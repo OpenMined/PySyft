@@ -55,14 +55,18 @@ class DrivePeering(Peering):
         # plus "_meta" -> {"version"}. None until the first read.
         self._peers_json_cache: dict[str, dict[str, Any]] | None = None
 
-    def copy_caches_to(self, other: "DrivePeering") -> None:
-        """Seed the caches of ``other`` from this store."""
-        other._encryption_bundles_folder_id = self._encryption_bundles_folder_id
-        other._peers_json_cache = (
+    def clone_for_thread(self) -> "DrivePeering":
+        """Peering over a new Drive client, for use from another thread, with
+        these caches."""
+        clone = DrivePeering(self._layout.clone_for_thread())
+        clone._encryption_bundles_folder_id = self._encryption_bundles_folder_id
+        clone._peers_json_cache = (
             dict(self._peers_json_cache) if self._peers_json_cache is not None else None
         )
+        return clone
 
     def reset_caches(self) -> None:
+        self._layout.reset_caches()
         self._encryption_bundles_folder_id = None
         self._peers_json_cache = None
 

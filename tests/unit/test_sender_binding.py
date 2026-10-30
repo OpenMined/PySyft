@@ -12,6 +12,7 @@ from syft.sync.messages.proposed_filechange import (
     ProposedFileChangesMessage,
 )
 from syft.sync.syftbox_manager import SyftboxManager
+from syft.sync.connections.drive.drive_connections import drive_layout_of
 
 
 def send_spoofed_message(
@@ -45,8 +46,8 @@ def sync_do(do_manager: SyftboxManager) -> None:
 
 
 def written_paths(do_manager: SyftboxManager) -> list[str]:
-    connection = do_manager.datasite_owner_syncer.event_cache.file_connection
-    return [str(path) for path, _ in connection.get_items()]
+    do_layout = do_manager.datasite_owner_syncer.event_cache.file_connection
+    return [str(path) for path, _ in do_layout.get_items()]
 
 
 def test_sender_email_in_body_cannot_claim_the_datasite_owner():
@@ -69,8 +70,8 @@ def test_sender_email_in_body_cannot_claim_the_datasite_owner():
 def test_spoofed_sender_does_not_name_an_archive_folder():
     """The DO archives a handled message under the peer that sent it.
 
-    `owner_remove_proposed_filechange_message_from_inbox` builds the archive
-    folder name from an email, and creates the folder. Read that email from the
+    `owner_archive_inbox_file` builds the archive folder name from an email,
+    and creates the folder. Read that email from the
     transport, so a claim in the body cannot name a folder in the DO's Drive.
     """
     ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection()
@@ -80,9 +81,11 @@ def test_spoofed_sender_does_not_name_an_archive_folder():
     send_spoofed_message(ds_manager, do_email, claimed_email, "any.txt")
     sync_do(do_manager)
 
-    connection = do_manager.datasite_owner_syncer.connection_router.connections[0]
+    do_layout = drive_layout_of(
+        do_manager.datasite_owner_syncer.connection_router.transport
+    )
     folder_names = [
-        f.name for f in connection.client.drive_service._backing_store.files.values()
+        f.name for f in do_layout.client.drive_service._backing_store.files.values()
     ]
     assert not [name for name in folder_names if claimed_email in name]
 

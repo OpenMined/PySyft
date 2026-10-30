@@ -8,7 +8,7 @@ import io
 import json
 import pickle
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaIoBaseDownload, MediaIoBaseUpload
@@ -23,6 +23,8 @@ GOOGLE_FOLDER_MIME_TYPE = "application/vnd.google-apps.folder"
 # Every file and folder that syft creates carries this property.
 SYFT_FILE_PROPERTY_KEY = "syft"
 SYFT_FILE_PROPERTY_VALUE = "true"
+# Google Drive batch API has a limit of 100 requests per batch
+DRIVE_BATCH_SIZE = 100
 
 
 def _has_reason(error: HttpError, reason: str) -> bool:
@@ -35,6 +37,12 @@ def _has_reason(error: HttpError, reason: str) -> bool:
 class GDriveClient:
     # A googleapiclient Drive v3 service, or a MockDriveService in tests.
     drive_service: Any
+    # Builds another service like ``drive_service``, for a copy in another thread.
+    new_service: Callable[[], Any]
+
+    def clone_for_thread(self) -> "GDriveClient":
+        """A client over a new Drive service, for use from another thread."""
+        return GDriveClient(self.new_service(), self.new_service)
 
     def download_file(self, file_id: str) -> bytes:
         request = self.drive_service.files().get_media(fileId=file_id)
@@ -127,10 +135,8 @@ class GDriveClient:
                 return
             raise exception
 
-        # Google Drive batch API has a limit of 100 requests per batch
-        BATCH_SIZE = 100
-        for i in range(0, len(file_ids), BATCH_SIZE):
-            chunk = file_ids[i : i + BATCH_SIZE]
+        for i in range(0, len(file_ids), DRIVE_BATCH_SIZE):
+            chunk = file_ids[i : i + DRIVE_BATCH_SIZE]
             batch = self.drive_service.new_batch_http_request(callback=callback)
             for file_id in chunk:
                 batch.add(self.drive_service.files().delete(fileId=file_id))
@@ -173,9 +179,8 @@ class GDriveClient:
             if exception is not None:
                 raise exception
 
-        BATCH_SIZE = 100
-        for i in range(0, len(users), BATCH_SIZE):
-            chunk = users[i : i + BATCH_SIZE]
+        for i in range(0, len(users), DRIVE_BATCH_SIZE):
+            chunk = users[i : i + DRIVE_BATCH_SIZE]
             batch = self.drive_service.new_batch_http_request(callback=callback)
             for user_email in chunk:
                 permission = {

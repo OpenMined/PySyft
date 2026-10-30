@@ -12,11 +12,7 @@ from syft.migrations import (
 )
 from syft.sync.checkpoints.checkpoint import Checkpoint, IncrementalCheckpoint
 from syft.sync.checkpoints.rolling_state import RollingState
-from syft.sync.connections.base_connection import (
-    ConnectionConfig,
-    FileCollection,
-    SyftboxPlatformConnection,
-)
+from syft.sync.connections.base_connection import FileCollection
 from syft.sync.encryption_policy import (
     MessageFormatError,
 )
@@ -29,7 +25,7 @@ from syft.sync.peers.peer import Peer, PeerState
 from syft.sync.peers.peer_store import PeerStore
 from syft.sync.transport.naming import PEERS_META_KEY
 from syft.sync.transport.protocols import Transport
-from syft.sync.transport.types import MessageKind, SendStatus
+from syft.sync.transport.types import MessageKind, RawMessage, SendStatus
 from syft.sync.utils.print_utils import (
     print_peer_added_to_platform,
     print_peer_adding_to_platform,
@@ -43,50 +39,18 @@ logger = logging.getLogger(__name__)
 
 
 class ConnectionRouter(BaseModel):
-    connections: List[SyftboxPlatformConnection]
+    """The one router of a manager. ``SyftboxManager.from_config`` builds it
+    and hands it to every part, so they share one transport, and through it
+    one connection, and one peer store."""
+
+    # Built once with the router and never replaced. A test may swap in a
+    # component that does not use Google Drive, such as a fake p2p.
+    transport: Transport
 
     peer_store: PeerStore
 
-    @property
-    def transport(self) -> Transport:
-        """The transport jobs over connections[0]."""
-        return self.connections[0].as_transport()
-
-    @classmethod
-    def from_configs(cls, email: str, connection_configs: List[ConnectionConfig]):
-        return cls(
-            connections=[
-                SyftboxPlatformConnection.from_config(config)
-                for config in connection_configs
-            ],
-            peer_store=PeerStore(email=email),
-        )
-
-    def add_connection(self, connection: SyftboxPlatformConnection):
-        self.connections.append(connection)
-
     def get_authenticated_email(self) -> str:
         return self.transport.peering.whoami()
-
-    def connection_for_send_message(self) -> SyftboxPlatformConnection:
-        return self.connections[0]
-
-    def connection_for_receive_message(self) -> SyftboxPlatformConnection:
-        return self.connections[0]
-
-    def copy_connection(
-        self, connection: SyftboxPlatformConnection
-    ) -> SyftboxPlatformConnection:
-        return connection.clone_for_thread()
-
-    def connection_for_datasite_watcher(self) -> SyftboxPlatformConnection:
-        return self.connections[0]
-
-    def connection_for_outbox(self) -> SyftboxPlatformConnection:
-        return self.connections[0]
-
-    def connection_for_own_syftbox(self) -> SyftboxPlatformConnection:
-        return self.connections[0]
 
     # =========================================================================
     # MESSAGE SEND/RECEIVE (with encryption)
@@ -138,37 +102,49 @@ class ConnectionRouter(BaseModel):
         filename = proposed_file_changes_message.message_filename.as_string()
         self.transport.p2p.send(recipient, filename, data, MessageKind.PROPOSED_CHANGES)
 
-    def owner_get_next_proposed_filechange_message(
+    def owner_receive_proposed_messages(
         self, sender_email: str
-    ) -> ProposedFileChangesMessage | None:
-        """The next message from ``sender_email``, or None when the inbox is empty.
+    ) -> list[tuple[RawMessage, ProposedFileChangesMessage]]:
+        """Every readable proposal waiting from ``sender_email``, oldest first,
+        as received and as read. Pass the received ones to
+        ``owner_mark_all_processed`` once they are handled.
 
-        A message whose format does not match the pair is archived unread,
-        with a warning.
+        A message that cannot be read (wrong format for the pair, bad
+        signature, cannot be decrypted or decoded) is marked processed unread,
+        with a warning, so it does not hold back the others.
 
         Raises:
-            SyftPeerNotReadyError: when the message cannot be read yet. It
-                stays in the inbox.
+            SyftPeerNotReadyError: when the peer is not set up yet. Every
+                message stays unprocessed.
         """
-        connection = self.connection_for_receive_message()
-        while True:
-            result = connection.owner_download_next_raw_proposed_message_from_inbox(
-                sender_email
+        received = self.transport.p2p.receive(
+            sender_email, MessageKind.PROPOSED_CHANGES
+        )
+        readable = []
+        for raw in received:
+            if (message := self._read_proposed_message(raw)) is not None:
+                readable.append((raw, message))
+        return readable
+
+    def _read_proposed_message(
+        self, raw: RawMessage
+    ) -> ProposedFileChangesMessage | None:
+        """``raw`` verified, decrypted and decoded, or None when it cannot be
+        read; that message is then marked processed with a warning."""
+        try:
+            decrypted = self.peer_store.decrypt_and_verify_if_needed(
+                raw.sender, raw.data
             )
-            if result is None:
-                return None
-            raw_data, file_id = result
-            try:
-                decrypted = self.peer_store.decrypt_and_verify_if_needed(
-                    sender_email, raw_data
-                )
-            except MessageFormatError as e:
-                warnings.warn(f"Archived message file {file_id} unread: {e}")
-                connection.owner_archive_inbox_file(file_id, sender_email)
-                continue
-            msg = ProposedFileChangesMessage.from_compressed_data(decrypted)
-            msg.platform_id = file_id
-            return msg
+            return ProposedFileChangesMessage.from_compressed_data(decrypted)
+        except SyftPeerNotReadyError:
+            raise
+        except Exception as e:
+            warnings.warn(f"Archived message {raw.msg_id} unread: {e!r}")
+            self.transport.p2p.mark_processed(raw)
+            return None
+
+    def owner_mark_all_processed(self, messages: list[RawMessage]) -> None:
+        self.transport.p2p.mark_all_processed(messages)
 
     def owner_write_event_messages_to_outbox(
         self, recipient_email: str, events_message: FileChangeEventsMessage
@@ -185,10 +161,7 @@ class ConnectionRouter(BaseModel):
         self, peer_email: str, since_timestamp: float | None
     ) -> List[FileChangeEventsMessage]:
         """The outbox messages of ``peer_email``, without the skipped ones."""
-        connection = self.connection_for_datasite_watcher()
-        raw_list = connection.watcher_download_raw_events_from_outbox(
-            peer_email, since_timestamp
-        )
+        raw_list = self.transport.p2p.outbox_messages(peer_email, since_timestamp)
         messages = [
             self.watcher_read_events_message(peer_email, raw) for raw in raw_list
         ]
@@ -215,25 +188,18 @@ class ConnectionRouter(BaseModel):
     def watcher_get_outbox_file_metadatas(
         self, peer_email: str, since_timestamp: float | None
     ) -> List[dict]:
-        connection = self.connection_for_datasite_watcher()
-        return connection.watcher_get_outbox_file_metadatas(peer_email, since_timestamp)
-
-    def connection_for_parallel_download(self) -> SyftboxPlatformConnection:
-        """Create a new connection for thread-safe parallel downloads."""
-        return self.copy_connection(self.connection_for_datasite_watcher())
-
-    def transport_for_thread(self) -> Transport:
-        """The transport jobs over a new copy of the connection, for one thread."""
-        return self.connection_for_parallel_download().as_transport()
+        return self.transport.p2p.outbox_message_metadatas(peer_email, since_timestamp)
 
     def download_outbox_message(self, file_id: str) -> bytes:
-        """The bytes of one outbox message file (thread-safe)."""
-        return self.connection_for_parallel_download().download_file(file_id)
+        """Download one outbox message by its handle (thread-safe)."""
+        return self.transport.p2p.clone_for_thread().fetch_message(file_id)
 
-    def owner_list_outbox_files(self, recipient_email: str) -> List[dict] | None:
-        """The files in my outbox for ``recipient_email``, or None when that
-        outbox does not exist."""
-        return self.connection_for_outbox().owner_list_outbox_files(recipient_email)
+    def owner_get_outbox_file_metadatas(self, recipient_email: str) -> List[dict]:
+        """The messages in my outbox to ``recipient_email``, without downloading."""
+        return self.transport.p2p.own_outbox_message_metadatas(recipient_email)
+
+    def owner_delete_outbox_messages(self, file_ids: List[str]) -> None:
+        self.transport.p2p.delete_messages(file_ids)
 
     # =========================================================================
     # EVENT LOG (self-encrypted at rest when encryption enabled)
@@ -251,7 +217,7 @@ class ConnectionRouter(BaseModel):
         self, events_message_id: str
     ) -> FileChangeEventsMessage:
         """Download and decrypt a single events message (thread-safe)."""
-        raw = self.transport_for_thread().owner_store.fetch(events_message_id)
+        raw = self.transport.owner_store.clone_for_thread().fetch(events_message_id)
         raw = self.peer_store.decrypt_and_verify_for_self_if_needed(raw)
         return FileChangeEventsMessage.from_compressed_data(raw)
 
@@ -322,16 +288,6 @@ class ConnectionRouter(BaseModel):
         """Update peer state in storage"""
         self.transport.peering.update_peer_registry(
             peer_email, state, public_encryption_bundle
-        )
-
-    def owner_remove_proposed_filechange_from_inbox(
-        self,
-        proposed_filechange_message: ProposedFileChangesMessage,
-        sender_email: str,
-    ):
-        connection = self.connection_for_receive_message()
-        connection.owner_remove_proposed_filechange_message_from_inbox(
-            proposed_filechange_message, sender_email
         )
 
     # =========================================================================
@@ -446,40 +402,22 @@ class ConnectionRouter(BaseModel):
     # MISC
     # =========================================================================
 
-    def delete_multiple_files_by_ids(
-        self,
-        file_ids: List[str],
-        ignore_permissions_errors: bool = True,
-        ignore_file_not_found: bool = True,
-    ):
-        connection = self.connection_for_own_syftbox()
-        connection.delete_multiple_files_by_ids(
-            file_ids,
-            ignore_permissions_errors=ignore_permissions_errors,
-            ignore_file_not_found=ignore_file_not_found,
-        )
-
     def owner_get_all_accepted_event_file_ids(
         self, since_timestamp: float | None = None
     ) -> List[str]:
         return self.transport.owner_store.list_event_handles(since_timestamp)
 
-    def gather_all_file_and_folder_ids(self) -> List[str]:
-        connection = self.connection_for_own_syftbox()
-        return connection.gather_all_file_and_folder_ids()
-
-    def find_orphaned_syft_files(self) -> List[str]:
-        """Find the orphaned syft files of this account in its My Drive root."""
-        connection = self.connection_for_own_syftbox()
-        return connection.find_orphaned_syft_files()
+    def delete_all(self) -> int:
+        """Delete everything this account stores; return how many files and
+        folders went."""
+        return self.transport.owner_store.delete_all()
 
     def reset_caches(self):
-        connection = self.connection_for_own_syftbox()
-        connection.reset_caches()
+        for component in self.transport.components():
+            component.reset_caches()
 
     def delete_file_by_id(self, file_id: str):
-        connection = self.connection_for_own_syftbox()
-        connection.delete_file_by_id(file_id)
+        self.transport.collections.delete_by_handle(file_id)
 
     # =========================================================================
     # CHECKPOINT METHODS

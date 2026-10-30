@@ -552,7 +552,7 @@ def test_version_upgrade_breaks_communication():
     )
 
     # Phase 2: Simulate DS "upgrading" to a new incompatible version
-    ds_connection = ds_manager._connection_router.connections[0]
+    ds_peering = ds_manager._connection_router.transport.peering
 
     current = VersionInfo.current()
     new_version = VersionInfo(
@@ -565,7 +565,7 @@ def test_version_upgrade_breaks_communication():
 
     # Write the new version to GDrive (simulating DS upgrading their client)
     own_info = ds_manager.peer_manager.get_own_peer_info()
-    ds_connection.as_transport().peering.publish_peer_info(
+    ds_peering.publish_peer_info(
         own_info.model_copy(update={"version_info": new_version})
     )
 
@@ -587,4 +587,4 @@ def test_version_upgrade_breaks_communication():
     )
 
     # Cleanup: Restore DS's version file to the original version
-    ds_connection.as_transport().peering.publish_peer_info(own_info)
+    ds_peering.publish_peer_info(own_info)

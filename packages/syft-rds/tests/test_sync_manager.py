@@ -9,6 +9,7 @@ import pytest
 
 from syft.sync.connections.drive import mock_drive_service
 from syft.sync.connections.drive.gdrive_transport import GDriveConnection
+from syft.sync.syftbox_manager import SyftboxManager
 from syft_datasets import Dataset
 from syft_datasets.dataset_manager import DATASET_COLLECTION_PREFIX
 from syft_rds import SyftRDSClient
@@ -21,6 +22,7 @@ from dataset_test_utils import (
     create_tmp_dataset_files,
     create_tmp_dataset_files_with_parquet,
 )
+from syft.sync.connections.drive.drive_connections import drive_layout_of
 
 
 def path_for_job(do_email: str, ds_email: str, filename: str = "test.job") -> str:
@@ -231,9 +233,9 @@ def test_dataset_only_mock_data_uploaded():
     # Sync so DS receives the dataset
     ds_manager.sync()
 
-    files = ds_manager.sync_engine._connection_router.connections[
-        0
-    ].client.drive_service._backing_store.files
+    files = drive_layout_of(
+        ds_manager.sync_engine._connection_router.transport
+    ).client.drive_service._backing_store.files
     list(files.keys())
     file_objs = list(files.values())
     file_objs_ex_dataset_yaml = [
@@ -282,11 +284,9 @@ with open("outputs/result.json", "w") as f:
     # we do this by not always syncing on a file change, currently this logic is a bit of
     # a short cut, but we could do this based on timing eventually (if there are items in the
     # queue for longer than a certain time we start pushing)
-    connection_do = do_manager.sync_engine._connection_router.connections[0]
-    inbox_folder_id = connection_do.layout.get_own_datasite_inbox_id(ds_manager.email)
-    inbox_file_metadatas = connection_do.layout.get_file_metadatas_from_folder(
-        inbox_folder_id
-    )
+    do_layout = drive_layout_of(do_manager.sync_engine._connection_router.transport)
+    inbox_folder_id = do_layout.get_own_datasite_inbox_id(ds_manager.email)
+    inbox_file_metadatas = do_layout.get_file_metadatas_from_folder(inbox_folder_id)
     assert len(inbox_file_metadatas) == 1
 
     do_manager.sync()
@@ -1038,9 +1038,9 @@ def test_ds_dataset_cache_aware_sync():
     assert remote_hash is not None
 
     # Get the mock backing store and directories for creating second pair
-    mock_backing_store = ds_manager.sync_engine._connection_router.connections[
-        0
-    ].client.drive_service._backing_store
+    mock_backing_store = drive_layout_of(
+        ds_manager.sync_engine._connection_router.transport
+    ).client.drive_service._backing_store
     ds_folder = ds_manager.syftbox_folder
     do_folder = do_manager.syftbox_folder
     ds_email = ds_manager.email
@@ -1057,12 +1057,12 @@ def test_ds_dataset_cache_aware_sync():
     )
 
     # Replace mock backing store to share dataset collections
-    ds_manager2.sync_engine._connection_router.connections[
-        0
-    ].client.drive_service._backing_store = mock_backing_store
-    do_manager2.sync_engine._connection_router.connections[
-        0
-    ].client.drive_service._backing_store = mock_backing_store
+    drive_layout_of(
+        ds_manager2.sync_engine._connection_router.transport
+    ).client.drive_service._backing_store = mock_backing_store
+    drive_layout_of(
+        do_manager2.sync_engine._connection_router.transport
+    ).client.drive_service._backing_store = mock_backing_store
 
     # Load peers (already approved in shared backing store)
     ds_manager2.load_peers()
@@ -1138,9 +1138,9 @@ def test_do_dataset_cache_aware_sync():
     assert len(do_manager.datasets.get_all()) == 1
 
     # Get the mock backing store and directories for creating second pair
-    mock_backing_store = ds_manager.sync_engine._connection_router.connections[
-        0
-    ].client.drive_service._backing_store
+    mock_backing_store = drive_layout_of(
+        ds_manager.sync_engine._connection_router.transport
+    ).client.drive_service._backing_store
     ds_folder = ds_manager.syftbox_folder
     do_folder = do_manager.syftbox_folder
     ds_email = ds_manager.email
@@ -1157,12 +1157,12 @@ def test_do_dataset_cache_aware_sync():
     )
 
     # Replace mock backing store to share dataset collections
-    ds_manager2.sync_engine._connection_router.connections[
-        0
-    ].client.drive_service._backing_store = mock_backing_store
-    do_manager2.sync_engine._connection_router.connections[
-        0
-    ].client.drive_service._backing_store = mock_backing_store
+    drive_layout_of(
+        ds_manager2.sync_engine._connection_router.transport
+    ).client.drive_service._backing_store = mock_backing_store
+    drive_layout_of(
+        do_manager2.sync_engine._connection_router.transport
+    ).client.drive_service._backing_store = mock_backing_store
 
     # Load peers (already approved in shared backing store)
     ds_manager2.load_peers()
@@ -1205,15 +1205,13 @@ def test_in_memory_connection_load_state():
     )
 
     # Get the backing store that will persist across "restarts"
-    backing_store = do_manager1.sync_engine._connection_router.connections[
-        0
-    ].client.drive_service._backing_store
+    backing_store = drive_layout_of(
+        do_manager1.sync_engine._connection_router.transport
+    ).client.drive_service._backing_store
     ds_folder = ds_manager1.syftbox_folder
     do_folder = do_manager1.syftbox_folder
     ds_email = ds_manager1.email
     do_email = do_manager1.email
-    ds_manager1.sync_engine._connection_router.connections[0]
-    do_manager1.sync_engine._connection_router.connections[0]
 
     # Make some changes (submit to DS's job folder where DS has write access)
     ds_manager1.sync_engine._send_file_change(
@@ -1267,9 +1265,6 @@ def test_in_memory_connection_load_state():
         check_versions=False,
     )
 
-    do_manager2 = SyftRDSClient.from_config(do_config2)
-    ds_manager2 = SyftRDSClient.from_config(ds_config2)
-
     # Connect to the same backing store
     service_do = mock_drive_service.MockDriveService(backing_store, do_email)
     do_connection2 = GDriveConnection.from_service(do_email, service_do)
@@ -1277,8 +1272,12 @@ def test_in_memory_connection_load_state():
     service_ds = mock_drive_service.MockDriveService(backing_store, ds_email)
     ds_connection2 = GDriveConnection.from_service(ds_email, service_ds)
 
-    do_manager2.sync_engine._add_connection(do_connection2)
-    ds_manager2.sync_engine._add_connection(ds_connection2)
+    do_manager2 = SyftRDSClient.from_config(
+        do_config2, SyftboxManager._drive_transport(do_connection2)
+    )
+    ds_manager2 = SyftRDSClient.from_config(
+        ds_config2, SyftboxManager._drive_transport(ds_connection2)
+    )
 
     # Load peers
     do_manager2.load_peers()

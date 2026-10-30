@@ -9,6 +9,7 @@ import json
 import pytest
 from pydantic import ValidationError
 
+from syft.sync.connections.drive.drive_peering import DrivePeering
 from syft.sync.connections.connection_router import ConnectionRouter
 from syft.sync.connections.drive import mock_drive_service
 from syft.sync.encryption_policy import (
@@ -28,6 +29,7 @@ from syft.sync.peers.peer_store import (
 )
 from syft.sync.syftbox_manager import SyftboxManager
 from syft.sync.sync.datasite_owner_syncer import OutgoingMessage
+from syft.sync.transport import MessageKind
 from syft.sync.version.peer_info import PeerInfo
 from syft.sync.version.peer_manager import PeerManager, PeerManagerConfig
 from syft.sync.version.version_info import VersionInfo
@@ -73,13 +75,11 @@ def _keyed_pair(
 
 
 def _raw_inbox_message(do_manager, sender_email: str) -> bytes:
-    connection = do_manager.datasite_owner_syncer.connection_router
-    raw, _ = (
-        connection.connection_for_receive_message().owner_download_next_raw_proposed_message_from_inbox(
-            sender_email
-        )
+    router = do_manager.datasite_owner_syncer.connection_router
+    [message] = router.transport.p2p.receive(
+        sender_email, MessageKind.PROPOSED_CHANGES, max_messages=1
     )
-    return raw
+    return message.data
 
 
 def _accepted_contents(do_manager) -> list[str]:
@@ -173,11 +173,11 @@ def test_missing_version_file_created_with_own_policy():
     a_conn, b_conn = mock_drive_service.pair_with_mock_service(
         "a@example.com", "b@example.com"
     )
-    a_conn.as_transport().peering.grant_peer_info_read(
+    DrivePeering(a_conn.layout).grant_peer_info_read(
         "b@example.com", _peer_info(REQUIRED)
     )
     assert (
-        b_conn.as_transport().peering.read_peer_info("a@example.com").encryption_policy
+        DrivePeering(b_conn.layout).read_peer_info("a@example.com").encryption_policy
         == REQUIRED
     )
 
@@ -285,7 +285,7 @@ def test_client_without_policy_takes_policy_of_syftbox(tmp_path):
         config = PeerManagerConfig(
             syftbox_folder=tmp_path, email="alice@example.com", encryption_policy=policy
         )
-        return PeerManager.from_config(config).peer_store.encryption_policy
+        return PeerManager.peer_store_from_config(config).encryption_policy
 
     assert start(REQUIRED) == REQUIRED
     assert start(None) == REQUIRED

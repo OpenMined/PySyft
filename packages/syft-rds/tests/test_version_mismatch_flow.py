@@ -7,6 +7,7 @@ earlier version are reused so a peer that has not upgraded still finds them.
 
 from unittest.mock import patch
 
+from syft.sync.connections.drive.drive_peering import DrivePeering
 from syft.sync.connections.drive.gdrive_client import GOOGLE_FOLDER_MIME_TYPE
 from syft.sync.connections.drive.gdrive_layout import GDRIVE_P2P_FOLDER_DATASITE_PREFIX
 from syft.sync.connections.drive.gdrive_transport import GDriveConnection
@@ -18,11 +19,13 @@ from syft_rds.config import SyftRDSClientConfig
 from syft.version import SYFT_VERSION
 
 from dataset_test_utils import create_test_project_folder, create_tmp_dataset_files
+from syft.sync.connections.drive.drive_connections import drive_layout_of
+from syft.sync.syftbox_manager import SyftboxManager
 
 NEW_VERSION = "99.0.0"
 
 
-def _find_p2p_folders(connection, peer_email):
+def _find_p2p_folders(layout, peer_email):
     """Find all P2P folders involving a specific peer on the mock drive."""
     q = (
         f"mimeType='{GOOGLE_FOLDER_MIME_TYPE}'"
@@ -31,23 +34,23 @@ def _find_p2p_folders(connection, peer_email):
         " and trashed=false"
     )
     results = (
-        connection.client.drive_service.files()
+        layout.client.drive_service.files()
         .list(q=q, fields="files(id, name)")
         .execute()
     )
     return results.get("files", [])
 
 
-def _find_versioned_p2p_folders(connection, peer_email, version):
+def _find_versioned_p2p_folders(layout, peer_email, version):
     """Find P2P folders for a specific peer and version."""
-    folders = _find_p2p_folders(connection, peer_email)
+    folders = _find_p2p_folders(layout, peer_email)
     return [f for f in folders if f"#{version}#" in f["name"]]
 
 
 def _get_backing_store(manager):
     """Extract the mock backing store from a manager's connection."""
-    conn = manager.peer_manager.connection_router.connections[0]
-    return conn.client.drive_service._backing_store
+    layout = drive_layout_of(manager.peer_manager.connection_router.transport)
+    return layout.client.drive_service._backing_store
 
 
 def _reinitialize_manager(
@@ -66,11 +69,9 @@ def _reinitialize_manager(
         use_in_memory_cache=False,
         syftbox_folder=syftbox_folder,
     )
-    manager = SyftRDSClient.from_config(config)
-
     mock_service = MockDriveService(backing_store, email)
     conn = GDriveConnection.from_service(email, mock_service)
-    manager.sync_engine._add_connection(conn)
+    manager = SyftRDSClient.from_config(config, SyftboxManager._drive_transport(conn))
 
     if has_ds_role:
         manager.sync_engine.file_writer.add_callback(
@@ -97,7 +98,7 @@ def _simulate_continue_on_mismatch(manager, backing_store):
     mock_conn = GDriveConnection.from_service(email, mock_service)
 
     def read_remote(e, t):
-        return mock_conn.as_transport().peering.read_own_peer_info().version_info
+        return DrivePeering(mock_conn.layout).read_own_peer_info().version_info
 
     with (
         patch(
@@ -172,15 +173,15 @@ def test_version_mismatch_continues_and_repairs():
     assert do_manager.jobs[0].status == "done"
 
     # -- Step 4: Record P2P folders and personal folder id before upgrade --
-    do_conn = do_manager.peer_manager.connection_router.connections[0]
+    do_layout = drive_layout_of(do_manager.peer_manager.connection_router.transport)
     do_p2p_current = _find_versioned_p2p_folders(
-        do_conn, ds_manager.email, SYFT_VERSION
+        do_layout, ds_manager.email, SYFT_VERSION
     )
     assert len(do_p2p_current) > 0
     old_personal_name = f"{SYFT_VERSION}#{do_manager.email}"
-    old_personal_id = do_conn.client.find_folder_by_name(
+    old_personal_id = do_layout.client.find_folder_by_name(
         old_personal_name,
-        parent_id=do_conn.layout.get_syftbox_folder_id(),
+        parent_id=do_layout.get_syftbox_folder_id(),
         owner_email=do_manager.email,
     )
     assert old_personal_id is not None
@@ -215,19 +216,21 @@ def test_version_mismatch_continues_and_repairs():
         )
 
         # Personal folder is adopted (same Drive id, new name), not recreated.
-        do_conn_new = do_manager.peer_manager.connection_router.connections[0]
+        do_layout_new = drive_layout_of(
+            do_manager.peer_manager.connection_router.transport
+        )
         new_personal_name = f"{NEW_VERSION}#{do_email}"
-        new_personal_id = do_conn_new.client.find_folder_by_name(
+        new_personal_id = do_layout_new.client.find_folder_by_name(
             new_personal_name,
-            parent_id=do_conn_new.layout.get_syftbox_folder_id(),
+            parent_id=do_layout_new.get_syftbox_folder_id(),
             owner_email=do_email,
         )
         assert new_personal_id is not None
         assert new_personal_id == old_personal_id
         assert (
-            do_conn_new.client.find_folder_by_name(
+            do_layout_new.client.find_folder_by_name(
                 old_personal_name,
-                parent_id=do_conn_new.layout.get_syftbox_folder_id(),
+                parent_id=do_layout_new.get_syftbox_folder_id(),
                 owner_email=do_email,
             )
             is None
@@ -251,11 +254,13 @@ def test_version_mismatch_continues_and_repairs():
             syftbox_folder=ds_syftbox,
         )
 
-        ds_conn_new = ds_manager.peer_manager.connection_router.connections[0]
+        ds_layout_new = drive_layout_of(
+            ds_manager.peer_manager.connection_router.transport
+        )
         ds_personal_name = f"{NEW_VERSION}#{ds_email}"
-        ds_personal_id = ds_conn_new.client.find_folder_by_name(
+        ds_personal_id = ds_layout_new.client.find_folder_by_name(
             ds_personal_name,
-            parent_id=ds_conn_new.layout.get_syftbox_folder_id(),
+            parent_id=ds_layout_new.get_syftbox_folder_id(),
             owner_email=ds_email,
         )
         assert ds_personal_id is not None
@@ -265,9 +270,9 @@ def test_version_mismatch_continues_and_repairs():
 
         # P2P folders of the old version are reused, not replaced. A peer that
         # has not upgraded still looks for the old name.
-        do_p2p_new = _find_versioned_p2p_folders(do_conn_new, ds_email, NEW_VERSION)
+        do_p2p_new = _find_versioned_p2p_folders(do_layout_new, ds_email, NEW_VERSION)
         assert len(do_p2p_new) == 0
-        do_p2p_old = _find_versioned_p2p_folders(do_conn_new, ds_email, SYFT_VERSION)
+        do_p2p_old = _find_versioned_p2p_folders(do_layout_new, ds_email, SYFT_VERSION)
         assert len(do_p2p_old) > 0
         assert len(do_p2p_old) == len(do_p2p_current)
 
@@ -331,34 +336,25 @@ def test_login_writes_the_remote_version_file_too():
         use_in_memory_cache=False,
         check_versions=True,
     )
-    conn = do_manager.peer_manager.connection_router.connections[0]
-    assert (
-        conn.as_transport()
-        .peering.read_own_peer_info()
-        .version_info.syft_client_version
-        == SYFT_VERSION
-    )
+    peering = do_manager.peer_manager.connection_router.transport.peering
+    assert peering.read_own_peer_info().version_info.syft_client_version == SYFT_VERSION
 
     with (
         patch("syft.version.SYFT_VERSION", NEW_VERSION),
         patch("syft.sync.version.version_info.SYFT_VERSION", NEW_VERSION),
     ):
         upgraded = _upgraded_manager(do_manager)
-        new_conn = upgraded.peer_manager.connection_router.connections[0]
+        new_peering = upgraded.peer_manager.connection_router.transport.peering
         # Still the pre-upgrade version: nothing has refreshed it yet.
         assert (
-            new_conn.as_transport()
-            .peering.read_own_peer_info()
-            .version_info.syft_client_version
+            new_peering.read_own_peer_info().version_info.syft_client_version
             == SYFT_VERSION
         )
 
         _init_client_login(upgraded.sync_engine, sync=False, load_peers=False)
 
         assert (
-            new_conn.as_transport()
-            .peering.read_own_peer_info()
-            .version_info.syft_client_version
+            new_peering.read_own_peer_info().version_info.syft_client_version
             == NEW_VERSION
         )
         local = read_local_version(upgraded.syftbox_folder)
@@ -399,12 +395,10 @@ def test_the_mismatch_prompt_does_not_return_after_a_login():
             handle_potential_version_mismatches_on_login,
         )
 
-        conn = do_manager.peer_manager.connection_router.connections[0]
+        peering = do_manager.peer_manager.connection_router.transport.peering
         with patch(
             "syft.sync.login_utils._read_remote_version",
-            side_effect=lambda e, t: conn.as_transport()
-            .peering.read_own_peer_info()
-            .version_info,
+            side_effect=lambda e, t: peering.read_own_peer_info().version_info,
         ):
             # The check runs before the client exists, so it reads the files
             # the previous client version left behind.

@@ -25,8 +25,7 @@ jobs:
         run: uv sync --all-extras
 
       - name: Install just
-        run: |
-          curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to /usr/local/bin
+        uses: extractions/setup-just@v3
 
       - name: Run unit tests
         run: just test-unit
@@ -86,8 +85,7 @@ jobs:
         run: uv sync --all-extras
 
       - name: Install just
-        run: |
-          curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to /usr/local/bin
+        uses: extractions/setup-just@v3
 
       - name: Run integration tests in mock mode
         run: just test-integration-mock-mode
@@ -147,8 +145,7 @@ jobs:
         run: uv sync --all-extras
 
       - name: Install just
-        run: |
-          curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to /usr/local/bin
+        uses: extractions/setup-just@v3
 
       - name: Run RDS tests
         run: just test-unit-rds
@@ -170,8 +167,7 @@ jobs:
         run: uv sync --all-extras
 
       - name: Install just
-        run: |
-          curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to /usr/local/bin
+        uses: extractions/setup-just@v3
 
       - name: Run enclave tests
         run: just test-unit-enclave
@@ -193,8 +189,7 @@ jobs:
         run: uv sync --all-extras
 
       - name: Install just
-        run: |
-          curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to /usr/local/bin
+        uses: extractions/setup-just@v3
 
       - name: Run enclave model API tests
         run: just test-unit-enclave-model-api
@@ -216,8 +211,7 @@ jobs:
         run: uv sync --all-extras
 
       - name: Install just
-        run: |
-          curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to /usr/local/bin
+        uses: extractions/setup-just@v3
 
       - name: Run migration tests
         run: just test-unit-migration
@@ -242,8 +236,7 @@ jobs:
         run: uv sync --all-extras
 
       - name: Install just
-        run: |
-          curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to /usr/local/bin
+        uses: extractions/setup-just@v3
 
       - name: Run restrict tests
         run: just test-unit-restrict

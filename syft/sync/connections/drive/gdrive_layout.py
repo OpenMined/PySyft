@@ -191,6 +191,13 @@ class DriveLayout:
     # sender email -> id of my archive folder for that sender.
     archive_folder_id_cache: dict[str, str] = field(default_factory=dict, init=False)
 
+    def clone_for_thread(self) -> "DriveLayout":
+        """A layout over a new Drive client, for use from another thread, that
+        knows the folder ids this one found."""
+        clone = DriveLayout(self.client.clone_for_thread(), self.email)
+        self.copy_caches_to(clone)
+        return clone
+
     def copy_caches_to(self, other: "DriveLayout") -> None:
         """Seed the folder ids of ``other`` from this layout."""
         other._syftbox_folder_id = self._syftbox_folder_id
@@ -452,15 +459,12 @@ class DriveLayout:
         return folder_id
 
     def get_archive_folder_id(self, sender_email: str) -> str:
-        if sender_email in self.archive_folder_id_cache:
-            return self.archive_folder_id_cache[sender_email]
-        else:
-            archive_folder_id = self.get_archive_folder_id_from_drive(sender_email)
-            if archive_folder_id:
-                self.archive_folder_id_cache[sender_email] = archive_folder_id
-                return archive_folder_id
-            else:
-                return self.create_archive_folder(sender_email)
+        if sender_email not in self.archive_folder_id_cache:
+            archive_folder_id = self.get_archive_folder_id_from_drive(
+                sender_email
+            ) or self.create_archive_folder(sender_email)
+            self.archive_folder_id_cache[sender_email] = archive_folder_id
+        return self.archive_folder_id_cache[sender_email]
 
     def get_archive_folder_id_from_drive(self, sender_email: str) -> str | None:
         archive_folder = GdriveArchiveFolder(

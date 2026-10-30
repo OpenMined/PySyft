@@ -16,6 +16,10 @@ from syft.sync.messages.proposed_filechange import (
     ProposedFileChangesMessage,
 )
 from syft.sync.utils.syftbox_utils import get_event_hash_from_content
+from syft.sync.connections.connection_router import ConnectionRouter
+from syft.sync.connections.drive.mock_drive_service import pair_with_mock_service
+from syft.sync.peers.peer_store import PeerStore
+from syft.sync.syftbox_manager import SyftboxManager
 
 
 def fail_next_listing(monkeypatch, name_prefix: str) -> None:
@@ -239,3 +243,14 @@ def grant_job_inbox_access(do_manager, ds_email: str) -> None:
     do_manager.datasite_owner_syncer.perm_context.open(
         f"app_data/job/inbox/{ds_email}/"
     ).grant_write_access(ds_email)
+
+
+def router_with_mock_connection(email: str) -> ConnectionRouter:
+    """A connection router over a mock Drive, for a part a test builds on its
+    own. In a manager every part shares the router
+    ``SyftboxManager.from_config`` builds."""
+    connection, _ = pair_with_mock_service(email, "peer@example.com")
+    return ConnectionRouter(
+        transport=SyftboxManager._drive_transport(connection),
+        peer_store=PeerStore(email=email),
+    )

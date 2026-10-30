@@ -13,7 +13,7 @@ from syft.sync.connections.drive.mock_drive_service import (
 
 def test_batch_delete_raises_error_whose_text_contains_404(monkeypatch):
     do_conn, _ = pair_with_mock_service("do@example.com", "ds@example.com")
-    folder_id = do_conn.client.create_folder(
+    folder_id = do_conn.layout.client.create_folder(
         "folder", do_conn.layout.get_syftbox_folder_id()
     )
 
@@ -22,12 +22,12 @@ def test_batch_delete_raises_error_whose_text_contains_404(monkeypatch):
 
     monkeypatch.setattr(MockDeleteRequest, "execute", forbidden)
     with pytest.raises(HttpError):
-        do_conn.client.delete_multiple_files_by_ids([folder_id])
+        do_conn.layout.client.delete_multiple_files_by_ids([folder_id])
 
 
 def test_batch_share_raises_error_whose_text_says_already_shared(monkeypatch):
     do_conn, _ = pair_with_mock_service("do@example.com", "ds@example.com")
-    folder_id = do_conn.client.create_folder(
+    folder_id = do_conn.layout.client.create_folder(
         "folder", do_conn.layout.get_syftbox_folder_id()
     )
 
@@ -36,4 +36,4 @@ def test_batch_share_raises_error_whose_text_says_already_shared(monkeypatch):
 
     monkeypatch.setattr(MockPermissionCreateRequest, "execute", forbidden)
     with pytest.raises(HttpError):
-        do_conn.client.batch_add_permissions(folder_id, ["ds@example.com"])
+        do_conn.layout.client.batch_add_permissions(folder_id, ["ds@example.com"])

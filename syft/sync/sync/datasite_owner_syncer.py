@@ -23,10 +23,7 @@ from syft.sync.checkpoints.rolling_state import (
     RollingState,
     raise_for_later_version,
 )
-from syft.sync.connections.base_connection import (
-    ConnectionConfig,
-    FileCollection,
-)
+from syft.sync.connections.base_connection import FileCollection
 from syft.sync.connections.connection_router import ConnectionRouter
 from syft.sync.events.file_change_event import (
     FileChangeEvent,
@@ -35,6 +32,7 @@ from syft.sync.events.file_change_event import (
 )
 from syft.sync.messages.proposed_filechange import ProposedFileChangesMessage
 from syft.sync.peers.exceptions import SyftPeerNotReadyError
+from syft.sync.transport.types import RawMessage
 from syft.sync.sync.caches.datasite_owner_cache import (
     DataSiteOwnerEventCache,
     DataSiteOwnerEventCacheConfig,
@@ -165,7 +163,6 @@ class DatasiteOwnerSyncerConfig(BaseModel):
     cache_config: DataSiteOwnerEventCacheConfig = Field(
         default_factory=DataSiteOwnerEventCacheConfig
     )
-    connection_configs: List[ConnectionConfig] = []
 
 
 class OutgoingMessage(NamedTuple):
@@ -228,7 +225,13 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
     _events_since_rolling_state_upload: int = PrivateAttr(default=0)
 
     @classmethod
-    def from_config(cls, config: DatasiteOwnerSyncerConfig):
+    def from_config(
+        cls, config: DatasiteOwnerSyncerConfig, connection_router: ConnectionRouter
+    ):
+        """``config`` holds plain values only. ``connection_router`` is live and
+        shared with the other parts of the manager, so the caller builds it
+        once and passes it in next to the config (see
+        ``SyftboxManager.from_config``)."""
         # Ensure cache config has the same collections_folder (both are now full paths)
         if config.collections_folder is not None:
             config.cache_config.collections_folder = config.collections_folder
@@ -240,9 +243,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             event_cache=DataSiteOwnerEventCache.from_config(config.cache_config),
             write_files=config.write_files,
             persist_owner_state=config.persist_owner_state,
-            connection_router=ConnectionRouter.from_configs(
-                config.email, config.connection_configs
-            ),
+            connection_router=connection_router,
             email=config.email,
             syftbox_folder=config.syftbox_folder,
             perm_context=SyftPermContext(datasite=datasite),
@@ -312,17 +313,24 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
                 self._save_rolling_state()
 
     def _pull_proposals(self, peer_email: str) -> None:
-        """Apply every proposed change waiting from ``peer_email``.
+        """Apply every proposed change waiting from ``peer_email``, then archive
+        them all in one go.
 
-        A proposal that fails is logged as an error, so that it does not hold
-        back the other peers or the owner's changes.
+        A proposal that cannot be read or applied is archived with a warning,
+        so it never holds back the ones after it. Proposals stay in the inbox
+        only while the peer is not set up yet or Drive cannot be reached; that
+        is logged, so it does not hold back the other peers or the owner's
+        changes.
         """
         proposed_count = 0
         try:
-            while msg := self.pull_and_process_next_proposed_filechange(
-                peer_email, raise_on_none=False
-            ):
-                proposed_count += len(msg.proposed_file_changes)
+            received = self.connection_router.owner_receive_proposed_messages(
+                peer_email
+            )
+            for raw, message in received:
+                if self._apply_proposed_message(raw, message):
+                    proposed_count += len(message.proposed_file_changes)
+            self.connection_router.owner_mark_all_processed([r for r, _ in received])
         except SyftPeerNotReadyError as e:
             warnings.warn(f"Messages from {peer_email} stay in the inbox: {e}")
         except Exception as e:
@@ -648,18 +656,18 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         self, collection: FileCollection, spec: CollectionSyncSpec
     ) -> list:
         """Get file metadatas for a collection using a new connection for thread safety."""
-        transport = self.connection_router.transport_for_thread()
-        return transport.collections.list_files(
+        collections = self.connection_router.transport.collections.clone_for_thread()
+        return collections.list_files(
             spec.wire_prefix(collection.variant),
-            collection.tag,
-            collection.content_hash,
-            self.email,
+            tag=collection.tag,
+            content_hash=collection.content_hash,
+            owner_email=self.email,
         )
 
     def _download_file_with_new_connection(self, file_id: str) -> bytes:
         """Download a file using a new connection for thread safety."""
-        transport = self.connection_router.transport_for_thread()
-        return transport.collections.fetch_file(file_id)
+        collections = self.connection_router.transport.collections.clone_for_thread()
+        return collections.fetch_file(file_id)
 
     def _create_current_filestate_event(self, path: str) -> FileChangeEvent:
         """An event that sets ``path`` on a peer to its current local state.
@@ -775,18 +783,17 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         events = [self._create_current_filestate_event(p) for p in plan.send]
         return events + [self._deletion_event(p) for p in plan.delete]
 
-    def pull_and_process_next_proposed_filechange(
-        self, sender_email: str, raise_on_none=True
-    ) -> ProposedFileChangesMessage | None:
-        # raise on none is useful for testing, shouldnt be used in production
-        message = self.connection_router.owner_get_next_proposed_filechange_message(
-            sender_email=sender_email
-        )
-        if message is not None:
-            # The sender is the peer whose inbox held the message. The transport
-            # read the message from that peer's folder and checked the signature
-            # against that peer's key. The body is sender-supplied, so a claim
-            # there that disagrees is a spoof attempt.
+    def _apply_proposed_message(
+        self, received: RawMessage, message: ProposedFileChangesMessage
+    ) -> bool:
+        """Apply one proposal; False, with a warning, when applying it failed.
+        Either way the caller archives it, so it does not hold back the next."""
+        # The sender is the peer whose inbox held the message. The transport
+        # read the message from that peer's folder and checked the signature
+        # against that peer's key. The body is sender-supplied, so a claim
+        # there that disagrees is a spoof attempt.
+        sender_email = received.sender
+        try:
             if same_email(message.sender_email, sender_email):
                 self.handle_proposed_filechange_events_message(sender_email, message)
             else:
@@ -794,16 +801,13 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
                     f"Dropped a proposed change from {sender_email}: the message "
                     f"claims sender {message.sender_email!r}."
                 )
-
-            # delete the message once we are done
-            self.connection_router.owner_remove_proposed_filechange_from_inbox(
-                message, sender_email
+            return True
+        except Exception as e:
+            warnings.warn(
+                f"Archived proposed change {received.msg_id} from {sender_email}: "
+                f"applying it failed: {e!r}"
             )
-            return message
-        elif raise_on_none:
-            raise ValueError("No proposed file change to process")
-        else:
-            return None
+            return False
 
     def check_write_permission(self, sender_email: str, path: str) -> bool:
         """Check if sender has write access to the given path."""
@@ -982,13 +986,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             )
             return 0
 
-        metas = self.connection_router.owner_list_outbox_files(recipient_email)
-        if metas is None:
-            logger.info(
-                f"WARNING: outbox compaction for {recipient_email} skipped — "
-                f"could not resolve outbox folder id"
-            )
-            return 0
+        metas = self.connection_router.owner_get_outbox_file_metadatas(recipient_email)
 
         # Keep only well-formed events-message filenames; track timestamps so
         # we apply events in order in the merged message.
@@ -1029,7 +1027,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             self.connection_router.owner_write_event_messages_to_outbox(
                 recipient_email, FileChangeEventsMessage(events=batch)
             )
-        self.connection_router.delete_multiple_files_by_ids(file_ids)
+        self.connection_router.owner_delete_outbox_messages(file_ids)
         return len(parsed)
 
     def write_file_filesystem(self, path: str, content: str):

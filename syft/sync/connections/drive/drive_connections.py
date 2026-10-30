@@ -1,34 +1,18 @@
-"""The transport jobs on Google Drive.
+"""The transport components on Google Drive.
 
-``drive_transport`` builds one of each job over the ``DriveLayout`` of a
-connection. Each job has its own module: ``drive_p2p``, ``drive_owner_store``,
-``drive_collections`` and ``drive_peering``.
+Each component has its own module: ``drive_p2p``, ``drive_owner_store``,
+``drive_collections`` and ``drive_peering``. They share one ``DriveLayout``,
+which holds the Drive client. ``SyftboxManager._drive_transport`` builds them.
 """
 
-from __future__ import annotations
-
-from typing import TYPE_CHECKING
-
-from syft.sync.connections.drive.drive_collections import DriveCollections
 from syft.sync.connections.drive.drive_owner_store import DriveOwnerStore
-from syft.sync.connections.drive.drive_p2p import DriveP2PConnection
-from syft.sync.connections.drive.drive_peering import DrivePeering
-from syft.sync.platforms.gdrive_files_platform import GdriveFilesPlatform
-from syft.sync.transport.protocols import (
-    Transport,
-    WatcherStore,
-)
-
-if TYPE_CHECKING:
-    from syft.sync.connections.drive.gdrive_transport import GDriveConnection
+from syft.sync.connections.drive.gdrive_layout import DriveLayout
+from syft.sync.transport.protocols import Transport, WatcherStore
 
 
 class DriveWatcherStore(WatcherStore):
     """The DS's storage on Drive. Not built yet: today the DS keeps what it
     received in a local cache."""
-
-    def __init__(self, connection: GDriveConnection):
-        self._conn = connection
 
     def put_checkpoint(self, peer: str, name: str, data: bytes) -> str:
         raise NotImplementedError("Watcher storage on Drive is not built yet")
@@ -46,13 +30,11 @@ class DriveWatcherStore(WatcherStore):
         raise NotImplementedError("Watcher storage on Drive is not built yet")
 
 
-def drive_transport(connection: GDriveConnection) -> Transport:
-    """The transport jobs over one Drive connection."""
-    return Transport(
-        p2p=DriveP2PConnection(connection.layout),
-        owner_store=DriveOwnerStore(connection.layout),
-        watcher_store=DriveWatcherStore(connection),
-        collections=DriveCollections(connection.layout),
-        peering=DrivePeering(connection.layout),
-        platform=GdriveFilesPlatform(),
-    )
+def drive_layout_of(transport: Transport) -> DriveLayout:
+    """The Drive layout under ``transport``, for tests and tools that need
+    Drive itself. The sync code reaches Drive only through the components.
+    Raises if the transport is not built on Drive."""
+    store = transport.owner_store
+    if not isinstance(store, DriveOwnerStore):
+        raise TypeError("This transport is not built on Google Drive")
+    return store._layout

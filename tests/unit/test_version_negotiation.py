@@ -15,6 +15,7 @@ from syft.sync.encryption_policy import EncryptionPolicy
 from syft.sync.version.peer_info import PeerInfo
 from syft.sync.version.peer_manager import CompatAction
 from syft.sync.version.version_info import CompatibilityStatus, VersionInfo
+from syft.sync.connections.drive.drive_connections import drive_layout_of
 
 
 def build_client_version(client_version: str) -> VersionInfo:
@@ -239,9 +240,9 @@ class TestPeerManager:
             SyftboxManager.pair_with_mock_drive_service_connection()
         )
 
-        backing_store = ds_manager._connection_router.connections[
-            0
-        ].client.drive_service._backing_store
+        backing_store = drive_layout_of(
+            ds_manager._connection_router.transport
+        ).client.drive_service._backing_store
 
         third_peer_email = "third_peer@test.com"
         third_peer_info = PeerInfo(
@@ -314,7 +315,7 @@ class TestPeerManager:
         with pytest.raises(TransportUnavailableError):
             ds_manager.peer_manager.load_peer_infos_parallel([do_manager.email])
 
-    def test_drive_refusal_during_peer_version_read_not_unavailable(self, monkeypatch):
+    def test_drive_refusal_during_peer_version_read_skips_peer(self, monkeypatch):
         ds_manager, do_manager = (
             SyftboxManager.pair_with_mock_drive_service_connection()
         )
@@ -324,17 +325,19 @@ class TestPeerManager:
         )
         monkeypatch.setattr(GDriveClient, "download_file", _raises(forbidden))
 
-        with pytest.raises(HttpError):
-            ds_manager.peer_manager.load_peer_infos_parallel([do_manager.email])
+        infos = ds_manager.peer_manager.load_peer_infos_parallel([do_manager.email])
 
-    def test_unreadable_peer_version_file_raises(self, monkeypatch):
+        assert infos == {do_manager.email: None}
+
+    def test_unreadable_peer_version_file_skips_peer(self, monkeypatch):
         ds_manager, do_manager = (
             SyftboxManager.pair_with_mock_drive_service_connection()
         )
         monkeypatch.setattr(GDriveClient, "download_file", _returns(b"{trunc"))
 
-        with pytest.raises(ValueError):
-            ds_manager.peer_manager.load_peer_infos_parallel([do_manager.email])
+        infos = ds_manager.peer_manager.load_peer_infos_parallel([do_manager.email])
+
+        assert infos == {do_manager.email: None}
 
 
 DRIVE_DOWN = ConnectionResetError("Drive is down")

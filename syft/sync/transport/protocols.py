@@ -14,7 +14,7 @@ backend may override when it can do them faster.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 from pydantic import BaseModel, ConfigDict
 
@@ -26,14 +26,31 @@ if TYPE_CHECKING:
     from syft.sync.version.peer_info import PeerInfo
 
 
-class P2PConnection(ABC):
-    """Messages between peers, kept until the recipient acknowledges them.
+class TransportComponent:
+    """What every component of a transport does besides its own work."""
 
-    One rule for every message, whatever its kind: ``receive`` returns the
-    messages not acknowledged yet, and ``ack`` finishes one. On Drive a written
-    message is ``DELIVERED`` and ``ack`` removes it. On a live link such as
-    WebRTC a message is ``QUEUED`` until the peer acknowledges it, which
-    ``delivered()`` then reports.
+    def clone_for_thread(self) -> Self:
+        """A copy that another thread may use. This one, unless its
+        connection cannot be shared across threads."""
+        return self
+
+    def reset_caches(self) -> None:
+        """Forget what was cached from the connection."""
+
+
+class P2PConnection(TransportComponent, ABC):
+    """Messages between peers, kept until the recipient has processed them.
+
+    Sending and receiving each have their own confirmation:
+
+    - Sender: a message is delivered once it is stored where the peer will
+      find it. On Drive that is when the upload returns, so ``send`` returns
+      ``DELIVERED``. On a live link such as WebRTC ``send`` returns ``QUEUED``,
+      and ``delivered()`` reports the message once the peer has stored it and
+      sent a receipt back.
+    - Receiver: ``receive`` returns the messages not processed yet, and
+      ``mark_processed`` finishes one. This stays with the receiver: nothing
+      is sent back to the peer.
     """
 
     @abstractmethod
@@ -49,26 +66,32 @@ class P2PConnection(ABC):
 
     @abstractmethod
     def delivered(self) -> list[str]:
-        """The ``msg_id`` of each queued message the peer acknowledged since
-        the last call. A connection that only returns ``DELIVERED`` returns
-        nothing."""
+        """The ``msg_id`` of each queued message the peer stored since the last
+        call. A connection that only returns ``DELIVERED`` returns nothing."""
 
     @abstractmethod
-    def receive(self, max_messages: int | None = None) -> list[RawMessage]:
-        """Messages from every peer that are not acknowledged yet, oldest first
-        per sender, at most ``max_messages`` of them.
+    def receive(
+        self, peer: str, kind: MessageKind, max_messages: int | None = None
+    ) -> list[RawMessage]:
+        """Messages of ``kind`` from ``peer`` that are not processed yet, oldest
+        first, at most ``max_messages`` of them.
 
         A peer whose channel does not exist yet has no messages. The connection
         sets each ``RawMessage.sender`` from where the message came from.
         """
 
     @abstractmethod
-    def ack(self, message: RawMessage) -> None:
+    def mark_processed(self, message: RawMessage) -> None:
         """Record that ``message`` was processed; ``receive`` never returns it
         again."""
 
+    def mark_all_processed(self, messages: list[RawMessage]) -> None:
+        """``mark_processed`` for each of ``messages``."""
+        for message in messages:
+            self.mark_processed(message)
 
-class OwnerStore(ABC):
+
+class OwnerStore(TransportComponent, ABC):
     """The data owner's own storage: event log, checkpoints, rolling state.
 
     Only the owner writes and reads it, and it is never shared.
@@ -142,8 +165,14 @@ class OwnerStore(ABC):
     def delete_rolling_state(self) -> None:
         """Remove the rolling state."""
 
+    # -- the whole account -----------------------------------------------------
+    @abstractmethod
+    def delete_all(self) -> int:
+        """Delete everything this account stores, for every role, and return
+        how many files and folders went."""
 
-class WatcherStore(ABC):
+
+class WatcherStore(TransportComponent, ABC):
     """The data scientist's memory of what each owner sent it.
 
     One area per owner, in the scientist's own storage, never shared, so it
@@ -174,7 +203,7 @@ class WatcherStore(ABC):
         everything again."""
 
 
-class Collections(ABC):
+class Collections(TransportComponent, ABC):
     """Sets of files a data owner shares with named readers (datasets)."""
 
     @abstractmethod
@@ -211,6 +240,10 @@ class Collections(ABC):
         """Remove every layout of ``tag`` published under ``prefix``."""
 
     @abstractmethod
+    def delete_by_handle(self, handle: str) -> None:
+        """Remove the one collection folder ``handle`` names."""
+
+    @abstractmethod
     def list_shared_with_me(self, prefix: str) -> list[dict]:
         """Collections peers shared with me, each with owner_email, tag,
         content_hash and variant."""
@@ -233,7 +266,7 @@ class Collections(ABC):
         return {f["file_name"]: self.fetch_file(f["file_id"]) for f in files}
 
 
-class Peering(ABC):
+class Peering(TransportComponent, ABC):
     """Finding and trusting a peer: identity, channels, peer list, published
     documents."""
 
@@ -308,6 +341,16 @@ class Peering(ABC):
         """
 
 
+# The components of a transport, as named on ``Transport``.
+TRANSPORT_COMPONENTS = (
+    "p2p",
+    "owner_store",
+    "watcher_store",
+    "collections",
+    "peering",
+)
+
+
 class Transport(BaseModel):
     """One implementation of each job. The parts may come from different
     backends, though a peer's ``p2p`` and ``peering`` go together."""
@@ -321,3 +364,7 @@ class Transport(BaseModel):
     peering: Peering
     # Recorded on each Peer so a peer list says which backend reaches it.
     platform: BasePlatform
+
+    def components(self) -> list[TransportComponent]:
+        """The components, in ``TRANSPORT_COMPONENTS`` order."""
+        return [getattr(self, name) for name in TRANSPORT_COMPONENTS]

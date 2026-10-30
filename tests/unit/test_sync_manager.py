@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 import yaml
 
+from syft.sync.connections.drive.drive_peering import DrivePeering
 from syft.sync.connections.connection_router import ConnectionRouter
 from syft.sync.connections.drive.gdrive_transport import GDriveConnection
 from syft.sync.encryption_policy import EncryptionPolicy
@@ -24,6 +25,7 @@ from tests.unit.utils import (
     get_mock_proposed_events_messages,
     grant_job_inbox_access,
 )
+from syft.sync.connections.drive.drive_connections import drive_layout_of
 
 
 def path_for_job(do_email: str, ds_email: str, filename: str = "test.job") -> str:
@@ -148,7 +150,7 @@ def test_sync_existing_datasite_state_do():
     ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
         use_in_memory_cache=False
     )
-    connection_ds = ds_manager._connection_router.connections[0]
+    ds_p2p = ds_manager._connection_router.transport.p2p
     events_messages = get_mock_events_messages(2)
 
     for message in events_messages:
@@ -167,7 +169,7 @@ def test_sync_existing_datasite_state_do():
     n_files_in_cache = len(do_manager.datasite_owner_syncer.event_cache.file_connection)
     hashes_in_cache = len(do_manager.datasite_owner_syncer.event_cache.file_hashes)
 
-    n_outbox = connection_ds.watcher_get_outbox_file_metadatas(do_manager.email, None)
+    n_outbox = ds_p2p.outbox_message_metadatas(do_manager.email, None)
     assert n_messages_in_cache >= 1  # At least 1 message with the 2 file changes
     # 2 data files + private/crypto_keys.json + private/syft_settings.json
     assert n_files_in_cache == 4
@@ -186,7 +188,6 @@ def test_sync_existing_inbox_state_do():
     do_manager.datasite_owner_syncer.perm_context.open(".").grant_write_access(
         ds_manager.email
     )
-
     proposed_events_messages = get_mock_proposed_events_messages(
         2, email=ds_manager.email
     )
@@ -486,12 +487,14 @@ def _add_known_peer(do_manager, email: str) -> None:
 def _peer_router(ds_manager, do_manager, email: str) -> ConnectionRouter:
     """Make ``email`` a second peer of the DO, and return its router."""
     conn = GDriveConnection.from_service(
-        email, ds_manager._connection_router.connections[0].client.drive_service
+        email,
+        drive_layout_of(ds_manager._connection_router.transport).client.drive_service,
     )
-    conn.as_transport().peering.open_channels(do_manager.email)
+    DrivePeering(conn.layout).open_channels(do_manager.email)
     _add_known_peer(do_manager, email)
     return ConnectionRouter(
-        connections=[conn], peer_store=_store_knowing(email, do_manager.email)
+        transport=SyftboxManager._drive_transport(conn),
+        peer_store=_store_knowing(email, do_manager.email),
     )
 
 

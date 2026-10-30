@@ -311,22 +311,24 @@ def delete_remote_syftbox(
             this is auto-detected if not provided.
         verbose: If True (default), print deletion progress.
     """
+    from syft.sync.connections.drive.drive_owner_store import DriveOwnerStore
     from syft.sync.connections.drive.gdrive_transport import GDriveConnection
 
     email = _resolve_email(email)
     token_path = _resolve_token_path(token_path)
     conn = GDriveConnection.from_token_path(email=email, token_path=token_path)
+    store = DriveOwnerStore(conn.layout)
 
     # Gather file IDs via folder hierarchy
-    folder_file_ids = set(conn.gather_all_file_and_folder_ids())
+    folder_file_ids = set(store.gather_all_file_and_folder_ids())
 
     # Find the orphaned syft files in My Drive root
-    orphaned_file_ids = set(conn.find_orphaned_syft_files())
+    orphaned_file_ids = set(store.find_orphaned_syft_files())
 
     all_file_ids = list(folder_file_ids | orphaned_file_ids)
 
     start = time.time()
-    conn.delete_multiple_files_by_ids(all_file_ids)
+    conn.layout.client.delete_multiple_files_by_ids(all_file_ids)
     elapsed = time.time() - start
 
     if verbose:
@@ -340,4 +342,4 @@ def delete_remote_syftbox(
         else:
             print()
 
-    conn.reset_caches()
+    store.reset_caches()

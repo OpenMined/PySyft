@@ -5,7 +5,6 @@ from typing import Dict, List
 
 from pydantic import BaseModel, Field, PrivateAttr
 
-from syft.sync.connections.base_connection import ConnectionConfig
 from syft.sync.connections.connection_router import ConnectionRouter
 from syft.sync.callback_mixin import BaseModelCallbackMixin
 from syft.sync.events.file_change_event import FileChangeEventsMessage
@@ -23,7 +22,6 @@ from syft.sync.sync.caches.datasite_watcher_cache import (
 class DatasiteWatcherSyncerConfig(BaseModel):
     syftbox_folder: Path | None = None
     email: str | None = None
-    connection_configs: List[ConnectionConfig] = []
     datasite_watcher_cache_config: DataSiteWatcherCacheConfig = Field(
         default_factory=DataSiteWatcherCacheConfig
     )
@@ -46,15 +44,19 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
     )
 
     @classmethod
-    def from_config(cls, config: DatasiteWatcherSyncerConfig):
+    def from_config(
+        cls, config: DatasiteWatcherSyncerConfig, connection_router: ConnectionRouter
+    ):
+        """``config`` holds plain values only. ``connection_router`` is live and
+        shared with the other parts of the manager, so the caller builds it
+        once and passes it in next to the config (see
+        ``SyftboxManager.from_config``)."""
         return cls(
             syftbox_folder=config.syftbox_folder,
             email=config.email,
-            connection_router=ConnectionRouter.from_configs(
-                config.email, config.connection_configs
-            ),
+            connection_router=connection_router,
             datasite_watcher_cache=DataSiteWatcherCache.from_config(
-                config.datasite_watcher_cache_config
+                config.datasite_watcher_cache_config, connection_router
             ),
         )
 
@@ -185,8 +187,8 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
         self, file_id: str, owner_email: str
     ) -> bytes:
         """Download collection file using a new connection (thread-safe)."""
-        transport = self.connection_router.transport_for_thread()
-        data = transport.collections.fetch_file(file_id)
+        collections = self.connection_router.transport.collections.clone_for_thread()
+        data = collections.fetch_file(file_id)
         data = self.connection_router.peer_store.decrypt_dataset_if_needed(
             owner_email, data
         )

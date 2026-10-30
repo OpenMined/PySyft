@@ -14,13 +14,21 @@ from syft.sync.checkpoints.rolling_state import (
     ROLLING_STATE_FILENAME_PREFIX,
     RollingState,
 )
+from syft.sync.connections.drive.gdrive_client import (
+    SYFT_FILE_PROPERTY_KEY,
+    SYFT_FILE_PROPERTY_VALUE,
+)
 from syft.sync.connections.drive.gdrive_layout import (
+    SYFTBOX_FOLDER,
     DriveLayout,
     valid_events_from_file_metadatas,
 )
 from syft.sync.connections.drive.gdrive_retry import (
     execute_with_retries,
     raise_unavailable,
+)
+from syft.sync.connections.drive.gdrive_utils import (
+    gather_all_file_and_folder_ids_recursive,
 )
 from syft.sync.events.file_change_event import FileChangeEventsMessageFileName
 from syft.sync.transport.protocols import OwnerStore
@@ -54,15 +62,19 @@ class DriveOwnerStore(OwnerStore):
         # fname -> gdrive id
         self.personal_syftbox_event_id_cache: dict[str, str] = {}
 
-    def copy_caches_to(self, other: "DriveOwnerStore") -> None:
-        """Seed the caches of ``other`` from this store."""
-        other._rolling_state_folder_id = self._rolling_state_folder_id
-        other._rolling_state_file_id = self._rolling_state_file_id
-        other.personal_syftbox_event_id_cache = dict(
+    def clone_for_thread(self) -> "DriveOwnerStore":
+        """A store over a new Drive client, for use from another thread, with
+        this store's caches."""
+        clone = DriveOwnerStore(self._layout.clone_for_thread())
+        clone._rolling_state_folder_id = self._rolling_state_folder_id
+        clone._rolling_state_file_id = self._rolling_state_file_id
+        clone.personal_syftbox_event_id_cache = dict(
             self.personal_syftbox_event_id_cache
         )
+        return clone
 
     def reset_caches(self) -> None:
+        self._layout.reset_caches()
         self._rolling_state_folder_id = None
         self._rolling_state_file_id = None
         self.personal_syftbox_event_id_cache.clear()
@@ -505,3 +517,36 @@ class DriveOwnerStore(OwnerStore):
                 )
             except Exception as e:
                 print(f"Warning: Failed to delete rolling state {item['name']}: {e}")
+
+    # -- the whole account -----------------------------------------------------
+
+    def delete_all(self) -> int:
+        """Everything in /SyftBox, and the syft files Drive moved to the root
+        of My Drive when they lost their folder."""
+        file_ids = set(self.gather_all_file_and_folder_ids())
+        file_ids |= set(self.find_orphaned_syft_files())
+        self._layout.client.delete_multiple_files_by_ids(list(file_ids))
+        return len(file_ids)
+
+    def gather_all_file_and_folder_ids(self) -> list[str]:
+        """Every file and folder under /SyftBox, and /SyftBox itself."""
+        syftbox_folder_id = self._layout.get_syftbox_folder_id()
+        return gather_all_file_and_folder_ids_recursive(
+            self._layout.client.drive_service, syftbox_folder_id
+        )
+
+    def find_orphaned_syft_files(self) -> list[str]:
+        """Find syft files of this account in its My Drive root, except /SyftBox.
+
+        Drive moves a file to the root of its owner when the file loses its
+        folder. Only /SyftBox belongs in root.
+
+        Returns list of orphaned file IDs.
+        """
+        query = (
+            "'root' in parents and 'me' in owners and trashed=false and "
+            f"name != '{SYFTBOX_FOLDER}' and "
+            f"properties has {{ key='{SYFT_FILE_PROPERTY_KEY}' "
+            f"and value='{SYFT_FILE_PROPERTY_VALUE}' }}"
+        )
+        return [f["id"] for f in self._layout.client.list_all_files(query, fields="id")]

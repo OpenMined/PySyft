@@ -93,11 +93,15 @@ class DriveCollections(Collections):
         # folder name -> id of my collection folder
         self.collection_folder_id_cache: dict[str, str] = {}
 
-    def copy_caches_to(self, other: "DriveCollections") -> None:
-        """Seed the caches of ``other`` from this store."""
-        other.collection_folder_id_cache = dict(self.collection_folder_id_cache)
+    def clone_for_thread(self) -> "DriveCollections":
+        """Collections over a new Drive client, for use from another thread,
+        with these caches."""
+        clone = DriveCollections(self._layout.clone_for_thread())
+        clone.collection_folder_id_cache = dict(self.collection_folder_id_cache)
+        return clone
 
     def reset_caches(self) -> None:
+        self._layout.reset_caches()
         self.collection_folder_id_cache.clear()
 
     def create(self, prefix: str, tag: str, content_hash: str, owner_email: str) -> str:
@@ -223,6 +227,14 @@ class DriveCollections(Collections):
                     variant=c.variant,
                 ).folder_name
                 self.collection_folder_id_cache.pop(folder_name, None)
+
+    def delete_by_handle(self, handle: str) -> None:
+        self._layout.client.delete_file_by_id(handle)
+        self.collection_folder_id_cache = {
+            name: folder_id
+            for name, folder_id in self.collection_folder_id_cache.items()
+            if folder_id != handle
+        }
 
     def list_shared_with_me(self, prefix: str) -> list[dict]:
         """List collections shared with DS (not owned by me), one per layout.

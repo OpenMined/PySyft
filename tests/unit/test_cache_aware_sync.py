@@ -10,6 +10,7 @@ from syft.sync.syftbox_manager import SyftboxManager
 from syft.sync.sync.collection_spec import CollectionSyncSpec
 
 from tests.unit.utils import (
+    router_with_mock_connection,
     TEST_COLLECTION_PREFIX,
     TEST_COLLECTION_SUBPATH,
     get_mock_events_messages,
@@ -244,9 +245,10 @@ def test_ds_cache_handles_deletions_correctly():
         collection_specs=[
             CollectionSyncSpec.public(TEST_COLLECTION_PREFIX, TEST_COLLECTION_SUBPATH)
         ],
-        connection_configs=[],
     )
-    new_cache = DataSiteWatcherCache.from_config(config)
+    new_cache = DataSiteWatcherCache.from_config(
+        config, router_with_mock_connection(do_manager.email)
+    )
 
     # Verify deleted file is not in reloaded cache
     assert expected_path not in new_cache.file_hashes, (

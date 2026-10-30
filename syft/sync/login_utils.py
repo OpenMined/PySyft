@@ -19,10 +19,11 @@ def _read_remote_version(
     token_path: Optional[Path],
 ) -> Optional[VersionInfo]:
     """Read version file from GDrive without a full SyftboxManager."""
+    from syft.sync.connections.drive.drive_peering import DrivePeering
     from syft.sync.connections.drive.gdrive_transport import GDriveConnection
 
     conn = GDriveConnection.from_token_path(email=email, token_path=token_path)
-    peer_info = conn.as_transport().peering.read_own_peer_info()
+    peer_info = DrivePeering(conn.layout).read_own_peer_info()
     return peer_info.version_info if peer_info else None
 
 
