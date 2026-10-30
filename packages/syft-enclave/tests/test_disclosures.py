@@ -17,6 +17,7 @@ from syft_job.disclosures import LOGS_WARNING  # noqa: E402
 from syft_job.job import JobInfo  # noqa: E402
 from syft_job.models import JobState, JobStatus  # noqa: E402
 from syft_job.traceback_capture import FRAMES_FILENAME  # noqa: E402
+from syft_perms import SyftPermContext  # noqa: E402
 
 from syft_enclaves import SyftEnclaveClient  # noqa: E402
 from syft_enclaves.enclave_job_info import (  # noqa: E402
@@ -247,6 +248,18 @@ def test_frames_reach_data_owners():
     do1.sync()
 
     assert (Path(do1.jobs["j"].job_review_path) / FRAMES_FILENAME).exists()
+
+
+def test_released_artifact_grants_read_to_parties():
+    enclave, do1, do2, ds = build_quad()
+    submit(ds, enclave, do1, do2, CRASH_CODE, [FRAMES])
+    run_to_completion(enclave, do1, do2, ds, [FRAMES])
+
+    datasite = enclave._rds.syftbox_folder / enclave.email
+    frames = Path(enclave.jobs["j"].job_review_path) / FRAMES_FILENAME
+    ctx = SyftPermContext(datasite=datasite)
+    for party in (ds, do1, do2):
+        assert ctx.open(str(frames.relative_to(datasite))).has_read_access(party.email)
 
 
 def test_one_owner_withholding_blocks_frames():

@@ -204,7 +204,7 @@ def test_output_policy_blocks_word_and_keeps_outputs_with_do(env):
     assert job.status == "failed"
     assert job.policy_error == "ValueError: Output out.txt contains a blocked word"
     assert env.reads(DS_EMAIL, "call.job", "policy_error.txt")
-    assert (job.job_review_path / "outputs" / "out.txt").read_text() == "SECRET\n"
+    assert (job.job_staging_path / "outputs" / "out.txt").read_text() == "SECRET\n"
     assert not env.reads(DS_EMAIL, "call.job", "outputs/out.txt")
 
 
@@ -246,6 +246,7 @@ def test_empty_recipients_hold_outputs_back(env):
     assert job.status == "done"
     assert not env.reads(DS_EMAIL, "call.job", "outputs/out.txt")
     assert job.outputs_withheld and job.policy_error is None
+    assert not (job.job_review_path / "outputs").exists()
     assert "Outputs not shared with you" in _ds_job(env)._repr_html_()
 
     env.runner.share_job_results("call.job", True, False, user=DS_EMAIL)

@@ -474,15 +474,25 @@ class SyftEnclaveClient:
         return self._rds.job_client.jobs
 
     def _apply_disclosure_policy(self) -> None:
-        """Move each granted artifact from the staging folder into review.
+        """Release each granted artifact to the parties of its job.
 
         An artifact that no party released stays in the staging folder, where no
-        submitter holds a grant.
+        party holds a grant.
         """
         for job in self._local_jobs():
             if job.status not in ("done", "failed"):
                 continue
-            job.release_artifacts(gated_names(self.granted_disclosures(job)))
+            job.release(
+                gated_names(self.granted_disclosures(job)),
+                self._disclosure_readers(job),
+            )
+
+    def _disclosure_readers(self, job: JobInfo) -> list[str]:
+        """The submitter and each DO of the job, who all get a released artifact."""
+        datasets = job.job_metadata.datasets or {}
+        return list(
+            dict.fromkeys([job.submitted_by, *(e for e in datasets if e != self.email)])
+        )
 
     def distribute_results(self) -> None:
         """Distribute job results to DS (always) and optionally to DOs."""
@@ -506,15 +516,12 @@ class SyftEnclaveClient:
             self._try_write_receipt(job)
 
         # Always share results with the DS (submitter)
-        job.release(["outputs"], [job.submitted_by])
-        self._forward_results_to_recipients(job, [job.submitted_by])
+        self._release_results(job, [job.submitted_by])
 
         # Optionally share with DOs
         datasets = job.job_metadata.datasets
         if job.job_headers.get("share_results_with_do") and datasets:
-            do_emails = list(datasets.keys())
-            job.release(["outputs"], do_emails)
-            self._forward_results_to_recipients(job, do_emails)
+            self._release_results(job, list(datasets.keys()))
 
         marker.write_text("shared")
 
@@ -547,11 +554,7 @@ class SyftEnclaveClient:
             ).read_bytes()
             for name in pending
         }
-        datasets = job.job_metadata.datasets or {}
-        recipients = list(
-            dict.fromkeys([job.submitted_by, *(e for e in datasets if e != self.email)])
-        )
-        self._push_files_to_recipients(files, recipients)
+        self._push_files_to_recipients(files, self._disclosure_readers(job))
 
         sent_path.write_text(json.dumps(sorted(sent.union(pending))))
         return pending
@@ -577,14 +580,15 @@ class SyftEnclaveClient:
         state_rel = state_file.relative_to(datasite_dir)
         return {state_rel: state_file.read_bytes()}
 
-    def _forward_results_to_recipients(self, job: JobInfo, recipients: list[str]):
-        """Forward job output files and state to recipients via event outbox."""
+    def _release_results(self, job: JobInfo, readers: list[str]) -> None:
+        """Release the outputs to ``readers``, and push them with the job state."""
+        job.release(["outputs"], readers)
         outputs_dir = job.job_review_path / "outputs"
         files_by_datasite_path = (
             self._get_files_in_dir(outputs_dir) if outputs_dir.exists() else {}
         )
         files_by_datasite_path.update(self._read_state_file(job))
-        self._push_files_to_recipients(files_by_datasite_path, recipients)
+        self._push_files_to_recipients(files_by_datasite_path, readers)
 
     def _push_files_to_recipients(
         self, files_by_datasite_path: dict, recipients: list[str]

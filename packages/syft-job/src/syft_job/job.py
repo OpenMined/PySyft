@@ -107,10 +107,13 @@ class JobInfo:
     def release(self, filenames: Iterable[str], readers: list[str]) -> list[str]:
         """Move the named staged files to review/, and give ``readers`` read access.
 
-        Returns the names that moved. A file that is already in review/ also
-        gets the read access, so a caller can add a reader later. A reader with
-        read access on the whole review folder also sees each file that moves.
+        Returns the names that moved. With no ``readers``, no file moves. A file
+        that is already in review/ also gets the read access, so a caller can
+        add a reader later. A reader with read access on the whole review
+        folder also sees each file that moves.
         """
+        if not readers:
+            return []
         filenames = list(filenames)
         moved = self.release_artifacts(filenames)
         released = [n for n in filenames if (self.job_review_path / n).exists()]
