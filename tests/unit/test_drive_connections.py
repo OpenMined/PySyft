@@ -17,6 +17,7 @@ from googleapiclient.errors import HttpError
 import syft.sync.connections.connection_router as connection_router_module
 from syft.sync.connections.connection_router import ConnectionRouter
 from syft.sync.connections.drive import mock_drive_service
+from syft.sync.connections.drive.drive_cached_client import DriveCachedClient
 from syft.sync.connections.drive.drive_collections import (
     CollectionFolder,
     DriveCollections,
@@ -28,6 +29,8 @@ from syft.sync.connections.drive.drive_peering import DrivePeering
 from syft.sync.connections.drive.gdrive_client import GDriveClient
 from syft.sync.connections.drive.mock_drive_service import (
     MockDeleteRequest,
+    MockDriveBackingStore,
+    MockDriveService,
     http_error,
     pair_with_mock_service,
 )
@@ -91,6 +94,17 @@ def test_drive_transport_does_every_job():
     assert isinstance(transport.collections, Collections)
     assert isinstance(transport.peering, Peering)
     assert isinstance(transport.platform, GdriveFilesPlatform)
+
+
+def test_login_on_new_account_searches_each_folder_once(monkeypatch):
+    calls = _count_drive_calls(monkeypatch)
+    service = MockDriveService(MockDriveBackingStore(), DO)
+    cached_client = DriveCachedClient.from_service(DO, service)
+    cached_client.get_syftbox_folder_id()
+    cached_client.get_personal_syftbox_folder_id()
+
+    # One search for /SyftBox and one for the personal folder; login creates both.
+    assert calls == Counter(list=2)
 
 
 # -- P2PConnection ----------------------------------------------------------------

@@ -295,16 +295,11 @@ class DriveCachedClient:
 
     def get_syftbox_folder_id(self) -> str:
         """/SyftBox"""
-        # cached
-        if self._syftbox_folder_id:
-            return self._syftbox_folder_id
-        else:
-            syftbox_folder_id = self.get_syftbox_folder_id_from_drive()
-            if syftbox_folder_id:
-                self._syftbox_folder_id = syftbox_folder_id
-                return self._syftbox_folder_id
-            else:
-                return self.create_syftbox_folder()
+        if self._syftbox_folder_id is None:
+            self._syftbox_folder_id = (
+                self.get_syftbox_folder_id_from_drive() or self.create_syftbox_folder()
+            )
+        return self._syftbox_folder_id
 
     def get_syftbox_folder_id_from_drive(self) -> str | None:
         query = f"name='{SYFTBOX_FOLDER}' and mimeType='application/vnd.google-apps.folder' and 'me' in owners and trashed=false"
@@ -323,8 +318,14 @@ class DriveCachedClient:
 
     def get_personal_syftbox_folder_id(self) -> str:
         """/SyftBox/{version}#{email}"""
-        if self._personal_syftbox_folder_id:
-            return self._personal_syftbox_folder_id
+        if self._personal_syftbox_folder_id is None:
+            self._personal_syftbox_folder_id = (
+                self.get_personal_syftbox_folder_id_from_drive()
+                or self.create_personal_syftbox_folder()
+            )
+        return self._personal_syftbox_folder_id
+
+    def get_personal_syftbox_folder_id_from_drive(self) -> str | None:
         folders = self.client.find_folders(
             name_contains=[f"#{self.email}"],
             parent_id=self.get_syftbox_folder_id(),
@@ -334,14 +335,10 @@ class DriveCachedClient:
         # '#{peer}#{type}#{email}'. Personal folder shape is exactly
         # '{version}#{email}', so require a single '#'.
         folders = [(fid, name) for fid, name in folders if name.count("#") == 1]
-        folder_id = self.find_or_adopt_versioned_folder(
+        return self.find_or_adopt_versioned_folder(
             folders,
             current_name=GdrivePersonalSyftboxFolder(email=self.email).as_string(),
         )
-        if folder_id:
-            self._personal_syftbox_folder_id = folder_id
-            return folder_id
-        return self.create_personal_syftbox_folder()
 
     def create_personal_syftbox_folder(self) -> str:
         """Creates /SyftBox/{version}#{email}"""
