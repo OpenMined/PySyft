@@ -1,9 +1,9 @@
 from unittest.mock import Mock, patch
 from uuid import uuid4
 
-from syft.sync.connections.drive.drive_collections import DriveCollections
+from syft.sync.connections.drive.drive_collections import DriveCollectionsConnection
 from syft.sync.connections.drive.drive_p2p import DriveP2PConnection
-from syft.sync.connections.drive.drive_peering import DrivePeering
+from syft.sync.connections.drive.drive_peering import DrivePeeringConnection
 from syft.sync.connections.drive.gdrive_client import GDriveClient
 from syft.sync.connections.drive.drive_cached_client import DriveCachedClient
 from syft.sync.connections.drive.mock_drive_service import (
@@ -266,8 +266,8 @@ def test_collection_listings_read_every_page():
         "do@example.com", "ds@example.com"
     )
     owner, reader = (
-        DriveCollections(do_cached_client),
-        DriveCollections(ds_cached_client),
+        DriveCollectionsConnection(do_cached_client),
+        DriveCollectionsConnection(ds_cached_client),
     )
     tags = [f"tag{i}" for i in range(FILE_COUNT)]
     for tag in tags:
@@ -285,7 +285,7 @@ def test_peer_requests_read_every_page():
     peer_emails = [f"peer{i}@example.com" for i in range(FILE_COUNT)]
     do_cached_client, *peers = _mock_cached_clients("do@example.com", *peer_emails)
     for peer in peers:
-        DrivePeering(peer).open_channels("do@example.com")
+        DrivePeeringConnection(peer).open_channels("do@example.com")
 
-    requests = DrivePeering(do_cached_client).incoming_requests()
+    requests = DrivePeeringConnection(do_cached_client).incoming_requests()
     assert sorted(requests) == sorted(peer_emails)

@@ -1,4 +1,4 @@
-"""The transport jobs on Google Drive, and the router that calls them.
+"""The connections on Google Drive, and the router that calls them.
 
 These tests pin what each job promises, on the mock Drive service the rest of
 the suite uses.
@@ -20,12 +20,12 @@ from syft.sync.connections.drive import mock_drive_service
 from syft.sync.connections.drive.drive_cached_client import DriveCachedClient
 from syft.sync.connections.drive.drive_collections import (
     CollectionFolder,
-    DriveCollections,
+    DriveCollectionsConnection,
 )
-from syft.sync.connections.drive.drive_connections import DriveWatcherStore
-from syft.sync.connections.drive.drive_owner_store import DriveOwnerStore
+from syft.sync.connections.drive.drive_connections import DriveWatcherStoreConnection
+from syft.sync.connections.drive.drive_owner_store import DriveOwnerStoreConnection
 from syft.sync.connections.drive.drive_p2p import DriveP2PConnection
-from syft.sync.connections.drive.drive_peering import DrivePeering
+from syft.sync.connections.drive.drive_peering import DrivePeeringConnection
 from syft.sync.connections.drive.gdrive_client import GDriveClient
 from syft.sync.connections.drive.mock_drive_service import (
     MockDeleteRequest,
@@ -40,18 +40,16 @@ from syft.sync.messages.proposed_filechange import ProposedFileChangesMessage
 from syft.sync.platforms.gdrive_files_platform import GdriveFilesPlatform
 from syft.sync.syftbox_manager import SyftboxManager
 from syft.sync.sync import datasite_owner_syncer
-from syft.sync.transport import (
-    Collections,
-    MessageKind,
-    OwnerStore,
+from syft.sync.connections.exceptions import ConnectionUnavailableError
+from syft.sync.connections.protocols import (
+    CollectionsConnection,
+    Connections,
+    OwnerStoreConnection,
     P2PConnection,
-    Peering,
-    RawMessage,
-    SendStatus,
-    Transport,
-    TransportUnavailableError,
-    WatcherStore,
+    PeeringConnection,
+    WatcherStoreConnection,
 )
+from syft.sync.connections.types import MessageKind, RawMessage, SendStatus
 from syft.sync.version.peer_info import PeerInfo
 from syft.sync.version.version_info import VersionInfo
 from tests.unit.test_sync_manager import _store_knowing
@@ -77,23 +75,23 @@ def _events_name(ts: float) -> str:
 def pair():
     """DO and DS cached clients over one mock Drive, with the DS's channels open."""
     do_cached_client, ds_cached_client = pair_with_mock_service(DO, DS)
-    DrivePeering(ds_cached_client).open_channels(DO)
+    DrivePeeringConnection(ds_cached_client).open_channels(DO)
     return do_cached_client, ds_cached_client
 
 
-# -- the transport ----------------------------------------------------------------
+# -- the connections --------------------------------------------------------------
 
 
-def test_drive_transport_does_every_job():
+def test_drive_connections_do_every_job():
     do_cached_client, _ = pair_with_mock_service(DO, DS)
-    transport = SyftboxManager._drive_transport(do_cached_client)
-    assert isinstance(transport, Transport)
-    assert isinstance(transport.p2p, P2PConnection)
-    assert isinstance(transport.owner_store, OwnerStore)
-    assert isinstance(transport.watcher_store, WatcherStore)
-    assert isinstance(transport.collections, Collections)
-    assert isinstance(transport.peering, Peering)
-    assert isinstance(transport.platform, GdriveFilesPlatform)
+    connections = SyftboxManager._drive_connections(do_cached_client)
+    assert isinstance(connections, Connections)
+    assert isinstance(connections.p2p_con, P2PConnection)
+    assert isinstance(connections.owner_store_con, OwnerStoreConnection)
+    assert isinstance(connections.watcher_store_con, WatcherStoreConnection)
+    assert isinstance(connections.collections_con, CollectionsConnection)
+    assert isinstance(connections.peering_con, PeeringConnection)
+    assert isinstance(connections.platform, GdriveFilesPlatform)
 
 
 def test_login_on_new_account_searches_each_folder_once(monkeypatch):
@@ -293,7 +291,7 @@ def test_receiving_inbox_while_drive_is_down_raises(pair, monkeypatch):
     do_cached_client, ds_cached_client = pair
     _send_proposals(ds_cached_client, 2)
     monkeypatch.setattr(GDriveClient, "download_file", _drive_down)
-    with pytest.raises(TransportUnavailableError):
+    with pytest.raises(ConnectionUnavailableError):
         DriveP2PConnection(do_cached_client).receive(DS, MessageKind.PROPOSED_CHANGES)
 
 
@@ -359,12 +357,12 @@ def test_receiving_file_events_through_p2p_is_not_built_yet(pair):
         p2p.mark_processed(message)
 
 
-# -- OwnerStore -------------------------------------------------------------------
+# -- OwnerStoreConnection ---------------------------------------------------------
 
 
 def test_owner_event_log_is_read_oldest_first(pair):
     do_cached_client, _ = pair
-    store = DriveOwnerStore(do_cached_client)
+    store = DriveOwnerStoreConnection(do_cached_client)
     # Written out of order: Drive lists by name, newest first.
     second = store.append_event(_events_name(2.0), b"second")
     first = store.append_event(_events_name(1.0), b"first")
@@ -380,7 +378,7 @@ def test_owner_event_log_is_read_oldest_first(pair):
 
 def test_owner_event_count_matches_the_listed_handles(pair):
     do_cached_client, _ = pair
-    store = DriveOwnerStore(do_cached_client)
+    store = DriveOwnerStoreConnection(do_cached_client)
     store.append_event(_events_name(1.0), b"event")
     store.append_event("syfteventsmessagev3_not-a-valid-name.tar.gz", b"junk")
 
@@ -389,17 +387,17 @@ def test_owner_event_count_matches_the_listed_handles(pair):
 
 def test_owner_event_log_read_while_drive_is_down_raises(pair, monkeypatch):
     do_cached_client, _ = pair
-    store = DriveOwnerStore(do_cached_client)
+    store = DriveOwnerStoreConnection(do_cached_client)
     store.append_event(_events_name(2.0), b"event")
 
     monkeypatch.setattr(GDriveClient, "download_file", _drive_down)
-    with pytest.raises(TransportUnavailableError):
+    with pytest.raises(ConnectionUnavailableError):
         store.fetch_events_since(1.0)
 
 
 def test_owner_event_log_download_error_raises(pair, monkeypatch):
     do_cached_client, _ = pair
-    store = DriveOwnerStore(do_cached_client)
+    store = DriveOwnerStoreConnection(do_cached_client)
     store.append_event(_events_name(2.0), b"event")
 
     def forbidden(self, file_id: str) -> bytes:
@@ -412,7 +410,7 @@ def test_owner_event_log_download_error_raises(pair, monkeypatch):
 
 def test_owner_store_keeps_the_newest_full_checkpoint(pair):
     do_cached_client, _ = pair
-    store = DriveOwnerStore(do_cached_client)
+    store = DriveOwnerStoreConnection(do_cached_client)
     store.put_checkpoint("checkpoint_1.0.tar.gz", b"one")
     store.put_checkpoint("checkpoint_2.0.tar.gz", b"two")
     assert store.latest_checkpoint() == b"two"
@@ -420,7 +418,7 @@ def test_owner_store_keeps_the_newest_full_checkpoint(pair):
 
 def test_owner_store_counts_and_deletes_incremental_checkpoints(pair):
     do_cached_client, _ = pair
-    store = DriveOwnerStore(do_cached_client)
+    store = DriveOwnerStoreConnection(do_cached_client)
     store.put_incremental("incremental_checkpoint_1_1.0.tar.gz", b"inc")
     assert store.incremental_count() == 1
     assert store.next_incremental_sequence() == 2
@@ -431,7 +429,7 @@ def test_owner_store_counts_and_deletes_incremental_checkpoints(pair):
 
 def test_owner_store_overwrites_and_deletes_the_rolling_state(pair):
     do_cached_client, _ = pair
-    store = DriveOwnerStore(do_cached_client)
+    store = DriveOwnerStoreConnection(do_cached_client)
     store.put_rolling_state("rolling_state_1.0.tar.gz", b"state 1")
     store.put_rolling_state("rolling_state_2.0.tar.gz", b"state 2")
     assert store.get_rolling_state() == b"state 2"
@@ -441,7 +439,7 @@ def test_owner_store_overwrites_and_deletes_the_rolling_state(pair):
 
 def test_owner_store_files_carry_the_syft_tag(pair):
     do_cached_client, _ = pair
-    store = DriveOwnerStore(do_cached_client)
+    store = DriveOwnerStoreConnection(do_cached_client)
     store.put_checkpoint("checkpoint_1.0.tar.gz", b"full")
     store.put_incremental("incremental_checkpoint_1_1.0.tar.gz", b"inc")
     store.put_rolling_state("rolling_state_1.0.tar.gz", b"state")
@@ -456,23 +454,23 @@ def test_owner_store_files_carry_the_syft_tag(pair):
     assert untagged == []
 
 
-# -- WatcherStore -----------------------------------------------------------------
+# -- WatcherStoreConnection -------------------------------------------------------
 
 
 def test_watcher_storage_on_drive_is_not_built_yet(pair):
     _, ds_cached_client = pair
     with pytest.raises(NotImplementedError):
-        DriveWatcherStore().latest_checkpoint(DO)
+        DriveWatcherStoreConnection().latest_checkpoint(DO)
 
 
-# -- Collections ------------------------------------------------------------------
+# -- CollectionsConnection --------------------------------------------------------
 
 
 def test_a_published_collection_is_listed_and_downloaded_by_its_reader(pair):
     do_cached_client, ds_cached_client = pair
     owner, reader = (
-        DriveCollections(do_cached_client),
-        DriveCollections(ds_cached_client),
+        DriveCollectionsConnection(do_cached_client),
+        DriveCollectionsConnection(ds_cached_client),
     )
     files = {"mock.csv": b"a,b\n1,2\n"}
     content_hash = CollectionFolder.compute_hash(files)
@@ -497,7 +495,7 @@ def test_a_published_collection_is_listed_and_downloaded_by_its_reader(pair):
 
 def test_a_failed_collection_delete_raises(pair, monkeypatch):
     do_cached_client, _ = pair
-    owner = DriveCollections(do_cached_client)
+    owner = DriveCollectionsConnection(do_cached_client)
     owner.create(DATASETS, "census", "hash", DO)
 
     def forbidden(self) -> None:
@@ -511,31 +509,31 @@ def test_a_failed_collection_delete_raises(pair, monkeypatch):
     assert owner.list_mine(DATASETS) == ["census"]
 
 
-# -- Peering ----------------------------------------------------------------------
+# -- PeeringConnection ------------------------------------------------------------
 
 
 def test_peering_finds_the_peer_that_opened_channels(pair):
     do_cached_client, _ = pair
-    peering = DrivePeering(do_cached_client)
+    peering = DrivePeeringConnection(do_cached_client)
     assert peering.whoami() == DO
     assert DS in peering.incoming_requests()
 
 
 def test_peering_keeps_the_peer_registry(pair):
     do_cached_client, _ = pair
-    peering = DrivePeering(do_cached_client)
+    peering = DrivePeeringConnection(do_cached_client)
     peering.update_peer_registry(DS, "accepted")
     assert peering.read_peer_registry(force_download=True)[DS]["state"] == "accepted"
 
 
 def test_peer_registry_update_while_drive_is_down_keeps_other_peers(pair, monkeypatch):
     do_cached_client, _ = pair
-    peering = DrivePeering(do_cached_client)
+    peering = DrivePeeringConnection(do_cached_client)
     peering.update_peer_registry(DS, "accepted")
     peering._peers_json_cache = None  # a new process has no cache
 
     monkeypatch.setattr(GDriveClient, "download_file", _drive_down)
-    with pytest.raises(TransportUnavailableError):
+    with pytest.raises(ConnectionUnavailableError):
         peering.update_peer_registry("other@example.com", "accepted")
     monkeypatch.undo()
 
@@ -543,14 +541,17 @@ def test_peer_registry_update_while_drive_is_down_keeps_other_peers(pair, monkey
 
 
 def test_reading_own_key_bundle_creates_no_folder(pair):
-    owner = DrivePeering(pair[0])
+    owner = DrivePeeringConnection(pair[0])
     assert owner.read_own_key_bundle(DS) is None
     assert owner._find_encryption_bundles_folder_id() is None
 
 
 def test_peering_publishes_a_key_bundle_both_sides_can_read(pair):
     do_cached_client, ds_cached_client = pair
-    owner, scientist = DrivePeering(do_cached_client), DrivePeering(ds_cached_client)
+    owner, scientist = (
+        DrivePeeringConnection(do_cached_client),
+        DrivePeeringConnection(ds_cached_client),
+    )
     bundle = '{"bundle": "do-public-key"}'
 
     owner.publish_key_bundle(DS, bundle)
@@ -563,7 +564,10 @@ def test_peering_publishes_a_key_bundle_both_sides_can_read(pair):
 
 def test_peering_publishes_peer_info_the_peer_can_read(pair):
     do_cached_client, ds_cached_client = pair
-    owner, scientist = DrivePeering(do_cached_client), DrivePeering(ds_cached_client)
+    owner, scientist = (
+        DrivePeeringConnection(do_cached_client),
+        DrivePeeringConnection(ds_cached_client),
+    )
     info = PeerInfo(
         version_info=VersionInfo.current(),
         encryption_policy=EncryptionPolicy.REQUIRED,
@@ -582,10 +586,12 @@ def test_peering_publishes_peer_info_the_peer_can_read(pair):
 def _router_with_mock_p2p():
     do_cached_client, _ = pair_with_mock_service(DO, DS)
     p2p = Mock(spec=DriveP2PConnection)
-    transport = SyftboxManager._drive_transport(do_cached_client).model_copy(
-        update={"p2p": p2p}
+    connections = SyftboxManager._drive_connections(do_cached_client).model_copy(
+        update={"p2p_con": p2p}
     )
-    router = ConnectionRouter(transport=transport, peer_store=_store_knowing(DO, DS))
+    router = ConnectionRouter(
+        connections=connections, peer_store=_store_knowing(DO, DS)
+    )
     return router, p2p
 
 

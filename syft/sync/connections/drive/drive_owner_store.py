@@ -31,7 +31,7 @@ from syft.sync.connections.drive.gdrive_utils import (
     gather_all_file_and_folder_ids_recursive,
 )
 from syft.sync.events.file_change_event import FileChangeEventsMessageFileName
-from syft.sync.transport.protocols import OwnerStore
+from syft.sync.connections.protocols import OwnerStoreConnection
 from syft.version import SYFT_VERSION
 
 
@@ -51,7 +51,7 @@ def _filter_valid_file_metadatas(
     return res
 
 
-class DriveOwnerStore(OwnerStore):
+class DriveOwnerStoreConnection(OwnerStoreConnection):
     """The DO's own folders in /SyftBox: event log, checkpoints, rolling state."""
 
     def __init__(self, cached_client: DriveCachedClient):
@@ -62,10 +62,10 @@ class DriveOwnerStore(OwnerStore):
         # fname -> gdrive id
         self.personal_syftbox_event_id_cache: dict[str, str] = {}
 
-    def clone_for_thread(self) -> "DriveOwnerStore":
+    def clone_for_thread(self) -> "DriveOwnerStoreConnection":
         """A store over a new Drive client, for use from another thread, with
         this store's caches."""
-        clone = DriveOwnerStore(self._cached_client.clone_for_thread())
+        clone = DriveOwnerStoreConnection(self._cached_client.clone_for_thread())
         clone._rolling_state_folder_id = self._rolling_state_folder_id
         clone._rolling_state_file_id = self._rolling_state_file_id
         clone.personal_syftbox_event_id_cache = dict(

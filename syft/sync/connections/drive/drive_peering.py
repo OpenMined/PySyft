@@ -22,8 +22,8 @@ from syft.sync.connections.drive.gdrive_retry import (
     execute_with_retries,
     raise_unavailable,
 )
-from syft.sync.transport.naming import PEERS_META_KEY, SYFT_PEERS_VERSION
-from syft.sync.transport.protocols import Peering
+from syft.sync.connections.naming import PEERS_META_KEY, SYFT_PEERS_VERSION
+from syft.sync.connections.protocols import PeeringConnection
 
 if TYPE_CHECKING:
     from syft.sync.version.peer_info import PeerInfo
@@ -43,7 +43,7 @@ class GdriveEncryptionBundlesFolder(BaseModel):
         return f"syft_encryption_bundles#{self.email}"
 
 
-class DrivePeering(Peering):
+class DrivePeeringConnection(PeeringConnection):
     """Identity from the Google account; channels, the peer list, key bundles
     and version files in /SyftBox."""
 
@@ -55,10 +55,10 @@ class DrivePeering(Peering):
         # plus "_meta" -> {"version"}. None until the first read.
         self._peers_json_cache: dict[str, dict[str, Any]] | None = None
 
-    def clone_for_thread(self) -> "DrivePeering":
+    def clone_for_thread(self) -> "DrivePeeringConnection":
         """Peering over a new Drive client, for use from another thread, with
         these caches."""
-        clone = DrivePeering(self._cached_client.clone_for_thread())
+        clone = DrivePeeringConnection(self._cached_client.clone_for_thread())
         clone._encryption_bundles_folder_id = self._encryption_bundles_folder_id
         clone._peers_json_cache = (
             dict(self._peers_json_cache) if self._peers_json_cache is not None else None
@@ -117,7 +117,7 @@ class DrivePeering(Peering):
         dict}``, and ``_meta`` to ``{"version": int}``.
 
         Raises:
-            TransportUnavailableError: when Drive cannot be reached.
+            ConnectionUnavailableError: when Drive cannot be reached.
             ValueError: when the file is not valid JSON.
         """
         with raise_unavailable("Could not read the peers file from Drive."):
@@ -295,7 +295,7 @@ class DrivePeering(Peering):
         Returns None when there is no file.
 
         Raises:
-            TransportUnavailableError: when Drive cannot be reached.
+            ConnectionUnavailableError: when Drive cannot be reached.
             ValueError: when the file is not a peer info file this client reads.
         """
         return self._read_peer_info_file(
@@ -308,7 +308,7 @@ class DrivePeering(Peering):
         Returns None when the peer has no file that this account may read.
 
         Raises:
-            TransportUnavailableError: when Drive cannot be reached.
+            ConnectionUnavailableError: when Drive cannot be reached.
             ValueError: when the file is not a peer info file this client reads.
         """
         return self._read_peer_info_file(

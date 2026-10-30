@@ -1,10 +1,11 @@
-"""The jobs a transport backend does, one abstract class each.
+"""The connections a backend provides, one abstract class for each job.
 
-``P2PConnection`` carries messages between peers, ``OwnerStore`` and
-``WatcherStore`` hold each role's own storage, ``Collections`` shares datasets,
-and ``Peering`` finds and trusts peers. A backend implements the classes it
-can. The sync layer above never sees backend ids: it passes back the messages
-and handles a backend returns.
+``P2PConnection`` carries messages between peers, ``OwnerStoreConnection`` and
+``WatcherStoreConnection`` hold each role's own storage,
+``CollectionsConnection`` shares datasets, and ``PeeringConnection`` finds and
+trusts peers. A backend implements the classes it can. The sync layer above
+never sees backend ids: it passes back the messages and handles a backend
+returns.
 
 Each class keeps its abstract methods to the few a backend must write. Methods
 that only combine those are ordinary methods on the base class, which a
@@ -19,15 +20,15 @@ from typing import TYPE_CHECKING, Self
 from pydantic import BaseModel, ConfigDict
 
 from syft.sync.platforms.base_platform import BasePlatform
-from syft.sync.transport.types import MessageKind, RawMessage, SendStatus
+from syft.sync.connections.types import MessageKind, RawMessage, SendStatus
 
 if TYPE_CHECKING:
     from syft.sync.connections.base_connection import FileCollection
     from syft.sync.version.peer_info import PeerInfo
 
 
-class TransportComponent:
-    """What every component of a transport does besides its own work."""
+class RouterConnection:
+    """What every connection of the router does besides its own work."""
 
     def clone_for_thread(self) -> Self:
         """A copy that another thread may use. This one, unless its
@@ -38,7 +39,7 @@ class TransportComponent:
         """Forget what was cached from the connection."""
 
 
-class P2PConnection(TransportComponent, ABC):
+class P2PConnection(RouterConnection, ABC):
     """Messages between peers, kept until the recipient has processed them.
 
     Sending and receiving each have their own confirmation:
@@ -91,7 +92,7 @@ class P2PConnection(TransportComponent, ABC):
             self.mark_processed(message)
 
 
-class OwnerStore(TransportComponent, ABC):
+class OwnerStoreConnection(RouterConnection, ABC):
     """The data owner's own storage: event log, checkpoints, rolling state.
 
     Only the owner writes and reads it, and it is never shared.
@@ -172,7 +173,7 @@ class OwnerStore(TransportComponent, ABC):
         how many files and folders went."""
 
 
-class WatcherStore(TransportComponent, ABC):
+class WatcherStoreConnection(RouterConnection, ABC):
     """The data scientist's memory of what each owner sent it.
 
     One area per owner, in the scientist's own storage, never shared, so it
@@ -203,7 +204,7 @@ class WatcherStore(TransportComponent, ABC):
         everything again."""
 
 
-class Collections(TransportComponent, ABC):
+class CollectionsConnection(RouterConnection, ABC):
     """Sets of files a data owner shares with named readers (datasets)."""
 
     @abstractmethod
@@ -266,7 +267,7 @@ class Collections(TransportComponent, ABC):
         return {f["file_name"]: self.fetch_file(f["file_id"]) for f in files}
 
 
-class Peering(TransportComponent, ABC):
+class PeeringConnection(RouterConnection, ABC):
     """Finding and trusting a peer: identity, channels, peer list, published
     documents."""
 
@@ -320,7 +321,7 @@ class Peering(TransportComponent, ABC):
         """My published version document, or None.
 
         Raises:
-            TransportUnavailableError: when the backend cannot be reached.
+            ConnectionUnavailableError: when the backend cannot be reached.
             ValueError: when the document is not one this client reads.
         """
 
@@ -329,7 +330,7 @@ class Peering(TransportComponent, ABC):
         """``peer``'s published version document, or None.
 
         Raises:
-            TransportUnavailableError: when the backend cannot be reached.
+            ConnectionUnavailableError: when the backend cannot be reached.
             ValueError: when the document is not one this client reads.
         """
 
@@ -341,30 +342,30 @@ class Peering(TransportComponent, ABC):
         """
 
 
-# The components of a transport, as named on ``Transport``.
-TRANSPORT_COMPONENTS = (
-    "p2p",
-    "owner_store",
-    "watcher_store",
-    "collections",
-    "peering",
+# The fields of ``Connections``, one per connection.
+CONNECTION_FIELDS = (
+    "p2p_con",
+    "owner_store_con",
+    "watcher_store_con",
+    "collections_con",
+    "peering_con",
 )
 
 
-class Transport(BaseModel):
-    """One implementation of each job. The parts may come from different
-    backends, though a peer's ``p2p`` and ``peering`` go together."""
+class Connections(BaseModel):
+    """One connection for each job. The connections may come from different
+    backends, though a peer's ``p2p_con`` and ``peering_con`` go together."""
 
     model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
 
-    p2p: P2PConnection
-    owner_store: OwnerStore
-    watcher_store: WatcherStore
-    collections: Collections
-    peering: Peering
+    p2p_con: P2PConnection
+    owner_store_con: OwnerStoreConnection
+    watcher_store_con: WatcherStoreConnection
+    collections_con: CollectionsConnection
+    peering_con: PeeringConnection
     # Recorded on each Peer so a peer list says which backend reaches it.
     platform: BasePlatform
 
-    def components(self) -> list[TransportComponent]:
-        """The components, in ``TRANSPORT_COMPONENTS`` order."""
-        return [getattr(self, name) for name in TRANSPORT_COMPONENTS]
+    def all(self) -> list[RouterConnection]:
+        """The connections, in ``CONNECTION_FIELDS`` order."""
+        return [getattr(self, name) for name in CONNECTION_FIELDS]

@@ -1,4 +1,4 @@
-"""Collections.list_mine_with_permissions on Drive skips only bad names.
+"""CollectionsConnection.list_mine_with_permissions on Drive skips only bad names.
 
 The Drive query matches a name prefix, so another tool can return a folder that
 this client cannot parse. The listing skips that folder. Every other failure is a
@@ -10,7 +10,7 @@ from unittest.mock import Mock
 import pytest
 from syft_datasets.dataset_manager import DATASET_COLLECTION_PREFIX
 
-from syft.sync.connections.drive.drive_collections import DriveCollections
+from syft.sync.connections.drive.drive_collections import DriveCollectionsConnection
 from syft.sync.connections.drive.gdrive_client import GDriveClient
 from syft.sync.connections.drive.drive_cached_client import DriveCachedClient
 
@@ -24,7 +24,7 @@ def _collections(files):
     cached_client.client.drive_service.files().list().execute.return_value = {
         "files": files
     }
-    return DriveCollections(cached_client)
+    return DriveCollectionsConnection(cached_client)
 
 
 def test_a_valid_collection_is_returned():

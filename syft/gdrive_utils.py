@@ -314,14 +314,14 @@ def delete_remote_syftbox(
         verbose: If True (default), print deletion progress.
     """
     from syft.sync.connections.drive.drive_cached_client import DriveCachedClient
-    from syft.sync.connections.drive.drive_owner_store import DriveOwnerStore
+    from syft.sync.connections.drive.drive_owner_store import DriveOwnerStoreConnection
 
     email = _resolve_email(email)
     token_path = _resolve_token_path(token_path)
     cached_client = DriveCachedClient.from_token_path(
         email=email, token_path=token_path
     )
-    store = DriveOwnerStore(cached_client)
+    store = DriveOwnerStoreConnection(cached_client)
 
     # Gather file IDs via folder hierarchy
     folder_file_ids = set(store.gather_all_file_and_folder_ids())

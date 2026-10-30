@@ -1,4 +1,4 @@
-"""The Google Drive API client that the Drive transport jobs share.
+"""The Google Drive API client that the Drive connections share.
 
 One client per account. It holds the Drive service, which is not safe to
 use from more than one thread.

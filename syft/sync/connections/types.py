@@ -1,4 +1,4 @@
-"""Types shared by every transport backend."""
+"""Types shared by the connections of every backend."""
 
 from enum import Enum
 

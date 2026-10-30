@@ -5,7 +5,7 @@ from syft.sync.connections.drive.mock_drive_service import (
 )
 from syft.sync.connections.drive.drive_cached_client import DriveCachedClient
 from syft.sync.syftbox_manager import SyftboxManager
-from syft.sync.transport.protocols import Transport
+from syft.sync.connections.protocols import Connections
 
 
 def create_configs(
@@ -57,15 +57,15 @@ def create_clients(configs) -> tuple:
     backing_store = MockDriveBackingStore()
     return tuple(
         SyftEnclaveClient.from_config(
-            c, transport=_mock_transport(backing_store, c.sync.email)
+            c, connections=_mock_connections(backing_store, c.sync.email)
         )
         for c in configs
     )
 
 
-def _mock_transport(backing_store: MockDriveBackingStore, email: str) -> Transport:
+def _mock_connections(backing_store: MockDriveBackingStore, email: str) -> Connections:
     service = MockDriveService(backing_store, email)
-    return SyftboxManager._drive_transport(
+    return SyftboxManager._drive_connections(
         DriveCachedClient.from_service(email, service)
     )
 

@@ -82,7 +82,7 @@ def test_spoofed_sender_does_not_name_an_archive_folder():
     sync_do(do_manager)
 
     do_cached_client = drive_cached_client_of(
-        do_manager.datasite_owner_syncer.connection_router.transport
+        do_manager.datasite_owner_syncer.connection_router.connections
     )
     folder_names = [
         f.name

@@ -205,11 +205,11 @@ class TestOrphanedMessageFiles:
 
 
 def _cached_client(manager: SyftboxManager):
-    return drive_cached_client_of(manager._connection_router.transport)
+    return drive_cached_client_of(manager._connection_router.connections)
 
 
 def _owner_store(manager: SyftboxManager):
-    return manager._connection_router.transport.owner_store
+    return manager._connection_router.connections.owner_store_con
 
 
 def _archive_one_proposal():
