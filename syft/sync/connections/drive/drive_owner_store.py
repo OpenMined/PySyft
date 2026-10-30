@@ -18,9 +18,9 @@ from syft.sync.connections.drive.gdrive_client import (
     SYFT_FILE_PROPERTY_KEY,
     SYFT_FILE_PROPERTY_VALUE,
 )
-from syft.sync.connections.drive.gdrive_layout import (
+from syft.sync.connections.drive.drive_cached_client import (
     SYFTBOX_FOLDER,
-    DriveLayout,
+    DriveCachedClient,
     valid_events_from_file_metadatas,
 )
 from syft.sync.connections.drive.gdrive_retry import (
@@ -54,8 +54,8 @@ def _filter_valid_file_metadatas(
 class DriveOwnerStore(OwnerStore):
     """The DO's own folders in /SyftBox: event log, checkpoints, rolling state."""
 
-    def __init__(self, layout: DriveLayout):
-        self._layout = layout
+    def __init__(self, cached_client: DriveCachedClient):
+        self._cached_client = cached_client
         # Rolling state caches for single-API-call optimization
         self._rolling_state_folder_id: str | None = None
         self._rolling_state_file_id: str | None = None
@@ -65,7 +65,7 @@ class DriveOwnerStore(OwnerStore):
     def clone_for_thread(self) -> "DriveOwnerStore":
         """A store over a new Drive client, for use from another thread, with
         this store's caches."""
-        clone = DriveOwnerStore(self._layout.clone_for_thread())
+        clone = DriveOwnerStore(self._cached_client.clone_for_thread())
         clone._rolling_state_folder_id = self._rolling_state_folder_id
         clone._rolling_state_file_id = self._rolling_state_file_id
         clone.personal_syftbox_event_id_cache = dict(
@@ -74,32 +74,36 @@ class DriveOwnerStore(OwnerStore):
         return clone
 
     def reset_caches(self) -> None:
-        self._layout.reset_caches()
+        self._cached_client.reset_caches()
         self._rolling_state_folder_id = None
         self._rolling_state_file_id = None
         self.personal_syftbox_event_id_cache.clear()
 
     def append_event(self, name: str, data: bytes) -> str:
         """Write raw bytes to /SyftBox/myemail."""
-        personal_syftbox_folder_id = self._layout.get_personal_syftbox_folder_id()
+        personal_syftbox_folder_id = (
+            self._cached_client.get_personal_syftbox_folder_id()
+        )
         file_metadata = {
             "name": name,
             "parents": [personal_syftbox_folder_id],
         }
-        file_payload, _ = self._layout.client.create_file_payload(data)
+        file_payload, _ = self._cached_client.client.create_file_payload(data)
 
-        res = self._layout.client.create_syft_file(file_metadata, file_payload)
+        res = self._cached_client.client.create_syft_file(file_metadata, file_payload)
         gdrive_id = res.get("id")
         self.personal_syftbox_event_id_cache[name] = gdrive_id
         return gdrive_id
 
     def fetch(self, handle: str) -> bytes:
         """Download raw bytes by file ID."""
-        return self._layout.client.download_file(handle)
+        return self._cached_client.client.download_file(handle)
 
     def list_event_handles(self, since_timestamp: float | None = None) -> list[str]:
-        personal_syftbox_folder_id = self._layout.get_personal_syftbox_folder_id()
-        file_metadatas = self._layout.get_file_metadatas_from_folder(
+        personal_syftbox_folder_id = (
+            self._cached_client.get_personal_syftbox_folder_id()
+        )
+        file_metadatas = self._cached_client.get_file_metadatas_from_folder(
             personal_syftbox_folder_id, since_timestamp=since_timestamp
         )
         valid_fname_objs = _filter_valid_file_metadatas(file_metadatas)
@@ -114,8 +118,10 @@ class DriveOwnerStore(OwnerStore):
     @raise_unavailable("Could not read the event log from Drive.")
     def fetch_all_events(self) -> list[bytes]:
         """Download all event files from /SyftBox/myemail as raw bytes."""
-        personal_syftbox_folder_id = self._layout.get_personal_syftbox_folder_id()
-        file_metadatas = self._layout.get_file_metadatas_from_folder(
+        personal_syftbox_folder_id = (
+            self._cached_client.get_personal_syftbox_folder_id()
+        )
+        file_metadatas = self._cached_client.get_file_metadatas_from_folder(
             personal_syftbox_folder_id
         )
         valid_fname_objs = valid_events_from_file_metadatas(file_metadatas)
@@ -125,7 +131,7 @@ class DriveOwnerStore(OwnerStore):
             gdrive_id = [
                 f for f in file_metadatas if f["name"] == fname_obj.as_string()
             ][0]["id"]
-            result.append(self._layout.client.download_file(gdrive_id))
+            result.append(self._cached_client.client.download_file(gdrive_id))
         return result
 
     @raise_unavailable("Could not read the event log from Drive.")
@@ -133,8 +139,8 @@ class DriveOwnerStore(OwnerStore):
         """Download event files created after a timestamp as raw bytes."""
         if since_timestamp is None:
             return self.fetch_all_events()
-        personal_folder_id = self._layout.get_personal_syftbox_folder_id()
-        file_metadatas = self._layout.get_file_metadatas_from_folder(
+        personal_folder_id = self._cached_client.get_personal_syftbox_folder_id()
+        file_metadatas = self._cached_client.get_file_metadatas_from_folder(
             personal_folder_id, since_timestamp=since_timestamp
         )
 
@@ -149,21 +155,21 @@ class DriveOwnerStore(OwnerStore):
                 f for f in file_metadatas if f["name"] == fname_obj.as_string()
             ][0]["id"]
 
-            result.append(self._layout.client.download_file(gdrive_id))
+            result.append(self._cached_client.client.download_file(gdrive_id))
 
         return result
 
     def _get_checkpoints_folder_name(self) -> str:
         """Get the checkpoints folder name: {email}-{version}-checkpoints"""
-        return f"{self._layout.email}-{SYFT_VERSION}-checkpoints"
+        return f"{self._cached_client.email}-{SYFT_VERSION}-checkpoints"
 
     def _get_checkpoints_folder_id(self) -> str | None:
         """Find the checkpoints folder ID from Google Drive."""
-        folders = self._layout.client.find_folders(
-            name_contains=[f"{self._layout.email}-", "-checkpoints"],
-            parent_id=self._layout.get_syftbox_folder_id(),
+        folders = self._cached_client.client.find_folders(
+            name_contains=[f"{self._cached_client.email}-", "-checkpoints"],
+            parent_id=self._cached_client.get_syftbox_folder_id(),
         )
-        return self._layout.find_or_adopt_versioned_folder(
+        return self._cached_client.find_or_adopt_versioned_folder(
             folders, current_name=self._get_checkpoints_folder_name()
         )
 
@@ -174,8 +180,8 @@ class DriveOwnerStore(OwnerStore):
             return folder_id
         # Create the folder
         folder_name = self._get_checkpoints_folder_name()
-        syftbox_folder_id = self._layout.get_syftbox_folder_id()
-        return self._layout.client.create_folder(folder_name, syftbox_folder_id)
+        syftbox_folder_id = self._cached_client.get_syftbox_folder_id()
+        return self._cached_client.client.create_folder(folder_name, syftbox_folder_id)
 
     def put_checkpoint(self, name: str, data: bytes) -> str:
         """Upload raw checkpoint bytes to Google Drive.
@@ -183,14 +189,14 @@ class DriveOwnerStore(OwnerStore):
         Uploads the new checkpoint first, then deletes old ones.
         """
         folder_id = self._get_or_create_checkpoints_folder_id()
-        payload, _ = self._layout.client.create_file_payload(data)
+        payload, _ = self._cached_client.client.create_file_payload(data)
 
         file_metadata = {
             "name": name,
             "parents": [folder_id],
         }
 
-        result = self._layout.client.create_syft_file(file_metadata, payload)
+        result = self._cached_client.client.create_syft_file(file_metadata, payload)
 
         # Only delete old checkpoints after successful upload
         self._delete_all_checkpoints(exclude_file_id=result.get("id"))
@@ -209,7 +215,7 @@ class DriveOwnerStore(OwnerStore):
             f"and name contains '{CHECKPOINT_FILENAME_PREFIX}'"
         )
         results = execute_with_retries(
-            self._layout.client.drive_service.files().list(
+            self._cached_client.client.drive_service.files().list(
                 q=query, fields="files(id, name)"
             )
         )
@@ -229,7 +235,7 @@ class DriveOwnerStore(OwnerStore):
         if latest_file is None:
             return None
 
-        return self._layout.client.download_file(latest_file["id"])
+        return self._cached_client.client.download_file(latest_file["id"])
 
     def _delete_all_checkpoints(self, exclude_file_id: str | None = None):
         """Delete all existing full checkpoints (not incremental ones).
@@ -248,7 +254,7 @@ class DriveOwnerStore(OwnerStore):
             f"and name contains '{CHECKPOINT_FILENAME_PREFIX}'"
         )
         results = execute_with_retries(
-            self._layout.client.drive_service.files().list(
+            self._cached_client.client.drive_service.files().list(
                 q=query, fields="files(id, name)"
             )
         )
@@ -262,7 +268,9 @@ class DriveOwnerStore(OwnerStore):
                 continue  # Skip the newly uploaded checkpoint
             try:
                 execute_with_retries(
-                    self._layout.client.drive_service.files().delete(fileId=item["id"])
+                    self._cached_client.client.drive_service.files().delete(
+                        fileId=item["id"]
+                    )
                 )
             except Exception as e:
                 print(f"Warning: Failed to delete checkpoint {item['name']}: {e}")
@@ -270,14 +278,14 @@ class DriveOwnerStore(OwnerStore):
     def put_incremental(self, name: str, data: bytes) -> str:
         """Upload raw incremental checkpoint bytes to Google Drive."""
         folder_id = self._get_or_create_checkpoints_folder_id()
-        payload, _ = self._layout.client.create_file_payload(data)
+        payload, _ = self._cached_client.client.create_file_payload(data)
 
         file_metadata = {
             "name": name,
             "parents": [folder_id],
         }
 
-        result = self._layout.client.create_syft_file(file_metadata, payload)
+        result = self._cached_client.client.create_syft_file(file_metadata, payload)
         return result.get("id")
 
     @raise_unavailable("Could not read the incremental checkpoints from Drive.")
@@ -292,7 +300,7 @@ class DriveOwnerStore(OwnerStore):
             f"and name contains '{INCREMENTAL_CHECKPOINT_PREFIX}'"
         )
         results = execute_with_retries(
-            self._layout.client.drive_service.files().list(
+            self._cached_client.client.drive_service.files().list(
                 q=query, fields="files(id, name)"
             )
         )
@@ -301,7 +309,7 @@ class DriveOwnerStore(OwnerStore):
         if not items:
             return []
 
-        return [self._layout.client.download_file(item["id"]) for item in items]
+        return [self._cached_client.client.download_file(item["id"]) for item in items]
 
     def incremental_count(self) -> int:
         """Get the number of incremental checkpoints on Google Drive."""
@@ -314,7 +322,9 @@ class DriveOwnerStore(OwnerStore):
             f"and name contains '{INCREMENTAL_CHECKPOINT_PREFIX}'"
         )
         results = execute_with_retries(
-            self._layout.client.drive_service.files().list(q=query, fields="files(id)")
+            self._cached_client.client.drive_service.files().list(
+                q=query, fields="files(id)"
+            )
         )
         return len(results.get("files", []))
 
@@ -329,7 +339,7 @@ class DriveOwnerStore(OwnerStore):
             f"and name contains '{INCREMENTAL_CHECKPOINT_PREFIX}'"
         )
         results = execute_with_retries(
-            self._layout.client.drive_service.files().list(
+            self._cached_client.client.drive_service.files().list(
                 q=query, fields="files(name)"
             )
         )
@@ -358,7 +368,7 @@ class DriveOwnerStore(OwnerStore):
             f"and name contains '{INCREMENTAL_CHECKPOINT_PREFIX}'"
         )
         results = execute_with_retries(
-            self._layout.client.drive_service.files().list(
+            self._cached_client.client.drive_service.files().list(
                 q=query, fields="files(id, name)"
             )
         )
@@ -367,7 +377,9 @@ class DriveOwnerStore(OwnerStore):
         for item in items:
             try:
                 execute_with_retries(
-                    self._layout.client.drive_service.files().delete(fileId=item["id"])
+                    self._cached_client.client.drive_service.files().delete(
+                        fileId=item["id"]
+                    )
                 )
             except Exception as e:
                 print(
@@ -376,7 +388,7 @@ class DriveOwnerStore(OwnerStore):
 
     def _get_rolling_state_folder_name(self) -> str:
         """Get the rolling state folder name: {email}-{version}-rolling-state"""
-        return f"{self._layout.email}-{SYFT_VERSION}-rolling-state"
+        return f"{self._cached_client.email}-{SYFT_VERSION}-rolling-state"
 
     def _get_rolling_state_folder_id(self, use_cache: bool = True) -> str | None:
         """
@@ -388,11 +400,11 @@ class DriveOwnerStore(OwnerStore):
         if use_cache and self._rolling_state_folder_id is not None:
             return self._rolling_state_folder_id
 
-        folders = self._layout.client.find_folders(
-            name_contains=[f"{self._layout.email}-", "-rolling-state"],
-            parent_id=self._layout.get_syftbox_folder_id(),
+        folders = self._cached_client.client.find_folders(
+            name_contains=[f"{self._cached_client.email}-", "-rolling-state"],
+            parent_id=self._cached_client.get_syftbox_folder_id(),
         )
-        folder_id = self._layout.find_or_adopt_versioned_folder(
+        folder_id = self._cached_client.find_or_adopt_versioned_folder(
             folders, current_name=self._get_rolling_state_folder_name()
         )
         if folder_id is not None:
@@ -406,8 +418,10 @@ class DriveOwnerStore(OwnerStore):
             return folder_id
         # Create the folder
         folder_name = self._get_rolling_state_folder_name()
-        syftbox_folder_id = self._layout.get_syftbox_folder_id()
-        folder_id = self._layout.client.create_folder(folder_name, syftbox_folder_id)
+        syftbox_folder_id = self._cached_client.get_syftbox_folder_id()
+        folder_id = self._cached_client.client.create_folder(
+            folder_name, syftbox_folder_id
+        )
         self._rolling_state_folder_id = folder_id
         return folder_id
 
@@ -416,13 +430,13 @@ class DriveOwnerStore(OwnerStore):
 
         Optimized to use update() if file ID is cached.
         """
-        payload, _ = self._layout.client.create_file_payload(data)
+        payload, _ = self._cached_client.client.create_file_payload(data)
 
         # Try to update existing file if we have a cached ID
         if self._rolling_state_file_id is not None:
             try:
                 execute_with_retries(
-                    self._layout.client.drive_service.files().update(
+                    self._cached_client.client.drive_service.files().update(
                         fileId=self._rolling_state_file_id,
                         media_body=payload,
                     )
@@ -444,7 +458,7 @@ class DriveOwnerStore(OwnerStore):
             "parents": [folder_id],
         }
 
-        result = self._layout.client.create_syft_file(file_metadata, payload)
+        result = self._cached_client.client.create_syft_file(file_metadata, payload)
         file_id = result.get("id")
         self._rolling_state_file_id = file_id
         return file_id
@@ -464,7 +478,7 @@ class DriveOwnerStore(OwnerStore):
             f"and name contains '{ROLLING_STATE_FILENAME_PREFIX}'"
         )
         results = execute_with_retries(
-            self._layout.client.drive_service.files().list(
+            self._cached_client.client.drive_service.files().list(
                 q=query, fields="files(id, name)"
             )
         )
@@ -484,7 +498,7 @@ class DriveOwnerStore(OwnerStore):
         if latest_file is None:
             return None
 
-        data = self._layout.client.download_file(latest_file["id"])
+        data = self._cached_client.client.download_file(latest_file["id"])
         self._rolling_state_file_id = latest_file["id"]
         return data
 
@@ -503,7 +517,7 @@ class DriveOwnerStore(OwnerStore):
             f"and name contains '{ROLLING_STATE_FILENAME_PREFIX}'"
         )
         results = execute_with_retries(
-            self._layout.client.drive_service.files().list(
+            self._cached_client.client.drive_service.files().list(
                 q=query, fields="files(id, name)"
             )
         )
@@ -513,7 +527,9 @@ class DriveOwnerStore(OwnerStore):
         for item in items:
             try:
                 execute_with_retries(
-                    self._layout.client.drive_service.files().delete(fileId=item["id"])
+                    self._cached_client.client.drive_service.files().delete(
+                        fileId=item["id"]
+                    )
                 )
             except Exception as e:
                 print(f"Warning: Failed to delete rolling state {item['name']}: {e}")
@@ -525,14 +541,14 @@ class DriveOwnerStore(OwnerStore):
         of My Drive when they lost their folder."""
         file_ids = set(self.gather_all_file_and_folder_ids())
         file_ids |= set(self.find_orphaned_syft_files())
-        self._layout.client.delete_multiple_files_by_ids(list(file_ids))
+        self._cached_client.client.delete_multiple_files_by_ids(list(file_ids))
         return len(file_ids)
 
     def gather_all_file_and_folder_ids(self) -> list[str]:
         """Every file and folder under /SyftBox, and /SyftBox itself."""
-        syftbox_folder_id = self._layout.get_syftbox_folder_id()
+        syftbox_folder_id = self._cached_client.get_syftbox_folder_id()
         return gather_all_file_and_folder_ids_recursive(
-            self._layout.client.drive_service, syftbox_folder_id
+            self._cached_client.client.drive_service, syftbox_folder_id
         )
 
     def find_orphaned_syft_files(self) -> list[str]:
@@ -549,4 +565,7 @@ class DriveOwnerStore(OwnerStore):
             f"properties has {{ key='{SYFT_FILE_PROPERTY_KEY}' "
             f"and value='{SYFT_FILE_PROPERTY_VALUE}' }}"
         )
-        return [f["id"] for f in self._layout.client.list_all_files(query, fields="id")]
+        return [
+            f["id"]
+            for f in self._cached_client.client.list_all_files(query, fields="id")
+        ]

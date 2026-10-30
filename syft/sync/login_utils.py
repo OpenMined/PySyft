@@ -23,7 +23,7 @@ def _read_remote_version(
     from syft.sync.connections.drive.gdrive_transport import GDriveConnection
 
     conn = GDriveConnection.from_token_path(email=email, token_path=token_path)
-    peer_info = DrivePeering(conn.layout).read_own_peer_info()
+    peer_info = DrivePeering(conn.cached_client).read_own_peer_info()
     return peer_info.version_info if peer_info else None
 
 

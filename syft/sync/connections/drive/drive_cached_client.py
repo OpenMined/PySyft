@@ -1,7 +1,8 @@
 """Where syft keeps its folders in one account's Google Drive.
 
-The layout finds and creates syft's folders and caches their ids. A folder whose
-name holds the client version follows the version rules in this module.
+``DriveCachedClient`` finds and creates syft's folders and caches their ids. A
+folder whose name holds the client version follows the version rules in this
+module.
 """
 
 import re
@@ -175,7 +176,14 @@ def valid_events_from_file_metadatas(
 
 
 @dataclass
-class DriveLayout:
+class DriveCachedClient:
+    """The Drive client of one account, and where syft's folders are in it.
+
+    It finds and creates syft's folders, follows the version rules for a
+    versioned folder name, and caches the folder ids so a lookup costs no
+    Drive call the second time.
+    """
+
     client: GDriveClient
     email: str
     # /SyftBox: the top folder, with the inboxes, outboxes and personal folder.
@@ -191,15 +199,15 @@ class DriveLayout:
     # sender email -> id of my archive folder for that sender.
     archive_folder_id_cache: dict[str, str] = field(default_factory=dict, init=False)
 
-    def clone_for_thread(self) -> "DriveLayout":
-        """A layout over a new Drive client, for use from another thread, that
+    def clone_for_thread(self) -> "DriveCachedClient":
+        """A copy over a new Drive client, for use from another thread, that
         knows the folder ids this one found."""
-        clone = DriveLayout(self.client.clone_for_thread(), self.email)
+        clone = DriveCachedClient(self.client.clone_for_thread(), self.email)
         self.copy_caches_to(clone)
         return clone
 
-    def copy_caches_to(self, other: "DriveLayout") -> None:
-        """Seed the folder ids of ``other`` from this layout."""
+    def copy_caches_to(self, other: "DriveCachedClient") -> None:
+        """Seed the folder ids of ``other`` from this one."""
         other._syftbox_folder_id = self._syftbox_folder_id
         other._personal_syftbox_folder_id = self._personal_syftbox_folder_id
         other.peer_datasite_inbox_cache = dict(self.peer_datasite_inbox_cache)

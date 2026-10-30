@@ -14,7 +14,7 @@ from syft.sync.connections.base_connection import (
     SyftboxPlatformConnection,
 )
 from syft.sync.connections.drive.gdrive_client import GDriveClient
-from syft.sync.connections.drive.gdrive_layout import DriveLayout
+from syft.sync.connections.drive.drive_cached_client import DriveCachedClient
 from syft.sync.environments.environment import Environment
 from syft.sync.utils.syftbox_utils import check_env
 
@@ -60,14 +60,14 @@ def build_drive_service(
 class GDriveConnection(SyftboxPlatformConnection):
     """A Google Drive account as a syft connection.
 
-    It logs in and builds the ``DriveLayout`` that the transport components
+    It logs in and builds the ``DriveCachedClient`` that the transport components
     share: ``SyftboxManager._drive_transport`` builds them over it.
     """
 
     class Config:
         arbitrary_types_allowed = True
 
-    layout: DriveLayout | None = None
+    cached_client: DriveCachedClient | None = None
     verbose: bool = True
     email: str
     token_path: Path | None = None
@@ -130,8 +130,9 @@ class GDriveConnection(SyftboxPlatformConnection):
         new_service: Callable[[], Any],
         warm_syftbox_folder_id_cache: bool = True,
     ):
-        """Build the layout over a Drive service from ``new_service``, which
-        also builds the service of each copy for another thread.
+        """Build the ``DriveCachedClient`` over a Drive service from
+        ``new_service``, which also builds the service of each copy for another
+        thread.
 
         Args:
             new_service: Builds a Drive service, real or mock.
@@ -139,9 +140,11 @@ class GDriveConnection(SyftboxPlatformConnection):
                 SyftBox folder id (2-3 API calls). Pass False when the caller
                 seeds the caches.
         """
-        self.layout = DriveLayout(GDriveClient(new_service(), new_service), self.email)
+        self.cached_client = DriveCachedClient(
+            GDriveClient(new_service(), new_service), self.email
+        )
         if warm_syftbox_folder_id_cache:
-            self.layout.get_personal_syftbox_folder_id()
+            self.cached_client.get_personal_syftbox_folder_id()
         self._is_setup = True
 
     @property

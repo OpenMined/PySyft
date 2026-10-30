@@ -5,7 +5,7 @@ from syft.sync.connections.drive.drive_collections import DriveCollections
 from syft.sync.connections.drive.drive_p2p import DriveP2PConnection
 from syft.sync.connections.drive.drive_peering import DrivePeering
 from syft.sync.connections.drive.gdrive_client import GDriveClient
-from syft.sync.connections.drive.gdrive_layout import DriveLayout
+from syft.sync.connections.drive.drive_cached_client import DriveCachedClient
 from syft.sync.connections.drive.gdrive_transport import GDriveConnection
 from syft.sync.connections.drive.mock_drive_service import (
     MockDriveBackingStore,
@@ -17,19 +17,19 @@ from syft.sync.events.file_change_event import (
 )
 
 
-def create_mock_layout() -> DriveLayout:
-    return DriveLayout(GDriveClient(Mock(), Mock), "test@test.com")
+def create_mock_cached_client() -> DriveCachedClient:
+    return DriveCachedClient(GDriveClient(Mock(), Mock), "test@test.com")
 
 
 def test_single_page_works():
     """Current implementation works for single page (< 100 files)"""
-    layout = create_mock_layout()
+    cached_client = create_mock_cached_client()
 
-    layout.client.drive_service.files().list().execute.return_value = {
+    cached_client.client.drive_service.files().list().execute.return_value = {
         "files": [{"name": "file1.txt", "id": "id1"}]
     }
 
-    files = layout.get_file_metadatas_from_folder("folder_id")
+    files = cached_client.get_file_metadatas_from_folder("folder_id")
 
     assert len(files) == 1
     assert files[0]["name"] == "file1.txt"
@@ -37,38 +37,40 @@ def test_single_page_works():
 
 def test_multiple_pages_pagination():
     """When there are >100 files, should fetch all pages"""
-    layout = create_mock_layout()
+    cached_client = create_mock_cached_client()
 
-    layout.client.drive_service.files().list().execute.side_effect = [
+    cached_client.client.drive_service.files().list().execute.side_effect = [
         {"files": [{"name": "file1.txt", "id": "id1"}], "nextPageToken": "token1"},
         {"files": [{"name": "file2.txt", "id": "id2"}], "nextPageToken": "token2"},
         {"files": [{"name": "file3.txt", "id": "id3"}]},
     ]
 
-    files = layout.get_file_metadatas_from_folder("folder_id")
+    files = cached_client.get_file_metadatas_from_folder("folder_id")
 
     assert len(files) == 3
-    assert layout.client.drive_service.files().list().execute.call_count == 3
+    assert cached_client.client.drive_service.files().list().execute.call_count == 3
 
 
 def test_empty_folder():
     """Empty folder should return empty list"""
-    layout = create_mock_layout()
+    cached_client = create_mock_cached_client()
 
-    layout.client.drive_service.files().list().execute.return_value = {"files": []}
+    cached_client.client.drive_service.files().list().execute.return_value = {
+        "files": []
+    }
 
-    files = layout.get_file_metadatas_from_folder("folder_id")
+    files = cached_client.get_file_metadatas_from_folder("folder_id")
 
     assert files == []
 
 
 @patch(
-    "syft.sync.connections.drive.gdrive_layout.DriveLayout.get_peer_datasite_outbox_id"
+    "syft.sync.connections.drive.drive_cached_client.DriveCachedClient.get_peer_datasite_outbox_id"
 )
 @patch("syft.sync.connections.drive.gdrive_client.GDriveClient.download_file")
 def test_events_returned_in_chronological_order(mock_download_file, mock_get_folder_id):
     """Events should be returned in chronological order by timestamp"""
-    layout = create_mock_layout()
+    cached_client = create_mock_cached_client()
 
     # Create valid filenames with proper UUIDs
     uuid1 = uuid4()
@@ -76,7 +78,7 @@ def test_events_returned_in_chronological_order(mock_download_file, mock_get_fol
     uuid3 = uuid4()
 
     # Mock Drive returns files in REVERSE chronological order (3.0, 2.0, 1.0)
-    layout.client.drive_service.files().list().execute.return_value = {
+    cached_client.client.drive_service.files().list().execute.return_value = {
         "files": [
             {"id": "id3", "name": f"syfteventsmessagev3_3.0_{uuid3}.tar.gz"},
             {"id": "id2", "name": f"syfteventsmessagev3_2.0_{uuid2}.tar.gz"},
@@ -103,7 +105,9 @@ def test_events_returned_in_chronological_order(mock_download_file, mock_get_fol
 
     events = [
         FileChangeEventsMessage.from_compressed_data(data)
-        for data in DriveP2PConnection(layout).outbox_messages("peer@test.com", None)
+        for data in DriveP2PConnection(cached_client).outbox_messages(
+            "peer@test.com", None
+        )
     ]
 
     # Should return in chronological order (1.0, 2.0, 3.0)
@@ -117,20 +121,22 @@ def test_events_returned_in_chronological_order(mock_download_file, mock_get_fol
 
 def test_orderby_name_desc_applied():
     """Drive API should be called with orderBy='name desc'"""
-    layout = create_mock_layout()
+    cached_client = create_mock_cached_client()
 
-    layout.client.drive_service.files().list().execute.return_value = {"files": []}
+    cached_client.client.drive_service.files().list().execute.return_value = {
+        "files": []
+    }
 
-    layout.get_file_metadatas_from_folder("folder_id")
+    cached_client.get_file_metadatas_from_folder("folder_id")
 
     # Check that orderBy was passed to Drive API
-    call_kwargs = layout.client.drive_service.files().list.call_args[1]
+    call_kwargs = cached_client.client.drive_service.files().list.call_args[1]
     assert call_kwargs["orderBy"] == "name desc"
 
 
 def test_early_termination_stops_pagination():
     """Should stop fetching pages when encountering old file"""
-    layout = create_mock_layout()
+    cached_client = create_mock_cached_client()
 
     # Create filenames using FileChangeEventsMessageFileName
     fname1 = FileChangeEventsMessageFileName(id=uuid4(), timestamp=1731506450.0)
@@ -142,7 +148,7 @@ def test_early_termination_stops_pagination():
     fname5 = FileChangeEventsMessageFileName(id=uuid4(), timestamp=1731506390.0)
 
     # Mock returns 3 potential pages, but should stop after page 2
-    layout.client.drive_service.files().list().execute.side_effect = [
+    cached_client.client.drive_service.files().list().execute.side_effect = [
         {
             "files": [
                 {"name": fname1.as_string(), "id": "id1"},
@@ -166,12 +172,12 @@ def test_early_termination_stops_pagination():
         },
     ]
 
-    files = layout.get_file_metadatas_from_folder(
+    files = cached_client.get_file_metadatas_from_folder(
         "folder_id", since_timestamp=1731506400.0
     )
 
     # Should stop after 2nd page (when it finds a timestamp in an earlier second)
-    assert layout.client.drive_service.files().list().execute.call_count == 2
+    assert cached_client.client.drive_service.files().list().execute.call_count == 2
     # Only files with timestamp > since_timestamp are returned
     assert len(files) == 3  # fname1, fname2, fname3 (fname4 is excluded)
     # Page 3 should NOT be fetched
@@ -179,12 +185,12 @@ def test_early_termination_stops_pagination():
 
 def test_no_early_termination_when_all_files_new():
     """Should fetch all pages when all files are newer than since_timestamp"""
-    layout = create_mock_layout()
+    cached_client = create_mock_cached_client()
 
     fname1 = FileChangeEventsMessageFileName(id=uuid4(), timestamp=1731506450.0)
     fname2 = FileChangeEventsMessageFileName(id=uuid4(), timestamp=1731506440.0)
 
-    layout.client.drive_service.files().list().execute.side_effect = [
+    cached_client.client.drive_service.files().list().execute.side_effect = [
         {
             "files": [{"name": fname1.as_string(), "id": "id1"}],
             "nextPageToken": "token1",
@@ -195,20 +201,20 @@ def test_no_early_termination_when_all_files_new():
         },
     ]
 
-    files = layout.get_file_metadatas_from_folder(
+    files = cached_client.get_file_metadatas_from_folder(
         "folder_id", since_timestamp=1731506400.0
     )
 
     # Should fetch all pages (both files are > since_timestamp)
-    assert layout.client.drive_service.files().list().execute.call_count == 2
+    assert cached_client.client.drive_service.files().list().execute.call_count == 2
     assert len(files) == 2
 
 
 def test_no_early_termination_when_since_timestamp_none():
     """Should fetch all pages when since_timestamp is None"""
-    layout = create_mock_layout()
+    cached_client = create_mock_cached_client()
 
-    layout.client.drive_service.files().list().execute.side_effect = [
+    cached_client.client.drive_service.files().list().execute.side_effect = [
         {
             "files": [{"name": "file1.txt", "id": "id1"}],
             "nextPageToken": "token1",
@@ -219,24 +225,26 @@ def test_no_early_termination_when_since_timestamp_none():
         },
     ]
 
-    files = layout.get_file_metadatas_from_folder("folder_id", since_timestamp=None)
+    files = cached_client.get_file_metadatas_from_folder(
+        "folder_id", since_timestamp=None
+    )
 
     # Should fetch all pages (no early termination)
-    assert layout.client.drive_service.files().list().execute.call_count == 2
+    assert cached_client.client.drive_service.files().list().execute.call_count == 2
     assert len(files) == 2
 
 
 def test_newer_message_listed_after_older_one_in_same_second_not_skipped():
-    layout = create_mock_layout()
+    cached_client = create_mock_cached_client()
     older = FileChangeEventsMessageFileName(id=uuid4(), timestamp=1731506400.9)
     newer = FileChangeEventsMessageFileName(id=uuid4(), timestamp=1731506400.95)
     # Drive lists by "name desc": "…400.9_" sorts before "…400.95_".
     names = sorted([older.as_string(), newer.as_string()], reverse=True)
-    layout.client.drive_service.files().list().execute.return_value = {
+    cached_client.client.drive_service.files().list().execute.return_value = {
         "files": [{"name": name, "id": name} for name in names]
     }
 
-    files = layout.get_file_metadatas_from_folder(
+    files = cached_client.get_file_metadatas_from_folder(
         "folder_id", since_timestamp=1731506400.92
     )
 
@@ -247,17 +255,22 @@ def test_newer_message_listed_after_older_one_in_same_second_not_skipped():
 FILE_COUNT = 250
 
 
-def _mock_layouts(*emails: str) -> list[DriveLayout]:
+def _mock_cached_clients(*emails: str) -> list[DriveCachedClient]:
     store = MockDriveBackingStore()
     return [
-        GDriveConnection.from_service(e, MockDriveService(store, e)).layout
+        GDriveConnection.from_service(e, MockDriveService(store, e)).cached_client
         for e in emails
     ]
 
 
 def test_collection_listings_read_every_page():
-    do_layout, ds_layout = _mock_layouts("do@example.com", "ds@example.com")
-    owner, reader = DriveCollections(do_layout), DriveCollections(ds_layout)
+    do_cached_client, ds_cached_client = _mock_cached_clients(
+        "do@example.com", "ds@example.com"
+    )
+    owner, reader = (
+        DriveCollections(do_cached_client),
+        DriveCollections(ds_cached_client),
+    )
     tags = [f"tag{i}" for i in range(FILE_COUNT)]
     for tag in tags:
         owner.create("syft_datasetcollection", tag, "hash", "do@example.com")
@@ -272,9 +285,9 @@ def test_collection_listings_read_every_page():
 
 def test_peer_requests_read_every_page():
     peer_emails = [f"peer{i}@example.com" for i in range(FILE_COUNT)]
-    do_layout, *peers = _mock_layouts("do@example.com", *peer_emails)
+    do_cached_client, *peers = _mock_cached_clients("do@example.com", *peer_emails)
     for peer in peers:
         DrivePeering(peer).open_channels("do@example.com")
 
-    requests = DrivePeering(do_layout).incoming_requests()
+    requests = DrivePeering(do_cached_client).incoming_requests()
     assert sorted(requests) == sorted(peer_emails)

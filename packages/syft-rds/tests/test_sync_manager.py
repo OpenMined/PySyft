@@ -22,7 +22,7 @@ from dataset_test_utils import (
     create_tmp_dataset_files,
     create_tmp_dataset_files_with_parquet,
 )
-from syft.sync.connections.drive.drive_connections import drive_layout_of
+from syft.sync.connections.drive.drive_connections import drive_cached_client_of
 
 
 def path_for_job(do_email: str, ds_email: str, filename: str = "test.job") -> str:
@@ -233,7 +233,7 @@ def test_dataset_only_mock_data_uploaded():
     # Sync so DS receives the dataset
     ds_manager.sync()
 
-    files = drive_layout_of(
+    files = drive_cached_client_of(
         ds_manager.sync_engine._connection_router.transport
     ).client.drive_service._backing_store.files
     list(files.keys())
@@ -284,9 +284,13 @@ with open("outputs/result.json", "w") as f:
     # we do this by not always syncing on a file change, currently this logic is a bit of
     # a short cut, but we could do this based on timing eventually (if there are items in the
     # queue for longer than a certain time we start pushing)
-    do_layout = drive_layout_of(do_manager.sync_engine._connection_router.transport)
-    inbox_folder_id = do_layout.get_own_datasite_inbox_id(ds_manager.email)
-    inbox_file_metadatas = do_layout.get_file_metadatas_from_folder(inbox_folder_id)
+    do_cached_client = drive_cached_client_of(
+        do_manager.sync_engine._connection_router.transport
+    )
+    inbox_folder_id = do_cached_client.get_own_datasite_inbox_id(ds_manager.email)
+    inbox_file_metadatas = do_cached_client.get_file_metadatas_from_folder(
+        inbox_folder_id
+    )
     assert len(inbox_file_metadatas) == 1
 
     do_manager.sync()
@@ -1038,7 +1042,7 @@ def test_ds_dataset_cache_aware_sync():
     assert remote_hash is not None
 
     # Get the mock backing store and directories for creating second pair
-    mock_backing_store = drive_layout_of(
+    mock_backing_store = drive_cached_client_of(
         ds_manager.sync_engine._connection_router.transport
     ).client.drive_service._backing_store
     ds_folder = ds_manager.syftbox_folder
@@ -1057,10 +1061,10 @@ def test_ds_dataset_cache_aware_sync():
     )
 
     # Replace mock backing store to share dataset collections
-    drive_layout_of(
+    drive_cached_client_of(
         ds_manager2.sync_engine._connection_router.transport
     ).client.drive_service._backing_store = mock_backing_store
-    drive_layout_of(
+    drive_cached_client_of(
         do_manager2.sync_engine._connection_router.transport
     ).client.drive_service._backing_store = mock_backing_store
 
@@ -1138,7 +1142,7 @@ def test_do_dataset_cache_aware_sync():
     assert len(do_manager.datasets.get_all()) == 1
 
     # Get the mock backing store and directories for creating second pair
-    mock_backing_store = drive_layout_of(
+    mock_backing_store = drive_cached_client_of(
         ds_manager.sync_engine._connection_router.transport
     ).client.drive_service._backing_store
     ds_folder = ds_manager.syftbox_folder
@@ -1157,10 +1161,10 @@ def test_do_dataset_cache_aware_sync():
     )
 
     # Replace mock backing store to share dataset collections
-    drive_layout_of(
+    drive_cached_client_of(
         ds_manager2.sync_engine._connection_router.transport
     ).client.drive_service._backing_store = mock_backing_store
-    drive_layout_of(
+    drive_cached_client_of(
         do_manager2.sync_engine._connection_router.transport
     ).client.drive_service._backing_store = mock_backing_store
 
@@ -1205,7 +1209,7 @@ def test_in_memory_connection_load_state():
     )
 
     # Get the backing store that will persist across "restarts"
-    backing_store = drive_layout_of(
+    backing_store = drive_cached_client_of(
         do_manager1.sync_engine._connection_router.transport
     ).client.drive_service._backing_store
     ds_folder = ds_manager1.syftbox_folder

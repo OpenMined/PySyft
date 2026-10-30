@@ -448,8 +448,10 @@ class TestGDriveConnectionWithMock:
         mock_service = MockDriveService(store, "user@example.com")
         connection = GDriveConnection.from_service("user@example.com", mock_service)
 
-        syftbox_id = connection.layout.create_syftbox_folder()
-        folder_id = connection.layout.client.create_folder("TestFolder", syftbox_id)
+        syftbox_id = connection.cached_client.create_syftbox_folder()
+        folder_id = connection.cached_client.client.create_folder(
+            "TestFolder", syftbox_id
+        )
 
         assert store.files[syftbox_id].properties == {"syft": "true"}
         assert store.files[folder_id].properties == {"syft": "true"}
@@ -468,7 +470,7 @@ class TestGDriveConnectionWithMock:
         mock_service = MockDriveService(store, "user@example.com")
         connection = GDriveConnection.from_service("user@example.com", mock_service)
 
-        content = connection.layout.client.download_file(file.id)
+        content = connection.cached_client.client.download_file(file.id)
         assert content == b"Test content"
 
 

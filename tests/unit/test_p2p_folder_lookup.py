@@ -11,7 +11,7 @@ A folder the peer owns must be found whatever version the peer wrote into it.
 
 from unittest.mock import Mock
 
-from syft.sync.connections.drive.gdrive_layout import DriveLayout
+from syft.sync.connections.drive.drive_cached_client import DriveCachedClient
 from syft.sync.connections.drive.gdrive_client import GDriveClient
 
 ME = "alice@example.com"
@@ -22,14 +22,14 @@ def _name(version: str, datasite: str, folder_type: str, peer: str) -> str:
     return f"syft_datasite#{version}#{datasite}#{folder_type}#{peer}"
 
 
-def _layout(found):
-    layout = DriveLayout(GDriveClient(Mock(), Mock), ME)
-    layout.client.find_folders = Mock(return_value=found)
-    return layout
+def _cached_client(found):
+    cached_client = DriveCachedClient(GDriveClient(Mock(), Mock), ME)
+    cached_client.client.find_folders = Mock(return_value=found)
+    return cached_client
 
 
-def _lookup(layout):
-    return layout.find_p2p_folder_id(
+def _lookup(cached_client):
+    return cached_client.find_p2p_folder_id(
         datasite_email=PEER, folder_type="inbox", peer_email=ME, owner_email=ME
     )
 
@@ -39,12 +39,12 @@ def test_a_folder_of_another_minor_version_is_found():
     # the peer kept writing into the first. 0.2.0 differs in the minor from the
     # current client version, which is what the filter used to reject.
     old = _name("0.2.0", PEER, "inbox", ME)
-    assert _lookup(_layout([("old", old)])) == "old"
+    assert _lookup(_cached_client([("old", old)])) == "old"
 
 
 def test_a_folder_of_an_older_major_version_is_found():
     old = _name("0.0.9", PEER, "inbox", ME)
-    assert _lookup(_layout([("old", old)])) == "old"
+    assert _lookup(_cached_client([("old", old)])) == "old"
 
 
 def test_the_highest_version_wins_when_several_exist():
@@ -53,7 +53,7 @@ def test_the_highest_version_wins_when_several_exist():
         ("v2", _name("0.2.0", PEER, "inbox", ME)),
         ("v0", _name("0.0.9", PEER, "inbox", ME)),
     ]
-    assert _lookup(_layout(folders)) == "v2"
+    assert _lookup(_cached_client(folders)) == "v2"
 
 
 def test_versions_order_by_number_not_by_string():
@@ -61,7 +61,7 @@ def test_versions_order_by_number_not_by_string():
         ("nine", _name("0.1.9", PEER, "inbox", ME)),
         ("ten", _name("0.1.10", PEER, "inbox", ME)),
     ]
-    assert _lookup(_layout(folders)) == "ten"
+    assert _lookup(_cached_client(folders)) == "ten"
 
 
 def test_several_folders_no_longer_raise():
@@ -69,22 +69,22 @@ def test_several_folders_no_longer_raise():
         ("a", _name("0.1.117", PEER, "inbox", ME)),
         ("b", _name("0.1.118", PEER, "inbox", ME)),
     ]
-    assert _lookup(_layout(folders)) is not None
+    assert _lookup(_cached_client(folders)) is not None
 
 
 def test_a_folder_of_another_peer_is_ignored():
     other = _name("0.1.117", PEER, "inbox", "carol@example.com")
-    assert _lookup(_layout([("other", other)])) is None
+    assert _lookup(_cached_client([("other", other)])) is None
 
 
 def test_a_folder_of_another_type_is_ignored():
     outbox = _name("0.1.117", PEER, "outbox", ME)
-    assert _lookup(_layout([("outbox", outbox)])) is None
+    assert _lookup(_cached_client([("outbox", outbox)])) is None
 
 
 def test_no_folder_returns_none():
-    assert _lookup(_layout([])) is None
+    assert _lookup(_cached_client([])) is None
 
 
 def test_a_name_that_does_not_parse_is_ignored():
-    assert _lookup(_layout([("junk", "not_a_p2p_folder")])) is None
+    assert _lookup(_cached_client([("junk", "not_a_p2p_folder")])) is None

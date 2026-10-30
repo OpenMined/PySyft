@@ -25,7 +25,7 @@ from tests.unit.utils import (
     get_mock_proposed_events_messages,
     grant_job_inbox_access,
 )
-from syft.sync.connections.drive.drive_connections import drive_layout_of
+from syft.sync.connections.drive.drive_connections import drive_cached_client_of
 
 
 def path_for_job(do_email: str, ds_email: str, filename: str = "test.job") -> str:
@@ -488,9 +488,11 @@ def _peer_router(ds_manager, do_manager, email: str) -> ConnectionRouter:
     """Make ``email`` a second peer of the DO, and return its router."""
     conn = GDriveConnection.from_service(
         email,
-        drive_layout_of(ds_manager._connection_router.transport).client.drive_service,
+        drive_cached_client_of(
+            ds_manager._connection_router.transport
+        ).client.drive_service,
     )
-    DrivePeering(conn.layout).open_channels(do_manager.email)
+    DrivePeering(conn.cached_client).open_channels(do_manager.email)
     _add_known_peer(do_manager, email)
     return ConnectionRouter(
         transport=SyftboxManager._drive_transport(conn),

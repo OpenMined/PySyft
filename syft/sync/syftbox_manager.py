@@ -16,7 +16,7 @@ from syft.sync.connections.drive import mock_drive_service
 from syft.sync.connections.drive.drive_collections import DriveCollections
 from syft.sync.connections.drive.drive_connections import (
     DriveWatcherStore,
-    drive_layout_of,
+    drive_cached_client_of,
 )
 from syft.sync.connections.drive.drive_owner_store import DriveOwnerStore
 from syft.sync.connections.drive.drive_p2p import DriveP2PConnection
@@ -610,11 +610,11 @@ class SyftboxManager(BaseModelCallbackMixin):
     def _drive_transport(drive: GDriveConnection) -> Transport:
         """Every transport component over one Google Drive connection."""
         return Transport(
-            p2p=DriveP2PConnection(drive.layout),
-            owner_store=DriveOwnerStore(drive.layout),
+            p2p=DriveP2PConnection(drive.cached_client),
+            owner_store=DriveOwnerStore(drive.cached_client),
             watcher_store=DriveWatcherStore(),
-            collections=DriveCollections(drive.layout),
-            peering=DrivePeering(drive.layout),
+            collections=DriveCollections(drive.cached_client),
+            peering=DrivePeering(drive.cached_client),
             platform=GdriveFilesPlatform(),
         )
 
@@ -1325,7 +1325,7 @@ class SyftboxManager(BaseModelCallbackMixin):
         from copy import deepcopy
 
         new_config = deepcopy(self.config)
-        drive_service = drive_layout_of(
+        drive_service = drive_cached_client_of(
             self._connection_router.transport
         ).client.drive_service
         if isinstance(drive_service, mock_drive_service.MockDriveService):

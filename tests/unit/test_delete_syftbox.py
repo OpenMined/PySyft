@@ -6,7 +6,7 @@ from unittest.mock import patch
 from syft.sync.login_utils import handle_potential_version_mismatches_on_login
 from syft.sync.syftbox_manager import SyftboxManager
 from syft.sync.version.version_info import VersionInfo
-from syft.sync.connections.drive.drive_connections import drive_layout_of
+from syft.sync.connections.drive.drive_connections import drive_cached_client_of
 
 
 EMAIL = "test@example.com"
@@ -128,11 +128,11 @@ class TestPromptWithoutATerminal:
             assert _prompt_mismatch(_old_version_info(), _old_version_info()) == "2"
 
 
-def _query_files(layout, name_contains):
+def _query_files(cached_client, name_contains):
     """Query mock drive for files/folders whose name contains a substring."""
     q = f"name contains '{name_contains}' and trashed=false"
     results = (
-        layout.client.drive_service.files()
+        cached_client.client.drive_service.files()
         .list(q=q, fields="files(id, name)")
         .execute()
     )
@@ -172,21 +172,23 @@ class TestOrphanedMessageFiles:
 
     def test_proposal_moved_to_root_when_do_deletes_syftbox_folder_only(self):
         ds_manager, do_manager, archived = _archive_one_proposal()
-        do_layout = _layout(do_manager)
-        archive_id = do_layout.get_archive_folder_id(ds_manager.email)
-        do_layout.client.drive_service.files().delete(
-            fileId=do_layout.get_syftbox_folder_id()
+        do_cached_client = _cached_client(do_manager)
+        archive_id = do_cached_client.get_archive_folder_id(ds_manager.email)
+        do_cached_client.client.drive_service.files().delete(
+            fileId=do_cached_client.get_syftbox_folder_id()
         ).execute()
 
         found = _owner_store(ds_manager).find_orphaned_syft_files()
 
-        assert archive_id not in do_layout.client.drive_service._backing_store.files
+        assert (
+            archive_id not in do_cached_client.client.drive_service._backing_store.files
+        )
         assert archived
         assert set(archived) <= set(found)
 
     def test_untagged_file_in_root_not_found(self):
         ds_manager, _, _ = _archive_one_proposal()
-        drive = _layout(ds_manager).client.drive_service
+        drive = _cached_client(ds_manager).client.drive_service
         user_file = drive.files().create(body={"name": "checkpoint_final.pt"}).execute()
 
         found = _owner_store(ds_manager).find_orphaned_syft_files()
@@ -195,15 +197,15 @@ class TestOrphanedMessageFiles:
 
     def test_syftbox_folder_not_found(self):
         ds_manager, _, _ = _archive_one_proposal()
-        ds_layout = _layout(ds_manager)
+        ds_cached_client = _cached_client(ds_manager)
 
         found = _owner_store(ds_manager).find_orphaned_syft_files()
 
-        assert ds_layout.get_syftbox_folder_id() not in found
+        assert ds_cached_client.get_syftbox_folder_id() not in found
 
 
-def _layout(manager: SyftboxManager):
-    return drive_layout_of(manager._connection_router.transport)
+def _cached_client(manager: SyftboxManager):
+    return drive_cached_client_of(manager._connection_router.transport)
 
 
 def _owner_store(manager: SyftboxManager):
@@ -218,7 +220,9 @@ def _archive_one_proposal():
     ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection()
     ds_manager._send_file_change(f"{do_manager.email}/shared/x.txt", "hi")
     do_manager.sync()
-    do_layout = _layout(do_manager)
-    archive_id = do_layout.get_archive_folder_id(ds_manager.email)
-    archived = [m["id"] for m in do_layout.get_file_metadatas_from_folder(archive_id)]
+    do_cached_client = _cached_client(do_manager)
+    archive_id = do_cached_client.get_archive_folder_id(ds_manager.email)
+    archived = [
+        m["id"] for m in do_cached_client.get_file_metadatas_from_folder(archive_id)
+    ]
     return ds_manager, do_manager, archived

@@ -317,7 +317,7 @@ def delete_remote_syftbox(
     email = _resolve_email(email)
     token_path = _resolve_token_path(token_path)
     conn = GDriveConnection.from_token_path(email=email, token_path=token_path)
-    store = DriveOwnerStore(conn.layout)
+    store = DriveOwnerStore(conn.cached_client)
 
     # Gather file IDs via folder hierarchy
     folder_file_ids = set(store.gather_all_file_and_folder_ids())
@@ -328,7 +328,7 @@ def delete_remote_syftbox(
     all_file_ids = list(folder_file_ids | orphaned_file_ids)
 
     start = time.time()
-    conn.layout.client.delete_multiple_files_by_ids(all_file_ids)
+    conn.cached_client.client.delete_multiple_files_by_ids(all_file_ids)
     elapsed = time.time() - start
 
     if verbose:

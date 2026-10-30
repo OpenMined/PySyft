@@ -8,9 +8,9 @@ import pytest
 from syft.sync.connections.base_connection import ConnectionConfig
 from syft.sync.connections.drive.drive_connections import (
     DriveWatcherStore,
-    drive_layout_of,
+    drive_cached_client_of,
 )
-from syft.sync.connections.drive.gdrive_layout import DriveLayout
+from syft.sync.connections.drive.drive_cached_client import DriveCachedClient
 from syft.sync.connections.drive.gdrive_transport import GDriveConnection
 from syft.sync.connections.drive.grdrive_config import GdriveConnectionConfig
 from syft.sync.connections.drive.mock_drive_service import pair_with_mock_service
@@ -50,11 +50,11 @@ def test_every_part_of_manager_shares_one_router():
     assert manager._peer_store is router.peer_store
 
 
-def _drive_layouts(transport) -> list[DriveLayout]:
-    """The layout of each component that uses Drive. The watcher store does not
+def _drive_cached_clients(transport) -> list[DriveCachedClient]:
+    """The cached client of each component that uses Drive. The watcher store does not
     use it yet."""
     return [
-        component._layout
+        component._cached_client
         for component in transport.components()
         if not isinstance(component, DriveWatcherStore)
     ]
@@ -75,25 +75,25 @@ def test_manager_builds_one_drive_connection_from_its_config(monkeypatch):
     manager = SyftboxManager.from_config(config)
 
     [connection] = built
-    for layout in _drive_layouts(manager._connection_router.transport):
-        assert layout is connection.layout
+    for cached_client in _drive_cached_clients(manager._connection_router.transport):
+        assert cached_client is connection.cached_client
 
 
-def test_every_drive_component_shares_one_layout():
+def test_every_drive_component_shares_one_cached_client():
     _, do_manager = SyftboxManager.pair_with_mock_drive_service_connection()
     transport = do_manager._connection_router.transport
-    layout = drive_layout_of(transport)
+    cached_client = drive_cached_client_of(transport)
 
-    for component_layout in _drive_layouts(transport):
-        assert component_layout is layout
+    for component_cached_client in _drive_cached_clients(transport):
+        assert component_cached_client is cached_client
 
 
-def test_drive_layout_of_transport_not_on_drive_raises():
+def test_drive_cached_client_of_transport_not_on_drive_raises():
     transport = SyftboxManager._drive_transport(_mock_connection("do@example.com"))
     transport = transport.model_copy(update={"owner_store": Mock(spec=OwnerStore)})
 
     with pytest.raises(TypeError, match="not built on Google Drive"):
-        drive_layout_of(transport)
+        drive_cached_client_of(transport)
 
 
 def test_manager_without_transport_config_fails_at_init():

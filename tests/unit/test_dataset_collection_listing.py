@@ -12,17 +12,19 @@ from syft_datasets.dataset_manager import DATASET_COLLECTION_PREFIX
 
 from syft.sync.connections.drive.drive_collections import DriveCollections
 from syft.sync.connections.drive.gdrive_client import GDriveClient
-from syft.sync.connections.drive.gdrive_layout import DriveLayout
+from syft.sync.connections.drive.drive_cached_client import DriveCachedClient
 
 VALID = f"{DATASET_COLLECTION_PREFIX}_mytag_abc123"
 UNPARSEABLE = DATASET_COLLECTION_PREFIX
 
 
 def _collections(files):
-    layout = DriveLayout(GDriveClient(Mock(), Mock), "alice@example.com")
-    layout._syftbox_folder_id = "syftbox-id"
-    layout.client.drive_service.files().list().execute.return_value = {"files": files}
-    return DriveCollections(layout)
+    cached_client = DriveCachedClient(GDriveClient(Mock(), Mock), "alice@example.com")
+    cached_client._syftbox_folder_id = "syftbox-id"
+    cached_client.client.drive_service.files().list().execute.return_value = {
+        "files": files
+    }
+    return DriveCollections(cached_client)
 
 
 def test_a_valid_collection_is_returned():
