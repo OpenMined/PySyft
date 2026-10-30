@@ -170,16 +170,14 @@ def test_own_version_advertises_policy():
 
 
 def test_missing_version_file_created_with_own_policy():
-    a_conn, b_conn = mock_drive_service.pair_with_mock_service(
+    a_cached_client, b_cached_client = mock_drive_service.pair_with_mock_service(
         "a@example.com", "b@example.com"
     )
-    DrivePeering(a_conn.cached_client).grant_peer_info_read(
+    DrivePeering(a_cached_client).grant_peer_info_read(
         "b@example.com", _peer_info(REQUIRED)
     )
     assert (
-        DrivePeering(b_conn.cached_client)
-        .read_peer_info("a@example.com")
-        .encryption_policy
+        DrivePeering(b_cached_client).read_peer_info("a@example.com").encryption_policy
         == REQUIRED
     )
 

@@ -1,23 +1,28 @@
 """The Google Drive API client that the Drive transport jobs share.
 
-One client per connection. It holds the Drive service, which is not safe to
+One client per account. It holds the Drive service, which is not safe to
 use from more than one thread.
 """
 
 import io
 import json
+import logging
 import pickle
 from dataclasses import dataclass
 from typing import Any, Callable, Optional
 
+from google.oauth2.credentials import Credentials as GoogleCredentials
+from google_auth_httplib2 import AuthorizedHttp
+from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
-from googleapiclient.http import MediaIoBaseDownload, MediaIoBaseUpload
+from googleapiclient.http import MediaIoBaseDownload, MediaIoBaseUpload, build_http
 
 from syft.sync.connections.drive.gdrive_retry import (
     batch_execute_with_retries,
     execute_with_retries,
     next_chunk_with_retries,
 )
+from syft.sync.environments.environment import Environment
 
 GOOGLE_FOLDER_MIME_TYPE = "application/vnd.google-apps.folder"
 # Every file and folder that syft creates carries this property.
@@ -25,6 +30,39 @@ SYFT_FILE_PROPERTY_KEY = "syft"
 SYFT_FILE_PROPERTY_VALUE = "true"
 # Google Drive batch API has a limit of 100 requests per batch
 DRIVE_BATCH_SIZE = 100
+
+
+# Timeout for Google API requests (in seconds)
+GOOGLE_API_TIMEOUT = 120  # 2 minutes
+
+SCOPES = ["https://www.googleapis.com/auth/drive"]
+
+
+logging.getLogger("google_auth_httplib2").setLevel(logging.ERROR)
+
+
+def build_drive_service(
+    credentials: GoogleCredentials,
+    timeout: int = GOOGLE_API_TIMEOUT,
+    environment: Environment | None = None,
+):
+    """Build a Google Drive service with timeout-enabled authorized HTTP."""
+    # Build the http via googleapiclient's own factory rather than constructing
+    # httplib2.Http() directly. build_http() applies Google-API-specific tweaks.
+    http = build_http()
+    http.timeout = timeout
+    if environment == Environment.COLAB:
+        import google.auth
+        from google.colab import auth as colab_auth
+
+        colab_auth.authenticate_user()
+        creds, _ = google.auth.default()
+        authed_http = AuthorizedHttp(creds, http=http)
+        # Build service without explicit credentials in Colab
+        return build("drive", "v3", http=authed_http)
+    else:
+        authorized_http = AuthorizedHttp(credentials, http=http)
+        return build("drive", "v3", http=authorized_http)
 
 
 def _has_reason(error: HttpError, reason: str) -> bool:

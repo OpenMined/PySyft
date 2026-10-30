@@ -73,17 +73,17 @@ def _events_name(ts: float) -> str:
 @pytest.fixture
 def pair():
     """DO and DS cached clients over one mock Drive, with the DS's channels open."""
-    do_conn, ds_conn = pair_with_mock_service(DO, DS)
-    DrivePeering(ds_conn.cached_client).open_channels(DO)
-    return do_conn.cached_client, ds_conn.cached_client
+    do_cached_client, ds_cached_client = pair_with_mock_service(DO, DS)
+    DrivePeering(ds_cached_client).open_channels(DO)
+    return do_cached_client, ds_cached_client
 
 
 # -- the transport ----------------------------------------------------------------
 
 
 def test_drive_transport_does_every_job():
-    do_conn, _ = pair_with_mock_service(DO, DS)
-    transport = SyftboxManager._drive_transport(do_conn)
+    do_cached_client, _ = pair_with_mock_service(DO, DS)
+    transport = SyftboxManager._drive_transport(do_cached_client)
     assert isinstance(transport, Transport)
     assert isinstance(transport.p2p, P2PConnection)
     assert isinstance(transport.owner_store, OwnerStore)
@@ -566,9 +566,11 @@ def test_peering_publishes_peer_info_the_peer_can_read(pair):
 
 
 def _router_with_mock_p2p():
-    do_conn, _ = pair_with_mock_service(DO, DS)
+    do_cached_client, _ = pair_with_mock_service(DO, DS)
     p2p = Mock(spec=DriveP2PConnection)
-    transport = SyftboxManager._drive_transport(do_conn).model_copy(update={"p2p": p2p})
+    transport = SyftboxManager._drive_transport(do_cached_client).model_copy(
+        update={"p2p": p2p}
+    )
     router = ConnectionRouter(transport=transport, peer_store=_store_knowing(DO, DS))
     return router, p2p
 

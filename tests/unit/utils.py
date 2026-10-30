@@ -249,8 +249,8 @@ def router_with_mock_connection(email: str) -> ConnectionRouter:
     """A connection router over a mock Drive, for a part a test builds on its
     own. In a manager every part shares the router
     ``SyftboxManager.from_config`` builds."""
-    connection, _ = pair_with_mock_service(email, "peer@example.com")
+    cached_client, _ = pair_with_mock_service(email, "peer@example.com")
     return ConnectionRouter(
-        transport=SyftboxManager._drive_transport(connection),
+        transport=SyftboxManager._drive_transport(cached_client),
         peer_store=PeerStore(email=email),
     )

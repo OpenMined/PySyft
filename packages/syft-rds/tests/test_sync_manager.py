@@ -8,7 +8,7 @@ import tempfile
 import pytest
 
 from syft.sync.connections.drive import mock_drive_service
-from syft.sync.connections.drive.gdrive_transport import GDriveConnection
+from syft.sync.connections.drive.drive_cached_client import DriveCachedClient
 from syft.sync.syftbox_manager import SyftboxManager
 from syft_datasets import Dataset
 from syft_datasets.dataset_manager import DATASET_COLLECTION_PREFIX
@@ -1271,16 +1271,16 @@ def test_in_memory_connection_load_state():
 
     # Connect to the same backing store
     service_do = mock_drive_service.MockDriveService(backing_store, do_email)
-    do_connection2 = GDriveConnection.from_service(do_email, service_do)
+    do_cached_client2 = DriveCachedClient.from_service(do_email, service_do)
 
     service_ds = mock_drive_service.MockDriveService(backing_store, ds_email)
-    ds_connection2 = GDriveConnection.from_service(ds_email, service_ds)
+    ds_cached_client2 = DriveCachedClient.from_service(ds_email, service_ds)
 
     do_manager2 = SyftRDSClient.from_config(
-        do_config2, SyftboxManager._drive_transport(do_connection2)
+        do_config2, SyftboxManager._drive_transport(do_cached_client2)
     )
     ds_manager2 = SyftRDSClient.from_config(
-        ds_config2, SyftboxManager._drive_transport(ds_connection2)
+        ds_config2, SyftboxManager._drive_transport(ds_cached_client2)
     )
 
     # Load peers

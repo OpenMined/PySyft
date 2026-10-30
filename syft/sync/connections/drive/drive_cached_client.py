@@ -1,24 +1,35 @@
-"""Where syft keeps its folders in one account's Google Drive.
+"""One Google Drive account, and where syft keeps its folders in it.
 
-``DriveCachedClient`` finds and creates syft's folders and caches their ids. A
-folder whose name holds the client version follows the version rules in this
-module.
+``DriveCachedClient`` logs in, finds and creates syft's folders and caches their
+ids. A folder whose name holds the client version follows the version rules in
+this module.
 """
 
 import re
 from dataclasses import dataclass, field
+from functools import partial
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Callable
 
+from google.oauth2.credentials import Credentials as GoogleCredentials
 from pydantic import BaseModel, field_validator
 
 from syft.sync.connections.drive.gdrive_client import (
     GOOGLE_FOLDER_MIME_TYPE,
+    SCOPES,
     GDriveClient,
+    build_drive_service,
 )
 from syft.sync.connections.drive.gdrive_retry import execute_with_retries
 from syft.sync.events.file_change_event import FileChangeEventsMessageFileName
 from syft.sync.transport.naming import timestamp_from_message_name
+from syft.sync.utils.syftbox_utils import check_env
 from syft.sync.version.version_info import _parse_semver
 from syft.version import SYFT_VERSION
+
+if TYPE_CHECKING:
+    from syft.sync.connections.drive.grdrive_config import GdriveConnectionConfig
+    from syft.sync.connections.drive.mock_drive_service import MockDriveService
 
 SYFTBOX_FOLDER = "SyftBox"
 GDRIVE_P2P_FOLDER_DATASITE_PREFIX = "syft_datasite"
@@ -179,9 +190,9 @@ def valid_events_from_file_metadatas(
 class DriveCachedClient:
     """The Drive client of one account, and where syft's folders are in it.
 
-    It finds and creates syft's folders, follows the version rules for a
-    versioned folder name, and caches the folder ids so a lookup costs no
-    Drive call the second time.
+    It logs in, finds and creates syft's folders, follows the version rules for
+    a versioned folder name, and caches the folder ids so a lookup costs no
+    Drive call the second time. The transport components share one.
     """
 
     client: GDriveClient
@@ -198,6 +209,63 @@ class DriveCachedClient:
     own_datasite_outbox_cache: dict[str, str] = field(default_factory=dict, init=False)
     # sender email -> id of my archive folder for that sender.
     archive_folder_id_cache: dict[str, str] = field(default_factory=dict, init=False)
+
+    @classmethod
+    def from_config(cls, config: "GdriveConnectionConfig") -> "DriveCachedClient":
+        return cls.from_token_path(config.email, config.token_path)
+
+    @classmethod
+    def from_token_path(
+        cls,
+        email: str,
+        token_path: Path | None,
+        warm_syftbox_folder_id_cache: bool = True,
+    ) -> "DriveCachedClient":
+        """Log in with the OAuth token at ``token_path``, or with Colab's own
+        login when ``token_path`` is None."""
+        credentials = (
+            GoogleCredentials.from_authorized_user_file(token_path, SCOPES)
+            if token_path
+            else None
+        )
+        new_service = partial(build_drive_service, credentials, environment=check_env())
+        return cls._build(email, new_service, warm_syftbox_folder_id_cache)
+
+    @classmethod
+    def from_service(
+        cls,
+        email: str,
+        mock_service: "MockDriveService",
+        warm_syftbox_folder_id_cache: bool = True,
+    ) -> "DriveCachedClient":
+        """A client for ``email`` over the backing store of ``mock_service``,
+        for tests."""
+        from syft.sync.connections.drive.mock_drive_service import (
+            MockDriveService,
+        )
+
+        new_service = partial(MockDriveService, mock_service._backing_store, email)
+        return cls._build(email, new_service, warm_syftbox_folder_id_cache)
+
+    @classmethod
+    def _build(
+        cls,
+        email: str,
+        new_service: Callable[[], Any],
+        warm_syftbox_folder_id_cache: bool,
+    ) -> "DriveCachedClient":
+        """A client over a Drive service from ``new_service``, which also builds
+        the service of each copy for another thread.
+
+        Args:
+            warm_syftbox_folder_id_cache: If True, eagerly resolve the personal
+                SyftBox folder id (2-3 API calls). Pass False when the caller
+                seeds the caches.
+        """
+        cached_client = cls(GDriveClient(new_service(), new_service), email)
+        if warm_syftbox_folder_id_cache:
+            cached_client.get_personal_syftbox_folder_id()
+        return cached_client
 
     def clone_for_thread(self) -> "DriveCachedClient":
         """A copy over a new Drive client, for use from another thread, that

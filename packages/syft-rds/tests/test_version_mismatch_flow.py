@@ -12,7 +12,7 @@ from syft.sync.connections.drive.gdrive_client import GOOGLE_FOLDER_MIME_TYPE
 from syft.sync.connections.drive.drive_cached_client import (
     GDRIVE_P2P_FOLDER_DATASITE_PREFIX,
 )
-from syft.sync.connections.drive.gdrive_transport import GDriveConnection
+from syft.sync.connections.drive.drive_cached_client import DriveCachedClient
 from syft.sync.connections.drive.mock_drive_service import (
     MockDriveService,
 )
@@ -74,8 +74,10 @@ def _reinitialize_manager(
         syftbox_folder=syftbox_folder,
     )
     mock_service = MockDriveService(backing_store, email)
-    conn = GDriveConnection.from_service(email, mock_service)
-    manager = SyftRDSClient.from_config(config, SyftboxManager._drive_transport(conn))
+    cached_client = DriveCachedClient.from_service(email, mock_service)
+    manager = SyftRDSClient.from_config(
+        config, SyftboxManager._drive_transport(cached_client)
+    )
 
     if has_ds_role:
         manager.sync_engine.file_writer.add_callback(
@@ -99,10 +101,10 @@ def _simulate_continue_on_mismatch(manager, backing_store):
     syftbox_folder = manager.syftbox_folder
 
     mock_service = MockDriveService(backing_store, email)
-    mock_conn = GDriveConnection.from_service(email, mock_service)
+    cached_client = DriveCachedClient.from_service(email, mock_service)
 
     def read_remote(e, t):
-        return DrivePeering(mock_conn.cached_client).read_own_peer_info().version_info
+        return DrivePeering(cached_client).read_own_peer_info().version_info
 
     with (
         patch(

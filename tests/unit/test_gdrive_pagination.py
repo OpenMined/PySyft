@@ -6,7 +6,6 @@ from syft.sync.connections.drive.drive_p2p import DriveP2PConnection
 from syft.sync.connections.drive.drive_peering import DrivePeering
 from syft.sync.connections.drive.gdrive_client import GDriveClient
 from syft.sync.connections.drive.drive_cached_client import DriveCachedClient
-from syft.sync.connections.drive.gdrive_transport import GDriveConnection
 from syft.sync.connections.drive.mock_drive_service import (
     MockDriveBackingStore,
     MockDriveService,
@@ -258,8 +257,7 @@ FILE_COUNT = 250
 def _mock_cached_clients(*emails: str) -> list[DriveCachedClient]:
     store = MockDriveBackingStore()
     return [
-        GDriveConnection.from_service(e, MockDriveService(store, e)).cached_client
-        for e in emails
+        DriveCachedClient.from_service(e, MockDriveService(store, e)) for e in emails
     ]
 
 

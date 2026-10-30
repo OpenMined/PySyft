@@ -1,4 +1,3 @@
-from typing import ClassVar, Type
 from pydantic import BaseModel
 
 
@@ -16,12 +15,5 @@ class FileCollection(BaseModel):
 
 
 class ConnectionConfig(BaseModel):
-    connection_type: ClassVar[Type["SyftboxPlatformConnection"]]
-
-
-class SyftboxPlatformConnection(BaseModel):
-    config: ConnectionConfig | None = None
-
-    @classmethod
-    def from_config(cls, config: ConnectionConfig):
-        return config.connection_type.from_config(config)
+    """How to log in to one platform. Each platform has its own subclass, such
+    as ``GdriveConnectionConfig``."""

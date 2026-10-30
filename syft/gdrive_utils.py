@@ -12,13 +12,15 @@ from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaIoBaseDownload
 
 from syft.sync.config.config import settings
-from syft.sync.connections.drive.gdrive_client import GOOGLE_FOLDER_MIME_TYPE
+from syft.sync.connections.drive.gdrive_client import (
+    GOOGLE_FOLDER_MIME_TYPE,
+    build_drive_service,
+)
+from syft.sync.connections.drive.gdrive_client import SCOPES as GDRIVE_SCOPES
 from syft.sync.connections.drive.gdrive_retry import (
     execute_with_retries,
     next_chunk_with_retries,
 )
-from syft.sync.connections.drive.gdrive_transport import SCOPES as GDRIVE_SCOPES
-from syft.sync.connections.drive.gdrive_transport import build_drive_service
 from syft.sync.environments.environment import Environment
 from syft.sync.utils.syftbox_utils import (
     _resolve_email,
@@ -299,7 +301,7 @@ def delete_remote_syftbox(
     """Delete all SyftBox state from Google Drive.
 
     This is a standalone utility that does not require a full SyftboxManager.
-    It creates a temporary GDriveConnection to find and delete all SyftBox
+    It logs in to Drive on its own to find and delete all SyftBox
     files/folders from Google Drive.
 
     Note: This function does NOT broadcast ``is_deleted`` events to peers.
@@ -311,13 +313,15 @@ def delete_remote_syftbox(
             this is auto-detected if not provided.
         verbose: If True (default), print deletion progress.
     """
+    from syft.sync.connections.drive.drive_cached_client import DriveCachedClient
     from syft.sync.connections.drive.drive_owner_store import DriveOwnerStore
-    from syft.sync.connections.drive.gdrive_transport import GDriveConnection
 
     email = _resolve_email(email)
     token_path = _resolve_token_path(token_path)
-    conn = GDriveConnection.from_token_path(email=email, token_path=token_path)
-    store = DriveOwnerStore(conn.cached_client)
+    cached_client = DriveCachedClient.from_token_path(
+        email=email, token_path=token_path
+    )
+    store = DriveOwnerStore(cached_client)
 
     # Gather file IDs via folder hierarchy
     folder_file_ids = set(store.gather_all_file_and_folder_ids())
@@ -328,7 +332,7 @@ def delete_remote_syftbox(
     all_file_ids = list(folder_file_ids | orphaned_file_ids)
 
     start = time.time()
-    conn.cached_client.client.delete_multiple_files_by_ids(all_file_ids)
+    cached_client.client.delete_multiple_files_by_ids(all_file_ids)
     elapsed = time.time() - start
 
     if verbose:

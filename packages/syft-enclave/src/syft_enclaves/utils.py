@@ -3,7 +3,7 @@ from syft.sync.connections.drive.mock_drive_service import (
     MockDriveBackingStore,
     MockDriveService,
 )
-from syft.sync.connections.drive.gdrive_transport import GDriveConnection
+from syft.sync.connections.drive.drive_cached_client import DriveCachedClient
 from syft.sync.syftbox_manager import SyftboxManager
 from syft.sync.transport.protocols import Transport
 
@@ -66,7 +66,7 @@ def create_clients(configs) -> tuple:
 def _mock_transport(backing_store: MockDriveBackingStore, email: str) -> Transport:
     service = MockDriveService(backing_store, email)
     return SyftboxManager._drive_transport(
-        GDriveConnection.from_service(email, service)
+        DriveCachedClient.from_service(email, service)
     )
 
 

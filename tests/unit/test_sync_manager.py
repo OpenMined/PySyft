@@ -5,7 +5,7 @@ import yaml
 
 from syft.sync.connections.drive.drive_peering import DrivePeering
 from syft.sync.connections.connection_router import ConnectionRouter
-from syft.sync.connections.drive.gdrive_transport import GDriveConnection
+from syft.sync.connections.drive.drive_cached_client import DriveCachedClient
 from syft.sync.encryption_policy import EncryptionPolicy
 from syft.sync.peers.peer import Peer
 from syft.sync.peers.peer_store import PeerStore
@@ -486,16 +486,16 @@ def _add_known_peer(do_manager, email: str) -> None:
 
 def _peer_router(ds_manager, do_manager, email: str) -> ConnectionRouter:
     """Make ``email`` a second peer of the DO, and return its router."""
-    conn = GDriveConnection.from_service(
+    cached_client = DriveCachedClient.from_service(
         email,
         drive_cached_client_of(
             ds_manager._connection_router.transport
         ).client.drive_service,
     )
-    DrivePeering(conn.cached_client).open_channels(do_manager.email)
+    DrivePeering(cached_client).open_channels(do_manager.email)
     _add_known_peer(do_manager, email)
     return ConnectionRouter(
-        transport=SyftboxManager._drive_transport(conn),
+        transport=SyftboxManager._drive_transport(cached_client),
         peer_store=_store_knowing(email, do_manager.email),
     )
 
