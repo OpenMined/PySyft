@@ -67,75 +67,25 @@ class DriveOwnerStore(OwnerStore):
         self._rolling_state_file_id = None
         self.personal_syftbox_event_id_cache.clear()
 
-    # -- OwnerStore ------------------------------------------------------------
-
     def append_event(self, name: str, data: bytes) -> str:
-        return self.owner_write_raw_bytes_to_syftbox(name, data)
-
-    def list_event_handles(self, since_timestamp: float | None = None) -> list[str]:
-        return self.owner_get_all_accepted_event_file_ids(since_timestamp)
-
-    def fetch(self, handle: str) -> bytes:
-        return self.owner_download_raw_bytes_by_id(handle)
-
-    def fetch_events_since(self, since_timestamp: float | None) -> list[bytes]:
-        if since_timestamp is None:
-            return self.fetch_all_events()
-        return self.download_raw_events_since_timestamp(since_timestamp)
-
-    def fetch_all_events(self) -> list[bytes]:
-        return self.owner_download_all_raw_events_from_syftbox()
-
-    def put_checkpoint(self, name: str, data: bytes) -> str:
-        return self.upload_raw_checkpoint(name, data)
-
-    def latest_checkpoint(self) -> bytes | None:
-        return self.download_raw_latest_checkpoint()
-
-    def put_incremental(self, name: str, data: bytes) -> str:
-        return self.upload_raw_incremental_checkpoint(name, data)
-
-    def all_incrementals(self) -> list[bytes]:
-        return self.download_all_raw_incremental_checkpoints()
-
-    def incremental_count(self) -> int:
-        return self.get_incremental_checkpoint_count()
-
-    def next_incremental_sequence(self) -> int:
-        return self.get_next_incremental_sequence_number()
-
-    def delete_incrementals(self) -> None:
-        self.delete_all_incremental_checkpoints()
-
-    def put_rolling_state(self, name: str, data: bytes) -> str:
-        return self.upload_raw_rolling_state(name, data)
-
-    def get_rolling_state(self) -> bytes | None:
-        return self.download_raw_rolling_state()
-
-    # -- Drive -----------------------------------------------------------------
-
-    def owner_write_raw_bytes_to_syftbox(self, filename: str, data: bytes) -> str:
         """Write raw bytes to /SyftBox/myemail."""
         personal_syftbox_folder_id = self._layout.get_personal_syftbox_folder_id()
         file_metadata = {
-            "name": filename,
+            "name": name,
             "parents": [personal_syftbox_folder_id],
         }
         file_payload, _ = self._layout.client.create_file_payload(data)
 
         res = self._layout.client.create_syft_file(file_metadata, file_payload)
         gdrive_id = res.get("id")
-        self.personal_syftbox_event_id_cache[filename] = gdrive_id
+        self.personal_syftbox_event_id_cache[name] = gdrive_id
         return gdrive_id
 
-    def owner_download_raw_bytes_by_id(self, file_id: str) -> bytes:
+    def fetch(self, handle: str) -> bytes:
         """Download raw bytes by file ID."""
-        return self._layout.client.download_file(file_id)
+        return self._layout.client.download_file(handle)
 
-    def owner_get_all_accepted_event_file_ids(
-        self, since_timestamp: float | None = None
-    ) -> list[str]:
+    def list_event_handles(self, since_timestamp: float | None = None) -> list[str]:
         personal_syftbox_folder_id = self._layout.get_personal_syftbox_folder_id()
         file_metadatas = self._layout.get_file_metadatas_from_folder(
             personal_syftbox_folder_id, since_timestamp=since_timestamp
@@ -150,7 +100,7 @@ class DriveOwnerStore(OwnerStore):
         return [f["id"] for f in oldest_first]
 
     @raise_unavailable("Could not read the event log from Drive.")
-    def owner_download_all_raw_events_from_syftbox(self) -> list[bytes]:
+    def fetch_all_events(self) -> list[bytes]:
         """Download all event files from /SyftBox/myemail as raw bytes."""
         personal_syftbox_folder_id = self._layout.get_personal_syftbox_folder_id()
         file_metadatas = self._layout.get_file_metadatas_from_folder(
@@ -167,10 +117,10 @@ class DriveOwnerStore(OwnerStore):
         return result
 
     @raise_unavailable("Could not read the event log from Drive.")
-    def download_raw_events_since_timestamp(
-        self, since_timestamp: float
-    ) -> list[bytes]:
+    def fetch_events_since(self, since_timestamp: float | None) -> list[bytes]:
         """Download event files created after a timestamp as raw bytes."""
+        if since_timestamp is None:
+            return self.fetch_all_events()
         personal_folder_id = self._layout.get_personal_syftbox_folder_id()
         file_metadatas = self._layout.get_file_metadatas_from_folder(
             personal_folder_id, since_timestamp=since_timestamp
@@ -215,7 +165,7 @@ class DriveOwnerStore(OwnerStore):
         syftbox_folder_id = self._layout.get_syftbox_folder_id()
         return self._layout.client.create_folder(folder_name, syftbox_folder_id)
 
-    def upload_raw_checkpoint(self, filename: str, data: bytes) -> str:
+    def put_checkpoint(self, name: str, data: bytes) -> str:
         """Upload raw checkpoint bytes to Google Drive.
 
         Uploads the new checkpoint first, then deletes old ones.
@@ -224,19 +174,19 @@ class DriveOwnerStore(OwnerStore):
         payload, _ = self._layout.client.create_file_payload(data)
 
         file_metadata = {
-            "name": filename,
+            "name": name,
             "parents": [folder_id],
         }
 
         result = self._layout.client.create_syft_file(file_metadata, payload)
 
         # Only delete old checkpoints after successful upload
-        self.delete_all_checkpoints(exclude_file_id=result.get("id"))
+        self._delete_all_checkpoints(exclude_file_id=result.get("id"))
 
         return result.get("id")
 
     @raise_unavailable("Could not read the latest checkpoint from Drive.")
-    def download_raw_latest_checkpoint(self) -> bytes | None:
+    def latest_checkpoint(self) -> bytes | None:
         """Download the latest checkpoint as raw bytes, or None."""
         folder_id = self._get_checkpoints_folder_id()
         if folder_id is None:
@@ -269,7 +219,7 @@ class DriveOwnerStore(OwnerStore):
 
         return self._layout.client.download_file(latest_file["id"])
 
-    def delete_all_checkpoints(self, exclude_file_id: str | None = None):
+    def _delete_all_checkpoints(self, exclude_file_id: str | None = None):
         """Delete all existing full checkpoints (not incremental ones).
 
         Args:
@@ -305,13 +255,13 @@ class DriveOwnerStore(OwnerStore):
             except Exception as e:
                 print(f"Warning: Failed to delete checkpoint {item['name']}: {e}")
 
-    def upload_raw_incremental_checkpoint(self, filename: str, data: bytes) -> str:
+    def put_incremental(self, name: str, data: bytes) -> str:
         """Upload raw incremental checkpoint bytes to Google Drive."""
         folder_id = self._get_or_create_checkpoints_folder_id()
         payload, _ = self._layout.client.create_file_payload(data)
 
         file_metadata = {
-            "name": filename,
+            "name": name,
             "parents": [folder_id],
         }
 
@@ -319,7 +269,7 @@ class DriveOwnerStore(OwnerStore):
         return result.get("id")
 
     @raise_unavailable("Could not read the incremental checkpoints from Drive.")
-    def download_all_raw_incremental_checkpoints(self) -> list[bytes]:
+    def all_incrementals(self) -> list[bytes]:
         """Download all incremental checkpoints as raw bytes."""
         folder_id = self._get_checkpoints_folder_id()
         if folder_id is None:
@@ -341,7 +291,7 @@ class DriveOwnerStore(OwnerStore):
 
         return [self._layout.client.download_file(item["id"]) for item in items]
 
-    def get_incremental_checkpoint_count(self) -> int:
+    def incremental_count(self) -> int:
         """Get the number of incremental checkpoints on Google Drive."""
         folder_id = self._get_checkpoints_folder_id()
         if folder_id is None:
@@ -356,7 +306,7 @@ class DriveOwnerStore(OwnerStore):
         )
         return len(results.get("files", []))
 
-    def get_next_incremental_sequence_number(self) -> int:
+    def next_incremental_sequence(self) -> int:
         """Get the next sequence number for incremental checkpoints."""
         folder_id = self._get_checkpoints_folder_id()
         if folder_id is None:
@@ -385,7 +335,7 @@ class DriveOwnerStore(OwnerStore):
 
         return max_seq + 1
 
-    def delete_all_incremental_checkpoints(self) -> None:
+    def delete_incrementals(self) -> None:
         """Delete all incremental checkpoints (called after compacting)."""
         folder_id = self._get_checkpoints_folder_id()
         if folder_id is None:
@@ -449,7 +399,7 @@ class DriveOwnerStore(OwnerStore):
         self._rolling_state_folder_id = folder_id
         return folder_id
 
-    def upload_raw_rolling_state(self, filename: str, data: bytes) -> str:
+    def put_rolling_state(self, name: str, data: bytes) -> str:
         """Upload raw rolling state bytes to Google Drive.
 
         Optimized to use update() if file ID is cached.
@@ -478,7 +428,7 @@ class DriveOwnerStore(OwnerStore):
         folder_id = self._get_or_create_rolling_state_folder_id()
 
         file_metadata = {
-            "name": filename,
+            "name": name,
             "parents": [folder_id],
         }
 
@@ -488,7 +438,7 @@ class DriveOwnerStore(OwnerStore):
         return file_id
 
     @raise_unavailable("Could not read the rolling state from Drive.")
-    def download_raw_rolling_state(self) -> bytes | None:
+    def get_rolling_state(self) -> bytes | None:
         """Download the latest rolling state as raw bytes, or None.
 
         Also populates the folder and file ID caches for subsequent uploads.
