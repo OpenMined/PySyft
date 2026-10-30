@@ -1,4 +1,5 @@
 import logging
+import shutil
 from pathlib import Path
 from typing import Callable, Iterator, Optional
 
@@ -16,8 +17,8 @@ from .migrations.registry import JOB_PROTOCOL_VERSION, job_registry
 from .models import JobState, JobSubmissionMetadata, RequestMetadata
 from .protocolcodecs import CODECS, ProtocolCodec
 from .submission import (
-    REQUEST_FILE_NAME,
     OWNER_RECORD_FILENAME,
+    REQUEST_FILE_NAME,
     OwnerJobRecord,
     claim_owner_record,
     read_owner_record,
@@ -134,6 +135,18 @@ class JobStorage:
 
     def staging_dir(self, ref: JobRef) -> Path:
         return self._codec_for(ref.protocol_version).staging_dir(ref)
+
+    def remove_outputs(self, ref: JobRef) -> bool:
+        """Delete outputs/ in review/ and in staging/. Returns True if one existed."""
+        removed = False
+        for outputs_dir in (
+            self.review_dir(ref) / "outputs",
+            self.staging_dir(ref) / "outputs",
+        ):
+            if outputs_dir.is_dir():
+                shutil.rmtree(outputs_dir)
+                removed = True
+        return removed
 
     # -- owner record (owner side, in staging/) ------------------------------------
     def owner_record_path(self, ref: JobRef) -> Path:

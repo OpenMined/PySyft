@@ -379,7 +379,7 @@ def test_released_artifact_not_sent_twice():
     run_to_completion(enclave, do1, do2, ds, [FRAMES])
 
     job = enclave.jobs["j"]
-    assert enclave._forward_new_releases(job) == []
+    assert enclave._push_new_disclosures(job) == []
 
 
 def test_approve_job_rejects_non_enclave_job():

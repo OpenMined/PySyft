@@ -755,12 +755,7 @@ class SyftJobRunner:
         # Create outputs/ inside code/ dir so job scripts can write there (cwd is code/)
         (run_dir / "code" / "outputs").mkdir(parents=True, exist_ok=True)
 
-        for outputs_dir in (
-            self.manager.review_dir(ref) / "outputs",
-            self.manager.staging_dir(ref) / "outputs",
-        ):
-            if outputs_dir.exists():
-                shutil.rmtree(outputs_dir)
+        self.manager.remove_outputs(ref)
 
     def _replace_ds_folder_reads(self) -> None:
         """Replace the read grant on a whole DS review folder with the named files.
@@ -859,7 +854,10 @@ class SyftJobRunner:
                 does not identify a job — it is unique per datasite and
                 submitter — so skipping by name drops every other job that
                 shares it.
-            share_outputs_with_submitter: If True, grant read access on outputs to submitter.
+            share_outputs_with_submitter: If True, release the outputs to the
+                output recipients: the submitter, or the list an output policy
+                writes. False keeps them in staging, where only the DO reads
+                them.
             share_logs_with_submitter: If True, release the logs and the exit
                 code to the submitter, whatever the job requested. False
                 (default) releases only the items that the submitter requested
@@ -889,7 +887,7 @@ class SyftJobRunner:
         for ref in approved_jobs:
             print(f"\n{'=' * 50}")
             if self._execute_job(ref, stream_output=stream_output, timeout=timeout):
-                self._share_job_results(
+                self._release_job_results(
                     ref,
                     share_outputs_with_submitter,
                     share_logs_with_submitter,
@@ -919,9 +917,9 @@ class SyftJobRunner:
             (self.manager.review_dir(ref) / OUTPUTS_WITHHELD_FILENAME).unlink(
                 missing_ok=True
             )
-        self._share_job_results(ref, share_outputs, share_logs, [ref.ds_email])
+        self._release_job_results(ref, share_outputs, share_logs, [ref.ds_email])
 
-    def _share_job_results(
+    def _release_job_results(
         self, ref: JobRef, share_outputs: bool, share_logs: bool, recipients: list[str]
     ) -> None:
         job_info = self._get_job_info(ref)

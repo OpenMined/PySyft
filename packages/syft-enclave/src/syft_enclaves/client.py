@@ -484,10 +484,10 @@ class SyftEnclaveClient:
                 continue
             job.release(
                 gated_names(self.granted_disclosures(job)),
-                self._disclosure_readers(job),
+                self._disclosure_recipients(job),
             )
 
-    def _disclosure_readers(self, job: JobInfo) -> list[str]:
+    def _disclosure_recipients(self, job: JobInfo) -> list[str]:
         """The submitter and each DO of the job, who all get a released artifact."""
         datasets = job.job_metadata.datasets or {}
         return list(
@@ -499,14 +499,14 @@ class SyftEnclaveClient:
         for job in self.jobs:
             if job.status not in ("done", "failed"):
                 continue
-            self._share_results_once(job)
+            self._release_results_once(job)
             # A grant can arrive after the results went out, so a released
             # artifact travels on its own schedule.
-            self._forward_new_releases(job)
+            self._push_new_disclosures(job)
 
         self._rds.sync()
 
-    def _share_results_once(self, job: JobInfo) -> None:
+    def _release_results_once(self, job: JobInfo) -> None:
         """Send the outputs and the state, the first time the job finishes."""
         marker = job.job_review_path / RESULTS_SHARED_MARKER
         if marker.exists():
@@ -516,16 +516,17 @@ class SyftEnclaveClient:
             self._try_write_receipt(job)
 
         # Always share results with the DS (submitter)
-        self._release_results(job, [job.submitted_by])
+        self._release_outputs(job, [job.submitted_by])
 
         # Optionally share with DOs
         datasets = job.job_metadata.datasets
         if job.job_headers.get("share_results_with_do") and datasets:
-            self._release_results(job, list(datasets.keys()))
+            do_emails = list(datasets)
+            self._release_outputs(job, do_emails)
 
         marker.write_text("shared")
 
-    def _forward_new_releases(self, job: JobInfo) -> list[str]:
+    def _push_new_disclosures(self, job: JobInfo) -> list[str]:
         """Send each released artifact that the parties do not hold yet.
 
         A party that releases an item also receives it, so the data owners get
@@ -554,7 +555,7 @@ class SyftEnclaveClient:
             ).read_bytes()
             for name in pending
         }
-        self._push_files_to_recipients(files, self._disclosure_readers(job))
+        self._push_files_to_recipients(files, self._disclosure_recipients(job))
 
         sent_path.write_text(json.dumps(sorted(sent.union(pending))))
         return pending
@@ -580,15 +581,15 @@ class SyftEnclaveClient:
         state_rel = state_file.relative_to(datasite_dir)
         return {state_rel: state_file.read_bytes()}
 
-    def _release_results(self, job: JobInfo, readers: list[str]) -> None:
-        """Release the outputs to ``readers``, and push them with the job state."""
-        job.release(["outputs"], readers)
+    def _release_outputs(self, job: JobInfo, recipients: list[str]) -> None:
+        """Release the outputs to ``recipients``, and push them with the job state."""
+        job.release(["outputs"], recipients)
         outputs_dir = job.job_review_path / "outputs"
         files_by_datasite_path = (
             self._get_files_in_dir(outputs_dir) if outputs_dir.exists() else {}
         )
         files_by_datasite_path.update(self._read_state_file(job))
-        self._push_files_to_recipients(files_by_datasite_path, readers)
+        self._push_files_to_recipients(files_by_datasite_path, recipients)
 
     def _push_files_to_recipients(
         self, files_by_datasite_path: dict, recipients: list[str]

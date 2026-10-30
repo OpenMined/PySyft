@@ -104,23 +104,23 @@ class JobInfo:
         """
         return self.release(STAGED_LOG_FILES, [self.submitted_by])
 
-    def release(self, filenames: Iterable[str], readers: list[str]) -> list[str]:
-        """Move the named staged files to review/, and give ``readers`` read access.
+    def release(self, filenames: Iterable[str], recipients: list[str]) -> list[str]:
+        """Move the named staged files to review/, for ``recipients`` to read.
 
-        Returns the names that moved. With no ``readers``, no file moves. A file
-        that is already in review/ also gets the read access, so a caller can
-        add a reader later. A reader with read access on the whole review
+        Returns the names that moved. With no ``recipients``, no file moves. A
+        file that is already in review/ also gets the read access, so a caller
+        can add a recipient later. A user with read access on the whole review
         folder also sees each file that moves.
         """
-        if not readers:
+        if not recipients:
             return []
         filenames = list(filenames)
-        moved = self.release_artifacts(filenames)
+        moved = self._move_to_review(filenames)
         released = [n for n in filenames if (self.job_review_path / n).exists()]
-        self._grant_read(released, readers)
+        self._grant_read(released, recipients)
         return moved
 
-    def release_artifacts(self, filenames: Iterable[str]) -> list[str]:
+    def _move_to_review(self, filenames: Iterable[str]) -> list[str]:
         """Move the named staged files to review/, and give no read access.
 
         Returns the names that moved. The method skips a name that is not in
@@ -210,7 +210,10 @@ class JobInfo:
         return granted
 
     def release_disclosures(self) -> list[str]:
-        """Release the granted items to the submitter, and return the names moved."""
+        """Move the granted items to review/, for the submitter to read.
+
+        Returns the names that moved.
+        """
         return self.release(gated_names(self.granted_disclosures), [self.submitted_by])
 
     # ──────────────────────────────────────────────
@@ -614,13 +617,8 @@ class JobInfo:
                     f.unlink()
                     changes_made.append(filename)
 
-        for outputs_dir in (
-            self.job_review_path / "outputs",
-            self.job_staging_path / "outputs",
-        ):
-            if outputs_dir.is_dir():
-                shutil.rmtree(outputs_dir)
-                changes_made.append("outputs directory")
+        if self._client.manager.remove_outputs(self._ref):
+            changes_made.append("outputs directory")
 
         # Reset state to approved
         self._state.status = JobStatus.APPROVED
@@ -652,13 +650,13 @@ class JobInfo:
         )
         return rel / subpath
 
-    def _grant_read(self, filenames: Iterable[str], users: list[str]) -> None:
-        """Grant read access to the named review/ files for the given users."""
+    def _grant_read(self, filenames: Iterable[str], recipients: list[str]) -> None:
+        """Grant ``recipients`` read access to the named review/ files."""
         ctx = self._get_perm_context()
         for filename in filenames:
             f = ctx.open(self._relative_review_path(filename))
-            for user in users:
-                f.grant_read_access(user)
+            for recipient in recipients:
+                f.grant_read_access(recipient)
 
     # ──────────────────────────────────────────────
     # Display

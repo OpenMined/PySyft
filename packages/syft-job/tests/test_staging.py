@@ -6,22 +6,20 @@ from pathlib import Path
 
 import pytest
 import yaml
-from syft_permissions.spec.ruleset import PERMISSION_FILE_NAME
-from syft_perms import SyftPermContext
-
 from syft_job.client import JobClient
-from syft_job.config import SyftJobConfig
+from syft_job.config import SyftJobConfig, protocol_dir_name
 from syft_job.disclosures import LOGS_WARNING, DisclosureItem
 from syft_job.job import JobInfo
 from syft_job.job_runner import SyftJobRunner
+from syft_job.migrations.registry import JOB_PROTOCOL_VERSION
 from syft_job.models import JobState, JobStatus
 from syft_job.submission import (
     OWNER_RECORD_FILENAME,
     SUBMISSION_HASH_HEADER,
 )
 from syft_job.traceback_capture import FRAMES_FILENAME
-from syft_job.config import protocol_dir_name
-from syft_job.migrations.registry import JOB_PROTOCOL_VERSION
+from syft_permissions.spec.ruleset import PERMISSION_FILE_NAME
+from syft_perms import SyftPermContext
 
 # The path segment of the current job protocol, e.g. "v2".
 PROTOCOL_DIR = protocol_dir_name(JOB_PROTOCOL_VERSION)
@@ -196,7 +194,7 @@ def test_traceback_record_is_staged(tmp_path):
     assert record["chain"][0]["type"] == "ValueError"
     assert "4120550" not in record_path.read_text()
 
-    assert job.release_artifacts([FRAMES_FILENAME]) == [FRAMES_FILENAME]
+    assert job.release([FRAMES_FILENAME], [DS_EMAIL]) == [FRAMES_FILENAME]
     assert (review / FRAMES_FILENAME).exists()
 
 
@@ -205,12 +203,15 @@ def test_rerun_clears_both_locations(tmp_path):
     job, review, staging = run_job(tmp_path, OK_PY, share_logs=False)
     (review / "returncode.txt").write_text("0")
     assert (staging / "stdout.txt").exists()
+    assert (review / "outputs").exists() or (staging / "outputs").exists()
 
     job.rerun()
 
     assert not (staging / "stdout.txt").exists()
     assert not (staging / "stderr.txt").exists()
     assert not (review / "stdout.txt").exists()
+    assert not (review / "outputs").exists()
+    assert not (staging / "outputs").exists()
 
 
 def test_rerun_clears_crash_record(tmp_path):
