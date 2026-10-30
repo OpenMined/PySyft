@@ -8,6 +8,7 @@ from tests.integration.utils import (
     token_path_do,
     token_path_ds,
 )
+from syft.sync.events.file_change_event import FileChangeEventsMessageFileName
 from syft.sync.syftbox_manager import SyftboxManager
 from tests.integration.with_unit_coverage.utils import is_mock_mode
 
@@ -71,9 +72,13 @@ def test_pagination_and_early_termination():
         manager_ds.datasite_watcher_syncer.datasite_watcher_cache.connection_router
     )
 
-    new_events = connection_router.watcher_get_events_messages(
-        EMAIL_DO, since_timestamp=checkpoint_timestamp
-    )
+    after = FileChangeEventsMessageFileName(timestamp=checkpoint_timestamp)
+    new_events = [
+        m
+        for _, m in connection_router.watcher_receive_events_messages(
+            EMAIL_DO, after=after.as_string()
+        )
+    ]
 
     new_event_timestamps = [e.timestamp for e in new_events]
     assert all(t > checkpoint_timestamp for t in new_event_timestamps)

@@ -76,7 +76,8 @@ class DataSiteWatcherCache(BaseModel):
     last_sync: datetime | None = None
     seconds_before_syncing_down: int = SECONDS_BEFORE_SYNCING_DOWN
     peers: List[str] = []
-    last_event_timestamp_per_peer: Dict[str, float] = {}
+    # The msg_id of the last events message applied from each peer.
+    last_msg_id_per_peer: Dict[str, str] = {}
     # Base syftbox folder
     syftbox_folder: Path | None = None
     # Collections to sync down (prefix + local subpath per collection type)
@@ -125,12 +126,12 @@ class DataSiteWatcherCache(BaseModel):
             return cache
 
     def _load_cached_state(self):
-        """Load cached state from disk: file hashes, timestamps, and collection hashes."""
+        """Load cached state from disk: file hashes, last messages, and collection hashes."""
         self._load_file_hashes_from_events()
         self._load_collection_hashes_from_disk()
 
     def _load_file_hashes_from_events(self):
-        """Load file hashes and timestamps from cached events."""
+        """Load file hashes and the last message from each peer from cached events."""
         try:
             cached_messages = self.events_connection.get_all()
         except Exception:
@@ -142,14 +143,9 @@ class DataSiteWatcherCache(BaseModel):
         sorted_messages = sorted(cached_messages, key=lambda m: m.timestamp)
 
         for events_message in sorted_messages:
+            msg_id = events_message.message_filepath.as_string()
             for event in events_message.events:
-                # Update last_event_timestamp_per_peer
-                peer_email = event.datasite_email
-                current_ts = self.last_event_timestamp_per_peer.get(peer_email)
-                if current_ts is None or events_message.timestamp > current_ts:
-                    self.last_event_timestamp_per_peer[peer_email] = (
-                        events_message.timestamp
-                    )
+                self.last_msg_id_per_peer[event.datasite_email] = msg_id
 
                 # Update file_hashes
                 path_key = Path(event.path_in_syftbox)
@@ -212,7 +208,7 @@ class DataSiteWatcherCache(BaseModel):
         self.last_sync = None
         self.peers = []
         self.current_check_point = None
-        self.last_event_timestamp_per_peer = {}
+        self.last_msg_id_per_peer = {}
         self.collection_hashes = {}
 
     @property
@@ -221,56 +217,18 @@ class DataSiteWatcherCache(BaseModel):
             return None
         return self.events_connection.get_latest().timestamp
 
-    def sync_down(self, peer_email: str):
-        # Use per-peer timestamp to avoid filtering out events from other peers
-        peer_timestamp = self.last_event_timestamp_per_peer.get(peer_email)
-
-        new_event_messages = self.connection_router.watcher_get_events_messages(
-            peer_email=peer_email,
-            since_timestamp=peer_timestamp,
+    def sync_down(self, peer_email: str) -> int:
+        """Apply the events messages ``peer_email`` sent after the last one
+        applied. Returns the number of events applied."""
+        received = self.connection_router.watcher_receive_events_messages(
+            peer_email, after=self.last_msg_id_per_peer.get(peer_email)
         )
-        for event_message in sorted(new_event_messages, key=lambda x: x.timestamp):
-            self.apply_event_message(event_message, peer_email)
-            self.last_event_timestamp_per_peer[peer_email] = event_message.timestamp
-
-        self.last_sync = datetime.now()
-
-    def sync_down_parallel(
-        self,
-        peer_email: str,
-        executor: ThreadPoolExecutor,
-        download_fn: Callable[[str], FileChangeEventsMessage | None],
-    ) -> int:
-        """Sync with parallel file downloads. Returns the number of events applied.
-
-        ``download_fn`` gets the id of one file. It returns None for a message
-        that it skips.
-        """
-        peer_timestamp = self.last_event_timestamp_per_peer.get(peer_email)
-
-        # Get file metadata (no download yet)
-        file_metadatas = self.connection_router.watcher_get_outbox_file_metadatas(
-            peer_email=peer_email,
-            since_timestamp=peer_timestamp,
-        )
-
-        if not file_metadatas:
-            # No new messages to download
-            self.last_sync = datetime.now()
-            return 0
-
-        # Download all files in parallel
-        file_ids = [m["file_id"] for m in file_metadatas]
-        downloaded_messages = [
-            m for m in executor.map(download_fn, file_ids) if m is not None
-        ]
-
-        # Apply in timestamp order
         event_count = 0
-        for event_message in sorted(downloaded_messages, key=lambda x: x.timestamp):
+        for raw, event_message in received:
             self.apply_event_message(event_message, peer_email)
-            self.last_event_timestamp_per_peer[peer_email] = event_message.timestamp
+            self.last_msg_id_per_peer[peer_email] = raw.msg_id
             event_count += len(event_message.events)
+        self.connection_router.mark_all_processed([raw for raw, _ in received])
 
         self.last_sync = datetime.now()
         return event_count

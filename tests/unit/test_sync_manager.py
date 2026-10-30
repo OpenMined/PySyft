@@ -5,6 +5,7 @@ import yaml
 
 from syft.sync.connections.drive.drive_peering import DrivePeeringConnection
 from syft.sync.connections.connection_router import ConnectionRouter
+from syft.sync.connections.types import MessageKind
 from syft.sync.connections.drive.drive_cached_client import DriveCachedClient
 from syft.sync.encryption_policy import EncryptionPolicy
 from syft.sync.peers.peer import Peer
@@ -169,7 +170,7 @@ def test_sync_existing_datasite_state_do():
     n_files_in_cache = len(do_manager.datasite_owner_syncer.event_cache.file_connection)
     hashes_in_cache = len(do_manager.datasite_owner_syncer.event_cache.file_hashes)
 
-    n_outbox = ds_p2p.outbox_message_metadatas(do_manager.email, None)
+    n_outbox = ds_p2p.receive(do_manager.email, MessageKind.FILE_EVENTS)
     assert n_messages_in_cache >= 1  # At least 1 message with the 2 file changes
     # 2 data files + private/crypto_keys.json + private/syft_settings.json
     assert n_files_in_cache == 4
@@ -552,11 +553,12 @@ def test_job_files_sync_to_submitter_only():
     submitter_router = _peer_router(ds_manager, do_manager, submitter_email)
     do_manager.datasite_owner_syncer.sync(recipients)
 
-    messages_for_non_submitter = (
-        ds_manager._connection_router.watcher_get_events_messages(
-            do_manager.email, None
+    messages_for_non_submitter = [
+        m
+        for _, m in ds_manager._connection_router.watcher_receive_events_messages(
+            do_manager.email
         )
-    )
+    ]
 
     paths_for_non_submitter = [
         str(event.path_in_datasite)
@@ -564,9 +566,9 @@ def test_job_files_sync_to_submitter_only():
         for event in msg.events
     ]
 
-    messages_for_submitter = submitter_router.watcher_get_events_messages(
-        do_manager.email, None
-    )
+    messages_for_submitter = [
+        m for _, m in submitter_router.watcher_receive_events_messages(do_manager.email)
+    ]
     paths_for_submitter = [
         str(event.path_in_datasite)
         for msg in messages_for_submitter
@@ -634,8 +636,8 @@ def test_job_file_beside_outputs_does_not_sync_to_submitter():
 
     paths = [
         str(event.path_in_datasite)
-        for msg in ds_manager._connection_router.watcher_get_events_messages(
-            do_manager.email, None
+        for _, msg in ds_manager._connection_router.watcher_receive_events_messages(
+            do_manager.email
         )
         for event in msg.events
     ]
@@ -758,14 +760,19 @@ def test_permission_change_triggers_resend():
     recipients = [peer_a_email, peer_b_email]
     do_manager.datasite_owner_syncer.sync(recipients)
 
-    messages_for_a = ds_manager._connection_router.watcher_get_events_messages(
-        do_manager.email, None
-    )
+    messages_for_a = [
+        m
+        for _, m in ds_manager._connection_router.watcher_receive_events_messages(
+            do_manager.email
+        )
+    ]
     paths_for_a = [
         str(e.path_in_datasite) for msg in messages_for_a for e in msg.events
     ]
 
-    messages_for_b = peer_b_router.watcher_get_events_messages(do_manager.email, None)
+    messages_for_b = [
+        m for _, m in peer_b_router.watcher_receive_events_messages(do_manager.email)
+    ]
     paths_for_b = [
         str(e.path_in_datasite) for msg in messages_for_b for e in msg.events
     ]
@@ -781,9 +788,9 @@ def test_permission_change_triggers_resend():
     # Second sync: peer B should receive data.txt via resend
     do_manager.datasite_owner_syncer.sync(recipients)
 
-    messages_for_b_after = peer_b_router.watcher_get_events_messages(
-        do_manager.email, None
-    )
+    messages_for_b_after = [
+        m for _, m in peer_b_router.watcher_receive_events_messages(do_manager.email)
+    ]
     paths_for_b_after = [
         str(e.path_in_datasite) for msg in messages_for_b_after for e in msg.events
     ]
@@ -797,7 +804,7 @@ def _events_for(router: ConnectionRouter, do_manager) -> list[tuple[str, bool]]:
     """(path, is_deleted) of each event in the DO's outbox for ``router``'s peer."""
     return [
         (str(e.path_in_datasite), e.is_deleted)
-        for m in router.watcher_get_events_messages(do_manager.email, None)
+        for _, m in router.watcher_receive_events_messages(do_manager.email)
         for e in m.events
     ]
 

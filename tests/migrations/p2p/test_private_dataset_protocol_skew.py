@@ -57,9 +57,12 @@ def _create(
 
 def _shipped_private_paths(ds_manager, do_manager) -> list[str]:
     """The private-file paths of the events the DO put in our outbox."""
-    messages = ds_manager.sync_engine._connection_router.watcher_get_events_messages(
-        do_manager.email, None
-    )
+    messages = [
+        m
+        for _, m in ds_manager.sync_engine._connection_router.watcher_receive_events_messages(
+            do_manager.email
+        )
+    ]
     return [
         str(event.path_in_datasite)
         for message in messages

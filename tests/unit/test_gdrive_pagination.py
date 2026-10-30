@@ -10,6 +10,7 @@ from syft.sync.connections.drive.mock_drive_service import (
     MockDriveBackingStore,
     MockDriveService,
 )
+from syft.sync.connections.types import MessageKind
 from syft.sync.events.file_change_event import (
     FileChangeEventsMessage,
     FileChangeEventsMessageFileName,
@@ -103,9 +104,9 @@ def test_events_returned_in_chronological_order(mock_download_file, mock_get_fol
     mock_download_file.side_effect = mock_download
 
     events = [
-        FileChangeEventsMessage.from_compressed_data(data)
-        for data in DriveP2PConnection(cached_client).outbox_messages(
-            "peer@test.com", None
+        FileChangeEventsMessage.from_compressed_data(m.data)
+        for m in DriveP2PConnection(cached_client).receive(
+            "peer@test.com", MessageKind.FILE_EVENTS
         )
     ]
 

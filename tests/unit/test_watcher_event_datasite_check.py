@@ -137,7 +137,7 @@ def test_dropped_event_is_not_restored_after_restart(tmp_path):
     restarted = DataSiteWatcherCache.from_config(config, router)
 
     assert Path(f"{VICTIM}/syft.pub.yaml") not in restarted.file_hashes
-    assert VICTIM not in restarted.last_event_timestamp_per_peer
+    assert VICTIM not in restarted.last_msg_id_per_peer
     assert restarted.file_hashes[Path(f"{PEER}/data/file.txt")] == legitimate.new_hash
 
 

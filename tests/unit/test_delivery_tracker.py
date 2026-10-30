@@ -138,17 +138,23 @@ def _received(ds_manager, do_manager, path: str):
 
 
 def _outbox_paths(ds_manager, do_manager) -> list[str]:
-    messages = ds_manager._connection_router.watcher_get_events_messages(
-        do_manager.email, None
-    )
+    messages = [
+        m
+        for _, m in ds_manager._connection_router.watcher_receive_events_messages(
+            do_manager.email
+        )
+    ]
     return [str(e.path_in_datasite) for m in messages for e in m.events]
 
 
 def _sent_events(ds_manager, do_manager, path: str) -> list[tuple[bool, object]]:
     """(is_deleted, content) of each event for ``path`` in the DS's outbox."""
-    messages = ds_manager._connection_router.watcher_get_events_messages(
-        do_manager.email, None
-    )
+    messages = [
+        m
+        for _, m in ds_manager._connection_router.watcher_receive_events_messages(
+            do_manager.email
+        )
+    ]
     return [
         (e.is_deleted, e.content)
         for m in messages
@@ -422,9 +428,12 @@ def test_large_catch_up_split_into_messages(monkeypatch):
         _write(do_manager, f"shared/{name}.txt", "abc")
 
     do_manager.sync(auto_checkpoint=False)
-    messages = ds_manager._connection_router.watcher_get_events_messages(
-        do_manager.email, None
-    )
+    messages = [
+        m
+        for _, m in ds_manager._connection_router.watcher_receive_events_messages(
+            do_manager.email
+        )
+    ]
     assert sorted(len(m.events) for m in messages) == [1, 2]
 
 
@@ -516,7 +525,10 @@ def test_compaction_keeps_message_size_cap(monkeypatch):
     monkeypatch.setattr(datasite_owner_syncer, "MAX_DELIVERY_MESSAGE_CONTENT", 6)
     syncer = do_manager.datasite_owner_syncer
     assert syncer.compact_outbox_if_needed(ds_manager.email, min_messages=2) == 4
-    messages = ds_manager._connection_router.watcher_get_events_messages(
-        do_manager.email, None
-    )
+    messages = [
+        m
+        for _, m in ds_manager._connection_router.watcher_receive_events_messages(
+            do_manager.email
+        )
+    ]
     assert [len(m.events) for m in messages] == [2, 2]

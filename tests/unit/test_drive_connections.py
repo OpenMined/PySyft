@@ -279,7 +279,7 @@ def test_inbox_message_that_fails_to_download_is_skipped_with_warning(
         return original_download(self, file_id)
 
     monkeypatch.setattr(GDriveClient, "download_file", download_all_but_broken)
-    with pytest.warns(UserWarning, match=f"Skipped inbox message {names[1]}"):
+    with pytest.warns(UserWarning, match=f"Skipped message {names[1]}"):
         received = DriveP2PConnection(do_cached_client).receive(
             DS, MessageKind.PROPOSED_CHANGES
         )
@@ -314,24 +314,61 @@ def test_file_events_sent_through_p2p_reach_the_scientist_outbox(pair):
         DS, name, b"results", MessageKind.FILE_EVENTS
     )
     assert status is SendStatus.DELIVERED
+    [message] = DriveP2PConnection(ds_cached_client).receive(
+        DO, MessageKind.FILE_EVENTS
+    )
+    assert (message.sender, message.msg_id, message.kind, message.data) == (
+        DO,
+        name,
+        MessageKind.FILE_EVENTS,
+        b"results",
+    )
+
+
+def test_outbox_messages_after_given_one_are_received_oldest_first(pair):
+    do_cached_client, ds_cached_client = pair
+    names = [_events_name(ts) for ts in (1.0, 3.0, 2.0)]
+    for name in names:
+        DriveP2PConnection(do_cached_client).send(
+            DS, name, name.encode(), MessageKind.FILE_EVENTS
+        )
     p2p = DriveP2PConnection(ds_cached_client)
-    listed = p2p.outbox_message_metadatas(DO, since_timestamp=None)
-    assert [m["file_name"] for m in listed] == [name]
-    assert p2p.fetch_message(listed[0]["file_id"]) == b"results"
-    assert p2p.outbox_messages(DO, since_timestamp=None) == [b"results"]
+
+    received = p2p.receive(DO, MessageKind.FILE_EVENTS, after=names[0])
+    assert [(m.msg_id, m.data) for m in received] == [
+        (names[2], names[2].encode()),
+        (names[1], names[1].encode()),
+    ]
 
 
-def test_a_p2p_copy_for_another_thread_reads_the_same_outbox(pair):
+def test_processed_outbox_message_stays_in_outbox(pair):
     do_cached_client, ds_cached_client = pair
     DriveP2PConnection(do_cached_client).send(
         DS, _events_name(1.0), b"results", MessageKind.FILE_EVENTS
     )
     p2p = DriveP2PConnection(ds_cached_client)
-    [listed] = p2p.outbox_message_metadatas(DO, since_timestamp=None)
+
+    [message] = p2p.receive(DO, MessageKind.FILE_EVENTS)
+    p2p.mark_processed(message)
+    p2p.mark_all_processed([message])
+    assert p2p.receive(DO, MessageKind.FILE_EVENTS) == [message]
+
+
+def test_receiving_from_peer_without_outbox_returns_nothing(pair):
+    do_cached_client, _ = pair
+    p2p = DriveP2PConnection(do_cached_client)
+    assert p2p.receive(DS, MessageKind.FILE_EVENTS) == []
+
+
+def test_a_p2p_copy_for_another_thread_reads_the_same_outbox(pair):
+    do_cached_client, _ = pair
+    p2p = DriveP2PConnection(do_cached_client)
+    p2p.send(DS, _events_name(1.0), b"results", MessageKind.FILE_EVENTS)
+    [listed] = p2p.own_outbox_message_metadatas(DS)
 
     copy = p2p.clone_for_thread()
-    assert copy._cached_client is not ds_cached_client
-    assert copy.fetch_message(listed["file_id"]) == b"results"
+    assert copy._cached_client is not do_cached_client
+    assert copy.fetch_message(listed["id"]) == b"results"
 
 
 def test_an_unknown_message_kind_is_refused(pair):
@@ -345,16 +382,6 @@ def test_an_unknown_message_kind_is_refused(pair):
 def test_drive_never_has_sends_waiting_for_confirmation(pair):
     do_cached_client, _ = pair
     assert DriveP2PConnection(do_cached_client).delivered() == []
-
-
-def test_receiving_file_events_through_p2p_is_not_built_yet(pair):
-    _, ds_cached_client = pair
-    p2p = DriveP2PConnection(ds_cached_client)
-    message = RawMessage(sender=DO, msg_id="m", kind=MessageKind.FILE_EVENTS, data=b"")
-    with pytest.raises(NotImplementedError):
-        p2p.receive(DO, MessageKind.FILE_EVENTS)
-    with pytest.raises(NotImplementedError):
-        p2p.mark_processed(message)
 
 
 # -- OwnerStoreConnection ---------------------------------------------------------
@@ -656,18 +683,39 @@ def test_the_router_marks_handled_messages_processed_through_p2p():
     message = RawMessage(
         sender=DS, msg_id="m", kind=MessageKind.PROPOSED_CHANGES, data=b""
     )
-    router.owner_mark_all_processed([message])
+    router.mark_all_processed([message])
     p2p.mark_all_processed.assert_called_once_with([message])
 
 
 def test_the_router_reads_the_outbox_through_p2p():
     router, p2p = _router_with_mock_p2p()
-    p2p.outbox_messages.return_value = []
-    p2p.outbox_message_metadatas.return_value = []
-    assert router.watcher_get_events_messages(DO, 5.0) == []
-    assert router.watcher_get_outbox_file_metadatas(DO, 5.0) == []
-    p2p.outbox_messages.assert_called_once_with(DO, 5.0)
-    p2p.outbox_message_metadatas.assert_called_once_with(DO, 5.0)
+    p2p.receive.return_value = []
+    assert router.watcher_receive_events_messages(DO, after="m") == []
+    p2p.receive.assert_called_once_with(DO, MessageKind.FILE_EVENTS, after="m")
+
+
+def test_the_router_skips_unreadable_events_message_and_returns_the_rest():
+    router, p2p = _router_with_mock_p2p()
+    events = FileChangeEventsMessage(events=[])
+    # The router's store knows DS only, so a message from a stranger is unreadable.
+    unreadable = RawMessage(
+        sender="stranger@example.com",
+        msg_id="bad",
+        kind=MessageKind.FILE_EVENTS,
+        data=events.as_compressed_data(),
+    )
+    readable = RawMessage(
+        sender=DS,
+        msg_id="good",
+        kind=MessageKind.FILE_EVENTS,
+        data=events.as_compressed_data(),
+    )
+    p2p.receive.return_value = [unreadable, readable]
+
+    with pytest.warns(UserWarning, match="Skipped an outbox message of stranger"):
+        pairs = router.watcher_receive_events_messages(DS)
+
+    assert [(raw.msg_id, message) for raw, message in pairs] == [("good", events)]
 
 
 def test_the_router_holds_no_drive_specific_code():

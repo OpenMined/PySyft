@@ -14,6 +14,7 @@ from syft.sync.connections.drive.gdrive_retry import (
     execute_with_retries,
     raise_unavailable,
 )
+from syft.sync.events.file_change_event import FileChangeEventsMessageFileName
 from syft.sync.messages.proposed_filechange import FileNameParseError, MessageFileName
 from syft.sync.connections.exceptions import ConnectionUnavailableError
 from syft.sync.connections.protocols import P2PConnection
@@ -24,7 +25,7 @@ DOWNLOAD_WORKERS = 10
 
 
 def _download_or_skip(client: GDriveClient, listed: dict) -> bytes | None:
-    """The bytes of one listed inbox file, or None with a warning when this
+    """The bytes of one listed message file, or None with a warning when this
     file cannot be downloaded, for example because it was deleted.
 
     Raises:
@@ -32,22 +33,13 @@ def _download_or_skip(client: GDriveClient, listed: dict) -> bytes | None:
     """
     name = listed["file_name"]
     try:
-        with raise_unavailable(f"Drive is unreachable; inbox message {name} waits"):
+        with raise_unavailable(f"Drive is unreachable; message {name} waits"):
             return client.download_file(listed["file_id"])
     except ConnectionUnavailableError:
         raise
     except Exception as e:
-        warnings.warn(f"Skipped inbox message {name}: download failed: {e!r}")
+        warnings.warn(f"Skipped message {name}: download failed: {e!r}")
         return None
-
-
-def _require_inbox_kind(kind: MessageKind) -> None:
-    """Only the inbox is read through ``receive`` so far."""
-    if kind is not MessageKind.PROPOSED_CHANGES:
-        raise NotImplementedError(
-            f"Messages of kind {kind!r} are still read through the outbox "
-            "methods; they move to receive with send-and-forget."
-        )
 
 
 def _valid_message_names(file_metadatas: list[dict]) -> list[MessageFileName]:
@@ -67,11 +59,12 @@ class DriveP2PConnection(P2PConnection):
     outbox. ``msg_id`` is the file name. A written file is ``DELIVERED``: it
     waits in the folder until the peer reads it.
 
-    The inbox is read through ``receive`` and a processed message is archived.
-    The outbox is still read through the Drive-only methods below, from a
-    timestamp cursor, and kept: the DS rebuilds a lost cache by reading it
-    again. It moves to ``receive`` with send-and-forget, once the DS keeps what
-    it received in its own storage.
+    Both are read through ``receive``. A processed inbox message is archived.
+    The outbox keeps every message, so the DS rebuilds a lost cache by reading
+    it again, and ``receive`` lists only the messages after ``after``. That
+    ends with send-and-forget, once the DS keeps what it received in its own
+    storage. The DO still compacts its own outbox through the Drive-only
+    methods below.
     """
 
     def __init__(self, cached_client: DriveCachedClient):
@@ -100,19 +93,30 @@ class DriveP2PConnection(P2PConnection):
         return []
 
     def receive(
-        self, peer: str, kind: MessageKind, max_messages: int | None = None
+        self,
+        peer: str,
+        kind: MessageKind,
+        after: str | None = None,
+        max_messages: int | None = None,
     ) -> list[RawMessage]:
-        """One listing for the whole inbox, then the files download in parallel.
+        """One listing of the folder, then the files download in parallel.
+
+        Proposed changes come from my inbox, which archives processed messages,
+        so ``after`` is not needed there. File events come from ``peer``'s
+        outbox, which keeps them, so only those after ``after`` are listed.
 
         A file that cannot be downloaded is left out with a warning, so it does
         not hold back the others.
 
         Raises:
             ConnectionUnavailableError: when Drive cannot be reached. Every
-                message stays in the inbox.
+                message stays in its folder.
         """
-        _require_inbox_kind(kind)
-        listed = self._list_inbox(peer)[:max_messages]
+        if kind is MessageKind.PROPOSED_CHANGES:
+            listed = self._list_inbox(peer)
+        else:
+            listed = self._list_outbox(peer, after)
+        listed = listed[:max_messages]
         contents = self._download_all(listed)
         return [
             RawMessage(
@@ -144,18 +148,20 @@ class DriveP2PConnection(P2PConnection):
             return list(pool.map(download, listed))
 
     def mark_processed(self, message: RawMessage) -> None:
+        # The outbox keeps file events; the DS passes ``after`` instead.
+        if message.kind is MessageKind.FILE_EVENTS:
+            return
         # The archive folder is named after ``message.sender``, which receive
         # set from the inbox folder, never from the message body.
-        _require_inbox_kind(message.kind)
         execute_with_retries(self._archive_request(message.handle, message.sender))
 
     def mark_all_processed(self, messages: list[RawMessage]) -> None:
-        """Archive every message, up to ``DRIVE_BATCH_SIZE`` moves per request.
+        """Archive every inbox message, up to ``DRIVE_BATCH_SIZE`` moves per
+        request. File events stay in the outbox.
 
         A move that fails is warned about and its file stays in the inbox.
         """
-        for message in messages:
-            _require_inbox_kind(message.kind)
+        messages = [m for m in messages if m.kind is MessageKind.PROPOSED_CHANGES]
 
         def callback(request_id, response, exception):
             if exception is not None:
@@ -171,42 +177,6 @@ class DriveP2PConnection(P2PConnection):
                     self._archive_request(m.handle, m.sender), request_id=m.handle
                 )
             batch_execute_with_retries(batch)
-
-    def outbox_messages(self, peer: str, since_timestamp: float | None) -> list[bytes]:
-        """The messages in ``peer``'s outbox to me, newer than ``since_timestamp``."""
-        return [
-            self._cached_client.client.download_file(m["file_id"])
-            for m in self.outbox_message_metadatas(peer, since_timestamp)
-        ]
-
-    def outbox_message_metadatas(
-        self, peer: str, since_timestamp: float | None
-    ) -> list[dict]:
-        """Like ``outbox_messages``, without downloading: each entry's
-        ``file_id`` is the handle to ``fetch_message`` it with."""
-        folder_id = self._cached_client.get_peer_datasite_outbox_id(peer)
-        if folder_id is None:
-            return []
-
-        file_metadatas = self._cached_client.get_file_metadatas_from_folder(
-            folder_id, since_timestamp=since_timestamp
-        )
-        valid_fname_objs = valid_events_from_file_metadatas(file_metadatas)
-        name_to_id = {f["name"]: f["id"] for f in file_metadatas}
-
-        result = []
-        for fname_obj in sorted(valid_fname_objs, key=lambda x: x.timestamp):
-            if since_timestamp is None or fname_obj.timestamp > since_timestamp:
-                file_name = fname_obj.as_string()
-                if file_name in name_to_id:
-                    result.append(
-                        {
-                            "file_id": name_to_id[file_name],
-                            "file_name": file_name,
-                            "timestamp": fname_obj.timestamp,
-                        }
-                    )
-        return result
 
     def fetch_message(self, handle: str) -> bytes:
         return self._cached_client.client.download_file(handle)
@@ -242,6 +212,31 @@ class DriveP2PConnection(P2PConnection):
                 _valid_message_names(file_metadatas),
                 key=lambda x: x.submitted_timestamp,
             )
+        ]
+
+    def _list_outbox(self, peer: str, after: str | None) -> list[dict]:
+        """The messages in ``peer``'s outbox to me sent after the message
+        ``after``, oldest first, each with ``file_id`` and ``file_name``,
+        without downloading them. An outbox whose folder is not found holds
+        none."""
+        folder_id = self._cached_client.get_peer_datasite_outbox_id(peer)
+        if folder_id is None:
+            return []
+        since = None
+        if after is not None:
+            since = FileChangeEventsMessageFileName.from_string(after).timestamp
+        file_metadatas = self._cached_client.get_file_metadatas_from_folder(
+            folder_id, since_timestamp=since
+        )
+        name_to_id = {f["name"]: f["id"] for f in file_metadatas}
+        names = sorted(
+            valid_events_from_file_metadatas(file_metadatas), key=lambda x: x.timestamp
+        )
+        return [
+            {"file_id": name_to_id[name.as_string()], "file_name": name.as_string()}
+            for name in names
+            if (since is None or name.timestamp > since)
+            and name.as_string() in name_to_id
         ]
 
     def _archive_request(self, file_id: str, sender: str):

@@ -129,8 +129,8 @@ def _raw_proposal_version(do_manager, ds_email: str) -> str:
 def _raw_outbox_versions(ds_manager, do_email: str) -> list[str]:
     """The version fields of the DO's outbox blobs for us, unparsed."""
     p2p = ds_manager._connection_router.connections.p2p_con
-    raw_list = p2p.outbox_messages(do_email, None)
-    return [_wire_version(ds_manager, do_email, raw) for raw in raw_list]
+    received = p2p.receive(do_email, MessageKind.FILE_EVENTS)
+    return [_wire_version(ds_manager, do_email, m.data) for m in received]
 
 
 def test_a_v2_proposal_for_a_protocol0_peer_downgrades_on_the_wire(

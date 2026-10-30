@@ -6,6 +6,7 @@ events they don't already have locally, avoiding redundant re-downloads on resta
 
 from pathlib import Path
 
+from syft.sync.connections.types import MessageKind
 from syft.sync.syftbox_manager import SyftboxManager
 from syft.sync.sync.collection_spec import CollectionSyncSpec
 
@@ -84,7 +85,7 @@ def test_do_incremental_sync_downloads_only_new_events():
     )
 
 
-def test_ds_incremental_sync_downloads_only_new_events():
+def test_ds_incremental_sync_downloads_only_new_events(monkeypatch):
     """Pre-populate cache with first n events, create new manager with same cache dir,
     sync with n+m in outbox, verify only m new events are downloaded."""
     import time
@@ -108,10 +109,7 @@ def test_ds_incremental_sync_downloads_only_new_events():
     initial_cache_count = len(ds_cache.events_connection)
     assert initial_cache_count == 3
 
-    # Verify last_event_timestamp_per_peer is populated
-    assert len(ds_cache.last_event_timestamp_per_peer) > 0, (
-        "last_event_timestamp_per_peer should be populated"
-    )
+    assert do_manager.email in ds_cache.last_msg_id_per_peer
 
     # Add 2 more events to outbox
     time.sleep(0.01)  # Ensure new events have later timestamps
@@ -129,15 +127,29 @@ def test_ds_incremental_sync_downloads_only_new_events():
     assert len(new_cache.events_connection) == initial_cache_count, (
         f"New manager cache should have loaded {initial_cache_count} events from disk"
     )
-    assert len(new_cache.last_event_timestamp_per_peer) > 0, (
-        "last_event_timestamp_per_peer should be pre-populated from disk cache"
-    )
+    assert (
+        new_cache.last_msg_id_per_peer[do_manager.email]
+        == ds_cache.last_msg_id_per_peer[do_manager.email]
+    ), "last_msg_id_per_peer should be pre-populated from disk cache"
     assert len(new_cache.file_hashes) == 3, (
         "file_hashes should be pre-populated from disk cache"
     )
 
     # Sync the new manager - should only download the 2 new events
+    p2p = new_ds_manager._connection_router.connections.p2p_con
+    original_receive = p2p.receive
+    received = []
+
+    def counted_receive(*args, **kwargs):
+        messages = original_receive(*args, **kwargs)
+        received.extend(m for m in messages if m.kind is MessageKind.FILE_EVENTS)
+        return messages
+
+    monkeypatch.setattr(p2p, "receive", counted_receive)
     new_ds_manager.sync()
+    assert len(received) == 2, (
+        f"Should receive only 2 new messages, got {len(received)}"
+    )
 
     # Verify total events in cache
     assert len(new_cache.events_connection) == 5, (
