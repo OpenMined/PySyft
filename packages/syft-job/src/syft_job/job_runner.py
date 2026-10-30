@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import List, Set
 
 import psutil
+from syft_permissions.spec.ruleset import PERMISSION_FILE_NAME
 
 from . import __version__
 from .client import JobClient
@@ -22,10 +23,10 @@ from .policies import (
     OUTPUT_RECIPIENTS_FILENAME,
     OUTPUTS_WITHHELD_FILENAME,
     POLICY_ERROR_FILENAME,
+    ApiResolver,
     JobPolicies,
     PolicyEnv,
     PolicyKind,
-    ApiResolver,
     PolicyResolutionError,
     PolicyResult,
     PolicyRunner,
@@ -105,6 +106,9 @@ NO_APPROVED_HASH_REASON = (
     "approved without a record of the approved submission; review and approve it again"
 )
 CHANGED_SUBMISSION_REASON = "the submission changed after it was approved"
+# Why the runner failed a job for its outputs. No release names it, so only
+# the DO reads it.
+OUTPUTS_ERROR_FILENAME = "outputs_error.txt"
 
 logger = logging.getLogger(__name__)
 
@@ -614,7 +618,8 @@ class SyftJobRunner:
             self._capture_traceback(ref, returncode, run_dir / "code")
             returncode = self._run_output_policy(ref, run_dir, policies, returncode)
 
-            self._move_outputs_to_staging(ref, run_dir)
+            skipped = self._copy_outputs_to_staging(ref, run_dir)
+            returncode = self._fail_on_output_permission_files(ref, skipped, returncode)
 
             self._finalize(ref, returncode)
             self._report_result(ref, returncode)
@@ -740,22 +745,66 @@ class SyftJobRunner:
         state.return_code = None
         self.manager.write_state(ref, state)
 
-    def _move_outputs_to_staging(self, ref: JobRef, run_dir: Path) -> None:
-        """Move the outputs from the run copy to staging/, to wait for a release."""
-        staging_dir = self.manager.staging_dir(ref)
-        staging_dir.mkdir(parents=True, exist_ok=True)
-        shutil.move(str(run_dir / "code" / "outputs"), str(staging_dir / "outputs"))
+    def _fail_on_output_permission_files(
+        self, ref: JobRef, permission_files: list[str], returncode: int
+    ) -> int:
+        """Fail the job when it wrote a permission file into outputs/.
+
+        In staging/, that file would decide who reads the outputs, so the job
+        could release them itself. The copy to staging/ skips the file, the job
+        shares its outputs with nobody, and the reason goes to staging/ for the
+        DO. Returns the exit code to record.
+        """
+        if not permission_files:
+            return returncode
+        reason = (
+            f"Job {ref.job_name} wrote permission files into outputs/: "
+            f"{', '.join(permission_files)}. The job failed and shares its "
+            f"outputs with nobody."
+        )
+        logger.error(reason)
+        self._write_staged(ref, OUTPUTS_ERROR_FILENAME, f"{reason}\n")
+        self._write_recipients(ref, [])
+        return returncode or 1
+
+    def _copy_outputs_to_staging(self, ref: JobRef, run_dir: Path) -> list[str]:
+        """Copy the outputs from the run copy to staging/, to wait for a release.
+
+        The copy follows symlinks, so staging/ holds only real files. It skips
+        each permission file, and returns their paths in outputs/.
+        """
+        run_outputs = run_dir / "code" / "outputs"
+        skipped: list[str] = []
+
+        def skip_permission_files(folder: str, names: list[str]) -> set[str]:
+            if PERMISSION_FILE_NAME not in names:
+                return set()
+            relative = (Path(folder) / PERMISSION_FILE_NAME).relative_to(run_outputs)
+            skipped.append(relative.as_posix())
+            return {PERMISSION_FILE_NAME}
+
+        shutil.copytree(
+            run_outputs,
+            self.manager.staging_dir(ref) / "outputs",
+            ignore=skip_permission_files,
+        )
+        return sorted(skipped)
 
     def _prepare_outputs_dir(self, ref: JobRef, run_dir: Path) -> None:
         """Create outputs/ in the run copy, and remove the outputs of a previous run.
 
         The job writes its outputs in the run copy, outside the SyftBox, so no
-        sync can send them to the submitter before they are released.
+        sync can send them to the submitter before they are released. The
+        recipients and the outputs error of a previous run go too, or this run
+        inherits them.
         """
         # Create outputs/ inside code/ dir so job scripts can write there (cwd is code/)
         (run_dir / "code" / "outputs").mkdir(parents=True, exist_ok=True)
 
         self.manager.remove_outputs(ref)
+        staging_dir = self.manager.staging_dir(ref)
+        for filename in (OUTPUT_RECIPIENTS_FILENAME, OUTPUTS_ERROR_FILENAME):
+            (staging_dir / filename).unlink(missing_ok=True)
 
     def _replace_ds_folder_reads(self) -> None:
         """Replace the read grant on a whole DS review folder with the named files.
