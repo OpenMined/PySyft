@@ -100,58 +100,7 @@ class DriveCollections(Collections):
     def reset_caches(self) -> None:
         self.collection_folder_id_cache.clear()
 
-    # -- Collections -----------------------------------------------------------
-
     def create(self, prefix: str, tag: str, content_hash: str, owner_email: str) -> str:
-        return self.owner_create_collection_folder(
-            prefix, tag, content_hash, owner_email
-        )
-
-    def mark_shared_with_any(self, prefix: str, tag: str, content_hash: str) -> None:
-        self.owner_tag_collection_as_any(prefix, tag, content_hash)
-
-    def grant_read(
-        self, prefix: str, tag: str, content_hash: str, users: list[str]
-    ) -> None:
-        self.owner_share_collection(prefix, tag, content_hash, users)
-
-    def upload(
-        self, prefix: str, tag: str, content_hash: str, files: dict[str, bytes]
-    ) -> None:
-        self.owner_upload_collection_files(prefix, tag, content_hash, files)
-
-    def list_mine_with_permissions(self, prefix: str) -> list[FileCollection]:
-        return self.owner_list_all_collections_with_permissions(prefix)
-
-    def list_mine(self, prefix: str) -> list[str]:
-        return self.owner_list_collections(prefix)
-
-    def delete(self, prefix: str, tag: str) -> None:
-        self.owner_delete_collection(prefix, tag)
-
-    def list_shared_with_me(self, prefix: str) -> list[dict]:
-        return self.watcher_list_collections(prefix)
-
-    def list_files(
-        self, prefix: str, tag: str, content_hash: str, owner_email: str
-    ) -> list[dict]:
-        return self.watcher_get_collection_file_metadatas(
-            prefix, tag, content_hash, owner_email
-        )
-
-    def fetch_file(self, handle: str) -> bytes:
-        return self.watcher_download_collection_file(handle)
-
-    def download(
-        self, prefix: str, tag: str, content_hash: str, owner_email: str
-    ) -> dict[str, bytes]:
-        return self.watcher_download_collection(prefix, tag, content_hash, owner_email)
-
-    # -- Drive -----------------------------------------------------------------
-
-    def owner_create_collection_folder(
-        self, prefix: str, tag: str, content_hash: str, owner_email: str
-    ) -> str:
         """Create /SyftBox/{prefix}_{tag}_{hash} folder."""
         folder_name = CollectionFolder(
             prefix=prefix, tag=tag, content_hash=content_hash
@@ -176,9 +125,7 @@ class DriveCollections(Collections):
         self.collection_folder_id_cache[folder_name] = folder_id
         return folder_id
 
-    def owner_tag_collection_as_any(
-        self, prefix: str, tag: str, content_hash: str
-    ) -> None:
+    def mark_shared_with_any(self, prefix: str, tag: str, content_hash: str) -> None:
         """Mark collection as shared with 'any' via appProperties."""
         folder_id = self._get_collection_folder_id(prefix, tag, content_hash)
         execute_with_retries(
@@ -188,7 +135,7 @@ class DriveCollections(Collections):
             )
         )
 
-    def owner_share_collection(
+    def grant_read(
         self, prefix: str, tag: str, content_hash: str, users: list[str]
     ) -> None:
         """Share collection folder with specific users via batch API."""
@@ -197,7 +144,7 @@ class DriveCollections(Collections):
         folder_id = self._get_collection_folder_id(prefix, tag, content_hash)
         self._layout.client.batch_add_permissions(folder_id, users)
 
-    def owner_upload_collection_files(
+    def upload(
         self, prefix: str, tag: str, content_hash: str, files: dict[str, bytes]
     ) -> None:
         """Upload files to a collection folder."""
@@ -210,7 +157,7 @@ class DriveCollections(Collections):
             file_metadata = {"name": file_name, "parents": [folder_id]}
             self._layout.client.create_syft_file(file_metadata, file_payload)
 
-    def owner_list_collections(self, prefix: str) -> list[str]:
+    def list_mine(self, prefix: str) -> list[str]:
         """List collections created by DO (owned by me). Returns list of tags.
 
         A tag appears once however many layouts hold it.
@@ -230,7 +177,7 @@ class DriveCollections(Collections):
                 result.append(cf.tag)
         return result
 
-    def owner_list_all_collections_with_permissions(
+    def list_mine_with_permissions(
         self,
         prefix: str,
     ) -> list[FileCollection]:
@@ -263,9 +210,9 @@ class DriveCollections(Collections):
 
         return collections
 
-    def owner_delete_collection(self, prefix: str, tag: str) -> None:
+    def delete(self, prefix: str, tag: str) -> None:
         """Delete every layout of ``tag`` published under ``prefix``."""
-        collections = self.owner_list_all_collections_with_permissions(prefix)
+        collections = self.list_mine_with_permissions(prefix)
         for c in collections:
             if c.tag == tag:
                 self._layout.client.delete_file_by_id(c.folder_id)
@@ -277,7 +224,7 @@ class DriveCollections(Collections):
                 ).folder_name
                 self.collection_folder_id_cache.pop(folder_name, None)
 
-    def watcher_list_collections(self, prefix: str) -> list[dict]:
+    def list_shared_with_me(self, prefix: str) -> list[dict]:
         """List collections shared with DS (not owned by me), one per layout.
 
         Returns list of dicts with keys: owner_email, tag, content_hash, variant
@@ -304,7 +251,7 @@ class DriveCollections(Collections):
             )
         return result
 
-    def watcher_download_collection(
+    def download(
         self, prefix: str, tag: str, content_hash: str, owner_email: str
     ) -> dict[str, bytes]:
         """Download all files from a collection."""
@@ -328,7 +275,7 @@ class DriveCollections(Collections):
 
         return files
 
-    def watcher_get_collection_file_metadatas(
+    def list_files(
         self, prefix: str, tag: str, content_hash: str, owner_email: str
     ) -> List[Dict]:
         """Get file metadata from a collection without downloading."""
@@ -345,9 +292,9 @@ class DriveCollections(Collections):
         file_metadatas = self._layout.get_file_metadatas_from_folder(folder_id)
         return [{"file_id": f["id"], "file_name": f["name"]} for f in file_metadatas]
 
-    def watcher_download_collection_file(self, file_id: str) -> bytes:
+    def fetch_file(self, handle: str) -> bytes:
         """Download a single file from a collection."""
-        return self._layout.client.download_file(file_id)
+        return self._layout.client.download_file(handle)
 
     def _get_collection_folder_id(
         self, prefix: str, tag: str, content_hash: str

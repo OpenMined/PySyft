@@ -1,4 +1,4 @@
-"""owner_list_all_collections_with_permissions skips only bad names.
+"""Collections.list_mine_with_permissions on Drive skips only bad names.
 
 The Drive query matches a name prefix, so another tool can return a folder that
 this client cannot parse. The listing skips that folder. Every other failure is a
@@ -28,7 +28,7 @@ def _conn(files):
 
 def test_a_valid_collection_is_returned():
     conn = _conn([{"id": "f1", "name": VALID, "appProperties": {}}])
-    got = conn.as_transport().collections.owner_list_all_collections_with_permissions(
+    got = conn.as_transport().collections.list_mine_with_permissions(
         DATASET_COLLECTION_PREFIX
     )
     assert [(c.folder_id, c.tag, c.content_hash) for c in got] == [
@@ -47,7 +47,7 @@ def test_the_any_permission_flag_comes_from_app_properties():
             }
         ]
     )
-    got = conn.as_transport().collections.owner_list_all_collections_with_permissions(
+    got = conn.as_transport().collections.list_mine_with_permissions(
         DATASET_COLLECTION_PREFIX
     )
     assert got[0].has_any_permission is True
@@ -60,7 +60,7 @@ def test_a_name_the_client_cannot_parse_is_skipped():
             {"id": "f1", "name": VALID, "appProperties": {}},
         ]
     )
-    got = conn.as_transport().collections.owner_list_all_collections_with_permissions(
+    got = conn.as_transport().collections.list_mine_with_permissions(
         DATASET_COLLECTION_PREFIX
     )
     assert [c.folder_id for c in got] == ["f1"]
@@ -71,6 +71,6 @@ def test_a_missing_name_field_raises():
     # without a message.
     conn = _conn([{"id": "f1", "appProperties": {}}])
     with pytest.raises(KeyError):
-        conn.as_transport().collections.owner_list_all_collections_with_permissions(
+        conn.as_transport().collections.list_mine_with_permissions(
             DATASET_COLLECTION_PREFIX
         )
