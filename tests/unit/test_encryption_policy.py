@@ -9,7 +9,7 @@ import json
 import pytest
 from pydantic import ValidationError
 
-from syft.sync.connections.drive.drive_peering import DrivePeering
+from syft.sync.connections.drive.drive_peering import DrivePeeringConnection
 from syft.sync.connections.connection_router import ConnectionRouter
 from syft.sync.connections.drive import mock_drive_service
 from syft.sync.encryption_policy import (
@@ -173,11 +173,13 @@ def test_missing_version_file_created_with_own_policy():
     a_cached_client, b_cached_client = mock_drive_service.pair_with_mock_service(
         "a@example.com", "b@example.com"
     )
-    DrivePeering(a_cached_client).grant_peer_info_read(
+    DrivePeeringConnection(a_cached_client).grant_peer_info_read(
         "b@example.com", _peer_info(REQUIRED)
     )
     assert (
-        DrivePeering(b_cached_client).read_peer_info("a@example.com").encryption_policy
+        DrivePeeringConnection(b_cached_client)
+        .read_peer_info("a@example.com")
+        .encryption_policy
         == REQUIRED
     )
 

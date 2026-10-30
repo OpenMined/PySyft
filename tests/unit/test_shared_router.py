@@ -7,7 +7,7 @@ import pytest
 
 from syft.sync.connections.base_connection import ConnectionConfig
 from syft.sync.connections.drive.drive_connections import (
-    DriveWatcherStore,
+    DriveWatcherStoreConnection,
     drive_cached_client_of,
 )
 from syft.sync.connections.drive.drive_cached_client import DriveCachedClient
@@ -15,7 +15,7 @@ from syft.sync.connections.drive.grdrive_config import GdriveConnectionConfig
 from syft.sync.connections.drive.mock_drive_service import pair_with_mock_service
 from syft.sync.syftbox_manager import SyftboxManager, SyftboxManagerConfig
 from syft.sync.transport.config import TransportConfig
-from syft.sync.transport.protocols import OwnerStore
+from syft.sync.transport.protocols import OwnerStoreConnection
 
 
 def _config_with_both_roles() -> SyftboxManagerConfig:
@@ -55,7 +55,7 @@ def _drive_cached_clients(transport) -> list[DriveCachedClient]:
     return [
         component._cached_client
         for component in transport.components()
-        if not isinstance(component, DriveWatcherStore)
+        if not isinstance(component, DriveWatcherStoreConnection)
     ]
 
 
@@ -89,7 +89,9 @@ def test_every_drive_component_shares_one_cached_client():
 
 def test_drive_cached_client_of_transport_not_on_drive_raises():
     transport = SyftboxManager._drive_transport(_mock_cached_client("do@example.com"))
-    transport = transport.model_copy(update={"owner_store": Mock(spec=OwnerStore)})
+    transport = transport.model_copy(
+        update={"owner_store": Mock(spec=OwnerStoreConnection)}
+    )
 
     with pytest.raises(TypeError, match="not built on Google Drive"):
         drive_cached_client_of(transport)

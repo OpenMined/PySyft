@@ -1,26 +1,26 @@
 """Backend-neutral transport contracts for the syft sync engine."""
 
 from syft.sync.transport.protocols import (
-    Collections,
-    OwnerStore,
+    CollectionsConnection,
+    OwnerStoreConnection,
     P2PConnection,
-    Peering,
+    PeeringConnection,
     Transport,
-    WatcherStore,
+    WatcherStoreConnection,
 )
 from syft.sync.transport.exceptions import TransportError, TransportUnavailableError
 from syft.sync.transport.types import MessageKind, RawMessage, SendStatus
 
 __all__ = [
-    "Collections",
+    "CollectionsConnection",
     "MessageKind",
-    "OwnerStore",
+    "OwnerStoreConnection",
     "P2PConnection",
-    "Peering",
+    "PeeringConnection",
     "RawMessage",
     "SendStatus",
     "Transport",
     "TransportError",
     "TransportUnavailableError",
-    "WatcherStore",
+    "WatcherStoreConnection",
 ]

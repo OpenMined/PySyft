@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from syft.sync.connections.drive.drive_peering import DrivePeering
+from syft.sync.connections.drive.drive_peering import DrivePeeringConnection
 from syft.sync.connections.connection_router import ConnectionRouter
 from syft.sync.connections.drive.drive_cached_client import DriveCachedClient
 from syft.sync.encryption_policy import EncryptionPolicy
@@ -492,7 +492,7 @@ def _peer_router(ds_manager, do_manager, email: str) -> ConnectionRouter:
             ds_manager._connection_router.transport
         ).client.drive_service,
     )
-    DrivePeering(cached_client).open_channels(do_manager.email)
+    DrivePeeringConnection(cached_client).open_channels(do_manager.email)
     _add_known_peer(do_manager, email)
     return ConnectionRouter(
         transport=SyftboxManager._drive_transport(cached_client),

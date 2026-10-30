@@ -1,10 +1,11 @@
 """The jobs a transport backend does, one abstract class each.
 
-``P2PConnection`` carries messages between peers, ``OwnerStore`` and
-``WatcherStore`` hold each role's own storage, ``Collections`` shares datasets,
-and ``Peering`` finds and trusts peers. A backend implements the classes it
-can. The sync layer above never sees backend ids: it passes back the messages
-and handles a backend returns.
+``P2PConnection`` carries messages between peers, ``OwnerStoreConnection`` and
+``WatcherStoreConnection`` hold each role's own storage,
+``CollectionsConnection`` shares datasets, and ``PeeringConnection`` finds and
+trusts peers. A backend implements the classes it can. The sync layer above
+never sees backend ids: it passes back the messages and handles a backend
+returns.
 
 Each class keeps its abstract methods to the few a backend must write. Methods
 that only combine those are ordinary methods on the base class, which a
@@ -91,7 +92,7 @@ class P2PConnection(TransportComponent, ABC):
             self.mark_processed(message)
 
 
-class OwnerStore(TransportComponent, ABC):
+class OwnerStoreConnection(TransportComponent, ABC):
     """The data owner's own storage: event log, checkpoints, rolling state.
 
     Only the owner writes and reads it, and it is never shared.
@@ -172,7 +173,7 @@ class OwnerStore(TransportComponent, ABC):
         how many files and folders went."""
 
 
-class WatcherStore(TransportComponent, ABC):
+class WatcherStoreConnection(TransportComponent, ABC):
     """The data scientist's memory of what each owner sent it.
 
     One area per owner, in the scientist's own storage, never shared, so it
@@ -203,7 +204,7 @@ class WatcherStore(TransportComponent, ABC):
         everything again."""
 
 
-class Collections(TransportComponent, ABC):
+class CollectionsConnection(TransportComponent, ABC):
     """Sets of files a data owner shares with named readers (datasets)."""
 
     @abstractmethod
@@ -266,7 +267,7 @@ class Collections(TransportComponent, ABC):
         return {f["file_name"]: self.fetch_file(f["file_id"]) for f in files}
 
 
-class Peering(TransportComponent, ABC):
+class PeeringConnection(TransportComponent, ABC):
     """Finding and trusting a peer: identity, channels, peer list, published
     documents."""
 
@@ -358,10 +359,10 @@ class Transport(BaseModel):
     model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
 
     p2p: P2PConnection
-    owner_store: OwnerStore
-    watcher_store: WatcherStore
-    collections: Collections
-    peering: Peering
+    owner_store: OwnerStoreConnection
+    watcher_store: WatcherStoreConnection
+    collections: CollectionsConnection
+    peering: PeeringConnection
     # Recorded on each Peer so a peer list says which backend reaches it.
     platform: BasePlatform
 

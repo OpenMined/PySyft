@@ -16,7 +16,7 @@ from unittest.mock import Mock, patch
 
 from syft.sync.connections.drive.gdrive_client import GDriveClient
 from syft.sync.connections.drive.drive_cached_client import DriveCachedClient
-from syft.sync.connections.drive.drive_peering import DrivePeering
+from syft.sync.connections.drive.drive_peering import DrivePeeringConnection
 from syft.sync.peers.peer import PeerState
 from syft.sync.platforms.gdrive_files_platform import GdriveFilesPlatform
 from syft.sync.transport.naming import PEERS_META_KEY, SYFT_PEERS_VERSION
@@ -26,7 +26,7 @@ PEER = "bob@example.com"
 
 def _peering(peers_data):
     cached_client = DriveCachedClient(GDriveClient(Mock(), Mock), "alice@example.com")
-    peering = DrivePeering(cached_client)
+    peering = DrivePeeringConnection(cached_client)
     peering._peers_json_cache = dict(peers_data)
     return peering
 
@@ -43,7 +43,9 @@ def _router(peering):
 def test_a_write_stamps_the_reserved_entry():
     peering = _peering({PEER: {"state": "accepted"}})
     with (
-        patch.object(DrivePeering, "_get_peers_file_id", return_value="file-id"),
+        patch.object(
+            DrivePeeringConnection, "_get_peers_file_id", return_value="file-id"
+        ),
         patch.object(
             DriveCachedClient, "get_syftbox_folder_id", return_value="folder-id"
         ),

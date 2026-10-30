@@ -7,7 +7,7 @@ earlier version are reused so a peer that has not upgraded still finds them.
 
 from unittest.mock import patch
 
-from syft.sync.connections.drive.drive_peering import DrivePeering
+from syft.sync.connections.drive.drive_peering import DrivePeeringConnection
 from syft.sync.connections.drive.gdrive_client import GOOGLE_FOLDER_MIME_TYPE
 from syft.sync.connections.drive.drive_cached_client import (
     GDRIVE_P2P_FOLDER_DATASITE_PREFIX,
@@ -104,7 +104,7 @@ def _simulate_continue_on_mismatch(manager, backing_store):
     cached_client = DriveCachedClient.from_service(email, mock_service)
 
     def read_remote(e, t):
-        return DrivePeering(cached_client).read_own_peer_info().version_info
+        return DrivePeeringConnection(cached_client).read_own_peer_info().version_info
 
     with (
         patch(

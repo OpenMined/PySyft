@@ -14,14 +14,14 @@ from syft.sync.callback_mixin import BaseModelCallbackMixin
 from syft.sync.connections.connection_router import ConnectionRouter
 from syft.sync.connections.drive import mock_drive_service
 from syft.sync.connections.drive.drive_cached_client import DriveCachedClient
-from syft.sync.connections.drive.drive_collections import DriveCollections
+from syft.sync.connections.drive.drive_collections import DriveCollectionsConnection
 from syft.sync.connections.drive.drive_connections import (
-    DriveWatcherStore,
+    DriveWatcherStoreConnection,
     drive_cached_client_of,
 )
-from syft.sync.connections.drive.drive_owner_store import DriveOwnerStore
+from syft.sync.connections.drive.drive_owner_store import DriveOwnerStoreConnection
 from syft.sync.connections.drive.drive_p2p import DriveP2PConnection
-from syft.sync.connections.drive.drive_peering import DrivePeering
+from syft.sync.connections.drive.drive_peering import DrivePeeringConnection
 from syft.sync.connections.drive.grdrive_config import GdriveConnectionConfig
 from syft.sync.events.file_change_event import (
     FileChangeEvent,
@@ -611,10 +611,10 @@ class SyftboxManager(BaseModelCallbackMixin):
         """Every transport component over one Google Drive account."""
         return Transport(
             p2p=DriveP2PConnection(cached_client),
-            owner_store=DriveOwnerStore(cached_client),
-            watcher_store=DriveWatcherStore(),
-            collections=DriveCollections(cached_client),
-            peering=DrivePeering(cached_client),
+            owner_store=DriveOwnerStoreConnection(cached_client),
+            watcher_store=DriveWatcherStoreConnection(),
+            collections=DriveCollectionsConnection(cached_client),
+            peering=DrivePeeringConnection(cached_client),
             platform=GdriveFilesPlatform(),
         )
 

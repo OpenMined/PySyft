@@ -13,7 +13,7 @@ from uuid import uuid4
 import pytest
 from googleapiclient.errors import HttpError
 
-from syft.sync.connections.drive.drive_owner_store import DriveOwnerStore
+from syft.sync.connections.drive.drive_owner_store import DriveOwnerStoreConnection
 from syft.sync.checkpoints.checkpoint import (
     CHECKPOINT_FILENAME_PREFIX,
     INCREMENTAL_CHECKPOINT_PREFIX,
@@ -753,7 +753,7 @@ def test_owner_state_is_written_by_default():
 
 def test_latest_checkpoint_read_retries_drive_error(monkeypatch):
     do_cached_client, _ = pair_with_mock_service("do@example.com", "ds@example.com")
-    store = DriveOwnerStore(do_cached_client)
+    store = DriveOwnerStoreConnection(do_cached_client)
     store.put_checkpoint("checkpoint_1.0.tar.gz", b"full")
 
     fail_next_listing(monkeypatch, CHECKPOINT_FILENAME_PREFIX)
@@ -762,7 +762,7 @@ def test_latest_checkpoint_read_retries_drive_error(monkeypatch):
 
 def test_incremental_count_retries_drive_error(monkeypatch):
     do_cached_client, _ = pair_with_mock_service("do@example.com", "ds@example.com")
-    store = DriveOwnerStore(do_cached_client)
+    store = DriveOwnerStoreConnection(do_cached_client)
     store.put_incremental("incremental_checkpoint_1_1.0.tar.gz", b"inc")
 
     fail_next_listing(monkeypatch, INCREMENTAL_CHECKPOINT_PREFIX)
@@ -771,7 +771,7 @@ def test_incremental_count_retries_drive_error(monkeypatch):
 
 def test_latest_checkpoint_download_error_raises(monkeypatch):
     do_cached_client, _ = pair_with_mock_service("do@example.com", "ds@example.com")
-    store = DriveOwnerStore(do_cached_client)
+    store = DriveOwnerStoreConnection(do_cached_client)
     store.put_checkpoint("checkpoint_1.0.tar.gz", b"full")
 
     def forbidden(self, file_id: str) -> bytes:

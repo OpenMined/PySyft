@@ -14,7 +14,7 @@ from syft.sync.connections.base_connection import FileCollection
 from syft.sync.connections.drive.gdrive_client import GOOGLE_FOLDER_MIME_TYPE
 from syft.sync.connections.drive.drive_cached_client import DriveCachedClient
 from syft.sync.connections.drive.gdrive_retry import execute_with_retries
-from syft.sync.transport.protocols import Collections
+from syft.sync.transport.protocols import CollectionsConnection
 
 
 def collection_name_query(prefix: str) -> str:
@@ -85,7 +85,7 @@ class CollectionFolder(BaseModel):
         return compute_file_hashes(files)
 
 
-class DriveCollections(Collections):
+class DriveCollectionsConnection(CollectionsConnection):
     """Collection folders in /SyftBox, shared by Drive permission."""
 
     def __init__(self, cached_client: DriveCachedClient):
@@ -93,10 +93,10 @@ class DriveCollections(Collections):
         # folder name -> id of my collection folder
         self.collection_folder_id_cache: dict[str, str] = {}
 
-    def clone_for_thread(self) -> "DriveCollections":
+    def clone_for_thread(self) -> "DriveCollectionsConnection":
         """Collections over a new Drive client, for use from another thread,
         with these caches."""
-        clone = DriveCollections(self._cached_client.clone_for_thread())
+        clone = DriveCollectionsConnection(self._cached_client.clone_for_thread())
         clone.collection_folder_id_cache = dict(self.collection_folder_id_cache)
         return clone
 

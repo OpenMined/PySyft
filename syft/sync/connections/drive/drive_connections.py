@@ -5,12 +5,12 @@ Each component has its own module: ``drive_p2p``, ``drive_owner_store``,
 which holds the Drive client. ``SyftboxManager._drive_transport`` builds them.
 """
 
-from syft.sync.connections.drive.drive_owner_store import DriveOwnerStore
+from syft.sync.connections.drive.drive_owner_store import DriveOwnerStoreConnection
 from syft.sync.connections.drive.drive_cached_client import DriveCachedClient
-from syft.sync.transport.protocols import Transport, WatcherStore
+from syft.sync.transport.protocols import Transport, WatcherStoreConnection
 
 
-class DriveWatcherStore(WatcherStore):
+class DriveWatcherStoreConnection(WatcherStoreConnection):
     """The DS's storage on Drive. Not built yet: today the DS keeps what it
     received in a local cache."""
 
@@ -35,6 +35,6 @@ def drive_cached_client_of(transport: Transport) -> DriveCachedClient:
     need Drive itself. The sync code reaches Drive only through the components.
     Raises if the transport is not built on Drive."""
     store = transport.owner_store
-    if not isinstance(store, DriveOwnerStore):
+    if not isinstance(store, DriveOwnerStoreConnection):
         raise TypeError("This transport is not built on Google Drive")
     return store._cached_client

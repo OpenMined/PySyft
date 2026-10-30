@@ -11,7 +11,7 @@ import time
 import pytest
 from googleapiclient.errors import HttpError
 
-from syft.sync.connections.drive.drive_owner_store import DriveOwnerStore
+from syft.sync.connections.drive.drive_owner_store import DriveOwnerStoreConnection
 from syft.sync.checkpoints.rolling_state import (
     ROLLING_STATE_FILENAME_PREFIX,
     RollingState,
@@ -289,7 +289,7 @@ def test_no_rolling_state_when_owner_state_disabled():
 
 def test_rolling_state_read_retries_drive_error(monkeypatch):
     do_cached_client, _ = pair_with_mock_service("do@example.com", "ds@example.com")
-    store = DriveOwnerStore(do_cached_client)
+    store = DriveOwnerStoreConnection(do_cached_client)
     store.put_rolling_state("rolling_state_1.0.tar.gz", b"state")
 
     fail_next_listing(monkeypatch, ROLLING_STATE_FILENAME_PREFIX)
@@ -298,7 +298,7 @@ def test_rolling_state_read_retries_drive_error(monkeypatch):
 
 def test_rolling_state_read_while_drive_is_down_raises(monkeypatch):
     do_cached_client, _ = pair_with_mock_service("do@example.com", "ds@example.com")
-    store = DriveOwnerStore(do_cached_client)
+    store = DriveOwnerStoreConnection(do_cached_client)
     store.put_rolling_state("rolling_state_1.0.tar.gz", b"state")
 
     def drive_down(self, file_id: str) -> bytes:
@@ -311,7 +311,7 @@ def test_rolling_state_read_while_drive_is_down_raises(monkeypatch):
 
 def test_rolling_state_listing_while_drive_is_down_raises(monkeypatch):
     do_cached_client, _ = pair_with_mock_service("do@example.com", "ds@example.com")
-    store = DriveOwnerStore(do_cached_client)
+    store = DriveOwnerStoreConnection(do_cached_client)
     store.put_rolling_state("rolling_state_1.0.tar.gz", b"state")
 
     def drive_down(self) -> dict:
@@ -324,7 +324,7 @@ def test_rolling_state_listing_while_drive_is_down_raises(monkeypatch):
 
 def test_rolling_state_download_error_raises(monkeypatch):
     do_cached_client, _ = pair_with_mock_service("do@example.com", "ds@example.com")
-    store = DriveOwnerStore(do_cached_client)
+    store = DriveOwnerStoreConnection(do_cached_client)
     store.put_rolling_state("rolling_state_1.0.tar.gz", b"state")
 
     def forbidden(self, file_id: str) -> bytes:
