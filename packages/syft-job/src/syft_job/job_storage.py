@@ -1,4 +1,5 @@
 import logging
+import shutil
 from pathlib import Path
 from typing import Callable, Iterator, Optional
 
@@ -9,6 +10,7 @@ from syft_migration import (
     MigrationService,
     ProtocolSchema,
 )
+from syft_perms import SyftPermContext
 
 from .config import SyftJobConfig, is_protocol_dir_name
 from .job_ref import JobRef, JobStateNotFoundError, RequestRef
@@ -16,8 +18,8 @@ from .migrations.registry import JOB_PROTOCOL_VERSION, job_registry
 from .models import JobState, JobSubmissionMetadata, RequestMetadata
 from .protocolcodecs import CODECS, ProtocolCodec
 from .submission import (
-    REQUEST_FILE_NAME,
     OWNER_RECORD_FILENAME,
+    REQUEST_FILE_NAME,
     OwnerJobRecord,
     claim_owner_record,
     read_owner_record,
@@ -134,6 +136,28 @@ class JobStorage:
 
     def staging_dir(self, ref: JobRef) -> Path:
         return self._codec_for(ref.protocol_version).staging_dir(ref)
+
+    def remove_outputs(self, ref: JobRef) -> bool:
+        """Delete outputs/ in review/ and in staging/, and the read grant on them.
+
+        Returns True if one of the folders existed. The grant can sit in a
+        permission file above outputs/, so it goes on its own, and the next
+        release starts with no recipient.
+        """
+        datasite = self.config.syftbox_folder / ref.datasite_email
+        released = self.review_dir(ref) / "outputs"
+        SyftPermContext(datasite=datasite).modifier.remove_all_rules(
+            str(released.relative_to(datasite)), is_folder=True
+        )
+        removed = False
+        for outputs_dir in (
+            self.review_dir(ref) / "outputs",
+            self.staging_dir(ref) / "outputs",
+        ):
+            if outputs_dir.is_dir():
+                shutil.rmtree(outputs_dir)
+                removed = True
+        return removed
 
     # -- owner record (owner side, in staging/) ------------------------------------
     def owner_record_path(self, ref: JobRef) -> Path:

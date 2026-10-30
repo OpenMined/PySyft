@@ -505,7 +505,7 @@ def test_job_files_sync_to_submitter_only():
 
     When a DO has multiple approved peers, job results should only be sent
     to the peer who submitted that specific job, not broadcast to all peers.
-    Uses permission-based routing: submitter gets read access via share_outputs(),
+    Uses permission-based routing: the outputs release grants the submitter read,
     non-submitter has no read access to job outputs.
     """
     ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(

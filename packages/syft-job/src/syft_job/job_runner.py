@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import List, Set
 
 import psutil
+from syft_permissions.spec.ruleset import PERMISSION_FILE_NAME
 
 from . import __version__
 from .client import JobClient
@@ -22,10 +23,10 @@ from .policies import (
     OUTPUT_RECIPIENTS_FILENAME,
     OUTPUTS_WITHHELD_FILENAME,
     POLICY_ERROR_FILENAME,
+    ApiResolver,
     JobPolicies,
     PolicyEnv,
     PolicyKind,
-    ApiResolver,
     PolicyResolutionError,
     PolicyResult,
     PolicyRunner,
@@ -105,6 +106,9 @@ NO_APPROVED_HASH_REASON = (
     "approved without a record of the approved submission; review and approve it again"
 )
 CHANGED_SUBMISSION_REASON = "the submission changed after it was approved"
+# Why the runner failed a job for its outputs. No release names it, so only
+# the DO reads it.
+OUTPUTS_ERROR_FILENAME = "outputs_error.txt"
 
 logger = logging.getLogger(__name__)
 
@@ -149,8 +153,8 @@ def _kill_process_tree(pid: int, timeout: float = 2.0) -> None:
 class SyftJobRunner:
     """Job runner that monitors and executes approved jobs.
 
-    Reads run.sh from inbox/. Outputs and state go to review/, logs and the
-    return code to staging/.
+    Reads run.sh from inbox/. State goes to review/. Outputs, logs and the
+    return code go to staging/, until a release moves them to review/.
     """
 
     def __init__(
@@ -482,8 +486,8 @@ class SyftJobRunner:
 
         The inbox is copied into a fresh folder outside the SyftBox, and the
         copy must match the approved hash before anything runs, so an edit of
-        the submitter's inbox never runs. Outputs and state go to review/, logs
-        and the return code to staging/.
+        the submitter's inbox never runs. State goes to review/. Outputs, logs
+        and the return code go to staging/, until a release moves them.
 
         Args:
             ref: Ref of the job to execute.
@@ -597,7 +601,6 @@ class SyftJobRunner:
         policies: JobPolicies | None = None,
     ) -> None:
         job_name = ref.job_name
-        review_dir = self.manager.review_dir(ref)
         self._prepare_outputs_dir(ref, run_dir)
 
         print(f" Executing job: {job_name}")
@@ -615,8 +618,8 @@ class SyftJobRunner:
             self._capture_traceback(ref, returncode, run_dir / "code")
             returncode = self._run_output_policy(ref, run_dir, policies, returncode)
 
-            # Move outputs from the run copy to review/
-            self._move_outputs_to_review(run_dir, review_dir)
+            skipped = self._copy_outputs_to_staging(ref, run_dir)
+            returncode = self._fail_on_output_permission_files(ref, skipped, returncode)
 
             self._finalize(ref, returncode)
             self._report_result(ref, returncode)
@@ -652,7 +655,7 @@ class SyftJobRunner:
         """Run the output policy, record who gets the outputs, return the exit code.
 
         A failed job or a deny shares the outputs with nobody; a deny also
-        fails the job. The outputs still go to review/, for the data owner.
+        fails the job. The outputs still go to staging/, for the data owner.
         """
         if policies is None or policies.output is None:
             return returncode
@@ -688,7 +691,7 @@ class SyftJobRunner:
     def _deny(self, ref: JobRef, kind: PolicyKind, result: PolicyResult) -> None:
         """Release the reason of a deny to the submitter."""
         self._write_staged(ref, POLICY_ERROR_FILENAME, f"{result.error}\n")
-        self._get_job_info(ref)._release_to_submitter([POLICY_ERROR_FILENAME])
+        self._get_job_info(ref).release([POLICY_ERROR_FILENAME], [ref.ds_email])
         print(f" Job {ref.job_name} denied by the {kind.value} policy: {result.error}")
 
     def _write_recipients(self, ref: JobRef, recipients: list[str]) -> None:
@@ -742,44 +745,66 @@ class SyftJobRunner:
         state.return_code = None
         self.manager.write_state(ref, state)
 
-    def _move_outputs_to_review(self, run_dir: Path, review_dir: Path) -> None:
+    def _fail_on_output_permission_files(
+        self, ref: JobRef, permission_files: list[str], returncode: int
+    ) -> int:
+        """Fail the job when it wrote a permission file into outputs/.
+
+        In staging/, that file would decide who reads the outputs, so the job
+        could release them itself. The copy to staging/ skips the file, the job
+        shares its outputs with nobody, and the reason goes to staging/ for the
+        DO. Returns the exit code to record.
+        """
+        if not permission_files:
+            return returncode
+        reason = (
+            f"Job {ref.job_name} wrote permission files into outputs/: "
+            f"{', '.join(permission_files)}. The job failed and shares its "
+            f"outputs with nobody."
+        )
+        logger.error(reason)
+        self._write_staged(ref, OUTPUTS_ERROR_FILENAME, f"{reason}\n")
+        self._write_recipients(ref, [])
+        return returncode or 1
+
+    def _copy_outputs_to_staging(self, ref: JobRef, run_dir: Path) -> list[str]:
+        """Copy the outputs from the run copy to staging/, to wait for a release.
+
+        The copy follows symlinks, so staging/ holds only real files. It skips
+        each permission file, and returns their paths in outputs/.
+        """
         run_outputs = run_dir / "code" / "outputs"
-        review_outputs = review_dir / "outputs"
-        if run_outputs.exists() and run_outputs.is_dir():
-            # Merge into review/outputs (which was pre-created by _prepare_outputs_dir)
-            for item in run_outputs.iterdir():
-                dest = review_outputs / item.name
-                if item.is_file():
-                    shutil.copy2(str(item), str(dest))
-                elif item.is_dir():
-                    if dest.exists():
-                        shutil.rmtree(dest)
-                    shutil.copytree(str(item), str(dest))
-            shutil.rmtree(run_outputs)
+        skipped: list[str] = []
+
+        def skip_permission_files(folder: str, names: list[str]) -> set[str]:
+            if PERMISSION_FILE_NAME not in names:
+                return set()
+            relative = (Path(folder) / PERMISSION_FILE_NAME).relative_to(run_outputs)
+            skipped.append(relative.as_posix())
+            return {PERMISSION_FILE_NAME}
+
+        shutil.copytree(
+            run_outputs,
+            self.manager.staging_dir(ref) / "outputs",
+            ignore=skip_permission_files,
+        )
+        return sorted(skipped)
 
     def _prepare_outputs_dir(self, ref: JobRef, run_dir: Path) -> None:
-        """Create outputs/ in the run copy (for the job) and review/ (for results).
+        """Create outputs/ in the run copy, and remove the outputs of a previous run.
 
         The job writes its outputs in the run copy, outside the SyftBox, so no
-        sync can send them to the submitter before they are released.
+        sync can send them to the submitter before they are released. The
+        recipients and the outputs error of a previous run go too, or this run
+        inherits them.
         """
         # Create outputs/ inside code/ dir so job scripts can write there (cwd is code/)
         (run_dir / "code" / "outputs").mkdir(parents=True, exist_ok=True)
 
-        # Create outputs/ in review dir with owner-only read permissions
-        review_dir = self.manager.review_dir(ref)
-        outputs_dir = review_dir / "outputs"
-        if outputs_dir.exists():
-            shutil.rmtree(outputs_dir)
-        outputs_dir.mkdir(parents=True, exist_ok=True)
-
-        from syft_perms import SyftPermContext
-
-        datasite = self.config.syftbox_folder / self.config.current_user_email
-        rel_path = str(outputs_dir.relative_to(datasite)) + "/"
-        ctx = SyftPermContext(datasite=datasite)
-        folder = ctx.open(rel_path)
-        folder.grant_read_access(self.config.current_user_email)
+        self.manager.remove_outputs(ref)
+        staging_dir = self.manager.staging_dir(ref)
+        for filename in (OUTPUT_RECIPIENTS_FILENAME, OUTPUTS_ERROR_FILENAME):
+            (staging_dir / filename).unlink(missing_ok=True)
 
     def _replace_ds_folder_reads(self) -> None:
         """Replace the read grant on a whole DS review folder with the named files.
@@ -878,7 +903,10 @@ class SyftJobRunner:
                 does not identify a job — it is unique per datasite and
                 submitter — so skipping by name drops every other job that
                 shares it.
-            share_outputs_with_submitter: If True, grant read access on outputs to submitter.
+            share_outputs_with_submitter: If True, release the outputs to the
+                output recipients: the submitter, or the list an output policy
+                writes. False keeps them in staging, where only the DO reads
+                them.
             share_logs_with_submitter: If True, release the logs and the exit
                 code to the submitter, whatever the job requested. False
                 (default) releases only the items that the submitter requested
@@ -908,7 +936,7 @@ class SyftJobRunner:
         for ref in approved_jobs:
             print(f"\n{'=' * 50}")
             if self._execute_job(ref, stream_output=stream_output, timeout=timeout):
-                self._share_job_results(
+                self._release_job_results(
                     ref,
                     share_outputs_with_submitter,
                     share_logs_with_submitter,
@@ -938,21 +966,21 @@ class SyftJobRunner:
             (self.manager.review_dir(ref) / OUTPUTS_WITHHELD_FILENAME).unlink(
                 missing_ok=True
             )
-        self._share_job_results(ref, share_outputs, share_logs, [ref.ds_email])
+        self._release_job_results(ref, share_outputs, share_logs, [ref.ds_email])
 
-    def _share_job_results(
+    def _release_job_results(
         self, ref: JobRef, share_outputs: bool, share_logs: bool, recipients: list[str]
     ) -> None:
         job_info = self._get_job_info(ref)
         job_info.release_disclosures()
         if share_outputs:
-            job_info.share_outputs(recipients)
+            job_info.release(["outputs"], recipients)
             if ref.ds_email not in recipients:
                 # An empty marker: that the submitter can read this file is
                 # the message. Their job then shows "Outputs not shared with
                 # you" instead of looking like it wrote no outputs.
                 self._write_staged(ref, OUTPUTS_WITHHELD_FILENAME, "")
-                job_info._release_to_submitter([OUTPUTS_WITHHELD_FILENAME])
+                job_info.release([OUTPUTS_WITHHELD_FILENAME], [ref.ds_email])
         if share_logs:
             job_info.release_logs()
 
