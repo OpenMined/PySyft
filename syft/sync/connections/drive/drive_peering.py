@@ -66,59 +66,14 @@ class DrivePeering(Peering):
         self._encryption_bundles_folder_id = None
         self._peers_json_cache = None
 
-    # -- Peering ---------------------------------------------------------------
-
     def whoami(self) -> str:
-        return self.get_authenticated_email()
-
-    def open_channels(self, peer: str) -> None:
-        self.add_peer(peer_email=peer)
-
-    def incoming_requests(self) -> list[str]:
-        return self.get_peer_requests()
-
-    def read_peer_registry(self, force_download: bool = False) -> dict:
-        return self._get_peers_json(force_download=force_download)
-
-    def update_peer_registry(
-        self, peer: str, state: str, public_encryption_bundle: dict | None = None
-    ) -> None:
-        self._update_peer_state(peer, state, public_encryption_bundle)
-
-    def publish_key_bundle(self, peer: str, bundle_json: str) -> None:
-        self.write_encryption_bundle(peer, bundle_json)
-
-    def grant_key_bundle_read(self, peer: str) -> None:
-        self.share_encryption_bundles_folder(peer)
-
-    def read_own_key_bundle(self, peer: str) -> str | None:
-        return self.read_own_encryption_bundle(peer)
-
-    def read_peer_key_bundle(self, peer: str) -> str | None:
-        return self.read_peer_encryption_bundle(peer)
-
-    def publish_peer_info(self, peer_info: PeerInfo) -> None:
-        self.write_peer_info_file(peer_info)
-
-    def read_own_peer_info(self) -> PeerInfo | None:
-        return self.read_own_peer_info_file()
-
-    def read_peer_info(self, peer: str) -> PeerInfo | None:
-        return self.read_peer_info_file(peer)
-
-    def grant_peer_info_read(self, peer: str, peer_info: PeerInfo) -> None:
-        self.share_peer_info_file_with_peer(peer, peer_info)
-
-    # -- Drive -----------------------------------------------------------------
-
-    def get_authenticated_email(self) -> str:
         """Return the email of the Google account behind the Drive service."""
         about = execute_with_retries(
             self._layout.client.drive_service.about().get(fields="user(emailAddress)")
         )
         return about["user"]["emailAddress"]
 
-    def create_peer_datasite_folders(self, peer_email: str):
+    def open_channels(self, peer: str):
         """Create inbox + outbox folders for peer's datasite on own drive, share with peer.
 
         Creates:
@@ -126,20 +81,16 @@ class DrivePeering(Peering):
         - syft_datasite_{peer}_outbox_{self} — peer pushes events to me here
         """
         # Inbox: I write proposals, peer reads
-        inbox_id = self._layout.get_peer_datasite_inbox_id(peer_email)
+        inbox_id = self._layout.get_peer_datasite_inbox_id(peer)
         if inbox_id is None:
-            inbox_id = self._layout.create_peer_datasite_folder(peer_email, "inbox")
-        self._layout.client.add_permission(inbox_id, peer_email, write=True)
+            inbox_id = self._layout.create_peer_datasite_folder(peer, "inbox")
+        self._layout.client.add_permission(inbox_id, peer, write=True)
 
         # Outbox: peer writes events, I read
-        outbox_id = self._layout.get_peer_datasite_outbox_id(peer_email)
+        outbox_id = self._layout.get_peer_datasite_outbox_id(peer)
         if outbox_id is None:
-            outbox_id = self._layout.create_peer_datasite_folder(peer_email, "outbox")
-        self._layout.client.add_permission(outbox_id, peer_email, write=True)
-
-    def add_peer(self, peer_email: str):
-        """Alias for create_peer_datasite_folders."""
-        self.create_peer_datasite_folders(peer_email)
+            outbox_id = self._layout.create_peer_datasite_folder(peer, "outbox")
+        self._layout.client.add_permission(outbox_id, peer, write=True)
 
     def _get_peers_file_id(self) -> str | None:
         """Find SYFT_peers.json file in /SyftBox folder"""
@@ -171,7 +122,7 @@ class DrivePeering(Peering):
         except ValueError as e:
             raise ValueError(f"Could not read the peers file: {e}") from e
 
-    def _get_peers_json(
+    def read_peer_registry(
         self, force_download: bool = False
     ) -> dict[str, dict[str, Any]]:
         """Return peers JSON, using the in-memory cache when available."""
@@ -212,9 +163,9 @@ class DrivePeering(Peering):
             self._peers_json_cache = peers_data
             return file_id
 
-    def _update_peer_state(
+    def update_peer_registry(
         self,
-        peer_email: str,
+        peer: str,
         state: str,
         public_encryption_bundle: dict | None = None,
     ):
@@ -222,15 +173,15 @@ class DrivePeering(Peering):
 
         Preserves existing fields when updating state.
         """
-        peers_data = self._get_peers_json()
-        existing = peers_data.get(peer_email, {})
+        peers_data = self.read_peer_registry()
+        existing = peers_data.get(peer, {})
         existing["state"] = state
         if public_encryption_bundle is not None:
             existing["public_encryption_bundle"] = public_encryption_bundle
-        peers_data[peer_email] = existing
+        peers_data[peer] = existing
         self._write_peers_json(peers_data)
 
-    def get_peer_requests(self) -> list[str]:
+    def incoming_requests(self) -> list[str]:
         """Get list of pending peer requests.
 
         Scans for syft_datasite_#version#{self}_*  folders NOT owned by self — those are
@@ -266,7 +217,7 @@ class DrivePeering(Peering):
             if folder.datasite_email == self._layout.email:
                 all_folder_peers.add(folder.peer_email)
 
-        peers_data = self._get_peers_json()
+        peers_data = self.read_peer_registry()
         pending_peers = []
         for peer_email in all_folder_peers:
             undecided = peers_data.get(peer_email, {}).get("state") not in [
@@ -288,7 +239,7 @@ class DrivePeering(Peering):
         items = results.get("files", [])
         return items[0]["id"] if items else None
 
-    def write_peer_info_file(self, peer_info: "PeerInfo") -> None:
+    def publish_peer_info(self, peer_info: "PeerInfo") -> None:
         """Write the peer info file to /SyftBox. Creates or updates the file."""
 
         syftbox_folder_id = self._layout.get_syftbox_folder_id()
@@ -324,7 +275,7 @@ class DrivePeering(Peering):
         items = results.get("files", [])
         return items[0]["id"] if items else None
 
-    def read_own_peer_info_file(self) -> Optional["PeerInfo"]:
+    def read_own_peer_info(self) -> Optional["PeerInfo"]:
         """Read the own peer info file from /SyftBox.
 
         Returns None when there is no file.
@@ -337,7 +288,7 @@ class DrivePeering(Peering):
             self._get_own_peer_info_file_id, "the own peer info file"
         )
 
-    def read_peer_info_file(self, peer_email: str) -> Optional["PeerInfo"]:
+    def read_peer_info(self, peer: str) -> Optional["PeerInfo"]:
         """Read the peer info file from a peer's /SyftBox folder.
 
         Returns None when the peer has no file that this account may read.
@@ -347,8 +298,8 @@ class DrivePeering(Peering):
             ValueError: when the file is not a peer info file this client reads.
         """
         return self._read_peer_info_file(
-            lambda: self._get_peer_info_file_id_of(peer_email),
-            f"the peer info file of {peer_email}",
+            lambda: self._get_peer_info_file_id_of(peer),
+            f"the peer info file of {peer}",
         )
 
     def _read_peer_info_file(
@@ -371,20 +322,18 @@ class DrivePeering(Peering):
         except (ValueError, MigrationError) as e:
             raise ValueError(f"Could not read {file_label}: {e}") from e
 
-    def share_peer_info_file_with_peer(
-        self, peer_email: str, peer_info: "PeerInfo"
-    ) -> None:
+    def grant_peer_info_read(self, peer: str, peer_info: "PeerInfo") -> None:
         """Share the peer info file with a peer so they can read it.
 
         A missing file is created from ``peer_info``, the info of this client.
         """
         file_id = self._get_own_peer_info_file_id()
         if file_id is None:
-            self.write_peer_info_file(peer_info)
+            self.publish_peer_info(peer_info)
             file_id = self._get_own_peer_info_file_id()
 
         if file_id:
-            self._layout.client.add_permission(file_id, peer_email, write=False)
+            self._layout.client.add_permission(file_id, peer, write=False)
 
     def _find_encryption_bundles_folder_id(self) -> str | None:
         """The id of the encryption bundles folder of this user, or None when it does not exist."""
@@ -416,10 +365,10 @@ class DrivePeering(Peering):
     def _encryption_bundle_filename(self, owner_email: str, peer_email: str) -> str:
         return f"encryption_bundle_{owner_email}_for_{peer_email}.json"
 
-    def write_encryption_bundle(self, peer_email: str, bundle_json: str) -> None:
+    def publish_key_bundle(self, peer: str, bundle_json: str) -> None:
         """Write own encryption bundle for a peer to own bundles folder."""
         folder_id = self._get_or_create_encryption_bundles_folder_id()
-        filename = self._encryption_bundle_filename(self._layout.email, peer_email)
+        filename = self._encryption_bundle_filename(self._layout.email, peer)
         file_payload, _ = self._layout.client.create_file_payload(bundle_json)
 
         # Check if file already exists
@@ -439,20 +388,20 @@ class DrivePeering(Peering):
             file_metadata = {"name": filename, "parents": [folder_id]}
             self._layout.client.create_syft_file(file_metadata, file_payload)
 
-    def share_encryption_bundles_folder(self, peer_email: str) -> None:
+    def grant_key_bundle_read(self, peer: str) -> None:
         """Share the bundles folder with a peer so they can read bundles."""
         folder_id = self._get_or_create_encryption_bundles_folder_id()
-        self._layout.client.add_permission(folder_id, peer_email, write=False)
+        self._layout.client.add_permission(folder_id, peer, write=False)
 
-    def read_own_encryption_bundle(self, peer_email: str) -> str | None:
-        """Read the bundle this client published for ``peer_email``, or None.
+    def read_own_key_bundle(self, peer: str) -> str | None:
+        """Read the bundle this client published for ``peer``, or None.
 
         A read never creates the bundles folder: without it, nothing is published.
         """
         folder_id = self._find_encryption_bundles_folder_id()
         if folder_id is None:
             return None
-        filename = self._encryption_bundle_filename(self._layout.email, peer_email)
+        filename = self._encryption_bundle_filename(self._layout.email, peer)
         query = f"name='{filename}' and '{folder_id}' in parents and trashed=false"
         results = execute_with_retries(
             self._layout.client.drive_service.files().list(q=query, fields="files(id)")
@@ -462,14 +411,14 @@ class DrivePeering(Peering):
             return None
         return self._layout.client.download_file(items[0]["id"]).decode("utf-8")
 
-    def read_peer_encryption_bundle(self, peer_email: str) -> str | None:
+    def read_peer_key_bundle(self, peer: str) -> str | None:
         """Read encryption bundle that peer wrote for us.
 
-        Searches for: encryption_bundle_{peer_email}_for_{self._layout.email}.json
+        Searches for: encryption_bundle_{peer}_for_{self._layout.email}.json
         in peer's bundles folder.
         """
-        filename = self._encryption_bundle_filename(peer_email, self._layout.email)
-        query = f"name='{filename}' and trashed=false and '{peer_email}' in owners"
+        filename = self._encryption_bundle_filename(peer, self._layout.email)
+        query = f"name='{filename}' and trashed=false and '{peer}' in owners"
         results = execute_with_retries(
             self._layout.client.drive_service.files().list(q=query, fields="files(id)")
         )
@@ -479,10 +428,10 @@ class DrivePeering(Peering):
         try:
             data = self._layout.client.download_file(items[0]["id"])
         except Exception as e:
-            print(f"Warning: could not download the bundle of {peer_email}: {e}")
+            print(f"Warning: could not download the bundle of {peer}: {e}")
             return None
         try:
             return data.decode("utf-8")
         except ValueError as e:
-            print(f"Warning: could not read the bundle of {peer_email}: {e}")
+            print(f"Warning: could not read the bundle of {peer}: {e}")
             return None

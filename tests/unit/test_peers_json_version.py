@@ -6,7 +6,7 @@ under a reserved key instead. An older client parses the state of that entry,
 fails, and skips it, so the reserved key is invisible to a client that predates
 it.
 
-The record itself is safe either way. The only writer is `_update_peer_state`,
+The record itself is safe either way. The only writer is `update_peer_registry`,
 which changes one entry of the raw map and writes the rest back, so a peer this
 client cannot read is not erased for the other side.
 """
