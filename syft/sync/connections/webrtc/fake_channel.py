@@ -17,9 +17,10 @@ class FakeChannel(Channel):
 
     @staticmethod
     def connect(a: WebRTCP2PConnection, b: WebRTCP2PConnection) -> None:
-        """Join ``a`` and ``b``. Both ends are attached before either side
-        resends, as both ends of a real channel exist before it opens."""
+        """Join ``a`` and ``b`` and open the channel. Both ends are attached
+        before it opens, as with a real channel, so the first receipts have
+        a way back."""
         a.attach(b.email, FakeChannel(sender=a.email, receiver=b))
         b.attach(a.email, FakeChannel(sender=b.email, receiver=a))
-        a.resend(b.email)
-        b.resend(a.email)
+        a.on_open(b.email)
+        b.on_open(a.email)

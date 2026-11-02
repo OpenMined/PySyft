@@ -79,6 +79,27 @@ def test_messages_wait_on_disk_until_peer_connects(tmp_path):
     assert restarted_ds.delivered() == ["m1", "m2"]
 
 
+def test_message_sent_before_channel_opens_follows_older_ones(tmp_path):
+    do = WebRTCP2PConnection(DO, tmp_path / "do")
+    ds = WebRTCP2PConnection(DS, tmp_path / "ds")
+    ds.send(DO, "m1", b"", PROPOSAL)
+    do.attach(DS, FakeChannel(sender=DO, receiver=ds))
+    ds.attach(DO, FakeChannel(sender=DS, receiver=do))
+
+    ds.send(DO, "m2", b"", PROPOSAL)
+    assert do.receive(DS, PROPOSAL) == []
+
+    ds.on_open(DO)
+    assert msg_ids(do.receive(DS, PROPOSAL)) == ["m1", "m2"]
+
+
+def test_msg_id_that_is_not_plain_file_name_is_refused(cores):
+    _, ds = cores
+
+    with pytest.raises(ValueError):
+        ds.send(DO, "../escape", b"", PROPOSAL)
+
+
 def test_restarted_receiver_keeps_unprocessed_messages(cores, tmp_path):
     _, ds = cores
     ds.send(DO, "m1", b"job", PROPOSAL)

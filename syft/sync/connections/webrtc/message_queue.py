@@ -1,14 +1,16 @@
-"""A queue of messages kept in one JSON file, so it survives a restart."""
+"""A queue of messages kept on disk, one file per message, so it survives a
+restart and adding or removing one message never rewrites the others."""
 
 from collections.abc import Collection
 from pathlib import Path
+from typing import NamedTuple
 
 from pydantic import BaseModel, ConfigDict
 
 from syft.sync.connections.types import MessageKind
-from syft.sync.sync.caches.persisted_dict import locked_file, write_text_atomic
+from syft.sync.sync.caches.persisted_dict import locked_file
 
-# Bytes travel and are stored as base64 inside JSON.
+# Bytes travel as base64 inside a JSON frame.
 BYTES_AS_BASE64 = ConfigDict(ser_json_bytes="base64", val_json_bytes="base64")
 
 
@@ -22,41 +24,68 @@ class QueuedMessage(BaseModel):
     data: bytes
 
 
-class _QueueFile(BaseModel):
-    model_config = BYTES_AS_BASE64
+class _Entry(NamedTuple):
+    """One message file, named ``<position>.<kind>.<msg_id>``."""
 
-    messages: list[QueuedMessage] = []
+    position: int
+    kind: MessageKind
+    msg_id: str
+    path: Path
 
 
 class MessageQueue:
-    """Messages in one file, oldest first. Every change holds the file lock."""
+    """Messages in one folder, oldest first. Every change holds the folder lock."""
 
-    def __init__(self, path: Path):
-        self.path = path
+    def __init__(self, folder: Path):
+        self.folder = folder
 
-    def all(self) -> list[QueuedMessage]:
-        with locked_file(self.path, exclusive=False):
-            return self._load()
+    def messages(
+        self, kind: MessageKind | None = None, max_messages: int | None = None
+    ) -> list[QueuedMessage]:
+        """The messages, of ``kind`` when given, oldest first, at most
+        ``max_messages``. Only those files are read."""
+        with locked_file(self.folder, exclusive=False):
+            entries = [e for e in self._entries() if kind is None or e.kind == kind]
+            return [
+                QueuedMessage(msg_id=e.msg_id, kind=e.kind, data=e.path.read_bytes())
+                for e in entries[:max_messages]
+            ]
 
     def add(self, message: QueuedMessage) -> None:
         """Append ``message``, unless one with its ``msg_id`` is already here."""
-        with locked_file(self.path):
-            messages = self._load()
-            if all(m.msg_id != message.msg_id for m in messages):
-                self._save([*messages, message])
+        _require_file_name(message.msg_id)
+        with locked_file(self.folder):
+            entries = self._entries()
+            if any(e.msg_id == message.msg_id for e in entries):
+                return
+            position = entries[-1].position + 1 if entries else 0
+            name = f"{position:012d}.{message.kind.value}.{message.msg_id}"
+            # Written under a hidden name first, so a reader never sees half.
+            tmp = self.folder / f".{name}.tmp"
+            tmp.write_bytes(message.data)
+            tmp.replace(self.folder / name)
 
     def remove(self, msg_ids: Collection[str]) -> list[str]:
         """Remove the messages with these ids; return the ids that were here."""
-        with locked_file(self.path):
-            messages = self._load()
-            kept = [m for m in messages if m.msg_id not in msg_ids]
-            self._save(kept)
-        return [m.msg_id for m in messages if m.msg_id in msg_ids]
+        with locked_file(self.folder):
+            removed = [e for e in self._entries() if e.msg_id in msg_ids]
+            for entry in removed:
+                entry.path.unlink()
+        return [e.msg_id for e in removed]
 
-    def _load(self) -> list[QueuedMessage]:
-        if not self.path.exists():
-            return []
-        return _QueueFile.model_validate_json(self.path.read_text()).messages
+    def _entries(self) -> list[_Entry]:
+        self.folder.mkdir(parents=True, exist_ok=True)
+        entries = []
+        for path in self.folder.iterdir():
+            if path.name.startswith("."):
+                continue
+            position, kind, msg_id = path.name.split(".", 2)
+            entries.append(_Entry(int(position), MessageKind(kind), msg_id, path))
+        return sorted(entries, key=lambda e: e.position)
 
-    def _save(self, messages: list[QueuedMessage]) -> None:
-        write_text_atomic(self.path, _QueueFile(messages=messages).model_dump_json())
+
+def _require_file_name(msg_id: str) -> None:
+    """``msg_id`` comes from the peer and names a file, so it may not leave the
+    queue folder or hide from it."""
+    if msg_id != Path(msg_id).name or msg_id.startswith("."):
+        raise ValueError(f"msg_id {msg_id!r} is not a plain file name")
