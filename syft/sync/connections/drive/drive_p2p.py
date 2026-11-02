@@ -2,6 +2,7 @@
 
 import threading
 import warnings
+from collections.abc import Container
 from concurrent.futures import ThreadPoolExecutor
 
 from syft.sync.connections.drive.gdrive_client import DRIVE_BATCH_SIZE, GDriveClient
@@ -23,6 +24,11 @@ from syft.sync.connections.types import MessageKind, RawMessage, SendStatus
 # Threads that download the messages of one receive at the same time.
 DOWNLOAD_WORKERS = 10
 
+# How far before ``after`` the outbox is listed again, for messages that land
+# after newer ones (a retried send, or notebook and syft-bg both writing).
+# The ones in that window the DS already has are in ``already_received``.
+OUTBOX_LOOKBACK_SECONDS = 60
+
 
 def _download_or_skip(client: GDriveClient, listed: dict) -> bytes | None:
     """The bytes of one listed message file, or None with a warning when this
@@ -40,6 +46,14 @@ def _download_or_skip(client: GDriveClient, listed: dict) -> bytes | None:
     except Exception as e:
         warnings.warn(f"Skipped message {name}: download failed: {e!r}")
         return None
+
+
+def _before_first_failure(
+    listed: list[dict], contents: list[bytes | None]
+) -> tuple[list[dict], list[bytes | None]]:
+    """``listed`` and ``contents`` up to the first file that failed to download."""
+    end = contents.index(None) if None in contents else len(contents)
+    return listed[:end], contents[:end]
 
 
 def _valid_message_names(file_metadatas: list[dict]) -> list[MessageFileName]:
@@ -61,7 +75,8 @@ class DriveP2PConnection(P2PConnection):
 
     Both are read through ``receive``. A processed inbox message is archived.
     The outbox keeps every message, so the DS rebuilds a lost cache by reading
-    it again, and ``receive`` lists only the messages after ``after``. That
+    it again, and ``receive`` lists only the messages from shortly before
+    ``after`` on, leaving out the ones already received. That
     ends with send-and-forget, once the DS keeps what it received in its own
     storage. The DO still compacts its own outbox through the Drive-only
     methods below.
@@ -98,15 +113,20 @@ class DriveP2PConnection(P2PConnection):
         kind: MessageKind,
         after: str | None = None,
         max_messages: int | None = None,
+        already_received: Container[str] = frozenset(),
     ) -> list[RawMessage]:
         """One listing of the folder, then the files download in parallel.
 
         Proposed changes come from my inbox, which archives processed messages,
         so ``after`` is not needed there. File events come from ``peer``'s
-        outbox, which keeps them, so only those after ``after`` are listed.
+        outbox, which keeps them. Those from ``OUTBOX_LOOKBACK_SECONDS`` before
+        ``after`` on are listed, and the ones in ``already_received`` are left
+        out before downloading.
 
-        A file that cannot be downloaded is left out with a warning, so it does
-        not hold back the others.
+        A file that cannot be downloaded is left out with a warning. In the
+        inbox it does not hold back the others. In the outbox it ends the list,
+        because the reader passes the last message it got as ``after`` and
+        would never get the missed one.
 
         Raises:
             ConnectionUnavailableError: when Drive cannot be reached. Every
@@ -115,9 +135,11 @@ class DriveP2PConnection(P2PConnection):
         if kind is MessageKind.PROPOSED_CHANGES:
             listed = self._list_inbox(peer)
         else:
-            listed = self._list_outbox(peer, after)
+            listed = self._list_outbox(peer, after, already_received)
         listed = listed[:max_messages]
         contents = self._download_all(listed)
+        if kind is MessageKind.FILE_EVENTS:
+            listed, contents = _before_first_failure(listed, contents)
         return [
             RawMessage(
                 sender=peer,
@@ -214,17 +236,23 @@ class DriveP2PConnection(P2PConnection):
             )
         ]
 
-    def _list_outbox(self, peer: str, after: str | None) -> list[dict]:
-        """The messages in ``peer``'s outbox to me sent after the message
-        ``after``, oldest first, each with ``file_id`` and ``file_name``,
-        without downloading them. An outbox whose folder is not found holds
-        none."""
+    def _list_outbox(
+        self, peer: str, after: str | None, already_received: Container[str]
+    ) -> list[dict]:
+        """The messages in ``peer``'s outbox to me from ``OUTBOX_LOOKBACK_SECONDS``
+        before the message ``after`` on, without those in ``already_received``,
+        oldest first, each with ``file_id`` and ``file_name``, without
+        downloading them. An outbox whose folder is not found holds none.
+
+        The look-back lists ``after`` and the messages just before it again,
+        which the DS received in earlier syncs; ``already_received`` skips them."""
         folder_id = self._cached_client.get_peer_datasite_outbox_id(peer)
         if folder_id is None:
             return []
         since = None
         if after is not None:
-            since = FileChangeEventsMessageFileName.from_string(after).timestamp
+            sent_at = FileChangeEventsMessageFileName.from_string(after).timestamp
+            since = sent_at - OUTBOX_LOOKBACK_SECONDS
         file_metadatas = self._cached_client.get_file_metadatas_from_folder(
             folder_id, since_timestamp=since
         )
@@ -235,8 +263,8 @@ class DriveP2PConnection(P2PConnection):
         return [
             {"file_id": name_to_id[name.as_string()], "file_name": name.as_string()}
             for name in names
-            if (since is None or name.timestamp > since)
-            and name.as_string() in name_to_id
+            if name.as_string() in name_to_id
+            and name.as_string() not in already_received
         ]
 
     def _archive_request(self, file_id: str, sender: str):

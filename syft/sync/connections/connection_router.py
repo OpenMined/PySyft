@@ -1,5 +1,6 @@
 import logging
 import warnings
+from collections.abc import Container
 from typing import TYPE_CHECKING, List, Optional
 
 from pydantic import BaseModel
@@ -13,9 +14,6 @@ from syft.migrations import (
 from syft.sync.checkpoints.checkpoint import Checkpoint, IncrementalCheckpoint
 from syft.sync.checkpoints.rolling_state import RollingState
 from syft.sync.connections.base_connection import FileCollection
-from syft.sync.encryption_policy import (
-    MessageFormatError,
-)
 from syft.sync.events.file_change_event import (
     FileChangeEventsMessage,
 )
@@ -161,32 +159,52 @@ class ConnectionRouter(BaseModel):
         )
 
     def watcher_receive_events_messages(
-        self, sender_email: str, after: str | None = None
-    ) -> list[tuple[RawMessage, FileChangeEventsMessage]]:
-        """Every readable events message from ``sender_email`` after the
-        message ``after``, oldest first, as received and as read. Pass the
+        self,
+        sender_email: str,
+        after: str | None = None,
+        already_received: Container[str] = frozenset(),
+    ) -> list[tuple[RawMessage, FileChangeEventsMessage | None]]:
+        """The events messages from ``sender_email`` after the message
+        ``after``, and any that landed after it, without those in
+        ``already_received``, oldest first, as received and as read. Pass the
         received ones to ``mark_all_processed`` once they are applied.
 
-        A message that cannot be read now is left out with a warning.
+        A message that can never be read (wrong format for the pair, bad
+        signature, cannot be decrypted or decoded) comes with None and a
+        warning, so the caller moves past it. The list ends, with a warning,
+        at a message that cannot be read yet because the peer is not set up;
+        it comes again at the next receive.
         """
         received = self.connections.p2p_con.receive(
-            sender_email, MessageKind.FILE_EVENTS, after=after
+            sender_email,
+            MessageKind.FILE_EVENTS,
+            after=after,
+            already_received=already_received,
         )
-        readable = []
+        read = []
         for raw in received:
-            if (message := self._read_events_message(raw)) is not None:
-                readable.append((raw, message))
-        return readable
+            try:
+                read.append((raw, self._read_events_message(raw)))
+            except SyftPeerNotReadyError as e:
+                warnings.warn(f"Outbox messages of {sender_email} wait: {e}")
+                break
+        return read
 
     def _read_events_message(self, raw: RawMessage) -> FileChangeEventsMessage | None:
         """``raw`` verified, decrypted and decoded, or None with a warning when
-        its format does not match the pair or it cannot be read now."""
+        it can never be read.
+
+        Raises:
+            SyftPeerNotReadyError: when the peer is not set up yet.
+        """
         try:
             data = self.peer_store.decrypt_and_verify_if_needed(raw.sender, raw.data)
-        except (MessageFormatError, SyftPeerNotReadyError) as e:
-            warnings.warn(f"Skipped an outbox message of {raw.sender}: {e}")
+            return FileChangeEventsMessage.from_compressed_data(data)
+        except SyftPeerNotReadyError:
+            raise
+        except Exception as e:
+            warnings.warn(f"Skipped unreadable outbox message {raw.msg_id}: {e!r}")
             return None
-        return FileChangeEventsMessage.from_compressed_data(data)
 
     def download_outbox_message(self, file_id: str) -> bytes:
         """Download one message of my own outbox by its handle (thread-safe)."""

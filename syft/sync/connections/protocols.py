@@ -15,6 +15,7 @@ backend may override when it can do them faster.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections.abc import Container
 from typing import TYPE_CHECKING, Self
 
 from pydantic import BaseModel, ConfigDict
@@ -77,13 +78,17 @@ class P2PConnection(RouterConnection, ABC):
         kind: MessageKind,
         after: str | None = None,
         max_messages: int | None = None,
+        already_received: Container[str] = frozenset(),
     ) -> list[RawMessage]:
         """Messages of ``kind`` from ``peer`` that are not processed yet, oldest
         first, at most ``max_messages`` of them.
 
-        ``after`` is the ``msg_id`` of the last message the receiver processed.
-        A connection that keeps processed messages, as Drive keeps the outbox,
-        returns only the later ones. A connection that drops them ignores it.
+        ``after`` is the ``msg_id`` of the newest message the receiver
+        processed. A connection that keeps processed messages, as Drive keeps
+        the outbox, returns the later ones with no gap: a message it cannot
+        return now ends the list. It may also list back a bit before ``after``
+        for late messages, skipping the ones in ``already_received``. A
+        connection that drops processed messages ignores both.
 
         A peer whose channel does not exist yet has no messages. The connection
         sets each ``RawMessage.sender`` from where the message came from.

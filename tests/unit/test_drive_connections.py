@@ -24,7 +24,10 @@ from syft.sync.connections.drive.drive_collections import (
 )
 from syft.sync.connections.drive.drive_connections import DriveWatcherStoreConnection
 from syft.sync.connections.drive.drive_owner_store import DriveOwnerStoreConnection
-from syft.sync.connections.drive.drive_p2p import DriveP2PConnection
+from syft.sync.connections.drive.drive_p2p import (
+    OUTBOX_LOOKBACK_SECONDS,
+    DriveP2PConnection,
+)
 from syft.sync.connections.drive.drive_peering import DrivePeeringConnection
 from syft.sync.connections.drive.gdrive_client import GDriveClient
 from syft.sync.connections.drive.mock_drive_service import (
@@ -334,11 +337,71 @@ def test_outbox_messages_after_given_one_are_received_oldest_first(pair):
         )
     p2p = DriveP2PConnection(ds_cached_client)
 
-    received = p2p.receive(DO, MessageKind.FILE_EVENTS, after=names[0])
+    received = p2p.receive(
+        DO, MessageKind.FILE_EVENTS, after=names[0], already_received={names[0]}
+    )
     assert [(m.msg_id, m.data) for m in received] == [
         (names[2], names[2].encode()),
         (names[1], names[1].encode()),
     ]
+
+
+def test_outbox_message_landing_after_newer_one_is_received(pair, monkeypatch):
+    do_cached_client, ds_cached_client = pair
+    do_p2p = DriveP2PConnection(do_cached_client)
+    ds_p2p = DriveP2PConnection(ds_cached_client)
+    newer, late = _events_name(2000.0), _events_name(1990.0)
+    do_p2p.send(DS, newer, b"newer", MessageKind.FILE_EVENTS)
+    ds_p2p.receive(DO, MessageKind.FILE_EVENTS)
+    do_p2p.send(DS, late, b"late", MessageKind.FILE_EVENTS)
+
+    calls = _count_drive_calls(monkeypatch)
+    received = ds_p2p.receive(
+        DO, MessageKind.FILE_EVENTS, after=newer, already_received={newer}
+    )
+
+    assert [m.msg_id for m in received] == [late]
+    assert calls["get_media"] == 1  # the newer message is not downloaded again
+
+
+def test_outbox_message_older_than_lookback_is_not_listed(pair):
+    do_cached_client, ds_cached_client = pair
+    old = _events_name(1.0)
+    after = _events_name(1.0 + OUTBOX_LOOKBACK_SECONDS + 1)
+    for name in (old, after):
+        DriveP2PConnection(do_cached_client).send(
+            DS, name, b"x", MessageKind.FILE_EVENTS
+        )
+
+    received = DriveP2PConnection(ds_cached_client).receive(
+        DO, MessageKind.FILE_EVENTS, after=after, already_received={after}
+    )
+    assert received == []
+
+
+def test_outbox_receive_stops_at_message_that_fails_to_download(pair, monkeypatch):
+    do_cached_client, ds_cached_client = pair
+    names = [_events_name(ts) for ts in (1.0, 2.0, 3.0)]
+    for name in names:
+        DriveP2PConnection(do_cached_client).send(
+            DS, name, name.encode(), MessageKind.FILE_EVENTS
+        )
+    original_download = GDriveClient.download_file
+
+    def download_all_but_second(self, file_id: str) -> bytes:
+        data = original_download(self, file_id)
+        if data == names[1].encode():
+            raise ValueError("download cut off")
+        return data
+
+    monkeypatch.setattr(GDriveClient, "download_file", download_all_but_second)
+    with pytest.warns(UserWarning, match=f"Skipped message {names[1]}"):
+        received = DriveP2PConnection(ds_cached_client).receive(
+            DO, MessageKind.FILE_EVENTS
+        )
+
+    # The third would move the reader's ``after`` past the second.
+    assert [m.msg_id for m in received] == [names[0]]
 
 
 def test_processed_outbox_message_stays_in_outbox(pair):
@@ -690,19 +753,20 @@ def test_the_router_marks_handled_messages_processed_through_p2p():
 def test_the_router_reads_the_outbox_through_p2p():
     router, p2p = _router_with_mock_p2p()
     p2p.receive.return_value = []
-    assert router.watcher_receive_events_messages(DO, after="m") == []
-    p2p.receive.assert_called_once_with(DO, MessageKind.FILE_EVENTS, after="m")
+    assert (
+        router.watcher_receive_events_messages(DO, after="m", already_received={"m"})
+        == []
+    )
+    p2p.receive.assert_called_once_with(
+        DO, MessageKind.FILE_EVENTS, after="m", already_received={"m"}
+    )
 
 
-def test_the_router_skips_unreadable_events_message_and_returns_the_rest():
+def test_router_reads_unreadable_events_message_as_none():
     router, p2p = _router_with_mock_p2p()
     events = FileChangeEventsMessage(events=[])
-    # The router's store knows DS only, so a message from a stranger is unreadable.
     unreadable = RawMessage(
-        sender="stranger@example.com",
-        msg_id="bad",
-        kind=MessageKind.FILE_EVENTS,
-        data=events.as_compressed_data(),
+        sender=DS, msg_id="bad", kind=MessageKind.FILE_EVENTS, data=b"garbage"
     )
     readable = RawMessage(
         sender=DS,
@@ -712,10 +776,34 @@ def test_the_router_skips_unreadable_events_message_and_returns_the_rest():
     )
     p2p.receive.return_value = [unreadable, readable]
 
-    with pytest.warns(UserWarning, match="Skipped an outbox message of stranger"):
+    with pytest.warns(UserWarning, match="Skipped unreadable outbox message bad"):
         pairs = router.watcher_receive_events_messages(DS)
 
-    assert [(raw.msg_id, message) for raw, message in pairs] == [("good", events)]
+    assert [(raw.msg_id, message) for raw, message in pairs] == [
+        ("bad", None),
+        ("good", events),
+    ]
+
+
+def test_router_stops_at_events_message_not_readable_yet():
+    router, p2p = _router_with_mock_p2p()
+    data = FileChangeEventsMessage(events=[]).as_compressed_data()
+    # The router's store knows DS only, so a stranger is not set up yet.
+    p2p.receive.return_value = [
+        RawMessage(
+            sender=sender, msg_id=msg_id, kind=MessageKind.FILE_EVENTS, data=data
+        )
+        for sender, msg_id in (
+            (DS, "first"),
+            ("stranger@example.com", "waiting"),
+            (DS, "later"),
+        )
+    ]
+
+    with pytest.warns(UserWarning, match="Outbox messages of ds@example.com wait"):
+        pairs = router.watcher_receive_events_messages(DS)
+
+    assert [raw.msg_id for raw, _ in pairs] == ["first"]
 
 
 def test_the_router_holds_no_drive_specific_code():
