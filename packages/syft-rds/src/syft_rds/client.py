@@ -230,6 +230,14 @@ class SyftRDSClient(BaseModel):
         return cls._build_rds_pair_from_managers(ds_mgr, do_mgr)
 
     @classmethod
+    def pair_with_mock_drive_and_mock_webrtc_connection(
+        cls, **kwargs: Any
+    ) -> tuple["SyftRDSClient", "SyftRDSClient"]:
+        """(ds, do) pair like ``pair_with_mock_drive_service_connection``, with
+        messages over WebRTC joined by a fake channel."""
+        return cls.pair_with_mock_drive_service_connection(mock_webrtc=True, **kwargs)
+
+    @classmethod
     def _pair_with_google_drive_testing_connection(
         cls, **kwargs: Any
     ) -> tuple["SyftRDSClient", "SyftRDSClient"]:

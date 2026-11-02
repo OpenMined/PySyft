@@ -63,6 +63,8 @@ from syft.sync.peers.peer_store import PeerStore
 from syft.sync.connections.config import ConnectionRouterConfig
 from syft.sync.platforms.gdrive_files_platform import GdriveFilesPlatform
 from syft.sync.connections.protocols import Connections
+from syft.sync.connections.webrtc.fake_channel import FakeChannel
+from syft.sync.connections.webrtc.webrtc_p2p import WebRTCP2PConnection
 from syft.sync.version.peer_manager import (
     PeerManager,
     PeerManagerConfig,
@@ -780,6 +782,7 @@ class SyftboxManager(BaseModelCallbackMixin):
         collection_specs: list["CollectionSyncSpec"] | None = None,
         ds_encryption_policy: EncryptionPolicy | None = None,
         do_encryption_policy: EncryptionPolicy | None = None,
+        mock_webrtc: bool = False,
     ):
         """Create a pair of managers using mock Google Drive services for testing.
 
@@ -800,6 +803,9 @@ class SyftboxManager(BaseModelCallbackMixin):
             encryption: Require encryption on both sides
             ds_encryption_policy: Policy of the DS; overrides ``encryption``
             do_encryption_policy: Policy of the DO; overrides ``encryption``
+            mock_webrtc: Send messages over WebRTC joined by a ``FakeChannel``
+                instead of the Drive inbox and outbox (see
+                ``pair_with_mock_drive_and_mock_webrtc_connection``)
 
         Returns:
             Tuple of (ds_manager, do_manager)
@@ -833,12 +839,14 @@ class SyftboxManager(BaseModelCallbackMixin):
         do_cached_client, ds_cached_client = mock_drive_service.pair_with_mock_service(
             do_config.email, ds_config.email
         )
-        do_manager = cls.from_config(
-            do_config, SyftboxManager._drive_connections(do_cached_client)
-        )
-        ds_manager = cls.from_config(
-            ds_config, SyftboxManager._drive_connections(ds_cached_client)
-        )
+        do_connections = SyftboxManager._drive_connections(do_cached_client)
+        ds_connections = SyftboxManager._drive_connections(ds_cached_client)
+        if mock_webrtc:
+            do_connections, ds_connections = cls._with_fake_webrtc_p2p(
+                do_config, do_connections, ds_config, ds_connections
+            )
+        do_manager = cls.from_config(do_config, do_connections)
+        ds_manager = cls.from_config(ds_config, ds_connections)
 
         # Set up callbacks for DS -> DO communication
         ds_manager.file_writer.add_callback(
@@ -867,6 +875,31 @@ class SyftboxManager(BaseModelCallbackMixin):
             ds_manager.load_peers()
 
         return ds_manager, do_manager
+
+    @classmethod
+    def pair_with_mock_drive_and_mock_webrtc_connection(cls, **kwargs):
+        """``pair_with_mock_drive_service_connection``, with the same arguments,
+        but messages go over the real WebRTC core on both sides, joined by a
+        ``FakeChannel``. The mock Drive still does peering, datasets and
+        storage."""
+        return cls.pair_with_mock_drive_service_connection(mock_webrtc=True, **kwargs)
+
+    @staticmethod
+    def _with_fake_webrtc_p2p(
+        do_config: SyftboxManagerConfig,
+        do_connections: Connections,
+        ds_config: SyftboxManagerConfig,
+        ds_connections: Connections,
+    ) -> tuple[Connections, Connections]:
+        """Both connections with their p2p replaced by a WebRTC core, the two
+        cores joined by a ``FakeChannel``."""
+        do_p2p = WebRTCP2PConnection(do_config.email, do_config.syftbox_folder)
+        ds_p2p = WebRTCP2PConnection(ds_config.email, ds_config.syftbox_folder)
+        FakeChannel.connect(do_p2p, ds_p2p)
+        return (
+            do_connections.model_copy(update={"p2p_con": do_p2p}),
+            ds_connections.model_copy(update={"p2p_con": ds_p2p}),
+        )
 
     def add_peer(
         self,
