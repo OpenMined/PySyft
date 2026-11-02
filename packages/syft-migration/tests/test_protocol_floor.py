@@ -18,7 +18,7 @@ def _registry(protocol_version: str = "2", floor: str = "0") -> MigrationRegistr
     )
 
 
-def _peer(version: str, floor: str = "0") -> ProtocolSchema:
+def _peer_schema(version: str, floor: str = "0") -> ProtocolSchema:
     """The schema a peer advertises."""
     return ProtocolSchema(
         protocol_name="p", version=version, min_supported_version=floor
@@ -41,29 +41,29 @@ def test_registry_floor_defaults_to_zero():
     assert reg.min_supported_protocol_version == "0"
 
 
-def test_the_lower_version_is_chosen():
+def test_lower_version_chosen():
     reg = _registry(protocol_version="2")
-    assert reg.infer_protocol_version_to_use(_peer("1")) == "1"
-    assert reg.infer_protocol_version_to_use(_peer("3")) == "2"
+    assert reg.infer_protocol_version_to_use(_peer_schema("1")) == "1"
+    assert reg.infer_protocol_version_to_use(_peer_schema("3")) == "2"
 
 
 def test_versions_order_by_number():
     reg = _registry(protocol_version="10")
-    assert reg.infer_protocol_version_to_use(_peer("9")) == "9"
+    assert reg.infer_protocol_version_to_use(_peer_schema("9")) == "9"
 
 
-def test_our_floor_refuses_an_older_peer():
+def test_our_floor_refuses_older_peer():
     reg = _registry(protocol_version="2", floor="2")
     with pytest.raises(MigrationError, match="1"):
-        reg.infer_protocol_version_to_use(_peer("1"))
+        reg.infer_protocol_version_to_use(_peer_schema("1"))
 
 
-def test_the_peer_floor_refuses_us():
+def test_peer_floor_refuses_us():
     reg = _registry(protocol_version="2", floor="0")
     with pytest.raises(MigrationError):
-        reg.infer_protocol_version_to_use(_peer("3", floor="3"))
+        reg.infer_protocol_version_to_use(_peer_schema("3", floor="3"))
 
 
-def test_a_zero_floor_on_both_sides_refuses_nothing():
+def test_zero_floor_on_both_sides_refuses_nothing():
     reg = _registry(protocol_version="5", floor="0")
-    assert reg.infer_protocol_version_to_use(_peer("0", floor="0")) == "0"
+    assert reg.infer_protocol_version_to_use(_peer_schema("0", floor="0")) == "0"
