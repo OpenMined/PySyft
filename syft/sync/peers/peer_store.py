@@ -4,6 +4,7 @@ Holds peers, encryption keys, and the encryption policy of this client.
 Shared between PeerManager and all ConnectionRouter instances.
 """
 
+import json
 import os
 import tempfile
 from pathlib import Path
@@ -33,21 +34,9 @@ SETTINGS_FILENAME = "syft_settings.json"
 # Format of the crypto key file. Raise it when the layout of the file changes.
 # A file of any other version is refused.
 CRYPTO_KEYS_VERSION = 2
-# Format of the datasite settings file, under the same rule.
+# Format of the datasite settings file. Raise it when the layout of the file
+# changes. A file of a later version is refused.
 DATASITE_SETTINGS_VERSION = 1
-
-
-def _require_file_version(path: Path, version: int, expected: int) -> None:
-    """Refuse the file at ``path`` unless its format ``version`` is ``expected``.
-
-    Raises:
-        ValueError: if ``version`` is not ``expected``.
-    """
-    if version != expected:
-        raise ValueError(
-            f"The file at {path} has version {version}, and this client reads "
-            f"only version {expected}."
-        )
 
 
 class _KeyFile(BaseModel):
@@ -68,7 +57,11 @@ class _KeyFile(BaseModel):
                 another identity.
         """
         key_file = cls.model_validate_json(path.read_text())
-        _require_file_version(path, key_file.version, CRYPTO_KEYS_VERSION)
+        if key_file.version != CRYPTO_KEYS_VERSION:
+            raise ValueError(
+                f"The crypto key file at {path} has version {key_file.version}, "
+                f"and this client reads only version {CRYPTO_KEYS_VERSION}."
+            )
         if key_file.email != email:
             raise ValueError(
                 f"Encryption key file {path} belongs to {key_file.email!r}, "
@@ -100,11 +93,17 @@ class _DatasiteSettings(BaseModel):
         """Read the settings file at ``path``.
 
         Raises:
-            ValueError: if the file has another shape or version.
+            ValueError: if a later client wrote the file, or it has another
+                shape.
         """
-        settings = cls.model_validate_json(path.read_text())
-        _require_file_version(path, settings.version, DATASITE_SETTINGS_VERSION)
-        return settings
+        data = json.loads(path.read_text())
+        # Checked before the fields, so a later layout is refused by its version.
+        if data["version"] > DATASITE_SETTINGS_VERSION:
+            raise ValueError(
+                f"The settings file at {path} has version {data['version']}, and "
+                f"this client reads up to version {DATASITE_SETTINGS_VERSION}."
+            )
+        return cls.model_validate(data)
 
 
 def resolve_encryption_policy(

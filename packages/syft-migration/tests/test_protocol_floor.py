@@ -18,6 +18,13 @@ def _registry(protocol_version: str = "2", floor: str = "0") -> MigrationRegistr
     )
 
 
+def _peer(version: str, floor: str = "0") -> ProtocolSchema:
+    """The schema a peer advertises."""
+    return ProtocolSchema(
+        protocol_name="p", version=version, min_supported_version=floor
+    )
+
+
 def test_schema_floor_defaults_to_zero():
     # A peer that predates the floor field says nothing, so it refuses nothing.
     schema = ProtocolSchema(protocol_name="p", version="1")
@@ -36,32 +43,27 @@ def test_registry_floor_defaults_to_zero():
 
 def test_the_lower_version_is_chosen():
     reg = _registry(protocol_version="2")
-    assert reg.infer_protocol_version_to_use(peer_version="1") == "1"
-    assert reg.infer_protocol_version_to_use(peer_version="3") == "2"
+    assert reg.infer_protocol_version_to_use(_peer("1")) == "1"
+    assert reg.infer_protocol_version_to_use(_peer("3")) == "2"
 
 
 def test_versions_order_by_number():
     reg = _registry(protocol_version="10")
-    assert reg.infer_protocol_version_to_use(peer_version="9") == "9"
+    assert reg.infer_protocol_version_to_use(_peer("9")) == "9"
 
 
 def test_our_floor_refuses_an_older_peer():
     reg = _registry(protocol_version="2", floor="2")
     with pytest.raises(MigrationError, match="1"):
-        reg.infer_protocol_version_to_use(peer_version="1")
+        reg.infer_protocol_version_to_use(_peer("1"))
 
 
 def test_the_peer_floor_refuses_us():
     reg = _registry(protocol_version="2", floor="0")
     with pytest.raises(MigrationError):
-        reg.infer_protocol_version_to_use(peer_version="3", peer_min="3")
+        reg.infer_protocol_version_to_use(_peer("3", floor="3"))
 
 
 def test_a_zero_floor_on_both_sides_refuses_nothing():
     reg = _registry(protocol_version="5", floor="0")
-    assert reg.infer_protocol_version_to_use(peer_version="0", peer_min="0") == "0"
-
-
-def test_an_unknown_peer_floor_is_treated_as_zero():
-    reg = _registry(protocol_version="2", floor="0")
-    assert reg.infer_protocol_version_to_use(peer_version="1", peer_min=None) == "1"
+    assert reg.infer_protocol_version_to_use(_peer("0", floor="0")) == "0"

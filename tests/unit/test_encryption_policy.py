@@ -281,12 +281,13 @@ def test_client_with_other_policy_than_disk_raises(tmp_path):
         resolve_encryption_policy(path, REQUIRED)
 
 
-def test_settings_file_of_other_version_refused(tmp_path):
+def test_settings_file_of_later_version_refused(tmp_path):
     path = tmp_path / "syft_settings.json"
     resolve_encryption_policy(path, OPTIONAL)
     later_version = DATASITE_SETTINGS_VERSION + 1
     data = json.loads(path.read_text())
-    data["version"] = later_version
+    # A later release that bumps the version also changes the fields.
+    data.update(version=later_version, new_setting=True)
     path.write_text(json.dumps(data))
 
     with pytest.raises(ValueError, match=f"version {later_version}"):

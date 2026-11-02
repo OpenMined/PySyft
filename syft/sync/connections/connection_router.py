@@ -4,7 +4,7 @@ from collections.abc import Container
 from typing import TYPE_CHECKING, List, Optional
 
 from pydantic import BaseModel
-from syft_migration import MigratableObject, ProtocolSchema, protocol_version_at_least
+from syft_migration import MigratableObject, protocol_version_at_least
 
 from syft.migrations import (
     PROTOCOL_NAME,
@@ -37,20 +37,6 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def _protocol_version_to_use(peer_schema: ProtocolSchema) -> str:
-    """The syft protocol version to speak with a peer that advertises
-    ``peer_schema``: the lower of the two current versions, at or above both
-    floors.
-
-    Raises:
-        MigrationError: when no version satisfies both sides.
-    """
-    return client_registry.infer_protocol_version_to_use(
-        peer_version=peer_schema.version,
-        peer_min=peer_schema.min_supported_version,
-    )
-
-
 class ConnectionRouter(BaseModel):
     """The one router of a manager. ``SyftboxManager.from_config`` builds it
     and hands it to every part, so they share one set of connections and one
@@ -77,7 +63,9 @@ class ConnectionRouter(BaseModel):
             MigrationError: when no version satisfies both sides.
         """
         schema = self.peer_store.protocol_schema(peer_email, PROTOCOL_NAME)
-        return None if schema is None else _protocol_version_to_use(schema)
+        if schema is None:
+            return None
+        return client_registry.infer_protocol_version_to_use(schema)
 
     def pair_speaks_protocol(self, peer_email: str, version: str) -> bool:
         """Whether this client and ``peer_email`` both speak syft protocol
@@ -87,6 +75,9 @@ class ConnectionRouter(BaseModel):
         decides from the version file it read last, so one side can switch
         before the other. The new behaviour must still work while the peer uses
         the old one.
+
+        Raises:
+            MigrationError: when no version satisfies both sides.
         """
         negotiated = self.negotiated_protocol_version_for_peer(peer_email)
         return negotiated is not None and protocol_version_at_least(negotiated, version)
@@ -117,7 +108,7 @@ class ConnectionRouter(BaseModel):
                 "peer that speaks an earlier protocol cannot read this message."
             )
             return message
-        protocol_version = _protocol_version_to_use(schema)
+        protocol_version = client_registry.infer_protocol_version_to_use(schema)
         if schema.version == protocol_version:
             # The peer speaks the negotiated version, so its advertised slim
             # schema is the target; computing our own full schema on every

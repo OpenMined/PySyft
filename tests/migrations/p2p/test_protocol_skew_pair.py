@@ -56,6 +56,9 @@ def test_pair_on_next_protocol_speaks_it(next_protocol):
 
     assert ds_router.pair_speaks_protocol(do_manager.email, next_protocol.next)
     assert do_router.pair_speaks_protocol(ds_manager.email, next_protocol.next)
+    # A pair on a protocol also speaks every earlier one.
+    assert ds_router.pair_speaks_protocol(do_manager.email, next_protocol.released)
+    assert do_router.pair_speaks_protocol(ds_manager.email, next_protocol.released)
 
 
 def test_unknown_peer_speaks_no_protocol(advertised_schemas):

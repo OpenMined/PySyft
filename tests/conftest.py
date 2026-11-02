@@ -97,6 +97,10 @@ def pin_syft_protocol(monkeypatch, advertised_schemas):
     afterwards, so they read the new version file.
 
     It wraps ``advertised_schemas``, so an advertised schema is capped too.
+
+    Only the negotiation is held back. Code that reads
+    ``client_registry.protocol_version`` directly still acts at the next
+    version, so gate a new behaviour on ``ConnectionRouter.pair_speaks_protocol()``.
     """
     # email of a held client -> the syft protocol version it is held at
     held_versions: dict[str, str] = {}
