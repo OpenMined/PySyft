@@ -4,9 +4,10 @@ from collections.abc import Container
 from typing import TYPE_CHECKING, List, Optional
 
 from pydantic import BaseModel
-from syft_migration import MigratableObject
+from syft_migration import MigratableObject, ProtocolSchema, protocol_version_at_least
 
 from syft.migrations import (
+    PROTOCOL_NAME,
     SYFT_CLIENT_PROTOCOL_VERSION,
     client_migration_service,
     client_registry,
@@ -14,6 +15,9 @@ from syft.migrations import (
 from syft.sync.checkpoints.checkpoint import Checkpoint, IncrementalCheckpoint
 from syft.sync.checkpoints.rolling_state import RollingState
 from syft.sync.connections.base_connection import FileCollection
+from syft.sync.connections.naming import PEERS_META_KEY
+from syft.sync.connections.protocols import Connections
+from syft.sync.connections.types import MessageKind, RawMessage, SendStatus
 from syft.sync.events.file_change_event import (
     FileChangeEventsMessage,
 )
@@ -21,9 +25,6 @@ from syft.sync.messages.proposed_filechange import ProposedFileChangesMessage
 from syft.sync.peers.exceptions import SyftPeerNotReadyError
 from syft.sync.peers.peer import Peer, PeerState
 from syft.sync.peers.peer_store import PeerStore
-from syft.sync.connections.naming import PEERS_META_KEY
-from syft.sync.connections.protocols import Connections
-from syft.sync.connections.types import MessageKind, RawMessage, SendStatus
 from syft.sync.utils.print_utils import (
     print_peer_added_to_platform,
     print_peer_adding_to_platform,
@@ -34,6 +35,20 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
+
+
+def _protocol_version_to_use(peer_schema: ProtocolSchema) -> str:
+    """The syft protocol version to speak with a peer that advertises
+    ``peer_schema``: the lower of the two current versions, at or above both
+    floors.
+
+    Raises:
+        MigrationError: when no version satisfies both sides.
+    """
+    return client_registry.infer_protocol_version_to_use(
+        peer_version=peer_schema.version,
+        peer_min=peer_schema.min_supported_version,
+    )
 
 
 class ConnectionRouter(BaseModel):
@@ -49,6 +64,32 @@ class ConnectionRouter(BaseModel):
 
     def get_authenticated_email(self) -> str:
         return self.connections.peering_con.whoami()
+
+    # =========================================================================
+    # PROTOCOL NEGOTIATION
+    # =========================================================================
+
+    def negotiated_protocol_version_for_peer(self, peer_email: str) -> str | None:
+        """The syft protocol version this client and ``peer_email`` both speak,
+        or None when the peer's schema is not known.
+
+        Raises:
+            MigrationError: when no version satisfies both sides.
+        """
+        schema = self.peer_store.protocol_schema(peer_email, PROTOCOL_NAME)
+        return None if schema is None else _protocol_version_to_use(schema)
+
+    def pair_speaks_protocol(self, peer_email: str, version: str) -> bool:
+        """Whether this client and ``peer_email`` both speak syft protocol
+        ``version`` or later. False when the peer's schema is not known.
+
+        Gate the behaviour that a protocol version adds on this check. Each side
+        decides from the version file it read last, so one side can switch
+        before the other. The new behaviour must still work while the peer uses
+        the old one.
+        """
+        negotiated = self.negotiated_protocol_version_for_peer(peer_email)
+        return negotiated is not None and protocol_version_at_least(negotiated, version)
 
     # =========================================================================
     # MESSAGE SEND/RECEIVE (with encryption)
@@ -68,7 +109,7 @@ class ConnectionRouter(BaseModel):
         A peer without a known schema is assumed to run the current protocol,
         the same policy as jobs; the assumption is logged.
         """
-        schema = self.peer_store.protocol_schema(peer_email, "syft")
+        schema = self.peer_store.protocol_schema(peer_email, PROTOCOL_NAME)
         if schema is None:
             logger.warning(
                 f"No syft protocol schema known for peer {peer_email!r}. "
@@ -76,10 +117,7 @@ class ConnectionRouter(BaseModel):
                 "peer that speaks an earlier protocol cannot read this message."
             )
             return message
-        protocol_version = client_registry.infer_protocol_version_to_use(
-            peer_version=schema.version,
-            peer_min=schema.min_supported_version,
-        )
+        protocol_version = _protocol_version_to_use(schema)
         if schema.version == protocol_version:
             # The peer speaks the negotiated version, so its advertised slim
             # schema is the target; computing our own full schema on every
