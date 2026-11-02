@@ -7,7 +7,6 @@ from pydantic import BaseModel, Field, PrivateAttr
 
 from syft.sync.connections.connection_router import ConnectionRouter
 from syft.sync.callback_mixin import BaseModelCallbackMixin
-from syft.sync.events.file_change_event import FileChangeEventsMessage
 from syft.sync.peers.exceptions import SyftPeerNotReadyError
 from syft.sync.messages.proposed_filechange import (
     ProposedFileChange,
@@ -172,17 +171,6 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
 
     # --- Pulling from datasite outboxes ---
 
-    def download_events_message_with_new_connection(
-        self, file_id: str, peer_email: str
-    ) -> FileChangeEventsMessage | None:
-        """Download from outbox using a new connection (thread-safe).
-
-        Returns None when the message is skipped (see
-        ``ConnectionRouter.watcher_read_events_message``).
-        """
-        raw = self.connection_router.download_outbox_message(file_id)
-        return self.connection_router.watcher_read_events_message(peer_email, raw)
-
     def download_collection_file_with_new_connection(
         self, file_id: str, owner_email: str
     ) -> bytes:
@@ -198,15 +186,7 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
 
     def sync_down(self, peer_emails: list[str]):
         for peer_email in peer_emails:
-            # Sync messages with parallel download
-            event_count = self.datasite_watcher_cache.sync_down_parallel(
-                peer_email,
-                self._executor,
-                lambda fid,
-                pe=peer_email: self.download_events_message_with_new_connection(
-                    fid, pe
-                ),
-            )
+            event_count = self.datasite_watcher_cache.sync_down(peer_email)
             if event_count:
                 print(f"Pulled {event_count} inbound event(s) from {peer_email}")
             # Sync collections with parallel download

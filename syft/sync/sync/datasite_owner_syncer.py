@@ -330,7 +330,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             for raw, message in received:
                 if self._apply_proposed_message(raw, message):
                     proposed_count += len(message.proposed_file_changes)
-            self.connection_router.owner_mark_all_processed([r for r, _ in received])
+            self.connection_router.mark_all_processed([r for r, _ in received])
         except SyftPeerNotReadyError as e:
             warnings.warn(f"Messages from {peer_email} stay in the inbox: {e}")
         except Exception as e:
