@@ -1344,7 +1344,6 @@ class SyftboxManager(BaseModelCallbackMixin):
         dirs_to_delete = [
             self.syftbox_folder,  # main syftbox folder (datasets, private, etc.)
             syftbox_parent / f"{syftbox_name}-events",  # DO event cache
-            syftbox_parent / f"{syftbox_name}-event-messages",  # DS event cache
         ]
         for d in dirs_to_delete:
             if d.exists():

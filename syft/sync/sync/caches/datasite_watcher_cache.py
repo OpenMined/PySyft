@@ -77,7 +77,6 @@ class DataSiteWatcherCacheConfig(BaseModel):
     email: str = ""
     use_in_memory_cache: bool = True
     syftbox_folder: Path | None = None
-    events_base_path: Path | None = None
     # Collections to sync down (prefix + local subpath per collection type)
     collection_specs: list[CollectionSyncSpec] = []
 
@@ -140,54 +139,16 @@ class DataSiteWatcherCache(BaseModel):
             if config.syftbox_folder is None:
                 raise ValueError("syftbox_folder is required for non-in-memory cache")
 
-            syftbox_folder_name = Path(config.syftbox_folder).name
-            syftbox_parent = Path(config.syftbox_folder).parent
-            events_folder = syftbox_parent / f"{syftbox_folder_name}-event-messages"
-
             cache = cls(
-                events_connection=FSFileConnection(
-                    base_dir=events_folder, dtype=FileChangeEventsMessage
-                ),
                 file_connection=FSFileConnection(base_dir=config.syftbox_folder),
                 connection_router=connection_router,
                 syftbox_folder=config.syftbox_folder,
                 collection_specs=config.collection_specs,
                 saves_watcher_state=True,
             )
-            cache._load_cached_state()
+            cache._load_collection_hashes_from_disk()
             cache._restore_saved_state()
             return cache
-
-    def _load_cached_state(self):
-        """Load cached state from disk: file hashes, last messages, and collection hashes."""
-        self._load_saved_messages()
-        self._load_collection_hashes_from_disk()
-
-    def _load_saved_messages(self):
-        """Restore the received messages, last messages and file hashes from
-        the saved events messages, oldest first."""
-        try:
-            saved_messages = self.events_connection.get_all()
-        except Exception:
-            saved_messages = []
-        for events_message in sorted(saved_messages, key=lambda m: m.timestamp):
-            self._restore_received(events_message)
-            self._restore_file_hashes(events_message)
-
-    def _restore_received(self, events_message: FileChangeEventsMessage) -> None:
-        """Record a saved message as received. It does not store its sender, but
-        its events name it: only events for the sender's datasite are saved."""
-        if events_message.events:
-            msg_id = events_message.message_filepath.as_string()
-            self._record_received(events_message.events[0].datasite_email, msg_id)
-
-    def _restore_file_hashes(self, events_message: FileChangeEventsMessage) -> None:
-        for event in events_message.events:
-            path_key = Path(event.path_in_syftbox)
-            if event.is_deleted:
-                self.file_hashes.pop(path_key, None)
-            else:
-                self.file_hashes[path_key] = event.new_hash
 
     def _load_collection_hashes_from_disk(self):
         """Scan local collection directories and compute hashes to populate collection_hashes."""
@@ -300,10 +261,8 @@ class DataSiteWatcherCache(BaseModel):
         ``<syftbox>/<peer_email>/``, so an event aimed anywhere else is dropped
         before it reaches the local file connection.
 
-        The saved copy of the message holds only the accepted events.
-        ``_load_saved_messages`` reads saved messages back on start,
-        and a saved message does not record its sender, so a dropped event
-        cannot be checked again there.
+        The record of the message and the saved state of ``peer_email`` hold
+        only the accepted events, so a restore never writes a dropped event.
         """
         accepted = _events_within_peer_datasite(event_message.events, peer_email)
         saved = event_message.model_copy(update={"events": accepted})

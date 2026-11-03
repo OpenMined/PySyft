@@ -94,8 +94,8 @@ def test_do_incremental_sync_downloads_only_new_events():
 
 
 def test_ds_incremental_sync_downloads_only_new_events(monkeypatch):
-    """Pre-populate cache with first n events, create new manager with same cache dir,
-    sync with n+m in outbox, verify only m new events are downloaded."""
+    """Sync n events, add m more to the outbox, restart the DS, and verify that
+    the restored state makes it download only the m new events."""
     import time
 
     # Create initial pair with filesystem cache
@@ -130,17 +130,14 @@ def test_ds_incremental_sync_downloads_only_new_events(monkeypatch):
     # Create a NEW SyftboxManager with the same cache directory (simulating restart)
     new_ds_manager = ds_manager._copy()
 
-    # Verify the new manager's cache loaded existing events from disk
+    # Verify the new manager restored its state from the DS's storage
     new_cache = new_ds_manager.datasite_watcher_syncer.datasite_watcher_cache
-    assert len(new_cache.events_connection) == initial_cache_count, (
-        f"New manager cache should have loaded {initial_cache_count} events from disk"
-    )
     assert (
         new_cache.last_msg_id_per_peer[do_manager.email]
         == ds_cache.last_msg_id_per_peer[do_manager.email]
-    ), "last_msg_id_per_peer should be pre-populated from disk cache"
+    ), "last_msg_id_per_peer should be restored from the saved state"
     assert len(new_cache.file_hashes) == 3, (
-        "file_hashes should be pre-populated from disk cache"
+        "file_hashes should be restored from the saved state"
     )
 
     # Sync the new manager - should only download the 2 new events
@@ -157,11 +154,6 @@ def test_ds_incremental_sync_downloads_only_new_events(monkeypatch):
     new_ds_manager.sync()
     assert len(received) == 2, (
         f"Should receive only 2 new messages, got {len(received)}"
-    )
-
-    # Verify total events in cache
-    assert len(new_cache.events_connection) == 5, (
-        "Should have 5 total events after syncing new events"
     )
 
 
