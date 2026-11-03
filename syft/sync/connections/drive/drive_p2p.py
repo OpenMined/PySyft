@@ -97,9 +97,12 @@ class DriveP2PConnection(P2PConnection):
     def send(
         self, peer: str, msg_id: str, data: bytes, kind: MessageKind
     ) -> SendStatus:
+        """A proposal that an earlier send uploaded is not uploaded again. File
+        events are not checked: the DS skips an outbox message it received."""
         with raise_unavailable(f"Could not send message {msg_id} to Drive."):
             if kind is MessageKind.PROPOSED_CHANGES:
-                self.watcher_send_raw_bytes_to_inbox(peer, msg_id, data)
+                if not self._is_uploaded(msg_id):
+                    self.watcher_send_raw_bytes_to_inbox(peer, msg_id, data)
             elif kind is MessageKind.FILE_EVENTS:
                 self.owner_write_raw_bytes_to_outbox(peer, msg_id, data)
             else:
@@ -109,18 +112,6 @@ class DriveP2PConnection(P2PConnection):
     def delivered(self) -> list[str]:
         # Every Drive send is DELIVERED when it returns; none waits for a peer.
         return []
-
-    @raise_unavailable("Could not check Drive for a sent message.")
-    def is_delivered(self, peer: str, msg_id: str) -> bool:
-        # The sender owns the file it uploads, also after the peer moves it to
-        # an archive, so a search of my own files by name finds it in any folder.
-        query = f"name='{msg_id}' and 'me' in owners and trashed=false"
-        results = execute_with_retries(
-            self._cached_client.client.drive_service.files().list(
-                q=query, fields="files(id)", pageSize=1
-            )
-        )
-        return bool(results["files"])
 
     def receive(
         self,
@@ -232,6 +223,18 @@ class DriveP2PConnection(P2PConnection):
         self._cached_client.client.delete_multiple_files_by_ids(handles)
 
     # -- Drive -----------------------------------------------------------------
+
+    def _is_uploaded(self, msg_id: str) -> bool:
+        """Whether I uploaded a message named ``msg_id``."""
+        # I own the file I upload, also after the peer moves it to its archive,
+        # so a search of my own files by name finds it in any folder.
+        query = f"name='{msg_id}' and 'me' in owners and trashed=false"
+        results = execute_with_retries(
+            self._cached_client.client.drive_service.files().list(
+                q=query, fields="files(id)", pageSize=1
+            )
+        )
+        return bool(results["files"])
 
     def _list_inbox(self, peer: str) -> list[dict]:
         """The messages in the inbox from ``peer``, oldest first, each with

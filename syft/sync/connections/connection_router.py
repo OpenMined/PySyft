@@ -176,10 +176,6 @@ class ConnectionRouter(BaseModel):
         """Finish ``messages``, as received by either role."""
         self.connections.p2p_con.mark_all_processed(messages)
 
-    def is_delivered(self, peer_email: str, msg_id: str) -> bool:
-        """Whether the message sent to ``peer_email`` under ``msg_id`` reached it."""
-        return self.connections.p2p_con.is_delivered(peer_email, msg_id)
-
     def owner_write_event_messages_to_outbox(
         self, recipient_email: str, events_message: FileChangeEventsMessage
     ) -> SendStatus:

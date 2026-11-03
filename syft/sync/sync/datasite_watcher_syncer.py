@@ -190,11 +190,10 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
     def _upload_spooled_to(self, recipient: str) -> None:
         for message in self.spool.pending_messages(recipient):
             msg_id = message.message_filename.as_string()
-            # An earlier upload may have stopped before it removed the message.
-            if not self.connection_router.is_delivered(recipient, msg_id):
-                self.connection_router.watcher_send_proposed_file_changes_message(
-                    recipient, message
-                )
+            # The send drops a message that an upload stored before a stop.
+            self.connection_router.watcher_send_proposed_file_changes_message(
+                recipient, message
+            )
             self.spool.remove(recipient, msg_id)
 
     def sync_up(self) -> None:

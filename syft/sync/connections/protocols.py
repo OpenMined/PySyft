@@ -66,8 +66,10 @@ class P2PConnection(RouterConnection, ABC):
         """Send ``data`` to ``peer`` under ``msg_id``.
 
         ``msg_id`` is chosen by the sender and stays the same if the message is
-        sent again. ``kind`` lets a connection keep the two kinds apart, as
-        Drive does with an inbox and an outbox.
+        sent again, as after a stop. The peer then applies it once: the
+        connection drops the second copy, or the peer skips it. ``kind`` lets a
+        connection keep the two kinds apart, as Drive does with an inbox and an
+        outbox.
 
         Raises:
             ConnectionUnavailableError: when the backend cannot be reached.
@@ -77,15 +79,6 @@ class P2PConnection(RouterConnection, ABC):
     def delivered(self) -> list[str]:
         """The ``msg_id`` of each queued message the peer stored since the last
         call. A connection that only returns ``DELIVERED`` returns nothing."""
-
-    @abstractmethod
-    def is_delivered(self, peer: str, msg_id: str) -> bool:
-        """Whether the message sent to ``peer`` under ``msg_id`` is stored where
-        the peer finds it, or was processed there.
-
-        A sender that stopped between a send and its record of the send asks
-        this before it sends the message again.
-        """
 
     @abstractmethod
     def receive(
