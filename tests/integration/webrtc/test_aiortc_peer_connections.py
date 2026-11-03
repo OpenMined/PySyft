@@ -5,6 +5,7 @@ import os
 import pytest
 
 from syft.sync.connections.types import MessageKind
+from syft.sync.connections.webrtc.aiortc_peer_connections import AiortcPeerConnections
 from syft.sync.connections.webrtc.local_signaling import LocalSignaling
 from syft.sync.connections.webrtc.webrtc_p2p import WebRTCP2PConnection
 
@@ -20,8 +21,8 @@ def cores(tmp_path):
     do = WebRTCP2PConnection(DO, tmp_path / "do")
     ds = WebRTCP2PConnection(DS, tmp_path / "ds")
     signaling = LocalSignaling()
-    do.open(signaling)
-    ds.open(signaling)
+    do.open(AiortcPeerConnections(signaling))
+    ds.open(AiortcPeerConnections(signaling))
     yield do, ds
     do.close()
     ds.close()

@@ -1,5 +1,5 @@
-"""The aiortc layer under the WebRTC core: a loop thread and one data channel
-per peer. It only moves frames; the core does everything else."""
+"""``PeerConnections`` over aiortc: a loop thread and one data channel per
+peer. It only moves frames."""
 
 import asyncio
 import logging
@@ -14,9 +14,12 @@ from aiortc import (
     RTCSessionDescription,
 )
 
-from syft.sync.connections.webrtc.channel import Channel
+from syft.sync.connections.webrtc.peer_connections import (
+    OnFrame,
+    OnOpen,
+    PeerConnections,
+)
 from syft.sync.connections.webrtc.signaling import Signaling
-from syft.sync.connections.webrtc.webrtc_p2p import WebRTCP2PConnection
 
 logger = logging.getLogger(__name__)
 
@@ -26,45 +29,42 @@ CHANNEL_LABEL = "syft"
 LOCAL_ONLY = RTCConfiguration(iceServers=[])
 
 
-class AiortcChannel(Channel):
-    """An aiortc data channel. ``send`` works from any thread; the frame goes
-    out on the loop thread."""
+class AiortcPeerConnections(PeerConnections):
+    """One aiortc peer connection and data channel per peer, and the asyncio
+    loop thread that runs them. ``on_open`` and ``on_frame`` run on that
+    thread."""
 
-    def __init__(self, channel: RTCDataChannel, loop: asyncio.AbstractEventLoop):
-        self._channel = channel
-        self._loop = loop
-
-    def send(self, frame: bytes) -> None:
-        self._loop.call_soon_threadsafe(self._channel.send, frame)
-
-
-class AiortcPeerConnections:
-    """One core's aiortc peer connections, one data channel per peer, and the
-    asyncio loop thread that runs them. Frames reach the core's ``on_frame``
-    on that thread."""
-
-    def __init__(self, core: WebRTCP2PConnection, signaling: Signaling):
-        self.core = core
+    def __init__(self, signaling: Signaling):
         self.signaling = signaling
+        self.email: str | None = None
+        self._on_open: OnOpen | None = None
+        self._on_frame: OnFrame | None = None
         self._loop = asyncio.new_event_loop()
-        self._thread = threading.Thread(
-            target=self._loop.run_forever, name=f"webrtc-{core.email}", daemon=True
-        )
-        # peer email -> its peer connection
-        self._connections: dict[str, RTCPeerConnection] = {}
+        self._thread = threading.Thread(target=self._loop.run_forever, daemon=True)
+        # peer email -> its aiortc peer connection
+        self._rtc_connections: dict[str, RTCPeerConnection] = {}
+        # peer email -> its data channel
+        self._channels: dict[str, RTCDataChannel] = {}
 
-    def open(self) -> None:
+    def open(self, email: str, on_open: OnOpen, on_frame: OnFrame) -> None:
         """Start the loop thread and answer offers from peers."""
+        self.email = email
+        self._on_open = on_open
+        self._on_frame = on_frame
+        self._thread.name = f"webrtc-{email}"
         self._thread.start()
-        self._run(self.signaling.listen(self.core.email, self._answer))
+        self._run(self.signaling.listen(email, self._answer))
 
     def connect(self, peer: str, timeout: float = CONNECT_TIMEOUT_SECONDS) -> None:
-        """Connect to ``peer``; return once the channel is open."""
         self._run(self._connect(peer), timeout)
+
+    def send(self, peer: str, frame: bytes) -> None:
+        """Works from any thread; the frame goes out on the loop thread."""
+        self._loop.call_soon_threadsafe(self._send_on_loop, peer, frame)
 
     def close(self) -> None:
         """Close every peer connection and stop the loop thread."""
-        self._run(self._close_connections())
+        self._run(self._close_rtc_connections())
         self._loop.call_soon_threadsafe(self._loop.stop)
         self._thread.join()
         self._loop.close()
@@ -77,55 +77,63 @@ class AiortcPeerConnections:
         finally:
             future.cancel()
 
+    def _send_on_loop(self, peer: str, frame: bytes) -> None:
+        """Dropped when ``peer`` has no open channel; an unconfirmed message
+        stays queued and goes again on the next ``on_open``."""
+        channel = self._channels.get(peer)
+        if channel is not None and channel.readyState == "open":
+            channel.send(frame)
+
     async def _connect(self, peer: str) -> None:
-        connection = await self._new_connection(peer)
-        channel = connection.createDataChannel(CHANNEL_LABEL)
-        self._attach(peer, channel)
+        rtc = await self._new_rtc_connection(peer)
+        channel = rtc.createDataChannel(CHANNEL_LABEL)
+        self._use_channel(peer, channel)
         opened = asyncio.Event()
 
         @channel.on("open")
         def on_open() -> None:
-            self.core.on_open(peer)
+            self._on_open(peer)
             opened.set()
 
-        await connection.setLocalDescription(await connection.createOffer())
-        offer = connection.localDescription.sdp
-        answer = await self.signaling.offer(self.core.email, peer, offer)
-        await connection.setRemoteDescription(RTCSessionDescription(answer, "answer"))
+        await rtc.setLocalDescription(await rtc.createOffer())
+        offer = rtc.localDescription.sdp
+        answer = await self.signaling.offer(self.email, peer, offer)
+        await rtc.setRemoteDescription(RTCSessionDescription(answer, "answer"))
         await opened.wait()
 
     async def _answer(self, sender: str, offer: str) -> str:
-        connection = await self._new_connection(sender)
+        rtc = await self._new_rtc_connection(sender)
 
         # aiortc hands over the channel already open.
-        @connection.on("datachannel")
+        @rtc.on("datachannel")
         def on_datachannel(channel: RTCDataChannel) -> None:
-            self._attach(sender, channel)
-            self.core.on_open(sender)
+            self._use_channel(sender, channel)
+            self._on_open(sender)
 
-        await connection.setRemoteDescription(RTCSessionDescription(offer, "offer"))
-        await connection.setLocalDescription(await connection.createAnswer())
-        return connection.localDescription.sdp
+        await rtc.setRemoteDescription(RTCSessionDescription(offer, "offer"))
+        await rtc.setLocalDescription(await rtc.createAnswer())
+        return rtc.localDescription.sdp
 
-    async def _new_connection(self, peer: str) -> RTCPeerConnection:
-        """A peer connection to ``peer``, in place of any older one."""
-        old = self._connections.pop(peer, None)
+    async def _new_rtc_connection(self, peer: str) -> RTCPeerConnection:
+        """An aiortc peer connection to ``peer``, in place of any older one."""
+        old = self._rtc_connections.pop(peer, None)
         if old is not None:
             await old.close()
-        self._connections[peer] = RTCPeerConnection(LOCAL_ONLY)
-        return self._connections[peer]
+        self._rtc_connections[peer] = RTCPeerConnection(LOCAL_ONLY)
+        return self._rtc_connections[peer]
 
-    def _attach(self, peer: str, channel: RTCDataChannel) -> None:
-        self.core.attach(peer, AiortcChannel(channel, self._loop))
-        channel.on("message", lambda frame: self._on_frame(peer, frame))
+    def _use_channel(self, peer: str, channel: RTCDataChannel) -> None:
+        self._channels[peer] = channel
+        channel.on("message", lambda frame: self._handle_frame(peer, frame))
 
-    def _on_frame(self, peer: str, frame: bytes) -> None:
+    def _handle_frame(self, peer: str, frame: bytes) -> None:
         # Logged, not raised: raised here it would end up inside aiortc.
         try:
-            self.core.on_frame(peer, frame)
+            self._on_frame(peer, frame)
         except Exception:
             logger.exception("Dropped a WebRTC frame from %s", peer)
 
-    async def _close_connections(self) -> None:
-        await asyncio.gather(*(c.close() for c in self._connections.values()))
-        self._connections.clear()
+    async def _close_rtc_connections(self) -> None:
+        await asyncio.gather(*(c.close() for c in self._rtc_connections.values()))
+        self._rtc_connections.clear()
+        self._channels.clear()

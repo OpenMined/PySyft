@@ -1,4 +1,4 @@
-"""Managers that send their messages over WebRTC joined by a FakeChannel."""
+"""Managers that send their messages over WebRTC joined by FakePeerConnections."""
 
 from pathlib import Path
 

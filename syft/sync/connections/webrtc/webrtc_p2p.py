@@ -1,35 +1,30 @@
 """Messages between peers over WebRTC: the synchronous core.
 
 The core keeps the queues on disk, sends receipts and resends what the peer has
-not confirmed. The ``Channel`` under it only carries frames: an aiortc data
-channel in production, a ``FakeChannel`` in tests.
+not confirmed. The ``PeerConnections`` under it only carry frames: aiortc in
+production, ``FakePeerConnections`` in tests.
 """
 
 import threading
 from collections import defaultdict
 from collections.abc import Container
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 from pydantic import BaseModel, ConfigDict
 
 from syft.sync.connections.protocols import P2PConnection
 from syft.sync.connections.types import MessageKind, RawMessage, SendStatus
-from syft.sync.connections.webrtc.channel import Channel
 from syft.sync.connections.webrtc.message_queue import (
     BYTES_AS_BASE64,
     MessageQueue,
     QueuedMessage,
 )
-from syft.sync.connections.webrtc.signaling import Signaling
+from syft.sync.connections.webrtc.peer_connections import PeerConnections
 from syft.sync.sync.constants import CACHE_DIR
 
-if TYPE_CHECKING:
-    from syft.sync.connections.webrtc.aiortc_peer_connections import (
-        AiortcPeerConnections,
-    )
-
 WEBRTC_QUEUES_DIR = "webrtc"
+OUTGOING_DIR = "outgoing"
+INCOMING_DIR = "incoming"
 DELIVERY_TIMEOUT_SECONDS = 30.0
 
 
@@ -51,53 +46,41 @@ class WebRTCP2PConnection(P2PConnection):
     its incoming queue and sends a receipt back. The message then leaves the
     outgoing queue and ``delivered()`` reports it.
 
-    A real channel calls ``on_open`` and ``on_frame`` from aiortc's loop
-    thread, so they and ``send`` hold ``_lock``.
+    ``AiortcPeerConnections`` calls ``on_open`` and ``on_frame`` from aiortc's
+    loop thread, so they and ``send`` hold ``_lock``.
     """
 
     def __init__(self, email: str, syftbox_folder: Path):
         self.email = email
         self._folder = Path(syftbox_folder) / CACHE_DIR / WEBRTC_QUEUES_DIR
-        # peer email -> its channel
-        self._channels: dict[str, Channel] = {}
-        # Peers whose channel is open and got every older message again.
-        self._open: set[str] = set()
+        # Peers whose channel opened and who got every older message again.
+        # New messages go straight out only to them, so none overtakes an
+        # older one.
+        self._caught_up: set[str] = set()
         self._delivered: list[str] = []
-        # Reentrant: a FakeChannel brings the receipt back inside ``send``.
+        # Reentrant: FakePeerConnections brings the receipt back inside ``send``.
         self._lock = threading.RLock()
         self._receipt_arrived = threading.Condition(self._lock)
-        self._peer_connections: "AiortcPeerConnections | None" = None
+        self._peer_connections: PeerConnections | None = None
 
-    def open(self, signaling: Signaling) -> None:
-        """Start the aiortc peer connections and answer peers that connect over
-        ``signaling``. Needs the ``webrtc`` extra."""
-        # Imported here: aiortc is optional, a FakeChannel does not need it.
-        from syft.sync.connections.webrtc.aiortc_peer_connections import (
-            AiortcPeerConnections,
-        )
-
-        self._peer_connections = AiortcPeerConnections(self, signaling)
-        self._peer_connections.open()
+    def open(self, peer_connections: PeerConnections) -> None:
+        """Reach peers through ``peer_connections`` from now on: aiortc, or
+        ``FakePeerConnections`` in tests."""
+        self._peer_connections = peer_connections
+        peer_connections.open(self.email, self.on_open, self.on_frame)
 
     def connect(self, peer: str) -> None:
-        """Connect to ``peer`` over aiortc; return once the channel is open."""
+        """Open a channel to ``peer``; return once it is open."""
         self._peer_connections.connect(peer)
 
     def close(self) -> None:
         """Close the peer connections. Unconfirmed messages stay in the outgoing
         queues."""
         with self._lock:
-            self._channels.clear()
-            self._open.clear()
+            self._caught_up.clear()
         if self._peer_connections is not None:
             self._peer_connections.close()
             self._peer_connections = None
-
-    def attach(self, peer: str, channel: Channel) -> None:
-        """Use ``channel`` for ``peer`` from now on. Receipts go over it right
-        away; messages once it opens."""
-        with self._lock:
-            self._channels[peer] = channel
 
     def on_open(self, peer: str) -> None:
         """``peer``'s channel opened: send it every message it has not
@@ -106,22 +89,22 @@ class WebRTCP2PConnection(P2PConnection):
         with self._lock:
             for message in self._outgoing(peer).messages():
                 self._send_frame(peer, Frame(message=message))
-            self._open.add(peer)
+            self._caught_up.add(peer)
 
     def send(
         self, peer: str, msg_id: str, data: bytes, kind: MessageKind
     ) -> SendStatus:
         message = QueuedMessage(msg_id=msg_id, kind=kind, data=data)
-        # Stored first, and not under the folder lock while it travels: a
-        # FakeChannel brings the receipt back inside this call.
+        # Stored first, and not under the folder lock while it travels:
+        # FakePeerConnections brings the receipt back inside this call.
         with self._lock:
             self._outgoing(peer).add(message)
-            if peer in self._open:
+            if peer in self._caught_up:
                 self._send_frame(peer, Frame(message=message))
         return SendStatus.QUEUED
 
     def on_frame(self, peer: str, data: bytes) -> None:
-        """Called by ``peer``'s channel with each frame that arrives."""
+        """Called by the peer connections with each frame from ``peer``."""
         frame = Frame.model_validate_json(data)
         with self._lock:
             if frame.message is not None:
@@ -174,21 +157,20 @@ class WebRTCP2PConnection(P2PConnection):
             self._incoming(sender).remove(msg_ids)
 
     def _send_frame(self, peer: str, frame: Frame) -> None:
-        """Send ``frame`` if ``peer`` has a channel. A message without one
-        waits in the outgoing queue until ``on_open``."""
-        channel = self._channels.get(peer)
-        if channel is not None:
-            channel.send(frame.model_dump_json().encode())
+        """Send ``frame`` once ``open`` was called. A message that does not
+        arrive stays in the outgoing queue and goes again on ``on_open``."""
+        if self._peer_connections is not None:
+            self._peer_connections.send(peer, frame.model_dump_json().encode())
 
     def _all_delivered(self) -> bool:
-        outgoing = self._folder / "outgoing"
+        outgoing = self._folder / OUTGOING_DIR
         if not outgoing.exists():
             return True
         queues = [MessageQueue(p) for p in outgoing.iterdir() if p.is_dir()]
         return all(queue.is_empty() for queue in queues)
 
     def _outgoing(self, peer: str) -> MessageQueue:
-        return MessageQueue(self._folder / "outgoing" / peer)
+        return MessageQueue(self._folder / OUTGOING_DIR / peer)
 
     def _incoming(self, peer: str) -> MessageQueue:
-        return MessageQueue(self._folder / "incoming" / peer)
+        return MessageQueue(self._folder / INCOMING_DIR / peer)

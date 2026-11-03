@@ -1,12 +1,14 @@
-"""The WebRTC core over a FakeChannel, without managers."""
+"""WebRTCP2PConnection over FakePeerConnections, without managers."""
 
 import threading
 
 import pytest
 
 from syft.sync.connections.types import MessageKind, SendStatus
-from syft.sync.connections.webrtc.channel import Channel
-from syft.sync.connections.webrtc.fake_channel import FakeChannel
+from syft.sync.connections.webrtc.fake_peer_connections import (
+    FakeNetwork,
+    FakePeerConnections,
+)
 from syft.sync.connections.webrtc.webrtc_p2p import WebRTCP2PConnection
 
 DO = "do@example.com"
@@ -16,10 +18,18 @@ EVENTS = MessageKind.FILE_EVENTS
 
 
 @pytest.fixture
-def cores(tmp_path) -> tuple[WebRTCP2PConnection, WebRTCP2PConnection]:
+def network() -> FakeNetwork:
+    return FakeNetwork()
+
+
+@pytest.fixture
+def cores(tmp_path, network) -> tuple[WebRTCP2PConnection, WebRTCP2PConnection]:
+    """Both open on one fake network, the DS connected to the DO."""
     do = WebRTCP2PConnection(DO, tmp_path / "do")
     ds = WebRTCP2PConnection(DS, tmp_path / "ds")
-    FakeChannel.connect(do, ds)
+    do.open(FakePeerConnections(network))
+    ds.open(FakePeerConnections(network))
+    ds.connect(DO)
     return do, ds
 
 
@@ -67,33 +77,56 @@ def test_message_sent_twice_is_received_once(cores):
     assert msg_ids(do.receive(DS, PROPOSAL)) == ["m1"]
 
 
-def test_messages_wait_on_disk_until_peer_connects(tmp_path):
+def test_messages_wait_on_disk_until_peer_connects(tmp_path, network):
     do = WebRTCP2PConnection(DO, tmp_path / "do")
     ds = WebRTCP2PConnection(DS, tmp_path / "ds")
     ds.send(DO, "m1", b"first", PROPOSAL)
     ds.send(DO, "m2", b"second", PROPOSAL)
     assert do.receive(DS, PROPOSAL) == []
 
-    # A new core on the same folder, as after a restart, still has them.
+    # A new connection on the same folder, as after a restart, still has them.
     restarted_ds = WebRTCP2PConnection(DS, tmp_path / "ds")
-    FakeChannel.connect(do, restarted_ds)
+    do.open(FakePeerConnections(network))
+    restarted_ds.open(FakePeerConnections(network))
+    restarted_ds.connect(DO)
 
     assert msg_ids(do.receive(DS, PROPOSAL)) == ["m1", "m2"]
     assert restarted_ds.delivered() == ["m1", "m2"]
 
 
-def test_message_sent_before_channel_opens_follows_older_ones(tmp_path):
+def test_message_sent_after_connect_follows_older_ones(tmp_path, network):
     do = WebRTCP2PConnection(DO, tmp_path / "do")
     ds = WebRTCP2PConnection(DS, tmp_path / "ds")
+    do.open(FakePeerConnections(network))
+    ds.open(FakePeerConnections(network))
     ds.send(DO, "m1", b"", PROPOSAL)
-    do.attach(DS, FakeChannel(sender=DO, receiver=ds))
-    ds.attach(DO, FakeChannel(sender=DS, receiver=do))
+    assert do.receive(DS, PROPOSAL) == []
 
+    ds.connect(DO)
+    ds.send(DO, "m2", b"", PROPOSAL)
+
+    assert msg_ids(do.receive(DS, PROPOSAL)) == ["m1", "m2"]
+
+
+def test_messages_sent_after_close_arrive_once_reconnected(cores, network):
+    do, ds = cores
+    ds.close()
+    ds.send(DO, "m1", b"", PROPOSAL)
     ds.send(DO, "m2", b"", PROPOSAL)
     assert do.receive(DS, PROPOSAL) == []
 
-    ds.on_open(DO)
+    ds.open(FakePeerConnections(network))
+    ds.connect(DO)
+
     assert msg_ids(do.receive(DS, PROPOSAL)) == ["m1", "m2"]
+
+
+def test_connect_to_peer_not_open_is_refused(tmp_path, network):
+    ds = WebRTCP2PConnection(DS, tmp_path / "ds")
+    ds.open(FakePeerConnections(network))
+
+    with pytest.raises(ConnectionError):
+        ds.connect(DO)
 
 
 def test_msg_id_that_is_not_plain_file_name_is_refused(cores):
@@ -112,25 +145,21 @@ def test_restarted_receiver_keeps_unprocessed_messages(cores, tmp_path):
     assert msg_ids(restarted_do.receive(DS, PROPOSAL)) == ["m1"]
 
 
-class ThreadChannel(Channel):
+class ThreadedPeerConnections(FakePeerConnections):
     """Hands each frame over on a new thread, as aiortc's loop thread would."""
 
-    def __init__(self, sender: str, receiver: WebRTCP2PConnection):
-        self.sender = sender
-        self.receiver = receiver
-
-    def send(self, frame: bytes) -> None:
-        threading.Thread(
-            target=self.receiver.on_frame, args=(self.sender, frame)
-        ).start()
+    def send(self, peer: str, frame: bytes) -> None:
+        threading.Thread(target=super().send, args=(peer, frame)).start()
 
 
-def test_wait_until_delivered_ends_when_receipt_arrives_on_other_thread(tmp_path):
+def test_wait_until_delivered_ends_when_receipt_arrives_on_other_thread(
+    tmp_path, network
+):
     do = WebRTCP2PConnection(DO, tmp_path / "do")
     ds = WebRTCP2PConnection(DS, tmp_path / "ds")
-    do.attach(DS, ThreadChannel(sender=DO, receiver=ds))
-    ds.attach(DO, ThreadChannel(sender=DS, receiver=do))
-    ds.on_open(DO)
+    do.open(ThreadedPeerConnections(network))
+    ds.open(ThreadedPeerConnections(network))
+    ds.connect(DO)
 
     ds.send(DO, "m1", b"job", PROPOSAL)
     ds.wait_until_delivered(timeout=5)
