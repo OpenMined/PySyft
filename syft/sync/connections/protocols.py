@@ -55,6 +55,10 @@ class P2PConnection(RouterConnection, ABC):
       is sent back to the peer.
     """
 
+    # Whether sent messages stay where the peer reads them, as in Drive's
+    # outbox, so the owner compacts them. A live link drops them on receipt.
+    keeps_sent_messages: bool = False
+
     @abstractmethod
     def send(
         self, peer: str, msg_id: str, data: bytes, kind: MessageKind

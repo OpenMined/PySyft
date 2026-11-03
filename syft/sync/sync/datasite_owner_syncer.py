@@ -979,9 +979,12 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         and deletes the originals.
 
         Returns the number of source messages compacted (0 if below threshold,
-        if no outbox folder, or if peer encryption is on — DO can't read
-        peer-encrypted bytes back to merge).
+        if no outbox folder, if the p2p connection keeps no sent messages, or
+        if peer encryption is on — DO can't read peer-encrypted bytes back to
+        merge).
         """
+        if not self.connection_router.connections.p2p_con.keeps_sent_messages:
+            return 0
         peer_store = self.connection_router.peer_store
         if peer_store.pair_encrypts(peer_store.get_cached_peer(recipient_email)):
             logger.debug(

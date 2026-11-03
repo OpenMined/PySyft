@@ -63,6 +63,8 @@ from syft.sync.peers.peer_store import PeerStore
 from syft.sync.connections.config import ConnectionRouterConfig
 from syft.sync.platforms.gdrive_files_platform import GdriveFilesPlatform
 from syft.sync.connections.protocols import Connections
+from syft.sync.connections.webrtc.fake_channel import FakeChannel
+from syft.sync.connections.webrtc.webrtc_p2p import WebRTCP2PConnection
 from syft.sync.version.peer_manager import (
     PeerManager,
     PeerManagerConfig,
@@ -804,69 +806,179 @@ class SyftboxManager(BaseModelCallbackMixin):
         Returns:
             Tuple of (ds_manager, do_manager)
         """
+        do_config, ds_config = SyftboxManager._mock_pair_configs(
+            email1=email1,
+            email2=email2,
+            base_path1=base_path1,
+            base_path2=base_path2,
+            use_in_memory_cache=use_in_memory_cache,
+            persist_owner_state=persist_owner_state,
+            check_versions=check_versions,
+            encryption=encryption,
+            collection_specs=collection_specs,
+            ds_encryption_policy=ds_encryption_policy,
+            do_encryption_policy=do_encryption_policy,
+        )
+        do_connections, ds_connections = SyftboxManager._mock_drive_connections(
+            do_config, ds_config
+        )
+        return cls._test_pair(
+            do_config, do_connections, ds_config, ds_connections, add_peers
+        )
+
+    @classmethod
+    def pair_with_mock_drive_and_mock_webrtc_connection(
+        cls,
+        email1: str | None = None,
+        email2: str | None = None,
+        base_path1: str | None = None,
+        base_path2: str | None = None,
+        sync_automatically: bool = False,
+        add_peers: bool = True,
+        use_in_memory_cache: bool = True,
+        persist_owner_state: bool = True,
+        check_versions: bool = False,
+        encryption: bool = False,
+        collection_specs: list["CollectionSyncSpec"] | None = None,
+        ds_encryption_policy: EncryptionPolicy | None = None,
+        do_encryption_policy: EncryptionPolicy | None = None,
+    ):
+        """Like ``pair_with_mock_drive_service_connection``, with the same
+        arguments, but messages go over the real WebRTC core on both sides,
+        joined by a ``FakeChannel``. The mock Drive still does peering, datasets
+        and storage."""
+        do_config, ds_config = SyftboxManager._mock_pair_configs(
+            email1=email1,
+            email2=email2,
+            base_path1=base_path1,
+            base_path2=base_path2,
+            use_in_memory_cache=use_in_memory_cache,
+            persist_owner_state=persist_owner_state,
+            check_versions=check_versions,
+            encryption=encryption,
+            collection_specs=collection_specs,
+            ds_encryption_policy=ds_encryption_policy,
+            do_encryption_policy=do_encryption_policy,
+        )
+        do_connections, ds_connections = SyftboxManager._mock_drive_connections(
+            do_config, ds_config
+        )
+        do_connections, ds_connections = SyftboxManager._with_fake_webrtc_p2p(
+            do_config, ds_config, do_connections, ds_connections
+        )
+        return cls._test_pair(
+            do_config, do_connections, ds_config, ds_connections, add_peers
+        )
+
+    @staticmethod
+    def _mock_pair_configs(
+        email1: str | None = None,
+        email2: str | None = None,
+        base_path1: str | None = None,
+        base_path2: str | None = None,
+        use_in_memory_cache: bool = True,
+        persist_owner_state: bool = True,
+        check_versions: bool = False,
+        encryption: bool = False,
+        collection_specs: list["CollectionSyncSpec"] | None = None,
+        ds_encryption_policy: EncryptionPolicy | None = None,
+        do_encryption_policy: EncryptionPolicy | None = None,
+    ) -> tuple[SyftboxManagerConfig, SyftboxManagerConfig]:
+        """The configs of a DO and a DS for a test pair."""
         default_policy = EncryptionPolicy.from_bool(encryption)
-        # Create configs using the existing base config generator
+        shared = dict(
+            use_in_memory_cache=use_in_memory_cache,
+            persist_owner_state=persist_owner_state,
+            check_versions=check_versions,
+            collection_specs=collection_specs,
+        )
         do_config = SyftboxManagerConfig._base_config_for_testing(
             email=email1,
             syftbox_folder=base_path1,
             has_ds_role=False,
             has_do_role=True,
-            use_in_memory_cache=use_in_memory_cache,
-            persist_owner_state=persist_owner_state,
-            check_versions=check_versions,
-            collection_specs=collection_specs,
             encryption_policy=do_encryption_policy or default_policy,
+            **shared,
         )
-
         ds_config = SyftboxManagerConfig._base_config_for_testing(
             email=email2,
             syftbox_folder=base_path2,
             has_ds_role=True,
             has_do_role=False,
-            use_in_memory_cache=use_in_memory_cache,
-            persist_owner_state=persist_owner_state,
-            check_versions=check_versions,
-            collection_specs=collection_specs,
             encryption_policy=ds_encryption_policy or default_policy,
+            **shared,
         )
+        return do_config, ds_config
 
+    @staticmethod
+    def _mock_drive_connections(
+        do_config: SyftboxManagerConfig, ds_config: SyftboxManagerConfig
+    ) -> tuple[Connections, Connections]:
+        """The connections of both managers over one mock Drive."""
         do_cached_client, ds_cached_client = mock_drive_service.pair_with_mock_service(
             do_config.email, ds_config.email
         )
-        do_manager = cls.from_config(
-            do_config, SyftboxManager._drive_connections(do_cached_client)
-        )
-        ds_manager = cls.from_config(
-            ds_config, SyftboxManager._drive_connections(ds_cached_client)
+        return (
+            SyftboxManager._drive_connections(do_cached_client),
+            SyftboxManager._drive_connections(ds_cached_client),
         )
 
-        # Set up callbacks for DS -> DO communication
+    @staticmethod
+    def _with_fake_webrtc_p2p(
+        do_config: SyftboxManagerConfig,
+        ds_config: SyftboxManagerConfig,
+        do_connections: Connections,
+        ds_connections: Connections,
+    ) -> tuple[Connections, Connections]:
+        """Both connections with their p2p replaced by a WebRTC core, the two
+        cores joined by a ``FakeChannel``."""
+        do_p2p = WebRTCP2PConnection(do_config.email, do_config.syftbox_folder)
+        ds_p2p = WebRTCP2PConnection(ds_config.email, ds_config.syftbox_folder)
+        FakeChannel.connect(do_p2p, ds_p2p)
+        return (
+            do_connections.model_copy(update={"p2p_con": do_p2p}),
+            ds_connections.model_copy(update={"p2p_con": ds_p2p}),
+        )
+
+    @classmethod
+    def _test_pair(
+        cls,
+        do_config: SyftboxManagerConfig,
+        do_connections: Connections,
+        ds_config: SyftboxManagerConfig,
+        ds_connections: Connections,
+        add_peers: bool,
+    ) -> tuple["SyftboxManager", "SyftboxManager"]:
+        """(ds_manager, do_manager) built on these connections, with the
+        callbacks a test pair needs and both version files published."""
+        do_manager = cls.from_config(do_config, do_connections)
+        ds_manager = cls.from_config(ds_config, ds_connections)
+        # DS -> DO: a written file is proposed to the DO
         ds_manager.file_writer.add_callback(
-            "write_file",
-            ds_manager.datasite_watcher_syncer.on_file_change,
+            "write_file", ds_manager.datasite_watcher_syncer.on_file_change
         )
-
-        # Set up callback for DO job handling
+        # The DO handles job files as they are written
         do_manager.datasite_owner_syncer.event_cache.add_callback(
             "on_event_local_write",
             do_manager.job_file_change_handler._handle_file_change,
         )
-
-        # Write version files
         ds_manager.peer_manager.write_own_peer_info()
         do_manager.peer_manager.write_own_peer_info()
-
         if add_peers:
-            # DS creates peer request
-            ds_manager.add_peer(do_manager.email, sync=False)
-            # DO approves the peer request
-            do_manager.load_peers()
-            do_manager.approve_peer_request(ds_manager.email)
-            # DS refreshes peer state so it sees DO's accepted status and
-            # DO's advertised VersionInfo (incl. syft_client_install_source).
-            ds_manager.load_peers()
-
+            SyftboxManager._approve_test_peers(ds_manager, do_manager)
         return ds_manager, do_manager
+
+    @staticmethod
+    def _approve_test_peers(
+        ds_manager: "SyftboxManager", do_manager: "SyftboxManager"
+    ) -> None:
+        """The DS asks the DO to peer, and the DO approves."""
+        ds_manager.add_peer(do_manager.email, sync=False)
+        do_manager.load_peers()
+        do_manager.approve_peer_request(ds_manager.email)
+        # The DS sees the DO's accepted state and its advertised VersionInfo
+        # (incl. syft_client_install_source).
+        ds_manager.load_peers()
 
     def add_peer(
         self,
