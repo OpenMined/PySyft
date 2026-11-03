@@ -4,7 +4,6 @@ Holds peers, encryption keys, and the encryption policy of this client.
 Shared between PeerManager and all ConnectionRouter instances.
 """
 
-import json
 import os
 import tempfile
 from pathlib import Path
@@ -21,6 +20,7 @@ from syft.sync.encryption_policy import (
 )
 from syft.sync.peers.exceptions import SyftPeerNotReadyError
 from syft.sync.peers.peer import Peer, PeerState
+from syft.sync.utils.versioned_file import read_versioned_json
 
 # Encryption key bundles persist inside the participant's own SyftBox datasite
 # folder, under private/ (which is never synced to Drive). This scopes keys per
@@ -96,14 +96,9 @@ class _DatasiteSettings(BaseModel):
             ValueError: if a later client wrote the file, or it has another
                 shape.
         """
-        data = json.loads(path.read_text())
-        # Checked before the fields, so a later layout is refused by its version.
-        if data["version"] > DATASITE_SETTINGS_VERSION:
-            raise ValueError(
-                f"The settings file at {path} has version {data['version']}, and "
-                f"this client reads up to version {DATASITE_SETTINGS_VERSION}."
-            )
-        return cls.model_validate(data)
+        return read_versioned_json(
+            path, cls, DATASITE_SETTINGS_VERSION, "settings file"
+        )
 
 
 def resolve_encryption_policy(

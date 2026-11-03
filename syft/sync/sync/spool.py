@@ -10,7 +10,6 @@ peer. The upload does both, so it uses the protocol and the key that the peer
 has at that time. An enclave gets a new key at every boot.
 """
 
-import json
 from contextlib import AbstractContextManager
 from pathlib import Path
 
@@ -19,6 +18,7 @@ from pydantic import BaseModel, ConfigDict
 from syft.sync.messages.proposed_filechange import ProposedFileChangesMessage
 from syft.sync.peers.peer_store import PRIVATE_DIR_NAME
 from syft.sync.sync.caches.persisted_dict import locked_file, write_text_atomic
+from syft.sync.utils.versioned_file import read_versioned_json
 
 SPOOL_DIR_NAME = "spool"
 SPOOL_ENTRY_SUFFIX = ".json"
@@ -54,15 +54,7 @@ class SpoolEntry(BaseModel):
             ValueError: if a later client wrote the entry, or it has another
                 shape.
         """
-        text = path.read_text()
-        data = json.loads(text)
-        # Checked before the fields, so a later layout is refused by its version.
-        if data["version"] > SPOOL_ENTRY_VERSION:
-            raise ValueError(
-                f"The spool entry at {path} has version {data['version']}, and "
-                f"this client reads up to version {SPOOL_ENTRY_VERSION}."
-            )
-        return cls.model_validate_json(text)
+        return read_versioned_json(path, cls, SPOOL_ENTRY_VERSION, "spool entry")
 
 
 class Spool:
