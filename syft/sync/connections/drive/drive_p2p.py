@@ -82,6 +82,8 @@ class DriveP2PConnection(P2PConnection):
     methods below.
     """
 
+    keeps_sent_messages = True
+
     def __init__(self, cached_client: DriveCachedClient):
         self._cached_client = cached_client
 
