@@ -15,13 +15,13 @@ from syft.sync.connections.connection_router import ConnectionRouter
 from syft.sync.connections.drive import mock_drive_service
 from syft.sync.connections.drive.drive_cached_client import DriveCachedClient
 from syft.sync.connections.drive.drive_collections import DriveCollectionsConnection
-from syft.sync.connections.drive.drive_connections import (
-    DriveWatcherStoreConnection,
-    drive_cached_client_of,
-)
+from syft.sync.connections.drive.drive_connections import drive_cached_client_of
 from syft.sync.connections.drive.drive_owner_store import DriveOwnerStoreConnection
 from syft.sync.connections.drive.drive_p2p import DriveP2PConnection
 from syft.sync.connections.drive.drive_peering import DrivePeeringConnection
+from syft.sync.connections.drive.drive_watcher_store import (
+    DriveWatcherStoreConnection,
+)
 from syft.sync.connections.drive.grdrive_config import GdriveConnectionConfig
 from syft.sync.events.file_change_event import (
     FileChangeEvent,
@@ -620,7 +620,7 @@ class SyftboxManager(BaseModelCallbackMixin):
         return Connections(
             p2p_con=DriveP2PConnection(cached_client),
             owner_store_con=DriveOwnerStoreConnection(cached_client),
-            watcher_store_con=DriveWatcherStoreConnection(),
+            watcher_store_con=DriveWatcherStoreConnection(cached_client),
             collections_con=DriveCollectionsConnection(cached_client),
             peering_con=DrivePeeringConnection(cached_client),
             platform=GdriveFilesPlatform(),

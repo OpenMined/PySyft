@@ -22,13 +22,15 @@ from syft.sync.connections.drive.drive_collections import (
     CollectionFolder,
     DriveCollectionsConnection,
 )
-from syft.sync.connections.drive.drive_connections import DriveWatcherStoreConnection
 from syft.sync.connections.drive.drive_owner_store import DriveOwnerStoreConnection
 from syft.sync.connections.drive.drive_p2p import (
     OUTBOX_LOOKBACK_SECONDS,
     DriveP2PConnection,
 )
 from syft.sync.connections.drive.drive_peering import DrivePeeringConnection
+from syft.sync.connections.drive.drive_watcher_store import (
+    DriveWatcherStoreConnection,
+)
 from syft.sync.connections.drive.gdrive_client import GDriveClient
 from syft.sync.connections.drive.mock_drive_service import (
     MockDeleteRequest,
@@ -547,10 +549,30 @@ def test_owner_store_files_carry_the_syft_tag(pair):
 # -- WatcherStoreConnection -------------------------------------------------------
 
 
-def test_watcher_storage_on_drive_is_not_built_yet(pair):
+def test_watcher_state_save_replaces_previous(pair):
     _, ds_cached_client = pair
-    with pytest.raises(NotImplementedError):
-        DriveWatcherStoreConnection().latest_checkpoint(DO)
+    store = DriveWatcherStoreConnection(ds_cached_client)
+    assert store.latest_checkpoint(DO) is None
+
+    store.put_checkpoint(DO, b"checkpoint 1")
+    store.put_rolling_state(DO, b"rolling state")
+    store.put_checkpoint(DO, b"checkpoint 2")
+
+    assert store.latest_checkpoint(DO) == b"checkpoint 2"
+    assert store.get_rolling_state(DO) == b"rolling state"
+
+
+def test_watcher_state_reset_keeps_other_peers(pair):
+    _, ds_cached_client = pair
+    store = DriveWatcherStoreConnection(ds_cached_client)
+    other_do = "other-do@example.com"
+    store.put_rolling_state(DO, b"from do")
+    store.put_rolling_state(other_do, b"from other do")
+
+    store.reset(DO)
+
+    assert store.get_rolling_state(DO) is None
+    assert store.get_rolling_state(other_do) == b"from other do"
 
 
 # -- CollectionsConnection --------------------------------------------------------
