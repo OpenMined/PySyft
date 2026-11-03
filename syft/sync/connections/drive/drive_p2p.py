@@ -97,12 +97,13 @@ class DriveP2PConnection(P2PConnection):
     def send(
         self, peer: str, msg_id: str, data: bytes, kind: MessageKind
     ) -> SendStatus:
-        if kind is MessageKind.PROPOSED_CHANGES:
-            self.watcher_send_raw_bytes_to_inbox(peer, msg_id, data)
-        elif kind is MessageKind.FILE_EVENTS:
-            self.owner_write_raw_bytes_to_outbox(peer, msg_id, data)
-        else:
-            raise ValueError(f"Drive has no folder for messages of kind {kind!r}")
+        with raise_unavailable(f"Could not send message {msg_id} to Drive."):
+            if kind is MessageKind.PROPOSED_CHANGES:
+                self.watcher_send_raw_bytes_to_inbox(peer, msg_id, data)
+            elif kind is MessageKind.FILE_EVENTS:
+                self.owner_write_raw_bytes_to_outbox(peer, msg_id, data)
+            else:
+                raise ValueError(f"Drive has no folder for messages of kind {kind!r}")
         return SendStatus.DELIVERED
 
     def delivered(self) -> list[str]:

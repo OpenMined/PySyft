@@ -3,6 +3,7 @@ stopped kernel does not lose a submission."""
 
 import json
 
+import httplib2
 import pytest
 
 from syft.sync.connections.drive.drive_p2p import DriveP2PConnection
@@ -11,6 +12,7 @@ from syft.sync.connections.types import MessageKind
 from syft.sync.peers.peer import PeerState
 from syft.sync.syftbox_manager import SyftboxManager, SyftboxManagerConfig
 from syft.sync.sync.spool import SPOOL_ENTRY_VERSION, Spool
+from tests.unit.test_persisted_cache import _pair_with_unsent_do_file
 from tests.unit.test_sync_manager import path_for_job
 from tests.unit.utils import grant_job_inbox_access, mock_message
 
@@ -21,7 +23,7 @@ class _Stopped(Exception):
 
 def _drop_connection(monkeypatch) -> None:
     def fail(self, recipient, filename, data):
-        raise ConnectionUnavailableError("Drive cannot be reached.")
+        raise httplib2.ServerNotFoundError("Unable to find the server")
 
     monkeypatch.setattr(DriveP2PConnection, "watcher_send_raw_bytes_to_inbox", fail)
 
@@ -52,11 +54,23 @@ def _pair_with_job_inbox(encryption: bool = False):
     return ds_manager, do_manager, path_for_job(do_manager.email, ds_manager.email)
 
 
+def _save_later_version_entry(spool: Spool, recipient: str) -> int:
+    """Save a message to ``recipient`` as a later client writes it, and return
+    that later version."""
+    spool.add(recipient, mock_message())
+    entry_path = next(spool.recipient_folder(recipient).iterdir())
+    later_version = SPOOL_ENTRY_VERSION + 1
+    data = json.loads(entry_path.read_text())
+    data.update(version=later_version, new_setting=True)
+    entry_path.write_text(json.dumps(data))
+    return later_version
+
+
 def test_failed_upload_sent_by_sync_after_restart(monkeypatch):
     ds_manager, do_manager, file_path = _pair_with_job_inbox()
     with monkeypatch.context() as m:
         _drop_connection(m)
-        with pytest.raises(ConnectionUnavailableError):
+        with pytest.raises(ConnectionUnavailableError, match="is saved"):
             ds_manager._send_file_change(file_path, "job")
 
     _restart(ds_manager).sync()
@@ -74,12 +88,15 @@ def test_crash_after_upload_sends_once(monkeypatch):
         m.setattr(Spool, "remove", stop)
         with pytest.raises(_Stopped):
             ds_manager._send_file_change(file_path, "job")
+    # The DO applies the message and moves it to its archive.
+    do_manager.sync()
 
     _restart(ds_manager).sync()
     inbox = do_manager._connection_router.connections.p2p_con.receive(
         ds_manager.email, MessageKind.PROPOSED_CHANGES
     )
-    assert len(inbox) == 1
+    assert inbox == []
+    assert _accepted_contents(do_manager).count("job") == 1
 
 
 def test_edits_saved_offline_apply_in_order(monkeypatch):
@@ -91,6 +108,20 @@ def test_edits_saved_offline_apply_in_order(monkeypatch):
                 ds_manager._send_file_change(file_path, content)
 
     ds_manager.sync()
+    do_manager.sync()
+    assert "second" in _accepted_contents(do_manager)
+
+
+def test_edit_after_restart_builds_on_saved_edit(monkeypatch):
+    ds_manager, do_manager, file_path = _pair_with_job_inbox()
+    with monkeypatch.context() as m:
+        _drop_connection(m)
+        with pytest.raises(ConnectionUnavailableError):
+            ds_manager._send_file_change(file_path, "first")
+
+    restarted = _restart(ds_manager)
+    restarted.load_peers()
+    restarted.datasite_watcher_syncer.on_file_change(file_path, "second")
     do_manager.sync()
     assert "second" in _accepted_contents(do_manager)
 
@@ -118,12 +149,19 @@ def test_saved_message_encrypted_with_peer_key_at_upload(monkeypatch):
 
 def test_spool_entry_of_later_version_refused(tmp_path):
     spool = Spool(tmp_path)
-    spool.add("do@example.com", mock_message())
-    entry_path = next(spool.recipient_folder("do@example.com").iterdir())
-    later_version = SPOOL_ENTRY_VERSION + 1
-    data = json.loads(entry_path.read_text())
-    data.update(version=later_version, new_setting=True)
-    entry_path.write_text(json.dumps(data))
+    later_version = _save_later_version_entry(spool, "do@example.com")
 
     with pytest.raises(ValueError, match=f"version {later_version}"):
         spool.pending("do@example.com")
+
+
+def test_stuck_message_does_not_block_pull():
+    ds_manager, do_manager = _pair_with_unsent_do_file()
+    spool = ds_manager.datasite_watcher_syncer.spool
+    _save_later_version_entry(spool, do_manager.email)
+    do_manager.sync(auto_checkpoint=False)
+
+    with pytest.raises(ValueError, match="version"):
+        ds_manager.sync()
+    received = ds_manager.syftbox_folder / do_manager.email / "app_data/apis/x/a.py"
+    assert received.exists()

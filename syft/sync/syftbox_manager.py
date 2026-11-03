@@ -1121,10 +1121,11 @@ class SyftboxManager(BaseModelCallbackMixin):
                     self.try_create_checkpoint(checkpoint_threshold)
 
             if self.has_ds_role:
-                self.datasite_watcher_syncer.sync_up()
                 peer_emails = [peer.email for peer in self.peer_manager.syncable_peers]
                 self.peer_manager.warn_if_all_peers_incompatible(peer_emails)
                 self.datasite_watcher_syncer.sync_down(peer_emails)
+                # After the pull, so a saved message that cannot go never holds back results.
+                self.datasite_watcher_syncer.sync_up()
 
     def load_peers(self, force_download: bool = False):
         """Load peers from connection router. Delegates to PeerManager.

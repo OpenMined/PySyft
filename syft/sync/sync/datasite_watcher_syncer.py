@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field, PrivateAttr
 
 from syft.sync.callback_mixin import BaseModelCallbackMixin
 from syft.sync.connections.connection_router import ConnectionRouter
+from syft.sync.connections.exceptions import ConnectionUnavailableError
 from syft.sync.messages.proposed_filechange import (
     ProposedFileChange,
     ProposedFileChangesMessage,
@@ -53,7 +54,7 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
         shared with the other parts of the manager, so the caller builds it
         once and passes it in next to the config (see
         ``SyftboxManager.from_config``)."""
-        return cls(
+        syncer = cls(
             syftbox_folder=config.syftbox_folder,
             email=config.email,
             connection_router=connection_router,
@@ -62,8 +63,17 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
             ),
             spool=Spool(datasite_spool_path(config.syftbox_folder, config.email)),
         )
+        syncer._record_spooled_hashes()
+        return syncer
 
     # --- Pushing proposed file changes ---
+
+    def _record_spooled_hashes(self) -> None:
+        """Record the hashes of the saved messages, so that a change after a
+        restart builds on a saved change that is not sent yet."""
+        for recipient in self.spool.recipients():
+            for message in self.spool.pending(recipient):
+                self._record_proposed_hashes(message)
 
     def get_proposed_file_change_object(
         self,
@@ -84,12 +94,15 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
 
     def process_file_changes_queue(self):
         """Save the queued changes as one message per datasite, then upload the
-        saved messages to those datasites.
+        saved messages to those datasites. A message that an upload error stops
+        stays saved, and so do the messages after it.
 
         Raises:
-            SyftPeerNotReadyError: when a recipient cannot receive yet. Its
-                message stays saved, and ``sync_up`` sends it later. The other
-                recipients still get their messages.
+            SyftPeerNotReadyError: when a recipient cannot receive yet.
+                ``sync_up`` sends its message later. The other recipients still
+                get their messages.
+            ConnectionUnavailableError: when the backend cannot be reached.
+                ``sync_up`` sends the messages later.
         """
         # One message per datasite: each change goes to the owner of its path.
         changes_by_recipient: Dict[str, List[ProposedFileChange]] = {}
@@ -127,7 +140,12 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
             self.spool.add(recipient, message)
             # The next change to a path builds on this one, sent or not.
             self._record_proposed_hashes(message)
-        waiting = self._upload_spooled(changes_by_recipient)
+        try:
+            waiting = self._upload_spooled(changes_by_recipient)
+        except ConnectionUnavailableError as e:
+            raise ConnectionUnavailableError(
+                f"{e} The change is saved, and client.sync() sends it."
+            ) from e
         if waiting:
             error = next(iter(waiting.values()))
             raise SyftPeerNotReadyError(
