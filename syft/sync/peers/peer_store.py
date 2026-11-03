@@ -4,6 +4,7 @@ Holds peers, encryption keys, and the encryption policy of this client.
 Shared between PeerManager and all ConnectionRouter instances.
 """
 
+import json
 import os
 import tempfile
 from pathlib import Path
@@ -33,6 +34,9 @@ SETTINGS_FILENAME = "syft_settings.json"
 # Format of the crypto key file. Raise it when the layout of the file changes.
 # A file of any other version is refused.
 CRYPTO_KEYS_VERSION = 2
+# Format of the datasite settings file. Raise it when the layout of the file
+# changes. A file of a later version is refused.
+DATASITE_SETTINGS_VERSION = 1
 
 
 class _KeyFile(BaseModel):
@@ -81,7 +85,25 @@ class _DatasiteSettings(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
+    version: int
     encryption_policy: EncryptionPolicy
+
+    @classmethod
+    def read(cls, path: Path) -> "_DatasiteSettings":
+        """Read the settings file at ``path``.
+
+        Raises:
+            ValueError: if a later client wrote the file, or it has another
+                shape.
+        """
+        data = json.loads(path.read_text())
+        # Checked before the fields, so a later layout is refused by its version.
+        if data["version"] > DATASITE_SETTINGS_VERSION:
+            raise ValueError(
+                f"The settings file at {path} has version {data['version']}, and "
+                f"this client reads up to version {DATASITE_SETTINGS_VERSION}."
+            )
+        return cls.model_validate(data)
 
 
 def resolve_encryption_policy(
@@ -99,14 +121,15 @@ def resolve_encryption_policy(
     path = Path(settings_path)
     if not path.exists():
         settings = _DatasiteSettings(
-            encryption_policy=requested or EncryptionPolicy.OPTIONAL
+            version=DATASITE_SETTINGS_VERSION,
+            encryption_policy=requested or EncryptionPolicy.OPTIONAL,
         )
         try:
             _create_private_file(path, settings.model_dump_json(indent=2))
             return settings.encryption_policy
         except FileExistsError:
             pass  # Another process started first; its policy applies.
-    on_disk = _DatasiteSettings.model_validate_json(path.read_text()).encryption_policy
+    on_disk = _DatasiteSettings.read(path).encryption_policy
     if requested is not None and requested != on_disk:
         raise EncryptionPolicyMismatchError(path, on_disk, requested)
     return on_disk
