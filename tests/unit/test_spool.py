@@ -152,7 +152,7 @@ def test_spool_entry_of_later_version_refused(tmp_path):
     later_version = _save_later_version_entry(spool, "do@example.com")
 
     with pytest.raises(ValueError, match=f"version {later_version}"):
-        spool.pending("do@example.com")
+        spool.pending_messages("do@example.com")
 
 
 def test_stuck_message_does_not_block_pull():

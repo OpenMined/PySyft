@@ -72,7 +72,7 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
         """Record the hashes of the saved messages, so that a change after a
         restart builds on a saved change that is not sent yet."""
         for recipient in self.spool.recipients():
-            for message in self.spool.pending(recipient):
+            for message in self.spool.pending_messages(recipient):
                 self._record_proposed_hashes(message)
 
     def get_proposed_file_change_object(
@@ -141,13 +141,13 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
             # The next change to a path builds on this one, sent or not.
             self._record_proposed_hashes(message)
         try:
-            waiting = self._upload_spooled(changes_by_recipient)
+            not_ready_errors = self._upload_spooled(changes_by_recipient)
         except ConnectionUnavailableError as e:
             raise ConnectionUnavailableError(
                 f"{e} The change is saved, and client.sync() sends it."
             ) from e
-        if waiting:
-            error = next(iter(waiting.values()))
+        if not_ready_errors:
+            error = next(iter(not_ready_errors.values()))
             raise SyftPeerNotReadyError(
                 error.peer_email,
                 cause=error.cause,
@@ -178,17 +178,17 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
                 upload that fails for another reason raises too. That message
                 and the later ones stay saved.
         """
-        waiting = {}
+        not_ready_errors = {}
         with self.spool.locked():
             for recipient in recipients:
                 try:
                     self._upload_spooled_to(recipient)
                 except SyftPeerNotReadyError as e:
-                    waiting[recipient] = e
-        return waiting
+                    not_ready_errors[recipient] = e
+        return not_ready_errors
 
     def _upload_spooled_to(self, recipient: str) -> None:
-        for message in self.spool.pending(recipient):
+        for message in self.spool.pending_messages(recipient):
             msg_id = message.message_filename.as_string()
             # An earlier upload may have stopped before it removed the message.
             if not self.connection_router.is_delivered(recipient, msg_id):
@@ -200,8 +200,8 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
     def sync_up(self) -> None:
         """Upload every saved message. Warn for each recipient that cannot
         receive yet; its messages wait for the next sync."""
-        waiting = self._upload_spooled(self.spool.recipients())
-        for recipient, error in waiting.items():
+        not_ready_errors = self._upload_spooled(self.spool.recipients())
+        for recipient, error in not_ready_errors.items():
             warnings.warn(
                 f"Changes to {recipient} wait in "
                 f"{self.spool.recipient_folder(recipient)}: {error}"

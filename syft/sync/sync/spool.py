@@ -44,7 +44,7 @@ class SpoolEntry(BaseModel):
 
     version: int
     # The compressed message, before the downgrade and the encryption for its peer.
-    message: bytes
+    compressed_message: bytes
 
     @classmethod
     def read(cls, path: Path) -> "SpoolEntry":
@@ -75,7 +75,7 @@ class Spool:
     def add(self, recipient: str, message: ProposedFileChangesMessage) -> None:
         """Save ``message`` to ``recipient``."""
         entry = SpoolEntry(
-            version=SPOOL_ENTRY_VERSION, message=message.as_compressed_data()
+            version=SPOOL_ENTRY_VERSION, compressed_message=message.as_compressed_data()
         )
         msg_id = message.message_filename.as_string()
         write_text_atomic(self._entry_path(recipient, msg_id), entry.model_dump_json())
@@ -86,7 +86,7 @@ class Spool:
             return []
         return sorted(p.name for p in self.folder.iterdir() if p.is_dir())
 
-    def pending(self, recipient: str) -> list[ProposedFileChangesMessage]:
+    def pending_messages(self, recipient: str) -> list[ProposedFileChangesMessage]:
         """The saved messages to ``recipient``, oldest first.
 
         Raises:
@@ -94,7 +94,9 @@ class Spool:
         """
         paths = self.recipient_folder(recipient).glob(f"*{SPOOL_ENTRY_SUFFIX}")
         messages = [
-            ProposedFileChangesMessage.from_compressed_data(SpoolEntry.read(p).message)
+            ProposedFileChangesMessage.from_compressed_data(
+                SpoolEntry.read(p).compressed_message
+            )
             for p in paths
         ]
         return sorted(messages, key=lambda m: m.message_filename.submitted_timestamp)
