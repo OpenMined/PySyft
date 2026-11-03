@@ -49,15 +49,13 @@ class WatcherCheckpoint(_WatcherState):
 
 
 class WatcherRollingState(_WatcherState):
-    """The changes received from one DO since its checkpoint, and the cursor in
-    its outbox."""
+    """The changes received from one DO since its checkpoint, and the ids of the
+    messages received from it. The newest id is the cursor in its outbox."""
 
     kind: ClassVar[str] = "watcher rolling state"
 
     # The latest event of each path since the checkpoint, deletes included.
     events: list[FileChangeEvent]
-    # The msg_id of the newest events message received from the DO.
-    last_msg_id: str
     # The ids of the events messages received. The outbox can list some of
     # them again, and the DS skips those.
     received_msg_ids: frozenset[str]

@@ -629,6 +629,10 @@ class ConnectionRouter(BaseModel):
             self._decrypt_watcher_state(data, WatcherRollingState.kind, peer_email)
         )
 
+    def watcher_peers_with_saved_state(self) -> list[str]:
+        """The DOs whose checkpoint or rolling state the DS saved."""
+        return self.connections.watcher_store_con.peers_with_saved_state()
+
     def _decrypt_watcher_state(self, data: bytes, kind: str, peer_email: str) -> bytes:
         """``data`` decrypted with this DS key. ``kind`` names the state in errors.
 

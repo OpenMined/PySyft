@@ -226,6 +226,10 @@ class WatcherStoreConnection(RouterConnection, ABC):
         """Forget everything received from ``peer``, before asking it to send
         everything again."""
 
+    @abstractmethod
+    def peers_with_saved_state(self) -> list[str]:
+        """The peers that have a stored snapshot or rolling state."""
+
 
 class CollectionsConnection(RouterConnection, ABC):
     """Sets of files a data owner shares with named readers (datasets)."""

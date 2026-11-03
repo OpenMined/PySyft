@@ -663,7 +663,6 @@ def test_watcher_state_encrypted_at_rest():
     state = WatcherRollingState(
         version=WATCHER_STATE_VERSION,
         events=[],
-        last_msg_id="msg-1",
         received_msg_ids=frozenset({"msg-1"}),
     )
 

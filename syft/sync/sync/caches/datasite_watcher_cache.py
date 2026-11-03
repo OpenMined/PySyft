@@ -1,18 +1,25 @@
 import logging
 from concurrent.futures import ThreadPoolExecutor
-from typing import Callable, Dict, List, Set
-from syft.sync.sync.caches.cache_file_writer_connection import FSFileConnection
-from pathlib import Path
-from pydantic import BaseModel, Field
 from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Callable, Dict, List, Set
+
+from pydantic import BaseModel, Field
+
+from syft.sync.checkpoints.watcher_state import (
+    WATCHER_STATE_VERSION,
+    WatcherCheckpoint,
+    WatcherRollingState,
+)
+from syft.sync.connections.connection_router import ConnectionRouter
 from syft.sync.events.file_change_event import (
     FileChangeEvent,
     FileChangeEventsMessage,
     FileChangeEventsMessageFileName,
 )
-from syft.sync.connections.connection_router import ConnectionRouter
 from syft.sync.sync.caches.cache_file_writer_connection import (
     CacheFileConnection,
+    FSFileConnection,
     InMemoryCacheFileConnection,
 )
 from syft.sync.sync.collection_spec import CollectionSyncSpec
@@ -61,6 +68,9 @@ def _events_within_peer_datasite(
 
 
 SECONDS_BEFORE_SYNCING_DOWN = 0
+# The changes from a DO go into its checkpoint at this many paths, as the DO
+# does with its own state.
+WATCHER_CHECKPOINT_THRESHOLD = 50
 
 
 class DataSiteWatcherCacheConfig(BaseModel):
@@ -90,9 +100,14 @@ class DataSiteWatcherCache(BaseModel):
     # The msg_id of the newest events message received from each peer, keyed
     # by ``_peer_key``.
     last_msg_id_per_peer: Dict[str, str] = {}
-    # The msg_id of each events message received. The connection lists back a
-    # bit before the last one for late messages, and skips these.
-    received_msg_ids: Set[str] = set()
+    # The msg_ids of the events messages received from each peer, keyed by
+    # ``_peer_key``. The connection lists back a bit before the last one for
+    # late messages, and skips these.
+    received_msg_ids_per_peer: Dict[str, Set[str]] = {}
+    # Whether the state received from each peer is saved in the DS's storage.
+    saves_watcher_state: bool
+    # peer key -> {path in syftbox: latest event since the peer's checkpoint}
+    rolling_events_per_peer: Dict[str, Dict[Path, FileChangeEvent]] = {}
     # Base syftbox folder
     syftbox_folder: Path | None = None
     # Collections to sync down (prefix + local subpath per collection type)
@@ -118,6 +133,7 @@ class DataSiteWatcherCache(BaseModel):
                 connection_router=connection_router,
                 syftbox_folder=config.syftbox_folder,
                 collection_specs=config.collection_specs,
+                saves_watcher_state=False,
             )
             return res
         else:
@@ -136,8 +152,10 @@ class DataSiteWatcherCache(BaseModel):
                 connection_router=connection_router,
                 syftbox_folder=config.syftbox_folder,
                 collection_specs=config.collection_specs,
+                saves_watcher_state=True,
             )
             cache._load_cached_state()
+            cache._restore_saved_state()
             return cache
 
     def _load_cached_state(self):
@@ -159,9 +177,8 @@ class DataSiteWatcherCache(BaseModel):
     def _restore_received(self, events_message: FileChangeEventsMessage) -> None:
         """Record a saved message as received. It does not store its sender, but
         its events name it: only events for the sender's datasite are saved."""
-        msg_id = events_message.message_filepath.as_string()
-        self.received_msg_ids.add(msg_id)
         if events_message.events:
+            msg_id = events_message.message_filepath.as_string()
             self._record_received(events_message.events[0].datasite_email, msg_id)
 
     def _restore_file_hashes(self, events_message: FileChangeEventsMessage) -> None:
@@ -226,7 +243,8 @@ class DataSiteWatcherCache(BaseModel):
         self.peers = []
         self.current_check_point = None
         self.last_msg_id_per_peer = {}
-        self.received_msg_ids = set()
+        self.received_msg_ids_per_peer = {}
+        self.rolling_events_per_peer = {}
         self.collection_hashes = {}
 
     @property
@@ -239,11 +257,15 @@ class DataSiteWatcherCache(BaseModel):
         """Apply the events messages of ``peer_email`` not received yet: those
         after the last one, and any that landed late. Returns the number of
         events applied. A message that can never be read is passed over, so it
-        does not hold back the later ones."""
+        does not hold back the later ones.
+
+        A cache that saves its state saves the state of ``peer_email`` before
+        it marks the messages processed."""
+        key = _peer_key(peer_email)
         received = self.connection_router.watcher_receive_events_messages(
             peer_email,
-            after=self.last_msg_id_per_peer.get(_peer_key(peer_email)),
-            already_received=self.received_msg_ids,
+            after=self.last_msg_id_per_peer.get(key),
+            already_received=self.received_msg_ids_per_peer.get(key, frozenset()),
         )
         event_count = 0
         for raw, event_message in received:
@@ -251,6 +273,8 @@ class DataSiteWatcherCache(BaseModel):
                 self.apply_event_message(event_message, peer_email)
                 event_count += len(event_message.events)
             self._record_received(peer_email, raw.msg_id)
+        if received and self.saves_watcher_state:
+            self._save_state(peer_email)
         self.connection_router.mark_all_processed([raw for raw, _ in received])
 
         self.last_sync = datetime.now()
@@ -259,8 +283,8 @@ class DataSiteWatcherCache(BaseModel):
     def _record_received(self, peer_email: str, msg_id: str) -> None:
         """Remember ``msg_id``, and make it ``peer_email``'s last message when
         it is newer. A message that landed late is older than the last one."""
-        self.received_msg_ids.add(msg_id)
         key = _peer_key(peer_email)
+        self.received_msg_ids_per_peer.setdefault(key, set()).add(msg_id)
         last = self.last_msg_id_per_peer.get(key)
         if last is None or _sent_at(msg_id) > _sent_at(last):
             self.last_msg_id_per_peer[key] = msg_id
@@ -285,12 +309,20 @@ class DataSiteWatcherCache(BaseModel):
         saved = event_message.model_copy(update={"events": accepted})
         self.events_connection.write_file(saved.message_filepath.as_string(), saved)
         for event in accepted:
+            if self._write_denied(event):
+                continue
             self._apply_event(event)
+            if self.saves_watcher_state:
+                self._rolling_events(peer_email)[event.path_in_syftbox] = event
+
+    def _write_denied(self, event: FileChangeEvent) -> bool:
+        """Whether ``pre_write_filter`` refuses ``event``."""
+        if self.pre_write_filter is None:
+            return False
+        return not self.pre_write_filter(str(event.path_in_syftbox), event.is_deleted)
 
     def _apply_event(self, event: FileChangeEvent) -> None:
         path = str(event.path_in_syftbox)
-        if self.pre_write_filter and not self.pre_write_filter(path, event.is_deleted):
-            return
         # Normalize path to Path object for consistency in file_hashes dict
         path_key = Path(event.path_in_syftbox)
         if event.is_deleted:
@@ -299,6 +331,65 @@ class DataSiteWatcherCache(BaseModel):
         else:
             self.file_connection.write_file(path, event.content)
             self.file_hashes[path_key] = event.new_hash
+
+    # --- State saved in the DS's storage ---
+
+    def _restore_saved_state(self) -> None:
+        """Restore the files, their hashes and the received message ids of each
+        peer with saved state. A Colab runtime reset loses the local copy."""
+        for peer_email in self.connection_router.watcher_peers_with_saved_state():
+            checkpoint = self.connection_router.watcher_load_checkpoint(peer_email)
+            if checkpoint is not None:
+                for event in checkpoint.events:
+                    self._apply_event(event)
+            rolling_state = self.connection_router.watcher_load_rolling_state(
+                peer_email
+            )
+            if rolling_state is not None:
+                for event in rolling_state.events:
+                    self._apply_event(event)
+                    self._rolling_events(peer_email)[event.path_in_syftbox] = event
+                for msg_id in rolling_state.received_msg_ids:
+                    self._record_received(peer_email, msg_id)
+
+    def _save_state(self, peer_email: str) -> None:
+        """Save the rolling state of ``peer_email``. At
+        ``WATCHER_CHECKPOINT_THRESHOLD`` paths, fold it into the checkpoint."""
+        self._save_rolling_state(peer_email)
+        if len(self._rolling_events(peer_email)) >= WATCHER_CHECKPOINT_THRESHOLD:
+            self._fold_into_checkpoint(peer_email)
+
+    def _fold_into_checkpoint(self, peer_email: str) -> None:
+        """Merge the changes since the checkpoint into it, then save an empty
+        rolling state. A deleted path leaves the checkpoint."""
+        checkpoint = self.connection_router.watcher_load_checkpoint(peer_email)
+        latest = {}
+        if checkpoint is not None:
+            latest = {event.path_in_syftbox: event for event in checkpoint.events}
+        latest.update(self._rolling_events(peer_email))
+        events = [event for event in latest.values() if not event.is_deleted]
+        # The checkpoint goes first. After a stop between the two saves, the old
+        # rolling state only repeats changes that the checkpoint has.
+        self.connection_router.watcher_save_checkpoint(
+            peer_email,
+            WatcherCheckpoint(version=WATCHER_STATE_VERSION, events=events),
+        )
+        self._rolling_events(peer_email).clear()
+        self._save_rolling_state(peer_email)
+
+    def _save_rolling_state(self, peer_email: str) -> None:
+        rolling_state = WatcherRollingState(
+            version=WATCHER_STATE_VERSION,
+            events=list(self._rolling_events(peer_email).values()),
+            received_msg_ids=frozenset(
+                self.received_msg_ids_per_peer[_peer_key(peer_email)]
+            ),
+        )
+        self.connection_router.watcher_save_rolling_state(peer_email, rolling_state)
+
+    def _rolling_events(self, peer_email: str) -> Dict[Path, FileChangeEvent]:
+        """The latest event of each path from ``peer_email`` since its checkpoint."""
+        return self.rolling_events_per_peer.setdefault(_peer_key(peer_email), {})
 
     def get_cached_events(self) -> List[FileChangeEvent]:
         messages = self.events_connection.get_all()

@@ -568,11 +568,13 @@ def test_watcher_state_reset_keeps_other_peers(pair):
     other_do = "other-do@example.com"
     store.put_rolling_state(DO, b"from do")
     store.put_rolling_state(other_do, b"from other do")
+    assert set(store.peers_with_saved_state()) == {DO, other_do}
 
     store.reset(DO)
 
     assert store.get_rolling_state(DO) is None
     assert store.get_rolling_state(other_do) == b"from other do"
+    assert store.peers_with_saved_state() == [other_do]
 
 
 # -- CollectionsConnection --------------------------------------------------------

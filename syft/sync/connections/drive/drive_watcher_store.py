@@ -47,6 +47,14 @@ class DriveWatcherStoreConnection(WatcherStoreConnection):
         if peer_folder_id is not None:
             self._cached_client.client.delete_file_by_id(peer_folder_id)
 
+    @raise_unavailable("Could not list the watcher state on Drive.")
+    def peers_with_saved_state(self) -> list[str]:
+        folder_id = self._folder_id()
+        if folder_id is None:
+            return []
+        peer_folders = self._cached_client.client.find_folders(parent_id=folder_id)
+        return [name for _, name in peer_folders]
+
     def _put(self, peer: str, name: str, data: bytes) -> str:
         client = self._cached_client.client
         folder_id = self._folder_id() or self._create_folder()
