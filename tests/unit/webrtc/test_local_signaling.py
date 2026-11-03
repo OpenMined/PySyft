@@ -4,7 +4,7 @@ import asyncio
 
 import pytest
 
-from syft.sync.connections.webrtc.local_signaling import LocalSignaling
+from syft.sync.connections.webrtc.signaling.local_signaling import LocalSignaling
 
 DO = "do@example.com"
 DS = "ds@example.com"

@@ -3,7 +3,7 @@ peering connection."""
 
 import asyncio
 
-from syft.sync.connections.webrtc.signaling import OnOffer, Signaling
+from syft.sync.connections.webrtc.signaling.signaling import OnOffer, Signaling
 
 
 class LocalSignaling(Signaling):

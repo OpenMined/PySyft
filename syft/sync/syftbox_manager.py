@@ -63,11 +63,11 @@ from syft.sync.peers.peer_store import PeerStore
 from syft.sync.connections.config import ConnectionRouterConfig
 from syft.sync.platforms.gdrive_files_platform import GdriveFilesPlatform
 from syft.sync.connections.protocols import Connections
-from syft.sync.connections.webrtc.fake_peer_connections import (
+from syft.sync.connections.webrtc.mock.fake_peer_connections import (
     FakeNetwork,
     FakePeerConnections,
 )
-from syft.sync.connections.webrtc.local_signaling import LocalSignaling
+from syft.sync.connections.webrtc.signaling.local_signaling import LocalSignaling
 from syft.sync.connections.webrtc.peer_connections import PeerConnections
 from syft.sync.connections.webrtc.webrtc_p2p import WebRTCP2PConnection
 from syft.sync.version.peer_manager import (
@@ -852,7 +852,7 @@ class SyftboxManager(BaseModelCallbackMixin):
         real aiortc data channel on this machine. Needs the ``webrtc`` extra;
         ``close()`` both p2p connections when done."""
         # Imported here: aiortc is an optional extra.
-        from syft.sync.connections.webrtc.aiortc_peer_connections import (
+        from syft.sync.connections.webrtc.real.aiortc_peer_connections import (
             AiortcPeerConnections,
         )
 

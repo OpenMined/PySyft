@@ -5,7 +5,7 @@ import threading
 import pytest
 
 from syft.sync.connections.types import MessageKind, SendStatus
-from syft.sync.connections.webrtc.fake_peer_connections import (
+from syft.sync.connections.webrtc.mock.fake_peer_connections import (
     FakeNetwork,
     FakePeerConnections,
 )

@@ -5,8 +5,10 @@ import os
 import pytest
 
 from syft.sync.connections.types import MessageKind
-from syft.sync.connections.webrtc.aiortc_peer_connections import AiortcPeerConnections
-from syft.sync.connections.webrtc.local_signaling import LocalSignaling
+from syft.sync.connections.webrtc.real.aiortc_peer_connections import (
+    AiortcPeerConnections,
+)
+from syft.sync.connections.webrtc.signaling.local_signaling import LocalSignaling
 from syft.sync.connections.webrtc.webrtc_p2p import WebRTCP2PConnection
 
 DO = "do@example.com"

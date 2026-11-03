@@ -19,7 +19,7 @@ from syft.sync.connections.webrtc.peer_connections import (
     OnOpen,
     PeerConnections,
 )
-from syft.sync.connections.webrtc.signaling import Signaling
+from syft.sync.connections.webrtc.signaling.signaling import Signaling
 
 logger = logging.getLogger(__name__)
 
