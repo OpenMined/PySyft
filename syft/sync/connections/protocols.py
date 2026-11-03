@@ -76,6 +76,15 @@ class P2PConnection(RouterConnection, ABC):
         call. A connection that only returns ``DELIVERED`` returns nothing."""
 
     @abstractmethod
+    def is_delivered(self, peer: str, msg_id: str) -> bool:
+        """Whether the message sent to ``peer`` under ``msg_id`` is stored where
+        the peer finds it, or was processed there.
+
+        A sender that stopped between a send and its record of the send asks
+        this before it sends the message again.
+        """
+
+    @abstractmethod
     def receive(
         self,
         peer: str,

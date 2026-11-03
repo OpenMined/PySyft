@@ -264,8 +264,7 @@ class PeerStore(BaseModel):
                 email,
                 cause=f"The encryption policy of {email} is not known yet.",
                 remedy=(
-                    "Peer with them and wait until they accept. Then run "
-                    "client.sync() and send again."
+                    "Peer with them and wait until they accept. Then run client.sync()."
                 ),
             )
         return peer

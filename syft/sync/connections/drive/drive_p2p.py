@@ -109,6 +109,18 @@ class DriveP2PConnection(P2PConnection):
         # Every Drive send is DELIVERED when it returns; none waits for a peer.
         return []
 
+    @raise_unavailable("Could not check Drive for a sent message.")
+    def is_delivered(self, peer: str, msg_id: str) -> bool:
+        # The sender owns the file it uploads, also after the peer moves it to
+        # an archive, so a search of my own files by name finds it in any folder.
+        query = f"name='{msg_id}' and 'me' in owners and trashed=false"
+        results = execute_with_retries(
+            self._cached_client.client.drive_service.files().list(
+                q=query, fields="files(id)", pageSize=1
+            )
+        )
+        return bool(results["files"])
+
     def receive(
         self,
         peer: str,

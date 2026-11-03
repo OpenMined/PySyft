@@ -1,26 +1,28 @@
-from pathlib import Path
+import warnings
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 from queue import Queue
-from typing import Dict, List
+from typing import Dict, Iterable, List
 
 from pydantic import BaseModel, Field, PrivateAttr
 
-from syft.sync.connections.connection_router import ConnectionRouter
 from syft.sync.callback_mixin import BaseModelCallbackMixin
-from syft.sync.peers.exceptions import SyftPeerNotReadyError
+from syft.sync.connections.connection_router import ConnectionRouter
 from syft.sync.messages.proposed_filechange import (
     ProposedFileChange,
     ProposedFileChangesMessage,
 )
+from syft.sync.peers.exceptions import SyftPeerNotReadyError
 from syft.sync.sync.caches.datasite_watcher_cache import (
     DataSiteWatcherCache,
     DataSiteWatcherCacheConfig,
 )
+from syft.sync.sync.spool import Spool, datasite_spool_path
 
 
 class DatasiteWatcherSyncerConfig(BaseModel):
-    syftbox_folder: Path | None = None
-    email: str | None = None
+    syftbox_folder: Path
+    email: str
     datasite_watcher_cache_config: DataSiteWatcherCacheConfig = Field(
         default_factory=DataSiteWatcherCacheConfig
     )
@@ -36,6 +38,7 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
     email: str
     connection_router: ConnectionRouter
     datasite_watcher_cache: DataSiteWatcherCache
+    spool: Spool
     queue: Queue = Field(default_factory=Queue)
 
     _executor: ThreadPoolExecutor = PrivateAttr(
@@ -57,6 +60,7 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
             datasite_watcher_cache=DataSiteWatcherCache.from_config(
                 config.datasite_watcher_cache_config, connection_router
             ),
+            spool=Spool(datasite_spool_path(config.syftbox_folder, config.email)),
         )
 
     # --- Pushing proposed file changes ---
@@ -79,6 +83,14 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
         )
 
     def process_file_changes_queue(self):
+        """Save the queued changes as one message per datasite, then upload the
+        saved messages to those datasites.
+
+        Raises:
+            SyftPeerNotReadyError: when a recipient cannot receive yet. Its
+                message stays saved, and ``sync_up`` sends it later. The other
+                recipients still get their messages.
+        """
         # One message per datasite: each change goes to the owner of its path.
         changes_by_recipient: Dict[str, List[ProposedFileChange]] = {}
         while not self.queue.empty():
@@ -108,34 +120,24 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
                 path_in_datasite, content, datasite_email=recipient
             )
             changes_by_recipient.setdefault(recipient, []).append(file_change)
-        self._send_by_recipient(changes_by_recipient)
-
-    def _send_by_recipient(
-        self, changes_by_recipient: dict[str, list[ProposedFileChange]]
-    ) -> None:
-        """Send one message to each recipient.
-
-        The changes for a recipient that cannot receive now are dropped. The
-        other recipients still get their changes, and then the first error is
-        raised.
-
-        Raises:
-            SyftPeerNotReadyError: when the policy of a recipient is not known,
-                or the pair encrypts and the peer bundle is missing.
-        """
-        error = None
         for recipient, changes in changes_by_recipient.items():
             message = ProposedFileChangesMessage(
                 sender_email=self.email, proposed_file_changes=changes
             )
-            try:
-                self._send_message(recipient, message)
-            except SyftPeerNotReadyError as e:
-                error = error or e
-        if error is not None:
-            raise error
+            self.spool.add(recipient, message)
+            # The next change to a path builds on this one, sent or not.
+            self._record_proposed_hashes(message)
+        waiting = self._upload_spooled(changes_by_recipient)
+        if waiting:
+            error = next(iter(waiting.values()))
+            raise SyftPeerNotReadyError(
+                error.peer_email,
+                cause=error.cause,
+                remedy=f"{error.remedy} The change is saved, and client.sync() "
+                "sends it once the peer is ready.",
+            ) from error
 
-    def _record_sent_hashes(self, message: ProposedFileChangesMessage) -> None:
+    def _record_proposed_hashes(self, message: ProposedFileChangesMessage) -> None:
         hashes = self.datasite_watcher_cache.file_hashes
         for fc in message.proposed_file_changes:
             path_key = Path(fc.datasite_email) / fc.path_in_datasite
@@ -144,19 +146,48 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
             else:
                 hashes[path_key] = fc.new_hash
 
-    def _send_message(
-        self, recipient: str, message: ProposedFileChangesMessage
-    ) -> None:
-        """Send ``message`` and record the hashes it sent.
+    def _upload_spooled(
+        self, recipients: Iterable[str]
+    ) -> dict[str, SyftPeerNotReadyError]:
+        """Upload the saved messages to each of ``recipients``, oldest first,
+        and remove each message once its recipient has it.
+
+        Returns why the messages to each recipient that cannot receive yet
+        wait, by recipient email. They stay saved, in order.
 
         Raises:
-            SyftPeerNotReadyError: when the policy of ``recipient`` is not
-                known, or the pair encrypts and the peer bundle is missing.
+            ConnectionUnavailableError: when the backend cannot be reached. An
+                upload that fails for another reason raises too. That message
+                and the later ones stay saved.
         """
-        self.connection_router.watcher_send_proposed_file_changes_message(
-            recipient, message
-        )
-        self._record_sent_hashes(message)
+        waiting = {}
+        with self.spool.locked():
+            for recipient in recipients:
+                try:
+                    self._upload_spooled_to(recipient)
+                except SyftPeerNotReadyError as e:
+                    waiting[recipient] = e
+        return waiting
+
+    def _upload_spooled_to(self, recipient: str) -> None:
+        for message in self.spool.pending(recipient):
+            msg_id = message.message_filename.as_string()
+            # An earlier upload may have stopped before it removed the message.
+            if not self.connection_router.is_delivered(recipient, msg_id):
+                self.connection_router.watcher_send_proposed_file_changes_message(
+                    recipient, message
+                )
+            self.spool.remove(recipient, msg_id)
+
+    def sync_up(self) -> None:
+        """Upload every saved message. Warn for each recipient that cannot
+        receive yet; its messages wait for the next sync."""
+        waiting = self._upload_spooled(self.spool.recipients())
+        for recipient, error in waiting.items():
+            warnings.warn(
+                f"Changes to {recipient} wait in "
+                f"{self.spool.recipient_folder(recipient)}: {error}"
+            )
 
     def on_file_change(
         self,
@@ -193,8 +224,7 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
             self.datasite_watcher_cache.sync_down_collections_parallel(
                 peer_email,
                 self._executor,
-                lambda fid,
-                pe=peer_email: self.download_collection_file_with_new_connection(
-                    fid, pe
+                lambda fid, pe=peer_email: (
+                    self.download_collection_file_with_new_connection(fid, pe)
                 ),
             )
