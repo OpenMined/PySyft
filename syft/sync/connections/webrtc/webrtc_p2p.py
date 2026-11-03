@@ -25,7 +25,9 @@ from syft.sync.connections.webrtc.signaling import Signaling
 from syft.sync.sync.constants import CACHE_DIR
 
 if TYPE_CHECKING:
-    from syft.sync.connections.webrtc.aiortc_link import AiortcLink
+    from syft.sync.connections.webrtc.aiortc_peer_connections import (
+        AiortcPeerConnections,
+    )
 
 WEBRTC_QUEUES_DIR = "webrtc"
 DELIVERY_TIMEOUT_SECONDS = 30.0
@@ -64,29 +66,32 @@ class WebRTCP2PConnection(P2PConnection):
         # Reentrant: a FakeChannel brings the receipt back inside ``send``.
         self._lock = threading.RLock()
         self._receipt_arrived = threading.Condition(self._lock)
-        self._link: "AiortcLink | None" = None
+        self._peer_connections: "AiortcPeerConnections | None" = None
 
     def open(self, signaling: Signaling) -> None:
-        """Start the aiortc link and answer peers that connect over
+        """Start the aiortc peer connections and answer peers that connect over
         ``signaling``. Needs the ``webrtc`` extra."""
         # Imported here: aiortc is optional, a FakeChannel does not need it.
-        from syft.sync.connections.webrtc.aiortc_link import AiortcLink
+        from syft.sync.connections.webrtc.aiortc_peer_connections import (
+            AiortcPeerConnections,
+        )
 
-        self._link = AiortcLink(self, signaling)
-        self._link.open()
+        self._peer_connections = AiortcPeerConnections(self, signaling)
+        self._peer_connections.open()
 
     def connect(self, peer: str) -> None:
-        """Connect to ``peer`` over the link; return once the channel is open."""
-        self._link.connect(peer)
+        """Connect to ``peer`` over aiortc; return once the channel is open."""
+        self._peer_connections.connect(peer)
 
     def close(self) -> None:
-        """Close the link. Unconfirmed messages stay in the outgoing queues."""
+        """Close the peer connections. Unconfirmed messages stay in the outgoing
+        queues."""
         with self._lock:
             self._channels.clear()
             self._open.clear()
-        if self._link is not None:
-            self._link.close()
-            self._link = None
+        if self._peer_connections is not None:
+            self._peer_connections.close()
+            self._peer_connections = None
 
     def attach(self, peer: str, channel: Channel) -> None:
         """Use ``channel`` for ``peer`` from now on. Receipts go over it right

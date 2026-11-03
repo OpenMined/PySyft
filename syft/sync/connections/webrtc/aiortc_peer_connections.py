@@ -38,9 +38,10 @@ class AiortcChannel(Channel):
         self._loop.call_soon_threadsafe(self._channel.send, frame)
 
 
-class AiortcLink:
-    """Moves one core's frames over aiortc, with an asyncio loop on its own
-    thread. Frames reach the core's ``on_frame`` on that thread."""
+class AiortcPeerConnections:
+    """One core's aiortc peer connections, one data channel per peer, and the
+    asyncio loop thread that runs them. Frames reach the core's ``on_frame``
+    on that thread."""
 
     def __init__(self, core: WebRTCP2PConnection, signaling: Signaling):
         self.core = core

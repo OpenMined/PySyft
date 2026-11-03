@@ -1,4 +1,4 @@
-"""Helpers for managers whose p2p connection is a real WebRTC link."""
+"""Helpers for managers whose p2p connection runs over real WebRTC."""
 
 from syft.sync.connections.webrtc.webrtc_p2p import WebRTCP2PConnection
 from syft.sync.syftbox_manager import SyftboxManager
