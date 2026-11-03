@@ -51,6 +51,10 @@ class MessageQueue:
                 for e in entries[:max_messages]
             ]
 
+    def is_empty(self) -> bool:
+        with locked_file(self.folder, exclusive=False):
+            return not self._entries()
+
     def add(self, message: QueuedMessage) -> None:
         """Append ``message``, unless one with its ``msg_id`` is already here."""
         _require_file_name(message.msg_id)

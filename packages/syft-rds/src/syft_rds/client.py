@@ -241,6 +241,19 @@ class SyftRDSClient(BaseModel):
         return cls._build_rds_pair_from_managers(ds_mgr, do_mgr)
 
     @classmethod
+    def pair_with_mock_drive_and_local_webrtc_connection(
+        cls, **kwargs: Any
+    ) -> tuple["SyftRDSClient", "SyftRDSClient"]:
+        """(ds, do) pair like ``pair_with_mock_drive_service_connection``, with
+        messages over real WebRTC on this machine. Needs the ``webrtc`` extra."""
+        ds_mgr, do_mgr = (
+            SyftboxManager.pair_with_mock_drive_and_local_webrtc_connection(
+                collection_specs=DATASET_COLLECTION_SPECS, **kwargs
+            )
+        )
+        return cls._build_rds_pair_from_managers(ds_mgr, do_mgr)
+
+    @classmethod
     def _pair_with_google_drive_testing_connection(
         cls, **kwargs: Any
     ) -> tuple["SyftRDSClient", "SyftRDSClient"]:

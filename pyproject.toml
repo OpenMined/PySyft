@@ -37,6 +37,8 @@ dependencies = [
     "syft-dataset==0.1.21",
 ]
 
+[project.optional-dependencies]
+webrtc = ["aiortc>=1.14.0"]
 
 
 [tool.uv]

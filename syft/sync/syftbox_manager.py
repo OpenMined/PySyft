@@ -64,6 +64,7 @@ from syft.sync.connections.config import ConnectionRouterConfig
 from syft.sync.platforms.gdrive_files_platform import GdriveFilesPlatform
 from syft.sync.connections.protocols import Connections
 from syft.sync.connections.webrtc.fake_channel import FakeChannel
+from syft.sync.connections.webrtc.local_signaling import LocalSignaling
 from syft.sync.connections.webrtc.webrtc_p2p import WebRTCP2PConnection
 from syft.sync.version.peer_manager import (
     PeerManager,
@@ -870,6 +871,50 @@ class SyftboxManager(BaseModelCallbackMixin):
             do_config, do_connections, ds_config, ds_connections, add_peers
         )
 
+    @classmethod
+    def pair_with_mock_drive_and_local_webrtc_connection(
+        cls,
+        email1: str | None = None,
+        email2: str | None = None,
+        base_path1: str | None = None,
+        base_path2: str | None = None,
+        sync_automatically: bool = False,
+        add_peers: bool = True,
+        use_in_memory_cache: bool = True,
+        persist_owner_state: bool = True,
+        check_versions: bool = False,
+        encryption: bool = False,
+        collection_specs: list["CollectionSyncSpec"] | None = None,
+        ds_encryption_policy: EncryptionPolicy | None = None,
+        do_encryption_policy: EncryptionPolicy | None = None,
+    ):
+        """Like ``pair_with_mock_drive_and_mock_webrtc_connection``, with the
+        same arguments, but the two WebRTC cores talk over a real aiortc data
+        channel on this machine. Needs the ``webrtc`` extra; ``close()`` both
+        p2p connections when done."""
+        do_config, ds_config = SyftboxManager._mock_pair_configs(
+            email1=email1,
+            email2=email2,
+            base_path1=base_path1,
+            base_path2=base_path2,
+            use_in_memory_cache=use_in_memory_cache,
+            persist_owner_state=persist_owner_state,
+            check_versions=check_versions,
+            encryption=encryption,
+            collection_specs=collection_specs,
+            ds_encryption_policy=ds_encryption_policy,
+            do_encryption_policy=do_encryption_policy,
+        )
+        do_connections, ds_connections = SyftboxManager._mock_drive_connections(
+            do_config, ds_config
+        )
+        do_connections, ds_connections = SyftboxManager._with_local_webrtc_p2p(
+            do_config, ds_config, do_connections, ds_connections
+        )
+        return cls._test_pair(
+            do_config, do_connections, ds_config, ds_connections, add_peers
+        )
+
     @staticmethod
     def _mock_pair_configs(
         email1: str | None = None,
@@ -935,6 +980,26 @@ class SyftboxManager(BaseModelCallbackMixin):
         do_p2p = WebRTCP2PConnection(do_config.email, do_config.syftbox_folder)
         ds_p2p = WebRTCP2PConnection(ds_config.email, ds_config.syftbox_folder)
         FakeChannel.connect(do_p2p, ds_p2p)
+        return (
+            do_connections.model_copy(update={"p2p_con": do_p2p}),
+            ds_connections.model_copy(update={"p2p_con": ds_p2p}),
+        )
+
+    @staticmethod
+    def _with_local_webrtc_p2p(
+        do_config: SyftboxManagerConfig,
+        ds_config: SyftboxManagerConfig,
+        do_connections: Connections,
+        ds_connections: Connections,
+    ) -> tuple[Connections, Connections]:
+        """Both connections with their p2p replaced by a WebRTC core, the DS
+        connected to the DO over aiortc on this machine."""
+        signaling = LocalSignaling()
+        do_p2p = WebRTCP2PConnection(do_config.email, do_config.syftbox_folder)
+        ds_p2p = WebRTCP2PConnection(ds_config.email, ds_config.syftbox_folder)
+        do_p2p.open(signaling)
+        ds_p2p.open(signaling)
+        ds_p2p.connect(do_config.email)
         return (
             do_connections.model_copy(update={"p2p_con": do_p2p}),
             ds_connections.model_copy(update={"p2p_con": ds_p2p}),

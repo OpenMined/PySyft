@@ -1,8 +1,11 @@
 """The WebRTC core over a FakeChannel, without managers."""
 
+import threading
+
 import pytest
 
 from syft.sync.connections.types import MessageKind, SendStatus
+from syft.sync.connections.webrtc.channel import Channel
 from syft.sync.connections.webrtc.fake_channel import FakeChannel
 from syft.sync.connections.webrtc.webrtc_p2p import WebRTCP2PConnection
 
@@ -107,3 +110,38 @@ def test_restarted_receiver_keeps_unprocessed_messages(cores, tmp_path):
     restarted_do = WebRTCP2PConnection(DO, tmp_path / "do")
 
     assert msg_ids(restarted_do.receive(DS, PROPOSAL)) == ["m1"]
+
+
+class ThreadChannel(Channel):
+    """Hands each frame over on a new thread, as aiortc's loop thread would."""
+
+    def __init__(self, sender: str, receiver: WebRTCP2PConnection):
+        self.sender = sender
+        self.receiver = receiver
+
+    def send(self, frame: bytes) -> None:
+        threading.Thread(
+            target=self.receiver.on_frame, args=(self.sender, frame)
+        ).start()
+
+
+def test_wait_until_delivered_ends_when_receipt_arrives_on_other_thread(tmp_path):
+    do = WebRTCP2PConnection(DO, tmp_path / "do")
+    ds = WebRTCP2PConnection(DS, tmp_path / "ds")
+    do.attach(DS, ThreadChannel(sender=DO, receiver=ds))
+    ds.attach(DO, ThreadChannel(sender=DS, receiver=do))
+    ds.on_open(DO)
+
+    ds.send(DO, "m1", b"job", PROPOSAL)
+    ds.wait_until_delivered(timeout=5)
+
+    assert ds.delivered() == ["m1"]
+    assert msg_ids(do.receive(DS, PROPOSAL)) == ["m1"]
+
+
+def test_wait_until_delivered_times_out_while_peer_is_away(tmp_path):
+    ds = WebRTCP2PConnection(DS, tmp_path / "ds")
+    ds.send(DO, "m1", b"job", PROPOSAL)
+
+    with pytest.raises(TimeoutError):
+        ds.wait_until_delivered(timeout=0.05)
