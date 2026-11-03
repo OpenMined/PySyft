@@ -1,8 +1,8 @@
-"""Messages between peers over WebRTC: the synchronous core.
+"""Messages between peers over WebRTC.
 
-The core keeps the queues on disk, sends receipts and resends what the peer has
-not confirmed. The ``PeerConnections`` under it only carry frames: aiortc in
-production, ``FakePeerConnections`` in tests.
+``WebRTCP2PConnection`` keeps the queues on disk, sends receipts and resends
+what the peer has not confirmed. The ``PeerConnections`` under it only carry
+frames: aiortc in production, ``FakePeerConnections`` in tests.
 """
 
 import threading

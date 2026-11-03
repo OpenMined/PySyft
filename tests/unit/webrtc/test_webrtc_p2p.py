@@ -23,7 +23,9 @@ def network() -> FakeNetwork:
 
 
 @pytest.fixture
-def cores(tmp_path, network) -> tuple[WebRTCP2PConnection, WebRTCP2PConnection]:
+def connected_pair(
+    tmp_path, network
+) -> tuple[WebRTCP2PConnection, WebRTCP2PConnection]:
     """Both open on one fake network, the DS connected to the DO."""
     do = WebRTCP2PConnection(DO, tmp_path / "do")
     ds = WebRTCP2PConnection(DS, tmp_path / "ds")
@@ -37,8 +39,8 @@ def msg_ids(messages) -> list[str]:
     return [m.msg_id for m in messages]
 
 
-def test_sent_message_arrives_and_is_delivered_once(cores):
-    do, ds = cores
+def test_sent_message_arrives_and_is_delivered_once(connected_pair):
+    do, ds = connected_pair
 
     assert ds.send(DO, "m1", b"job", PROPOSAL) is SendStatus.QUEUED
 
@@ -48,8 +50,8 @@ def test_sent_message_arrives_and_is_delivered_once(cores):
     assert ds.delivered() == []
 
 
-def test_receive_returns_one_kind_oldest_first_up_to_max(cores):
-    do, ds = cores
+def test_receive_returns_one_kind_oldest_first_up_to_max(connected_pair):
+    do, ds = connected_pair
     do.send(DS, "e1", b"", EVENTS)
     do.send(DS, "p1", b"", PROPOSAL)
     do.send(DS, "e2", b"", EVENTS)
@@ -59,8 +61,8 @@ def test_receive_returns_one_kind_oldest_first_up_to_max(cores):
     assert msg_ids(ds.receive(DO, PROPOSAL)) == ["p1"]
 
 
-def test_processed_message_is_not_received_again(cores):
-    do, ds = cores
+def test_processed_message_is_not_received_again(connected_pair):
+    do, ds = connected_pair
     ds.send(DO, "m1", b"job", PROPOSAL)
 
     do.mark_all_processed(do.receive(DS, PROPOSAL))
@@ -68,8 +70,8 @@ def test_processed_message_is_not_received_again(cores):
     assert do.receive(DS, PROPOSAL) == []
 
 
-def test_message_sent_twice_is_received_once(cores):
-    do, ds = cores
+def test_message_sent_twice_is_received_once(connected_pair):
+    do, ds = connected_pair
 
     ds.send(DO, "m1", b"job", PROPOSAL)
     ds.send(DO, "m1", b"job", PROPOSAL)
@@ -108,8 +110,8 @@ def test_message_sent_after_connect_follows_older_ones(tmp_path, network):
     assert msg_ids(do.receive(DS, PROPOSAL)) == ["m1", "m2"]
 
 
-def test_messages_sent_after_close_arrive_once_reconnected(cores, network):
-    do, ds = cores
+def test_messages_sent_after_close_arrive_once_reconnected(connected_pair, network):
+    do, ds = connected_pair
     ds.close()
     ds.send(DO, "m1", b"", PROPOSAL)
     ds.send(DO, "m2", b"", PROPOSAL)
@@ -129,15 +131,15 @@ def test_connect_to_peer_not_open_is_refused(tmp_path, network):
         ds.connect(DO)
 
 
-def test_msg_id_that_is_not_plain_file_name_is_refused(cores):
-    _, ds = cores
+def test_msg_id_that_is_not_plain_file_name_is_refused(connected_pair):
+    _, ds = connected_pair
 
     with pytest.raises(ValueError):
         ds.send(DO, "../escape", b"", PROPOSAL)
 
 
-def test_restarted_receiver_keeps_unprocessed_messages(cores, tmp_path):
-    _, ds = cores
+def test_restarted_receiver_keeps_unprocessed_messages(connected_pair, tmp_path):
+    _, ds = connected_pair
     ds.send(DO, "m1", b"job", PROPOSAL)
 
     restarted_do = WebRTCP2PConnection(DO, tmp_path / "do")

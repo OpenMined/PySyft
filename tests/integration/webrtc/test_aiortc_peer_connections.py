@@ -1,4 +1,4 @@
-"""Two WebRTC cores over a real aiortc channel on this machine."""
+"""Two WebRTCP2PConnections over a real aiortc channel on this machine."""
 
 import os
 
@@ -18,8 +18,8 @@ EVENTS = MessageKind.FILE_EVENTS
 
 
 @pytest.fixture
-def cores(tmp_path):
-    """Both cores open but not connected yet."""
+def open_pair(tmp_path):
+    """Both open, not connected yet."""
     do = WebRTCP2PConnection(DO, tmp_path / "do")
     ds = WebRTCP2PConnection(DS, tmp_path / "ds")
     signaling = LocalSignaling()
@@ -34,8 +34,8 @@ def msg_ids(messages) -> list[str]:
     return [m.msg_id for m in messages]
 
 
-def test_messages_go_both_ways_and_receipts_come_back(cores):
-    do, ds = cores
+def test_messages_go_both_ways_and_receipts_come_back(open_pair):
+    do, ds = open_pair
     ds.connect(DO)
 
     ds.send(DO, "proposal", b"job", PROPOSAL)
@@ -49,8 +49,8 @@ def test_messages_go_both_ways_and_receipts_come_back(cores):
     assert do.delivered() == ["events"]
 
 
-def test_messages_sent_before_connect_arrive_in_order(cores):
-    do, ds = cores
+def test_messages_sent_before_connect_arrive_in_order(open_pair):
+    do, ds = open_pair
     ds.send(DO, "p1", b"", PROPOSAL)
     ds.send(DO, "p2", b"", PROPOSAL)
     do.send(DS, "e1", b"", EVENTS)
@@ -64,8 +64,8 @@ def test_messages_sent_before_connect_arrive_in_order(cores):
     assert msg_ids(ds.receive(DO, EVENTS)) == ["e1"]
 
 
-def test_large_message_arrives_whole(cores):
-    do, ds = cores
+def test_large_message_arrives_whole(open_pair):
+    do, ds = open_pair
     # Far over the 64 KB max-message-size aiortc advertises.
     data = os.urandom(2_000_000)
     ds.connect(DO)
