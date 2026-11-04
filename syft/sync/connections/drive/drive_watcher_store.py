@@ -30,20 +30,20 @@ class DriveWatcherStoreConnection(WatcherStoreConnection):
         return DriveWatcherStoreConnection(self._cached_client.clone_for_thread())
 
     @raise_unavailable("Could not save the checkpoint to Drive.")
-    def put_checkpoint(self, peer: str, data: bytes) -> str:
-        return self._put(peer, CHECKPOINT_FILE_NAME, data)
+    def put_checkpoint(self, peer: str, data: bytes) -> None:
+        self._save_file(peer, CHECKPOINT_FILE_NAME, data)
 
     @raise_unavailable("Could not read the checkpoint from Drive.")
-    def latest_checkpoint(self, peer: str) -> bytes | None:
-        return self._get(peer, CHECKPOINT_FILE_NAME)
+    def get_checkpoint(self, peer: str) -> bytes | None:
+        return self._read_file(peer, CHECKPOINT_FILE_NAME)
 
     @raise_unavailable("Could not save the rolling state to Drive.")
-    def put_rolling_state(self, peer: str, data: bytes) -> str:
-        return self._put(peer, ROLLING_STATE_FILE_NAME, data)
+    def put_rolling_state(self, peer: str, data: bytes) -> None:
+        self._save_file(peer, ROLLING_STATE_FILE_NAME, data)
 
     @raise_unavailable("Could not read the rolling state from Drive.")
     def get_rolling_state(self, peer: str) -> bytes | None:
-        return self._get(peer, ROLLING_STATE_FILE_NAME)
+        return self._read_file(peer, ROLLING_STATE_FILE_NAME)
 
     @raise_unavailable("Could not remove the watcher state from Drive.")
     def reset(self, peer: str) -> None:
@@ -53,44 +53,46 @@ class DriveWatcherStoreConnection(WatcherStoreConnection):
 
     @raise_unavailable("Could not list the watcher state on Drive.")
     def peers_with_saved_state(self) -> list[str]:
-        folder_id = self._folder_id()
-        if folder_id is None:
+        watcher_folder_id = self._watcher_folder_id()
+        if watcher_folder_id is None:
             return []
-        peer_folders = self._cached_client.client.find_folders(parent_id=folder_id)
+        peer_folders = self._cached_client.client.find_folders(
+            parent_id=watcher_folder_id
+        )
         return [name for _, name in peer_folders]
 
-    def _put(self, peer: str, name: str, data: bytes) -> str:
+    def _save_file(self, peer: str, name: str, data: bytes) -> None:
         client = self._cached_client.client
-        folder_id = self._folder_id() or self._create_folder()
-        peer_folder_id = self._find_one(peer, folder_id) or client.create_folder(
-            peer, folder_id
+        watcher_folder_id = self._watcher_folder_id() or self._create_watcher_folder()
+        peer_folder_id = self._find_id(peer, watcher_folder_id) or client.create_folder(
+            peer, watcher_folder_id
         )
         payload, _ = client.create_file_payload(data)
-        file_id = self._find_one(name, peer_folder_id)
+        file_id = self._find_id(name, peer_folder_id)
         if file_id is None:
             body = {"name": name, "parents": [peer_folder_id]}
-            return client.create_syft_file(body, payload)["id"]
-        execute_with_retries(
-            client.drive_service.files().update(fileId=file_id, media_body=payload)
-        )
-        return file_id
+            client.create_syft_file(body, payload)
+        else:
+            execute_with_retries(
+                client.drive_service.files().update(fileId=file_id, media_body=payload)
+            )
 
-    def _get(self, peer: str, name: str) -> bytes | None:
+    def _read_file(self, peer: str, name: str) -> bytes | None:
         peer_folder_id = self._peer_folder_id(peer)
         if peer_folder_id is None:
             return None
-        file_id = self._find_one(name, peer_folder_id)
+        file_id = self._find_id(name, peer_folder_id)
         if file_id is None:
             return None
         return self._cached_client.client.download_file(file_id)
 
     def _peer_folder_id(self, peer: str) -> str | None:
-        folder_id = self._folder_id()
-        if folder_id is None:
+        watcher_folder_id = self._watcher_folder_id()
+        if watcher_folder_id is None:
             return None
-        return self._find_one(peer, folder_id)
+        return self._find_id(peer, watcher_folder_id)
 
-    def _find_one(self, name: str, parent_id: str) -> str | None:
+    def _find_id(self, name: str, parent_id: str) -> str | None:
         """The id of the file or folder ``name`` in ``parent_id``, or None.
 
         Raises:
@@ -105,12 +107,12 @@ class DriveWatcherStoreConnection(WatcherStoreConnection):
             )
         return files[0]["id"] if files else None
 
-    def _folder_name(self) -> str:
+    def _watcher_folder_name(self) -> str:
         return (
             f"{self._cached_client.email}-{SYFT_VERSION}{WATCHER_STATE_FOLDER_SUFFIX}"
         )
 
-    def _folder_id(self) -> str | None:
+    def _watcher_folder_id(self) -> str | None:
         folders = self._cached_client.client.find_folders(
             name_contains=[
                 f"{self._cached_client.email}-",
@@ -119,10 +121,10 @@ class DriveWatcherStoreConnection(WatcherStoreConnection):
             parent_id=self._cached_client.get_syftbox_folder_id(),
         )
         return self._cached_client.find_or_adopt_versioned_folder(
-            folders, current_name=self._folder_name()
+            folders, current_name=self._watcher_folder_name()
         )
 
-    def _create_folder(self) -> str:
+    def _create_watcher_folder(self) -> str:
         return self._cached_client.client.create_folder(
-            self._folder_name(), self._cached_client.get_syftbox_folder_id()
+            self._watcher_folder_name(), self._cached_client.get_syftbox_folder_id()
         )

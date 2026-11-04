@@ -552,13 +552,13 @@ def test_owner_store_files_carry_the_syft_tag(pair):
 def test_watcher_state_save_replaces_previous(pair):
     _, ds_cached_client = pair
     store = DriveWatcherStoreConnection(ds_cached_client)
-    assert store.latest_checkpoint(DO) is None
+    assert store.get_checkpoint(DO) is None
 
     store.put_checkpoint(DO, b"checkpoint 1")
     store.put_rolling_state(DO, b"rolling state")
     store.put_checkpoint(DO, b"checkpoint 2")
 
-    assert store.latest_checkpoint(DO) == b"checkpoint 2"
+    assert store.get_checkpoint(DO) == b"checkpoint 2"
     assert store.get_rolling_state(DO) == b"rolling state"
 
 

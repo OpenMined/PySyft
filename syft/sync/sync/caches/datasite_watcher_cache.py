@@ -160,7 +160,7 @@ class DataSiteWatcherCache(BaseModel):
                 saves_watcher_state=True,
             )
             cache._load_collection_hashes_from_disk()
-            cache._restore_saved_state()
+            cache._restore_watcher_state()
             return cache
 
     def _load_collection_hashes_from_disk(self):
@@ -248,7 +248,7 @@ class DataSiteWatcherCache(BaseModel):
                 event_count += len(event_message.events)
             self._record_received(peer_email, raw.msg_id)
         if received and self.saves_watcher_state:
-            self._save_state(peer_email)
+            self._save_watcher_state(peer_email)
         self.connection_router.mark_all_processed([raw for raw, _ in received])
 
         self.last_sync = datetime.now()
@@ -307,7 +307,7 @@ class DataSiteWatcherCache(BaseModel):
 
     # --- State saved in the DS's storage ---
 
-    def _restore_saved_state(self) -> None:
+    def _restore_watcher_state(self) -> None:
         """Restore the files, their hashes and the received message ids of each
         peer with saved state. A Colab runtime reset loses the local copy.
 
@@ -333,7 +333,7 @@ class DataSiteWatcherCache(BaseModel):
         self.file_connection.write_file(str(path_in_syftbox), file.content)
         self.file_hashes[path_in_syftbox] = file.hash
 
-    def _save_state(self, peer_email: str) -> None:
+    def _save_watcher_state(self, peer_email: str) -> None:
         """Save the rolling state of ``peer_email``. At
         ``DEFAULT_CHECKPOINT_EVENT_THRESHOLD`` paths, fold it into the checkpoint."""
         self._save_rolling_state(peer_email)
@@ -364,8 +364,9 @@ class DataSiteWatcherCache(BaseModel):
 
     def _save_rolling_state(self, peer_email: str) -> None:
         key = _peer_key(peer_email)
+        received_msg_ids = sorted(self.received_msg_ids_per_peer[key])
         saved = self._rolling_state(peer_email).model_copy(
-            update={"received_msg_ids": sorted(self.received_msg_ids_per_peer[key])}
+            update={"received_msg_ids": received_msg_ids}
         )
         self.connection_router.watcher_save_rolling_state(key, saved)
 

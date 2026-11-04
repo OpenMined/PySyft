@@ -1263,8 +1263,10 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
 
         print(f"Found {len(incremental_cps)} incremental checkpoints to compact")
 
-        ordered = sorted(incremental_cps, key=lambda c: c.sequence_number)
-        events = [event for checkpoint in ordered for event in checkpoint.events]
+        incrementals_in_order = sorted(incremental_cps, key=lambda c: c.sequence_number)
+        events = [
+            event for checkpoint in incrementals_in_order for event in checkpoint.events
+        ]
         if existing_checkpoint is None:
             compacted = Checkpoint(email=self.email).with_events(events)
         else:

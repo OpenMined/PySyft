@@ -594,7 +594,7 @@ class ConnectionRouter(BaseModel):
         Raises:
             ValueError: if a later client saved it.
         """
-        data = self.connections.watcher_store_con.latest_checkpoint(peer_email)
+        data = self.connections.watcher_store_con.get_checkpoint(peer_email)
         if data is None:
             return None
         return Checkpoint.from_compressed_data(data)

@@ -204,16 +204,16 @@ class WatcherStoreConnection(RouterConnection, ABC):
     """
 
     @abstractmethod
-    def put_checkpoint(self, peer: str, data: bytes) -> str:
+    def put_checkpoint(self, peer: str, data: bytes) -> None:
         """Store a snapshot of every file received from ``peer``; it replaces
         the previous one."""
 
     @abstractmethod
-    def latest_checkpoint(self, peer: str) -> bytes | None:
-        """The newest snapshot of files received from ``peer``, or None."""
+    def get_checkpoint(self, peer: str) -> bytes | None:
+        """The snapshot of files received from ``peer``, or None."""
 
     @abstractmethod
-    def put_rolling_state(self, peer: str, data: bytes) -> str:
+    def put_rolling_state(self, peer: str, data: bytes) -> None:
         """Store the changes received from ``peer`` since the snapshot, and the
         ids of the messages already processed; it replaces the previous one."""
 
