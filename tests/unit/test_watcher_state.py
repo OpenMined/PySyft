@@ -74,7 +74,7 @@ def test_restart_on_empty_folder_restores_files_and_cursor(tmp_path):
 
 
 def test_restart_after_checkpoint_keeps_deleted_file_deleted(tmp_path, monkeypatch):
-    monkeypatch.setattr(datasite_watcher_cache, "WATCHER_CHECKPOINT_THRESHOLD", 2)
+    monkeypatch.setattr(datasite_watcher_cache, "DEFAULT_CHECKPOINT_EVENT_THRESHOLD", 2)
     ds_manager, do_manager = _pair_on_disk()
     kept = get_mock_event(f"{do_manager.email}/kept.txt")
     deleted = get_mock_event(f"{do_manager.email}/deleted.txt")
@@ -132,7 +132,7 @@ def test_restart_with_new_key_restores_files_and_cursor(tmp_path):
 
 
 def test_binary_file_restored_from_checkpoint(tmp_path, monkeypatch):
-    monkeypatch.setattr(datasite_watcher_cache, "WATCHER_CHECKPOINT_THRESHOLD", 1)
+    monkeypatch.setattr(datasite_watcher_cache, "DEFAULT_CHECKPOINT_EVENT_THRESHOLD", 1)
     ds_manager, do_manager = _pair_on_disk()
     event = get_mock_event(f"{do_manager.email}/image.bin").model_copy(
         update={"content": b"\x00\xff"}
@@ -151,7 +151,7 @@ def test_binary_file_restored_from_checkpoint(tmp_path, monkeypatch):
 def test_restore_writes_files_where_events_write(tmp_path, monkeypatch):
     """The DO's events may spell its email in another case than the DS's peer
     entry does. A restored file goes where the live event put it."""
-    monkeypatch.setattr(datasite_watcher_cache, "WATCHER_CHECKPOINT_THRESHOLD", 1)
+    monkeypatch.setattr(datasite_watcher_cache, "DEFAULT_CHECKPOINT_EVENT_THRESHOLD", 1)
     ds_manager, do_manager = _pair_on_disk()
     event = get_mock_event(f"{do_manager.email.upper()}/result.txt")
     _send_to_ds(do_manager, ds_manager, [event])
@@ -163,7 +163,7 @@ def test_restore_writes_files_where_events_write(tmp_path, monkeypatch):
 
 
 def test_do_state_saved_under_email_without_case(monkeypatch):
-    monkeypatch.setattr(datasite_watcher_cache, "WATCHER_CHECKPOINT_THRESHOLD", 1)
+    monkeypatch.setattr(datasite_watcher_cache, "DEFAULT_CHECKPOINT_EVENT_THRESHOLD", 1)
     ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
         email1="Owner@Example.com", use_in_memory_cache=False
     )
@@ -176,7 +176,7 @@ def test_do_state_saved_under_email_without_case(monkeypatch):
 
 
 def test_change_without_hash_or_content_dropped(monkeypatch):
-    monkeypatch.setattr(datasite_watcher_cache, "WATCHER_CHECKPOINT_THRESHOLD", 1)
+    monkeypatch.setattr(datasite_watcher_cache, "DEFAULT_CHECKPOINT_EVENT_THRESHOLD", 1)
     ds_manager, do_manager = _pair_on_disk()
     no_hash = get_mock_event(f"{do_manager.email}/no_hash.txt").model_copy(
         update={"new_hash": None}

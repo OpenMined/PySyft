@@ -11,6 +11,7 @@ from typing import Any, Callable, List, Optional, cast
 from pydantic import BaseModel, ConfigDict, PrivateAttr
 
 from syft.sync.callback_mixin import BaseModelCallbackMixin
+from syft.sync.checkpoints.checkpoint import DEFAULT_CHECKPOINT_EVENT_THRESHOLD
 from syft.sync.connections.connection_router import ConnectionRouter
 from syft.sync.connections.drive import mock_drive_service
 from syft.sync.connections.drive.drive_cached_client import DriveCachedClient
@@ -1074,7 +1075,7 @@ class SyftboxManager(BaseModelCallbackMixin):
     def sync(
         self,
         auto_checkpoint: bool = True,
-        checkpoint_threshold: int = 50,
+        checkpoint_threshold: int = DEFAULT_CHECKPOINT_EVENT_THRESHOLD,
         auto_compact: bool = True,
         compact_threshold: int = MIN_MESSAGES_COMPACT,
         force_download_peer_state: bool = False,
@@ -1396,7 +1397,9 @@ class SyftboxManager(BaseModelCallbackMixin):
                 for peer in self.peer_manager.approved_peers
             }
 
-    def should_create_checkpoint(self, threshold: int = 50) -> bool:
+    def should_create_checkpoint(
+        self, threshold: int = DEFAULT_CHECKPOINT_EVENT_THRESHOLD
+    ) -> bool:
         """
         Check if a checkpoint should be created based on event count.
 
@@ -1410,7 +1413,9 @@ class SyftboxManager(BaseModelCallbackMixin):
             return False
         return self.datasite_owner_syncer.should_create_checkpoint(threshold)
 
-    def try_create_checkpoint(self, threshold: int = 50):
+    def try_create_checkpoint(
+        self, threshold: int = DEFAULT_CHECKPOINT_EVENT_THRESHOLD
+    ):
         """
         Try to create a checkpoint if the event count exceeds the threshold.
 

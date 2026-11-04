@@ -13,6 +13,7 @@ from syft_perms import SyftPermContext
 
 from syft.sync.callback_mixin import BaseModelCallbackMixin
 from syft.sync.checkpoints.checkpoint import (
+    DEFAULT_CHECKPOINT_EVENT_THRESHOLD,
     DEFAULT_COMPACTING_THRESHOLD,
     Checkpoint,
     IncrementalCheckpoint,
@@ -48,9 +49,6 @@ from syft.sync.utils.syftbox_utils import (
 
 logger = logging.getLogger(__name__)
 
-
-# Default threshold for creating incremental checkpoint from rolling state
-DEFAULT_CHECKPOINT_EVENT_THRESHOLD = 50
 
 # save_owner_state() uploads the rolling state once this many events were added
 # since the last upload. At 1 the rolling state on Drive holds every change after

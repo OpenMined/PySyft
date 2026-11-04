@@ -60,6 +60,10 @@ def _check_version(version: int, kind: str) -> None:
 # Default compacting threshold: merge after this many incremental checkpoints
 DEFAULT_COMPACTING_THRESHOLD = 4
 
+# Default threshold for a checkpoint: this many events in the DO's rolling
+# state, or this many paths in the rolling state that a DS keeps for a DO
+DEFAULT_CHECKPOINT_EVENT_THRESHOLD = 50
+
 
 class CheckpointFile(BaseModel):
     """Represents a single file in the checkpoint."""

@@ -6,7 +6,11 @@ from typing import Callable, Dict, List, Set
 
 from pydantic import BaseModel, Field
 
-from syft.sync.checkpoints.checkpoint import Checkpoint, CheckpointFile
+from syft.sync.checkpoints.checkpoint import (
+    DEFAULT_CHECKPOINT_EVENT_THRESHOLD,
+    Checkpoint,
+    CheckpointFile,
+)
 from syft.sync.checkpoints.rolling_state import RollingState
 from syft.sync.connections.connection_router import ConnectionRouter
 from syft.sync.events.file_change_event import (
@@ -78,9 +82,6 @@ def _accepted_events(
 
 
 SECONDS_BEFORE_SYNCING_DOWN = 0
-# The changes from a DO go into its checkpoint at this many paths, as the DO
-# does with its own state.
-WATCHER_CHECKPOINT_THRESHOLD = 50
 
 
 class DataSiteWatcherCacheConfig(BaseModel):
@@ -334,9 +335,12 @@ class DataSiteWatcherCache(BaseModel):
 
     def _save_state(self, peer_email: str) -> None:
         """Save the rolling state of ``peer_email``. At
-        ``WATCHER_CHECKPOINT_THRESHOLD`` paths, fold it into the checkpoint."""
+        ``DEFAULT_CHECKPOINT_EVENT_THRESHOLD`` paths, fold it into the checkpoint."""
         self._save_rolling_state(peer_email)
-        if self._rolling_state(peer_email).event_count >= WATCHER_CHECKPOINT_THRESHOLD:
+        if (
+            self._rolling_state(peer_email).event_count
+            >= DEFAULT_CHECKPOINT_EVENT_THRESHOLD
+        ):
             self._fold_into_checkpoint(peer_email)
 
     def _fold_into_checkpoint(self, peer_email: str) -> None:
