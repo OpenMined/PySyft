@@ -17,9 +17,7 @@ from syft.sync.events.file_change_event import (
 )
 from syft.sync.syftbox_manager import SyftboxManager
 from syft.sync.sync.collection_spec import CollectionSyncSpec
-
 from tests.unit.utils import (
-    router_with_mock_connection,
     TEST_COLLECTION_PREFIX,
     TEST_COLLECTION_SUBPATH,
     get_mock_events_messages,
@@ -208,7 +206,8 @@ def test_do_cache_handles_deletions_correctly():
 
 
 def test_ds_cache_handles_deletions_correctly():
-    """Test that DS file_hashes properly reflects deletions when loading from cache."""
+    """Test that DS file_hashes properly reflects deletions when restoring its
+    saved state."""
     ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
         use_in_memory_cache=False
     )
@@ -219,10 +218,11 @@ def test_ds_cache_handles_deletions_correctly():
     ctx = do_manager.datasite_owner_syncer.perm_context
     ctx.open(".").grant_read_access(ds_manager.email)
 
-    # Create a file on DO side
+    # Create two files on DO side: one is deleted later, one is kept
     test_file = datasite_dir_do / "test_file.txt"
     test_file.parent.mkdir(parents=True, exist_ok=True)
     test_file.write_text("Hello")
+    (datasite_dir_do / "kept_file.txt").write_text("Kept")
 
     do_manager.sync()
     ds_manager.sync()
@@ -258,13 +258,15 @@ def test_ds_cache_handles_deletions_correctly():
             CollectionSyncSpec.public(TEST_COLLECTION_PREFIX, TEST_COLLECTION_SUBPATH)
         ],
     )
-    new_cache = DataSiteWatcherCache.from_config(
-        config, router_with_mock_connection(do_manager.email)
-    )
+    new_cache = DataSiteWatcherCache.from_config(config, ds_manager._connection_router)
 
-    # Verify deleted file is not in reloaded cache
+    # Verify the restore kept one file and not the deleted one
+    kept_path = Path(do_manager.email) / "kept_file.txt"
+    assert kept_path in new_cache.file_hashes, (
+        "Kept file should be restored from the saved state"
+    )
     assert expected_path not in new_cache.file_hashes, (
-        "Deleted file should not appear in file_hashes after cache reload"
+        "Deleted file should not appear in file_hashes after the restore"
     )
 
 
