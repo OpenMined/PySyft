@@ -25,6 +25,10 @@ class DriveWatcherStoreConnection(WatcherStoreConnection):
     def __init__(self, cached_client: DriveCachedClient):
         self._cached_client = cached_client
 
+    def clone_for_thread(self) -> "DriveWatcherStoreConnection":
+        """A connection over a new Drive client, for use from another thread."""
+        return DriveWatcherStoreConnection(self._cached_client.clone_for_thread())
+
     @raise_unavailable("Could not save the checkpoint to Drive.")
     def put_checkpoint(self, peer: str, data: bytes) -> str:
         return self._put(peer, CHECKPOINT_FILE_NAME, data)
