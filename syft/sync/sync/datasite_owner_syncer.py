@@ -15,9 +15,7 @@ from syft.sync.callback_mixin import BaseModelCallbackMixin
 from syft.sync.checkpoints.checkpoint import (
     DEFAULT_COMPACTING_THRESHOLD,
     Checkpoint,
-    CheckpointFile,
     IncrementalCheckpoint,
-    compact_incremental_checkpoints,
 )
 from syft.sync.checkpoints.rolling_state import (
     RollingState,
@@ -1267,67 +1265,16 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
 
         print(f"Found {len(incremental_cps)} incremental checkpoints to compact")
 
-        # Start with existing checkpoint files (if any)
-        if existing_checkpoint:
+        ordered = sorted(incremental_cps, key=lambda c: c.sequence_number)
+        events = [event for checkpoint in ordered for event in checkpoint.events]
+        if existing_checkpoint is None:
+            compacted = Checkpoint(email=self.email).with_events(events)
+        else:
             print(
                 f"Merging with existing full checkpoint "
                 f"({len(existing_checkpoint.files)} files)..."
             )
-            # Convert existing checkpoint files to events for merging
-            merged_events: dict[str, FileChangeEvent] = {}
-
-            # Add existing checkpoint files as events
-            for checkpoint_file in existing_checkpoint.files:
-                # Create a FileChangeEvent from CheckpointFile
-                event = FileChangeEvent(
-                    id=uuid4(),
-                    path_in_datasite=Path(checkpoint_file.path),
-                    datasite_email=self.email,
-                    content=checkpoint_file.content,
-                    old_hash=None,
-                    new_hash=checkpoint_file.hash,
-                    is_deleted=False,
-                    submitted_timestamp=existing_checkpoint.timestamp,
-                    timestamp=existing_checkpoint.timestamp,
-                )
-                merged_events[checkpoint_file.path] = event
-
-            # Merge incremental checkpoints on top (later events overwrite)
-            for inc_cp in sorted(incremental_cps, key=lambda c: c.sequence_number):
-                for event in inc_cp.events:
-                    merged_events[str(event.path_in_datasite)] = event
-
-            # Create full checkpoint from merged events
-            files = []
-            for event in merged_events.values():
-                if not event.is_deleted and event.content is not None:
-                    files.append(
-                        CheckpointFile(
-                            path=str(event.path_in_datasite),
-                            hash=str(event.new_hash),
-                            content=event.content,
-                        )
-                    )
-
-            # Find latest timestamp
-            last_event_timestamp = existing_checkpoint.last_event_timestamp
-            for inc_cp in incremental_cps:
-                for event in inc_cp.events:
-                    if event.timestamp is not None:
-                        if (
-                            last_event_timestamp is None
-                            or event.timestamp > last_event_timestamp
-                        ):
-                            last_event_timestamp = event.timestamp
-
-            compacted = Checkpoint(
-                email=self.email,
-                files=files,
-                last_event_timestamp=last_event_timestamp,
-            )
-        else:
-            # No existing checkpoint, just merge incremental checkpoints
-            compacted = compact_incremental_checkpoints(incremental_cps, self.email)
+            compacted = existing_checkpoint.with_events(events)
 
         # Upload the compacted checkpoint (this deletes old full checkpoints)
         print(f"Uploading compacted checkpoint with {len(compacted.files)} files...")

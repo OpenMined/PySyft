@@ -11,9 +11,8 @@ Flow:
 - After N incremental checkpoints: compact into single full Checkpoint
 """
 
-import base64
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Literal
+from typing import TYPE_CHECKING, Any, Dict, List
 
 from pydantic import (
     BaseModel,
@@ -23,6 +22,12 @@ from pydantic import (
     model_validator,
 )
 
+from syft.sync.utils.file_content import (
+    ContentType,
+    content_to_json,
+    content_type_of,
+    decode_content,
+)
 from syft.sync.utils.syftbox_utils import (
     compress_data,
     create_event_timestamp,
@@ -65,27 +70,18 @@ class CheckpointFile(BaseModel):
 
     @computed_field
     @property
-    def content_type(self) -> Literal["text", "binary"]:
+    def content_type(self) -> ContentType | None:
         """Saved with the file, so that a read gives bytes back as bytes."""
-        return "binary" if isinstance(self.content, bytes) else "text"
+        return content_type_of(self.content)
 
     @field_serializer("content", when_used="json")
-    def _content_as_text(self, content: str | bytes) -> str:
-        """Bytes as base64, because JSON holds only text."""
-        if isinstance(content, bytes):
-            return base64.b64encode(content).decode("ascii")
-        return content
+    def _content_as_text(self, content: str | bytes) -> str | None:
+        return content_to_json(content)
 
     @model_validator(mode="before")
     @classmethod
     def _content_from_text(cls, data: Any) -> Any:
-        if (
-            isinstance(data, dict)
-            and data.get("content_type") == "binary"
-            and isinstance(data.get("content"), str)
-        ):
-            return {**data, "content": base64.b64decode(data["content"])}
-        return data
+        return decode_content(data)
 
 
 class Checkpoint(BaseModel):
@@ -164,6 +160,35 @@ class Checkpoint(BaseModel):
         """Get file contents as a dict mapping path to content."""
         return {f.path: f.content for f in self.files}
 
+    def with_events(self, events: List["FileChangeEvent"]) -> "Checkpoint":
+        """A new checkpoint: these files with ``events`` applied in order. A
+        change sets its file, and a delete removes it.
+
+        Raises:
+            ValueError: if a change has no content or no hash.
+        """
+        files = {file.path: file for file in self.files}
+        last_event_timestamp = self.last_event_timestamp
+        for event in events:
+            path = str(event.path_in_datasite)
+            if event.is_deleted:
+                files.pop(path, None)
+            elif event.content is None or event.new_hash is None:
+                raise ValueError(
+                    f"The change of {path} in {self.email} has no content or no hash."
+                )
+            else:
+                files[path] = CheckpointFile(
+                    path=path, hash=event.new_hash, content=event.content
+                )
+            if last_event_timestamp is None or event.timestamp > last_event_timestamp:
+                last_event_timestamp = event.timestamp
+        return Checkpoint(
+            email=self.email,
+            files=list(files.values()),
+            last_event_timestamp=last_event_timestamp,
+        )
+
     def as_compressed_data(self) -> bytes:
         """Compress checkpoint for storage."""
         return compress_data(self.model_dump_json().encode("utf-8"))
@@ -233,59 +258,6 @@ class IncrementalCheckpoint(BaseModel):
         checkpoint = cls.model_validate_json(uncompressed_data)
         _check_version(checkpoint.version, "incremental checkpoint")
         return checkpoint
-
-
-def compact_incremental_checkpoints(
-    checkpoints: List[IncrementalCheckpoint],
-    email: str,
-) -> Checkpoint:
-    """
-    Merge multiple incremental checkpoints into a single full Checkpoint.
-
-    Events are merged in order (by sequence number), with later events
-    overwriting earlier ones for the same file path. Deleted files are excluded.
-
-    Args:
-        checkpoints: List of incremental checkpoints to merge.
-        email: Email for the resulting checkpoint.
-
-    Returns:
-        A full Checkpoint with the merged state.
-    """
-    # Sort by sequence number to process in order
-    sorted_checkpoints = sorted(checkpoints, key=lambda c: c.sequence_number)
-
-    # Merge events: later events overwrite earlier ones for same path
-    merged_events: Dict[str, "FileChangeEvent"] = {}
-    last_event_timestamp = None
-
-    for cp in sorted_checkpoints:
-        for event in cp.events:
-            merged_events[str(event.path_in_datasite)] = event
-            if event.timestamp is not None:
-                if (
-                    last_event_timestamp is None
-                    or event.timestamp > last_event_timestamp
-                ):
-                    last_event_timestamp = event.timestamp
-
-    # Convert to full Checkpoint (only non-deleted files)
-    files = []
-    for event in merged_events.values():
-        if not event.is_deleted and event.content is not None:
-            files.append(
-                CheckpointFile(
-                    path=str(event.path_in_datasite),
-                    hash=str(event.new_hash),
-                    content=event.content,
-                )
-            )
-
-    return Checkpoint(
-        email=email,
-        files=files,
-        last_event_timestamp=last_event_timestamp,
-    )
 
 
 # Import here to avoid circular imports

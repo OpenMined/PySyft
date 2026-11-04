@@ -343,30 +343,13 @@ class DataSiteWatcherCache(BaseModel):
         """Merge the changes since the checkpoint into it, then save an empty
         rolling state. A deleted path leaves the checkpoint."""
         key = _peer_key(peer_email)
-        checkpoint = self.connection_router.watcher_load_checkpoint(key)
-        files: Dict[str, CheckpointFile] = {}
-        if checkpoint is not None:
-            files = {file.path: file for file in checkpoint.files}
         rolling_state = self._rolling_state(peer_email)
-        for event in rolling_state.events:
-            path = str(event.path_in_datasite)
-            if event.is_deleted:
-                files.pop(path, None)
-            elif event.new_hash is None or event.content is None:
-                raise ValueError(
-                    f"The change of {path} from {peer_email} has no content or no hash."
-                )
-            else:
-                files[path] = CheckpointFile(
-                    path=path, hash=event.new_hash, content=event.content
-                )
-        folded = Checkpoint(
+        checkpoint = self.connection_router.watcher_load_checkpoint(key)
+        if checkpoint is None:
             # Live events write under the email as the DO's events spell it, so
             # a restore writes the checkpoint files there too.
-            email=rolling_state.events[-1].datasite_email,
-            last_event_timestamp=rolling_state.last_event_timestamp,
-            files=list(files.values()),
-        )
+            checkpoint = Checkpoint(email=rolling_state.events[-1].datasite_email)
+        folded = checkpoint.with_events(rolling_state.events)
         # The checkpoint goes first. After a stop between the two saves, the old
         # rolling state only repeats changes that the checkpoint has.
         self.connection_router.watcher_save_checkpoint(key, folded)

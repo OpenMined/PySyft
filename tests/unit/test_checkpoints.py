@@ -848,3 +848,11 @@ def test_rolling_state_of_later_version_refused():
 
     with pytest.raises(ValueError, match=f"version {later_version}"):
         RollingState.from_compressed_data(state.as_compressed_data())
+
+
+def test_checkpoint_with_change_without_content_raises():
+    checkpoint = Checkpoint(email="do@example.com")
+    change = get_mock_event("do@example.com/a.txt").model_copy(update={"content": None})
+
+    with pytest.raises(ValueError, match="no content or no hash"):
+        checkpoint.with_events([change])
