@@ -162,7 +162,7 @@ DO notifications are threaded per job (new → approved/rejected → completed i
 Runs api calls, and approves peers based on your config:
 
 - **Peers**: Auto-accept connection requests from approved domains, and from the peers of your apis
-- **Jobs**: Run every approved job; an api call arrives approved
+- **Jobs**: Run api calls, which arrive approved. Jobs you approve by hand wait for you to run them
 
 ## Configuration
 
