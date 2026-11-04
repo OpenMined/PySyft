@@ -261,7 +261,7 @@ An empty list holds the outputs back, but the job does not fail. The DO can shar
 
 ### What the DS sees
 
-The DS always sees the job's status. When the output policy denies, the job is `failed` and the DS reads the reason in `job.policy_error`. When the policy removed the DS from the recipients, the job shows "Outputs not shared with you". Blocked outputs stay in the job's review folder, where only the DO reads them.
+The DS always sees the job's status. When the output policy denies, the job is `failed` and the DS reads the reason in `job.policy_error`. When the policy removed the DS from the recipients, the job shows "Outputs not shared with you". Blocked outputs stay in the job's staging folder, where only the DO reads them.
 
 ### Example: block a word
 

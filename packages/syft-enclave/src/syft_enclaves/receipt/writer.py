@@ -71,7 +71,7 @@ def write_receipt(
     public_key = signing_key.public_key().public_bytes_raw()
     receipt = _receipt(client, job, settings, public_key)
     envelope = sign_receipt(receipt, signing_key)
-    path = job.job_review_path / "outputs" / RECEIPT_FILE_NAME
+    path = job.artifact_path("outputs") / RECEIPT_FILE_NAME
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(envelope, indent=2))
     logger.info("Wrote signed receipt for job %s to %s", job.name, path)
@@ -80,7 +80,7 @@ def write_receipt(
 
 def write_receipt_error(job: JobInfo) -> None:
     """Record the current exception in the job's outputs."""
-    path = job.job_review_path / "outputs" / RECEIPT_ERROR_FILE_NAME
+    path = job.artifact_path("outputs") / RECEIPT_ERROR_FILE_NAME
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(traceback.format_exc())
 
@@ -91,7 +91,7 @@ def _receipt(
     settings: ReceiptSettings,
     run_public_key: bytes,
 ) -> dict[str, Any]:
-    outputs_dir = job.job_review_path / "outputs"
+    outputs_dir = job.artifact_path("outputs")
     job_entry = _job(job)
     owners = job.job_metadata.datasets or {}
     shared = bool(job.job_headers.get("share_results_with_do"))

@@ -6,22 +6,21 @@ from pathlib import Path
 
 import pytest
 import yaml
-from syft_permissions.spec.ruleset import PERMISSION_FILE_NAME
-from syft_perms import SyftPermContext
-
 from syft_job.client import JobClient
-from syft_job.config import SyftJobConfig
+from syft_job.config import SyftJobConfig, protocol_dir_name
 from syft_job.disclosures import LOGS_WARNING, DisclosureItem
 from syft_job.job import JobInfo
-from syft_job.job_runner import SyftJobRunner
+from syft_job.job_runner import OUTPUTS_ERROR_FILENAME, SyftJobRunner
+from syft_job.migrations.registry import JOB_PROTOCOL_VERSION
 from syft_job.models import JobState, JobStatus
+from syft_job.policies import OUTPUT_RECIPIENTS_FILENAME
 from syft_job.submission import (
     OWNER_RECORD_FILENAME,
     SUBMISSION_HASH_HEADER,
 )
 from syft_job.traceback_capture import FRAMES_FILENAME
-from syft_job.config import protocol_dir_name
-from syft_job.migrations.registry import JOB_PROTOCOL_VERSION
+from syft_permissions.spec.ruleset import PERMISSION_FILE_NAME
+from syft_perms import SyftPermContext
 
 # The path segment of the current job protocol, e.g. "v2".
 PROTOCOL_DIR = protocol_dir_name(JOB_PROTOCOL_VERSION)
@@ -135,7 +134,7 @@ def test_failure_after_run_stages_return_code(tmp_path, monkeypatch):
     def fail(*args, **kwargs):
         raise OSError("disk full")
 
-    monkeypatch.setattr(SyftJobRunner, "_move_outputs_to_review", fail)
+    monkeypatch.setattr(SyftJobRunner, "_copy_outputs_to_staging", fail)
     job, review, staging = run_job(tmp_path, OK_PY, share_logs=None)
 
     assert (staging / "returncode.txt").read_text().strip() == "-1"
@@ -196,8 +195,20 @@ def test_traceback_record_is_staged(tmp_path):
     assert record["chain"][0]["type"] == "ValueError"
     assert "4120550" not in record_path.read_text()
 
-    assert job.release_artifacts([FRAMES_FILENAME]) == [FRAMES_FILENAME]
+    assert job.release([FRAMES_FILENAME], [DS_EMAIL]) == [FRAMES_FILENAME]
     assert (review / FRAMES_FILENAME).exists()
+
+
+def test_release_with_nothing_released_skips_permissions(tmp_path, monkeypatch):
+    """The permission context scans the whole datasite, so build it only to grant."""
+    job, _, _ = run_job(tmp_path, OK_PY, share_logs=None)
+
+    def no_permission_work(self):
+        raise AssertionError("release built a permission context")
+
+    monkeypatch.setattr(JobInfo, "_get_perm_context", no_permission_work)
+
+    assert job.release([FRAMES_FILENAME], [DS_EMAIL]) == []
 
 
 def test_rerun_clears_both_locations(tmp_path):
@@ -205,12 +216,15 @@ def test_rerun_clears_both_locations(tmp_path):
     job, review, staging = run_job(tmp_path, OK_PY, share_logs=False)
     (review / "returncode.txt").write_text("0")
     assert (staging / "stdout.txt").exists()
+    assert job.release(["outputs"], [DS_EMAIL]) == ["outputs"]
+    assert (review / "outputs").exists()
 
     job.rerun()
 
     assert not (staging / "stdout.txt").exists()
     assert not (staging / "stderr.txt").exists()
     assert not (review / "stdout.txt").exists()
+    assert not (review / "outputs").exists()
 
 
 def test_rerun_clears_crash_record(tmp_path):
@@ -226,6 +240,106 @@ def test_rerun_clears_crash_record(tmp_path):
 
     assert not (staging / FRAMES_FILENAME).exists()
     assert not (review / FRAMES_FILENAME).exists()
+
+
+PERMISSION_FILE_PY = f"""\
+import os
+
+os.makedirs("outputs", exist_ok=True)
+with open("outputs/result.txt", "w") as f:
+    f.write("done")
+with open("outputs/{PERMISSION_FILE_NAME}", "w") as f:
+    f.write("rules:\\n- pattern: '**'\\n  access:\\n    read: ['*']\\n")
+"""
+
+
+def test_permission_file_in_outputs_fails_job(tmp_path):
+    """A job must not decide who reads its own staged outputs."""
+    job, _, staging = run_job(tmp_path, PERMISSION_FILE_PY, share_logs=None)
+
+    assert job.status == "failed"
+    assert (staging / "outputs" / "result.txt").exists()
+    assert not (staging / "outputs" / PERMISSION_FILE_NAME).exists()
+    ctx = SyftPermContext(datasite=tmp_path / "SyftBox" / DO_EMAIL)
+    staged_result = (
+        f"app_data/job/staging/{DS_EMAIL}/{PROTOCOL_DIR}/test.job/outputs/result.txt"
+    )
+    assert not ctx.open(staged_result).has_read_access(DS_EMAIL)
+    assert PERMISSION_FILE_NAME in (staging / OUTPUTS_ERROR_FILENAME).read_text()
+
+
+def test_symlinked_outputs_staged_as_files(tmp_path):
+    external = tmp_path / "external.txt"
+    external.write_text("external")
+    code = f"""\
+import os
+
+os.makedirs("outputs", exist_ok=True)
+with open("checkpoint.txt", "w") as f:
+    f.write("checkpoint")
+os.symlink("../checkpoint.txt", "outputs/latest.txt")
+os.symlink({str(external)!r}, "outputs/external.txt")
+"""
+    _, _, staging = run_job(tmp_path, code, share_logs=None)
+
+    for name, content in (("latest.txt", "checkpoint"), ("external.txt", "external")):
+        staged = staging / "outputs" / name
+        assert not staged.is_symlink()
+        assert staged.read_text() == content
+
+
+def test_symlinked_outputs_folder_staged_as_folder(tmp_path):
+    results = tmp_path / "results"
+    results.mkdir()
+    (results / "result.txt").write_text("done")
+    code = f"""\
+import os
+import shutil
+
+shutil.rmtree("outputs", ignore_errors=True)
+os.symlink({str(results)!r}, "outputs")
+"""
+    job, _, staging = run_job(tmp_path, code, share_logs=None)
+
+    assert not (staging / "outputs").is_symlink()
+    assert (staging / "outputs" / "result.txt").read_text() == "done"
+    job.rerun()
+    assert not (staging / "outputs").exists()
+
+
+def test_rerun_drops_outputs_recipients_of_old_run(tmp_path):
+    """A recipient of the old outputs must not read the outputs of the rerun."""
+    peer = "peer@test.org"
+    job, _, _ = run_job(tmp_path, OK_PY, share_logs=None)
+    # As on a datasite: the DS review folder has its own permission file, so the
+    # outputs grant goes there, not inside outputs/.
+    JobClient(config=do_config_for(tmp_path)).setup_ds_job_folder_as_do(DS_EMAIL)
+    job.release(["outputs"], [DS_EMAIL, peer])
+
+    job.rerun()
+    run_approved(tmp_path)
+    reload_job(tmp_path).release(["outputs"], [DS_EMAIL])
+
+    ctx = SyftPermContext(datasite=tmp_path / "SyftBox" / DO_EMAIL)
+    result = ctx.open(
+        f"app_data/job/review/{DS_EMAIL}/{PROTOCOL_DIR}/test.job/outputs/result.txt"
+    )
+    assert result.has_read_access(DS_EMAIL)
+    assert not result.has_read_access(peer)
+
+
+def test_new_run_drops_recipients_and_outputs_error_of_old_run(tmp_path):
+    """A run that blocked its outputs must not block the outputs of the next."""
+    job, _, staging = run_job(tmp_path, OK_PY, share_logs=None)
+    (staging / OUTPUT_RECIPIENTS_FILENAME).write_text("[]")
+    (staging / OUTPUTS_ERROR_FILENAME).write_text("old run\n")
+
+    job.rerun()
+    run_approved(tmp_path)
+
+    assert reload_job(tmp_path).status == "done"
+    assert not (staging / OUTPUT_RECIPIENTS_FILENAME).exists()
+    assert not (staging / OUTPUTS_ERROR_FILENAME).exists()
 
 
 # -- disclosures: requested by the DS, granted by the DO ------------------------
