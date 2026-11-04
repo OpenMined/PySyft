@@ -26,11 +26,15 @@ def content_to_json(content: str | bytes | None) -> str | None:
 
 def decode_content(data: Any) -> Any:
     """The input of a model, with its base64 ``content`` decoded to bytes when
-    its ``content_type`` is ``"binary"``."""
+    its ``content_type`` is ``"binary"``.
+
+    Raises:
+        ValueError: if the content is not valid base64.
+    """
     if (
         isinstance(data, dict)
         and data.get("content_type") == "binary"
         and isinstance(data.get("content"), str)
     ):
-        return {**data, "content": base64.b64decode(data["content"])}
+        return {**data, "content": base64.b64decode(data["content"], validate=True)}
     return data
