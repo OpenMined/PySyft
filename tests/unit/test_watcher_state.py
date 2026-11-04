@@ -173,3 +173,23 @@ def test_do_state_saved_under_email_without_case(monkeypatch):
 
     router = ds_manager._connection_router
     assert router.watcher_peers_with_saved_state() == ["owner@example.com"]
+
+
+def test_change_without_hash_or_content_dropped(monkeypatch):
+    monkeypatch.setattr(datasite_watcher_cache, "WATCHER_CHECKPOINT_THRESHOLD", 1)
+    ds_manager, do_manager = _pair_on_disk()
+    no_hash = get_mock_event(f"{do_manager.email}/no_hash.txt").model_copy(
+        update={"new_hash": None}
+    )
+    no_content = get_mock_event(f"{do_manager.email}/no_content.txt").model_copy(
+        update={"content": None}
+    )
+    good = get_mock_event(f"{do_manager.email}/good.txt")
+    _send_to_ds(do_manager, ds_manager, [no_hash, no_content, good])
+
+    ds_manager.sync()
+
+    datasite = ds_manager.syftbox_folder / do_manager.email
+    assert (datasite / "good.txt").exists()
+    assert not (datasite / "no_hash.txt").exists()
+    assert not (datasite / "no_content.txt").exists()
