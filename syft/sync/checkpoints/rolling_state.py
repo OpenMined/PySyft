@@ -61,6 +61,9 @@ class RollingState(BaseModel):
     base_checkpoint_timestamp: float  # Timestamp of the checkpoint this builds on
     last_event_timestamp: float | None = None  # Timestamp of last event included
     events: List[FileChangeEvent] = Field(default_factory=list)
+    # The ids of the events messages that a DS received from this owner. The
+    # owner's own rolling state keeps none.
+    received_msg_ids: List[str] = Field(default_factory=list)
 
     @property
     def filename(self) -> str:

@@ -5,21 +5,14 @@ from pathlib import Path
 
 import pytest
 
-from syft.sync.checkpoints.watcher_state import (
-    WATCHER_STATE_VERSION,
-    WatcherCheckpoint,
-    WatcherRollingState,
-)
-from syft.sync.connections.connection_router import ConnectionRouter
+from syft.sync.connections.drive.drive_connections import drive_cached_client_of
 from syft.sync.encryption_policy import EncryptionPolicy
 from syft.sync.peers.exceptions import SyftPeerNotReadyError
 from syft.sync.peers.peer import Peer, PeerState
 from syft.sync.peers.peer_store import PeerStore, import_key_file
 from syft.sync.syftbox_manager import SyftboxManager
 from tests.unit.test_sync_manager import path_for_job
-from tests.unit.utils import grant_job_inbox_access, router_with_mock_connection
-from syft.sync.connections.drive.drive_connections import drive_cached_client_of
-
+from tests.unit.utils import grant_job_inbox_access
 
 # =========================================================================
 # PeerStore unit tests
@@ -453,12 +446,13 @@ def test_encrypted_checkpoint_roundtrip():
 
 def test_encrypted_rolling_state_roundtrip():
     """Rolling state is encrypted at rest and decrypted on read."""
+    from uuid import uuid4
+
     from syft.sync.checkpoints.rolling_state import RollingState
     from syft.sync.events.file_change_event import (
         FileChangeEvent,
         FileChangeEventsMessage,
     )
-    from uuid import uuid4
 
     ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
         encryption=True,
@@ -644,43 +638,3 @@ def test_tampered_inbox_message_is_archived_with_warning():
     with pytest.warns(UserWarning, match="unread"):
         do_manager.sync()
     assert do_cached_client.get_file_metadatas_from_folder(inbox_id) == []
-
-
-def _router_with_new_key(connections) -> ConnectionRouter:
-    """A DS router over ``connections`` that requires encryption, with a key of
-    its own."""
-    peer_store = PeerStore(
-        email="ds@example.com", encryption_policy=EncryptionPolicy.REQUIRED
-    )
-    peer_store.generate_keys()
-    return ConnectionRouter(connections=connections, peer_store=peer_store)
-
-
-def test_watcher_state_encrypted_at_rest():
-    router = _router_with_new_key(
-        router_with_mock_connection("ds@example.com").connections
-    )
-    state = WatcherRollingState(
-        version=WATCHER_STATE_VERSION,
-        events=[],
-        received_msg_ids=frozenset({"msg-1"}),
-    )
-
-    router.watcher_save_rolling_state("do@example.com", state)
-
-    stored = router.connections.watcher_store_con.get_rolling_state("do@example.com")
-    assert stored is not None
-    plaintext = router.peer_store.decrypt_for_self(stored)
-    assert WatcherRollingState.from_compressed_data(plaintext) == state
-    assert router.watcher_load_rolling_state("do@example.com") == state
-
-
-def test_watcher_state_of_other_key_names_key_file():
-    connections = router_with_mock_connection("ds@example.com").connections
-    checkpoint = WatcherCheckpoint(version=WATCHER_STATE_VERSION, events=[])
-    _router_with_new_key(connections).watcher_save_checkpoint(
-        "do@example.com", checkpoint
-    )
-
-    with pytest.raises(ValueError, match="key_file"):
-        _router_with_new_key(connections).watcher_load_checkpoint("do@example.com")

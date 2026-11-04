@@ -6,11 +6,8 @@ from typing import Callable, Dict, List, Set
 
 from pydantic import BaseModel, Field
 
-from syft.sync.checkpoints.watcher_state import (
-    WATCHER_STATE_VERSION,
-    WatcherCheckpoint,
-    WatcherRollingState,
-)
+from syft.sync.checkpoints.checkpoint import Checkpoint, CheckpointFile
+from syft.sync.checkpoints.rolling_state import RollingState
 from syft.sync.connections.connection_router import ConnectionRouter
 from syft.sync.events.file_change_event import (
     FileChangeEvent,
@@ -105,8 +102,10 @@ class DataSiteWatcherCache(BaseModel):
     received_msg_ids_per_peer: Dict[str, Set[str]] = {}
     # Whether the state received from each peer is saved in the DS's storage.
     saves_watcher_state: bool
-    # peer key -> {path in syftbox: latest event since the peer's checkpoint}
-    rolling_events_per_peer: Dict[str, Dict[Path, FileChangeEvent]] = {}
+    # The changes from each peer since its checkpoint, keyed by ``_peer_key``.
+    # The received ids stay in ``received_msg_ids_per_peer``; a saved copy
+    # carries them.
+    rolling_state_per_peer: Dict[str, RollingState] = {}
     # Base syftbox folder
     syftbox_folder: Path | None = None
     # Collections to sync down (prefix + local subpath per collection type)
@@ -205,7 +204,7 @@ class DataSiteWatcherCache(BaseModel):
         self.current_check_point = None
         self.last_msg_id_per_peer = {}
         self.received_msg_ids_per_peer = {}
-        self.rolling_events_per_peer = {}
+        self.rolling_state_per_peer = {}
         self.collection_hashes = {}
 
     @property
@@ -272,7 +271,7 @@ class DataSiteWatcherCache(BaseModel):
                 continue
             self._apply_event(event)
             if self.saves_watcher_state:
-                self._rolling_events(peer_email)[event.path_in_syftbox] = event
+                self._rolling_state(peer_email).add_event(event)
 
     def _write_denied(self, event: FileChangeEvent) -> bool:
         """Whether ``pre_write_filter`` refuses ``event``."""
@@ -295,60 +294,89 @@ class DataSiteWatcherCache(BaseModel):
 
     def _restore_saved_state(self) -> None:
         """Restore the files, their hashes and the received message ids of each
-        peer with saved state. A Colab runtime reset loses the local copy."""
-        for peer_email in self.connection_router.watcher_peers_with_saved_state():
-            checkpoint = self.connection_router.watcher_load_checkpoint(peer_email)
+        peer with saved state. A Colab runtime reset loses the local copy.
+
+        The state of a peer is saved under its ``_peer_key``, so two spellings
+        of one email share it."""
+        for peer_key in self.connection_router.watcher_peers_with_saved_state():
+            checkpoint = self.connection_router.watcher_load_checkpoint(peer_key)
             if checkpoint is not None:
-                for event in checkpoint.events:
-                    self._apply_event(event)
-            rolling_state = self.connection_router.watcher_load_rolling_state(
-                peer_email
-            )
+                for file in checkpoint.files:
+                    self._restore_file(checkpoint.email, file)
+            rolling_state = self.connection_router.watcher_load_rolling_state(peer_key)
             if rolling_state is not None:
                 for event in rolling_state.events:
                     self._apply_event(event)
-                    self._rolling_events(peer_email)[event.path_in_syftbox] = event
                 for msg_id in rolling_state.received_msg_ids:
-                    self._record_received(peer_email, msg_id)
+                    self._record_received(peer_key, msg_id)
+                self.rolling_state_per_peer[peer_key] = rolling_state.model_copy(
+                    update={"received_msg_ids": []}
+                )
+
+    def _restore_file(self, datasite_email: str, file: CheckpointFile) -> None:
+        path_in_syftbox = Path(datasite_email) / file.path
+        self.file_connection.write_file(str(path_in_syftbox), file.content)
+        self.file_hashes[path_in_syftbox] = file.hash
 
     def _save_state(self, peer_email: str) -> None:
         """Save the rolling state of ``peer_email``. At
         ``WATCHER_CHECKPOINT_THRESHOLD`` paths, fold it into the checkpoint."""
         self._save_rolling_state(peer_email)
-        if len(self._rolling_events(peer_email)) >= WATCHER_CHECKPOINT_THRESHOLD:
+        if self._rolling_state(peer_email).event_count >= WATCHER_CHECKPOINT_THRESHOLD:
             self._fold_into_checkpoint(peer_email)
 
     def _fold_into_checkpoint(self, peer_email: str) -> None:
         """Merge the changes since the checkpoint into it, then save an empty
         rolling state. A deleted path leaves the checkpoint."""
-        checkpoint = self.connection_router.watcher_load_checkpoint(peer_email)
-        latest = {}
+        key = _peer_key(peer_email)
+        checkpoint = self.connection_router.watcher_load_checkpoint(key)
+        files: Dict[str, CheckpointFile] = {}
         if checkpoint is not None:
-            latest = {event.path_in_syftbox: event for event in checkpoint.events}
-        latest.update(self._rolling_events(peer_email))
-        events = [event for event in latest.values() if not event.is_deleted]
+            files = {file.path: file for file in checkpoint.files}
+        rolling_state = self._rolling_state(peer_email)
+        for event in rolling_state.events:
+            path = str(event.path_in_datasite)
+            if event.is_deleted:
+                files.pop(path, None)
+            elif event.new_hash is None or event.content is None:
+                raise ValueError(
+                    f"The change of {path} from {peer_email} has no content or no hash."
+                )
+            else:
+                files[path] = CheckpointFile(
+                    path=path, hash=event.new_hash, content=event.content
+                )
+        folded = Checkpoint(
+            # Live events write under the email as the DO's events spell it, so
+            # a restore writes the checkpoint files there too.
+            email=rolling_state.events[-1].datasite_email,
+            last_event_timestamp=rolling_state.last_event_timestamp,
+            files=list(files.values()),
+        )
         # The checkpoint goes first. After a stop between the two saves, the old
         # rolling state only repeats changes that the checkpoint has.
-        self.connection_router.watcher_save_checkpoint(
-            peer_email,
-            WatcherCheckpoint(version=WATCHER_STATE_VERSION, events=events),
+        self.connection_router.watcher_save_checkpoint(key, folded)
+        self.rolling_state_per_peer[key] = RollingState(
+            email=peer_email, base_checkpoint_timestamp=folded.timestamp
         )
-        self._rolling_events(peer_email).clear()
         self._save_rolling_state(peer_email)
 
     def _save_rolling_state(self, peer_email: str) -> None:
-        rolling_state = WatcherRollingState(
-            version=WATCHER_STATE_VERSION,
-            events=list(self._rolling_events(peer_email).values()),
-            received_msg_ids=frozenset(
-                self.received_msg_ids_per_peer[_peer_key(peer_email)]
-            ),
+        key = _peer_key(peer_email)
+        saved = self._rolling_state(peer_email).model_copy(
+            update={"received_msg_ids": sorted(self.received_msg_ids_per_peer[key])}
         )
-        self.connection_router.watcher_save_rolling_state(peer_email, rolling_state)
+        self.connection_router.watcher_save_rolling_state(key, saved)
 
-    def _rolling_events(self, peer_email: str) -> Dict[Path, FileChangeEvent]:
-        """The latest event of each path from ``peer_email`` since its checkpoint."""
-        return self.rolling_events_per_peer.setdefault(_peer_key(peer_email), {})
+    def _rolling_state(self, peer_email: str) -> RollingState:
+        """The changes from ``peer_email`` since its checkpoint."""
+        key = _peer_key(peer_email)
+        if key not in self.rolling_state_per_peer:
+            # 0.0 means no checkpoint yet, as for the DO's own rolling state.
+            self.rolling_state_per_peer[key] = RollingState(
+                email=peer_email, base_checkpoint_timestamp=0.0
+            )
+        return self.rolling_state_per_peer[key]
 
     def get_cached_events(self) -> List[FileChangeEvent]:
         messages = self.events_connection.get_all()

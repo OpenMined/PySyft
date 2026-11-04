@@ -11,10 +11,17 @@ Flow:
 - After N incremental checkpoints: compact into single full Checkpoint
 """
 
+import base64
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, List
+from typing import TYPE_CHECKING, Any, Dict, List, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import (
+    BaseModel,
+    Field,
+    computed_field,
+    field_serializer,
+    model_validator,
+)
 
 from syft.sync.utils.syftbox_utils import (
     compress_data,
@@ -54,7 +61,31 @@ class CheckpointFile(BaseModel):
 
     path: str  # Relative path in datasite (e.g., "public/syft_datasets/data.csv")
     hash: str  # Hash of the content (SHA256 hex string)
-    content: str  # File content
+    content: str | bytes  # File content: bytes for a binary file
+
+    @computed_field
+    @property
+    def content_type(self) -> Literal["text", "binary"]:
+        """Saved with the file, so that a read gives bytes back as bytes."""
+        return "binary" if isinstance(self.content, bytes) else "text"
+
+    @field_serializer("content", when_used="json")
+    def _content_as_text(self, content: str | bytes) -> str:
+        """Bytes as base64, because JSON holds only text."""
+        if isinstance(content, bytes):
+            return base64.b64encode(content).decode("ascii")
+        return content
+
+    @model_validator(mode="before")
+    @classmethod
+    def _content_from_text(cls, data: Any) -> Any:
+        if (
+            isinstance(data, dict)
+            and data.get("content_type") == "binary"
+            and isinstance(data.get("content"), str)
+        ):
+            return {**data, "content": base64.b64decode(data["content"])}
+        return data
 
 
 class Checkpoint(BaseModel):

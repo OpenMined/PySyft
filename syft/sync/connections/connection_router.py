@@ -14,7 +14,6 @@ from syft.migrations import (
 )
 from syft.sync.checkpoints.checkpoint import Checkpoint, IncrementalCheckpoint
 from syft.sync.checkpoints.rolling_state import RollingState
-from syft.sync.checkpoints.watcher_state import WatcherCheckpoint, WatcherRollingState
 from syft.sync.connections.base_connection import FileCollection
 from syft.sync.connections.naming import PEERS_META_KEY
 from syft.sync.connections.protocols import Connections
@@ -578,71 +577,49 @@ class ConnectionRouter(BaseModel):
         self.connections.owner_store_con.delete_rolling_state()
 
     # =========================================================================
-    # WATCHER STATE (self-encrypted at rest when encryption enabled)
+    # WATCHER STATE (not encrypted until there is key recovery: a new key, as
+    # an enclave gets at each boot, could not read it back)
     # =========================================================================
 
-    def watcher_save_checkpoint(
-        self, peer_email: str, checkpoint: WatcherCheckpoint
-    ) -> None:
+    def watcher_save_checkpoint(self, peer_email: str, checkpoint: Checkpoint) -> None:
         """Save the files received from ``peer_email``; it replaces the previous
         checkpoint."""
-        data = self.peer_store.encrypt_for_self_if_needed(
-            checkpoint.as_compressed_data()
+        self.connections.watcher_store_con.put_checkpoint(
+            peer_email, checkpoint.as_compressed_data()
         )
-        self.connections.watcher_store_con.put_checkpoint(peer_email, data)
 
-    def watcher_load_checkpoint(self, peer_email: str) -> WatcherCheckpoint | None:
+    def watcher_load_checkpoint(self, peer_email: str) -> Checkpoint | None:
         """The saved checkpoint of ``peer_email``, or None if there is none.
 
         Raises:
-            ValueError: if this DS key cannot decrypt it, or a later client
-                saved it.
+            ValueError: if a later client saved it.
         """
         data = self.connections.watcher_store_con.latest_checkpoint(peer_email)
         if data is None:
             return None
-        return WatcherCheckpoint.from_compressed_data(
-            self._decrypt_watcher_state(data, WatcherCheckpoint.kind, peer_email)
-        )
+        return Checkpoint.from_compressed_data(data)
 
     def watcher_save_rolling_state(
-        self, peer_email: str, rolling_state: WatcherRollingState
+        self, peer_email: str, rolling_state: RollingState
     ) -> None:
         """Save the changes received from ``peer_email`` since its checkpoint,
-        and the cursor; it replaces the previous rolling state."""
-        data = self.peer_store.encrypt_for_self_if_needed(
-            rolling_state.as_compressed_data()
+        and the ids of the messages received; it replaces the previous rolling
+        state."""
+        self.connections.watcher_store_con.put_rolling_state(
+            peer_email, rolling_state.as_compressed_data()
         )
-        self.connections.watcher_store_con.put_rolling_state(peer_email, data)
 
-    def watcher_load_rolling_state(self, peer_email: str) -> WatcherRollingState | None:
+    def watcher_load_rolling_state(self, peer_email: str) -> RollingState | None:
         """The saved rolling state of ``peer_email``, or None if there is none.
 
         Raises:
-            ValueError: if this DS key cannot decrypt it, or a later client
-                saved it.
+            ValueError: if a later client saved it.
         """
         data = self.connections.watcher_store_con.get_rolling_state(peer_email)
         if data is None:
             return None
-        return WatcherRollingState.from_compressed_data(
-            self._decrypt_watcher_state(data, WatcherRollingState.kind, peer_email)
-        )
+        return RollingState.from_compressed_data(data)
 
     def watcher_peers_with_saved_state(self) -> list[str]:
         """The DOs whose checkpoint or rolling state the DS saved."""
         return self.connections.watcher_store_con.peers_with_saved_state()
-
-    def _decrypt_watcher_state(self, data: bytes, kind: str, peer_email: str) -> bytes:
-        """``data`` decrypted with this DS key. ``kind`` names the state in errors.
-
-        Raises:
-            ValueError: if this DS key cannot decrypt it.
-        """
-        try:
-            return self.peer_store.decrypt_and_verify_for_self_if_needed(data)
-        except ValueError as e:
-            raise ValueError(
-                f"This DS key cannot decrypt the {kind} of {peer_email}. Log in "
-                "with the key_file of the key that saved it."
-            ) from e
