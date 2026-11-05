@@ -23,6 +23,7 @@ from .astutil import (
     node_in_ranges,
     normalize_ranges,
     row_in_ranges,
+    source_rows,
 )
 from .policy import DEFAULT_KEEP
 
@@ -225,7 +226,7 @@ def _names_of(tree, node_type, ranges) -> set[str]:
 
 # ── apply position edits to the source, preserving non-private lines verbatim ─────────────
 def _apply_edits(source: str, edits) -> str:
-    lines = source.splitlines(keepends=True)
+    lines = source_rows(source)
     # apply bottom-up so earlier edits don't shift later line indices / columns
     for srow, scol, erow, ecol, new in sorted(edits, reverse=True):
         if srow == erow:
@@ -239,7 +240,7 @@ def _apply_edits(source: str, edits) -> str:
 
 # ── blank whole hidden lines, keeping indentation; leave blank lines untouched ────────────
 def _apply_hides(text: str, hide_ranges) -> str:
-    lines = text.splitlines(keepends=True)
+    lines = source_rows(text)
     in_block = False  # inside a run of consecutive hidden line numbers
     noted = False  # has the explanatory note been added for the current block yet
     for i, line in enumerate(lines, 1):

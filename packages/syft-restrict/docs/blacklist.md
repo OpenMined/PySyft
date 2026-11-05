@@ -12,23 +12,24 @@ This document lists everything the checker rejects in the **private** region.
 
 ## Index of violation codes
 
-| Code                | Meaning                                                                  |
-| ------------------- | ------------------------------------------------------------------------ |
-| `node-type`         | Syntax not on the allow list (walrus, `match`, …)                        |
-| `banned-name`       | Reference or call to a banned builtin (`open`, `eval`, …)                |
-| `banned-construct`  | Forbidden statement/expression form (import, `with`, f-string, …)        |
-| `call-not-allowed`  | Library path not allow-listed (or hit by `disallow_functions`)           |
-| `call-unresolved`   | Call target not provably safe                                            |
-| `method-on-value`   | Named method on an unknown value (`x.reshape`)                           |
-| `attr-on-value`     | Attribute read/write on an unknown value, or bad `self` chain            |
-| `attr-not-allowed`  | Library attribute path not allow-listed                                  |
-| `dunder-attr`       | Dunder attribute (`.__class__`, …)                                       |
-| `dunder-name`       | Bare dunder name (`__class__`)                                           |
-| `dunder-def`        | Defining a forbidden magic method                                        |
-| `class-keyword`     | e.g. `metaclass=`                                                        |
-| `class-base`        | Base class not allow-listed                                              |
-| `reserved-name`     | Rebinding a trusted name (`jnp`, public wrapper, private def, `self`, …) |
-| `operator-disabled` | Operator used without enabling its group in `allow_operators`            |
+| Code                 | Meaning                                                                  |
+| -------------------- | ------------------------------------------------------------------------ |
+| `node-type`          | Syntax not on the allow list (walrus, `match`, …)                        |
+| `banned-name`        | Reference or call to a banned builtin (`open`, `eval`, …)                |
+| `banned-construct`   | Forbidden statement/expression form (import, `with`, f-string, …)        |
+| `call-not-allowed`   | Library path not allow-listed (or hit by `disallow_functions`)           |
+| `call-unresolved`    | Call target not provably safe                                            |
+| `method-on-value`    | Named method on an unknown value (`x.reshape`)                           |
+| `attr-on-value`      | Attribute read/write on an unknown value, or bad `self` chain            |
+| `attr-not-allowed`   | Library attribute path not allow-listed                                  |
+| `dunder-attr`        | Dunder attribute (`.__class__`, …)                                       |
+| `dunder-name`        | Bare dunder name (`__class__`)                                           |
+| `dunder-def`         | Defining a forbidden magic method                                        |
+| `class-keyword`      | e.g. `metaclass=`                                                        |
+| `class-base`         | Base class not allow-listed                                              |
+| `reserved-name`      | Rebinding a trusted name (`jnp`, public wrapper, private def, `self`, …) |
+| `operator-disabled`  | Operator used without enabling its group in `allow_operators`            |
+| `row-count-mismatch` | The obfuscated copy has a different row count than the source            |
 
 ---
 

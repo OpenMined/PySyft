@@ -4,6 +4,8 @@ import ast
 import shutil
 from pathlib import Path
 
+import pytest
+
 from syft_restrict import obfuscate
 from syft_restrict.astutil import scan_file
 from syft_restrict.runner import _run
@@ -101,6 +103,30 @@ def test_fstring_literal_text_is_blanked():
     obf = obfuscate(source, [[1, 2]], [], scan)
     assert "secret literal text" not in obf
     assert "■" in obf
+
+
+@pytest.mark.parametrize(
+    "obfuscate_ranges, hide_ranges",
+    [([[3, 6]], []), ([[3, 3]], [[4, 6]])],
+    ids=["obfuscate", "obfuscate-then-hide"],
+)
+def test_formfeed_keeps_row_count(obfuscate_ranges, hide_ranges):
+    # A form feed must stay part of its row, the way tokenize counts rows.
+    source = (
+        "import jax.numpy as jnp\n"
+        "# page\x0cbreak\n"
+        "def scale(x):\n"
+        "    y = x * 2\n"
+        "    z = y + 1\n"
+        "    return z\n"
+        "\n"
+        "def main(x):\n"
+        "    return scale(x)\n"
+    )
+    private = [*obfuscate_ranges, *hide_ranges]
+    scan = scan_file(ast.parse(source), private)
+    obf = obfuscate(source, obfuscate_ranges, hide_ranges, scan)
+    assert obf.count("\n") == source.count("\n"), obf
 
 
 def test_obfuscation_is_deterministic(tmp_path):

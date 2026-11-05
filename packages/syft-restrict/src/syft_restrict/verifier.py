@@ -153,6 +153,7 @@ ViolationCode = Literal[
     "operator-disabled",  # _require_bundle
     "duplicate-method",  # _forbid_duplicate_methods
     "star-import",  # visit (`from ... import *` anywhere in the file)
+    "row-count-mismatch",  # run (display copy row count differs from the source)
 ]
 
 
