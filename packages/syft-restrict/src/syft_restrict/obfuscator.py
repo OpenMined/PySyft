@@ -113,13 +113,16 @@ def obfuscate(source: str, obfuscate_ranges, hide_ranges, scan: FileScan) -> str
             if new is not None:
                 edits.append((srow, scol, erow, ecol, new))
         elif tok.type == tokenize.STRING:
-            edits.append((srow, scol, erow, ecol, f'"{_BLANK}"'))
+            # A string that spans rows keeps all of them, so every later row stays where it was.
+            gap = "\n" * (erow - srow)
+            new = f'"""{_BLANK}{gap}"""' if gap else f'"{_BLANK}"'
+            edits.append((srow, scol, erow, ecol, new))
         elif tok.type == _FSTRING_MIDDLE:
             # The f-string's literal text between `{...}` parts; FSTRING_START/END (the f"/" quote
             # delimiters) are left as-is, and any interpolated expression's own tokens (NAME, etc.)
             # still flow through the normal token handling above/below like any other reference.
             if tok.string:
-                edits.append((srow, scol, erow, ecol, _BLANK))
+                edits.append((srow, scol, erow, ecol, _BLANK + "\n" * (erow - srow)))
         elif tok.type == tokenize.NUMBER:
             edits.append((srow, scol, erow, ecol, _BLANK))
         elif tok.type == tokenize.COMMENT:

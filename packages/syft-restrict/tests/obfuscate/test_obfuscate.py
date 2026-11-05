@@ -129,6 +129,32 @@ def test_formfeed_keeps_row_count(obfuscate_ranges, hide_ranges):
     assert obf.count("\n") == source.count("\n"), obf
 
 
+@pytest.mark.parametrize(
+    "obfuscate_ranges, hide_ranges",
+    [([[3, 6]], []), ([[3, 6]], [[7, 7]])],
+    ids=["obfuscate", "obfuscate-then-hide"],
+)
+def test_multiline_docstring_keeps_row_count(obfuscate_ranges, hide_ranges):
+    # A string that spans several rows must keep all of them when it is blanked.
+    source = (
+        "import jax.numpy as jnp\n"
+        "\n"
+        "class Model:\n"
+        '    """Line one.\n'
+        "    Line two.\n"
+        '    Line three."""\n'
+        "SECRET = 1\n"
+        'PUBLIC = "public"\n'
+        "\n"
+        "def main():\n"
+        "    return PUBLIC\n"
+    )
+    private = [*obfuscate_ranges, *hide_ranges]
+    scan = scan_file(ast.parse(source), private)
+    obf = obfuscate(source, obfuscate_ranges, hide_ranges, scan)
+    assert obf.count("\n") == source.count("\n"), obf
+
+
 def test_obfuscation_is_deterministic(tmp_path):
     dir_a = tmp_path / "a"
     dir_b = tmp_path / "b"
