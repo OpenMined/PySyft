@@ -491,8 +491,9 @@ def _queued_changes(manager) -> int:
 
 
 @pytest.mark.parametrize("do_policy", [OPTIONAL, REQUIRED])
-def test_send_before_owner_accepts_raises(do_policy):
-    """Before the owner accepts, its policy is not known, so nothing is sent."""
+def test_send_before_owner_accepts_goes_once_accepted(do_policy):
+    """Before the owner accepts, its policy is not known. The change is saved,
+    and the first sync after the owner accepts sends it."""
     ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
         add_peers=False,
         do_encryption_policy=do_policy,
@@ -500,15 +501,18 @@ def test_send_before_owner_accepts_raises(do_policy):
     ds_manager.add_peer(do_manager.email, sync=False)
 
     file_path = path_for_job(do_manager.email, ds_manager.email, "my.job")
-    with pytest.raises(SyftPeerNotReadyError, match="not known"):
+    with pytest.raises(SyftPeerNotReadyError, match="not known.*is saved"):
         ds_manager._send_file_change(file_path, "early content")
     assert _queued_changes(ds_manager) == 0
+    with pytest.warns(UserWarning, match="wait in"):
+        ds_manager.sync()
 
     do_manager.load_peers()
     do_manager.approve_peer_request(ds_manager.email)
     grant_job_inbox_access(do_manager, ds_manager.email)
+    ds_manager.sync()
     do_manager.sync()
-    assert not any("early content" in c for c in _accepted_contents(do_manager))
+    assert any("early content" in c for c in _accepted_contents(do_manager))
 
 
 def test_send_to_non_peer_raises():
