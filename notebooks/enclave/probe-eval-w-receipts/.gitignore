@@ -1,0 +1,10 @@
+# Written by notebook 0. probe.json is the probe owner's private probe: it goes
+# to the enclave and nowhere else, so it must never be committed.
+probe.json
+probe_mock.json
+probe_readout.py
+
+# Downloaded by the notebooks.
+train_prompts/
+prompts/
+dbe-adapter/
