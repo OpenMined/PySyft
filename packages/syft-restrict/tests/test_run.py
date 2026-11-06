@@ -1,10 +1,12 @@
 """End-to-end tests for run()."""
 
+import hashlib
+import importlib.machinery
 import shutil
 from pathlib import Path
 
 import pytest
-from syft_restrict import MarkerError, PolicyViolation, run
+from syft_restrict import MarkerError, PolicyViolation, SourceEncodingError, run
 from syft_restrict.runner import _run
 from verify.helpers import normalize_source
 
@@ -178,3 +180,59 @@ def test__run_uses_explicit_ranges_and_ignores_markers(tmp_path):
         allow_operators=ALLOW_OPERATORS,
     )
     assert result.ok
+
+
+def test_run_refuses_a_coding_cookie_that_changes_the_program(tmp_path):
+    # The enclave loads model code with importlib, which honours a PEP 263 coding cookie.
+    # Under unicode_escape, the loader decodes \x22 into a closing quote, so print() escapes
+    # the string. run() reads the file as UTF-8 and would see one harmless string constant.
+    src = tmp_path / "model.py"
+    src.write_bytes(
+        b"# -*- coding: unicode_escape -*-\n"
+        b"# syft-restrict: obfuscate-start\n"
+        b"s = \"\\x22; print('escaped') #\"\n"
+        b"# syft-restrict: obfuscate-end\n"
+    )
+
+    # Read as UTF-8 (what run() verifies), the file has no call to print...
+    verified = compile(src.read_bytes().decode("utf-8"), str(src), "exec")
+    assert "print" not in verified.co_names
+    # ...but the loader decodes it with the cookie and would call print.
+    loader = importlib.machinery.SourceFileLoader("model", str(src))
+    loaded = loader.source_to_code(loader.get_data(str(src)), str(src))
+    assert "print" in loaded.co_names
+
+    # So run() refuses the file before verifying it, even with strict=False.
+    with pytest.raises(SourceEncodingError):
+        run(
+            src,
+            allow_functions=ALLOW_FUNCTIONS,
+            allow_operators=ALLOW_OPERATORS,
+            strict=False,
+        )
+    assert not (tmp_path / "model.obfuscated.py").exists()
+
+
+def test_run_accepts_utf8_source_and_verifies_what_the_loader_runs(tmp_path):
+    # The same private string, declared UTF-8 and holding a non-ASCII character. Here \x22 stays
+    # an escape inside the string, so run() and the loader read the same program.
+    src = tmp_path / "model.py"
+    data = (
+        b"# -*- coding: utf-8 -*-\n"
+        b"# syft-restrict: obfuscate-start\n"
+        + "s = \"café\\x22; print('escaped') #\"\n".encode()
+        + b"# syft-restrict: obfuscate-end\n"
+    )
+    src.write_bytes(data)
+
+    result = run(src, allow_functions=ALLOW_FUNCTIONS, allow_operators=ALLOW_OPERATORS)
+    assert result.ok
+    assert result.certificate is not None
+    # The certificate hashes the exact bytes the loader will read...
+    assert result.certificate["source_sha256"] == hashlib.sha256(data).hexdigest()
+    # ...and the code run() verified is the code the loader compiles.
+    verified = compile(data.decode("utf-8"), str(src), "exec")
+    loader = importlib.machinery.SourceFileLoader("model", str(src))
+    loaded = loader.source_to_code(loader.get_data(str(src)), str(src))
+    assert verified == loaded
+    assert "print" not in loaded.co_names
