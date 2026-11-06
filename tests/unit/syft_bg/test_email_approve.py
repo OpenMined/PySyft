@@ -156,9 +156,8 @@ class TestEmailApproveHandler:
 
         notify_state.store_thread_id("test.job", "thread123")
 
-        mock_job = MagicMock()
+        mock_job = MagicMock(status="pending", submitted_by="ds@example.com")
         mock_job.name = "test.job"
-        mock_job.status = "pending"
         job_client.jobs = [mock_job]
 
         handler.handle_reply(thread_id="thread123", reply_text="approve")
@@ -166,9 +165,10 @@ class TestEmailApproveHandler:
         mock_job.approve.assert_called_once_with(
             approval_method="manual", disclosures=disclosures
         )
-        job_runner.process_approved_jobs.assert_called_once_with(
-            share_outputs_with_submitter=True
+        job_runner.run_job.assert_called_once_with(
+            "test.job", "ds@example.com", share_outputs_with_submitter=True
         )
+        job_runner.process_approved_jobs.assert_not_called()
 
     def test_deny_job(self, tmp_path):
         handler, job_client, _, state, notify_state = self._make_handler(tmp_path)
@@ -246,7 +246,9 @@ class TestEmailApproveHandler:
             handler.handle_reply(thread_id="thread_auto", reply_text="auto-approve")
 
         mock_job.approve.assert_called_once()
-        job_runner.process_approved_jobs.assert_called_once()
+        job_runner.run_job.assert_called_once_with(
+            "test.job", "ds@example.com", share_outputs_with_submitter=True
+        )
         mock_create_api.assert_called_once_with(mock_job)
 
     def test_job_not_pending(self, tmp_path):

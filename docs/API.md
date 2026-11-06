@@ -255,6 +255,16 @@ reported by name, with the submitter and the reason:
 
 The job stays at `approved`, so it runs on the next call once the versions match.
 
+### `client.run_job(job, share_outputs_with_submitter=False, sync=False)`
+
+Run one approved job. **DO only.** Takes the same options as `process_approved_jobs`.
+Raises if the submitter runs an incompatible version. Pass `sync=True` to sync after.
+
+```python
+job = do_client.jobs["analysis"]
+do_client.run_job(job)
+```
+
 ---
 
 ## Cleanup

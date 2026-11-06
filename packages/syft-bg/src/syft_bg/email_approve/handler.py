@@ -127,7 +127,9 @@ class EmailApproveHandler:
         )
         self.state.mark_notified(state_key, "processed")
 
-        self.job_runner.process_approved_jobs(share_outputs_with_submitter=True)
+        self.job_runner.run_job(
+            job.name, job.submitted_by, share_outputs_with_submitter=True
+        )
         print(f"[EmailApproveHandler] Approved job: {job_name}")
 
     def _approve_and_create_api(self, job, job_name: str, state_key: str) -> None:
