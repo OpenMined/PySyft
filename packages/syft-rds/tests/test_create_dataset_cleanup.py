@@ -33,7 +33,7 @@ class TestCreateDatasetCleanup:
         )
 
     def test_no_cleanup_when_local_create_fails(self):
-        """If create_all raises, nothing was created so nothing to clean."""
+        """An immediate local-create error requires no outer cleanup."""
         do_manager = self._make_do_manager()
 
         with (
@@ -51,6 +51,38 @@ class TestCreateDatasetCleanup:
 
         # Cleanup called with nothing to clean
         mock_cleanup.assert_called_once_with(None, False, [], [])
+
+    @pytest.mark.parametrize("invalid", ["private", "readme"])
+    def test_corrected_local_input_can_reuse_name(self, tmp_path, invalid):
+        do_manager = self._make_do_manager()
+        mock, private = tmp_path / "mock.csv", tmp_path / "private.csv"
+        mock.write_bytes(b"mock\n")
+        readme = tmp_path / "README.txt"
+        readme.write_text("# dataset\n")
+        if invalid == "readme":
+            private.write_bytes(b"private\n")
+        else:
+            readme = readme.with_suffix(".md")
+            readme.write_text("# dataset\n")
+        kwargs = dict(
+            name="retry",
+            mock_path=mock,
+            private_path=private,
+            readme_path=readme,
+            sync=False,
+        )
+
+        with pytest.raises(ValueError):
+            do_manager.create_dataset(**kwargs)
+
+        private.write_bytes(b"private\n")
+        kwargs["readme_path"] = readme.with_suffix(".md")
+        kwargs["readme_path"].write_text("# dataset\n")
+        dataset = do_manager.create_dataset(**kwargs)
+
+        assert [d.name for d in do_manager.dataset_manager.get_all()] == ["retry"]
+        assert [p.read_bytes() for p in dataset.mock_files] == [b"mock\n"]
+        assert [p.read_bytes() for p in dataset.private_files] == [b"private\n"]
 
     def test_cleanup_on_mock_upload_failure(self):
         """If mock upload fails, local dataset is cleaned up."""

@@ -262,6 +262,7 @@ class DatasetStorage:
                 f"Mock data at {source.mock} contains reserved file "
                 f"{METADATA_FILENAME}. Please rename it and try again."
             )
+        self._validate_source_files(source)
         if protocol_versions is None:
             protocol_versions = self.create_protocol_versions(peer_emails)
         now = _utcnow()
@@ -279,6 +280,37 @@ class DatasetStorage:
             ref = self.new_dataset_ref(name, protocol_version)
             created[protocol_version] = self._materialize_version(ref, fields, source)
         return created
+
+    def _validate_source_files(self, source: DatasetSourceFiles) -> None:
+        """Reject invalid sources before copying any dataset protocol version."""
+        self._validate_mock_path(source.mock)
+        self._validate_readme_path(source.readme)
+        self._validate_private_path(source.private)
+
+    @staticmethod
+    def _validate_mock_path(path: Path) -> None:
+        if not path.exists():
+            raise FileNotFoundError(f"Could not find mock data at {path}")
+        if not (path.is_file() or path.is_dir()):
+            raise ValueError(
+                f"Mock data path {path} must be an existing file or directory."
+            )
+
+    @staticmethod
+    def _validate_readme_path(path: Optional[Path]) -> None:
+        if path is None:
+            return
+        if not path.is_file():
+            raise FileNotFoundError(f"Could not find README at {path}")
+        if path.suffix.lower() != ".md":
+            raise ValueError("readme file must be a markdown (.md) file.")
+
+    @staticmethod
+    def _validate_private_path(path: Path) -> None:
+        if not (path.is_file() or path.is_dir()):
+            raise ValueError(
+                f"Private data path {path} must be an existing file or directory."
+            )
 
     def migrate_dataset(self, ref: DatasetRef, target_protocol_version: str) -> Dataset:
         """Rewrite an existing on-disk dataset into another protocol layout.
@@ -404,8 +436,7 @@ class DatasetStorage:
         exclude_names: frozenset[str] = frozenset(),
     ) -> list[Path]:
         target_dir = self.public_dataset_dir(ref)
-        if not src_path.exists():
-            raise FileNotFoundError(f"Could not find mock data at {src_path}")
+        self._validate_mock_path(src_path)
         if target_dir.exists() and not is_empty_dir(target_dir):
             raise FileExistsError(
                 f"Mock dir {target_dir} already exists and is not empty."
@@ -431,6 +462,7 @@ class DatasetStorage:
         exclude_names: frozenset[str] = frozenset(),
     ) -> list[Path]:
         private_target_dir = self.private_dataset_dir(ref)
+        self._validate_private_path(src_path)
         private_target_dir.mkdir(parents=True, exist_ok=True)
         if src_path.is_dir():
             # TODO: Implementing without copying private data to `SyftBox/private``
@@ -447,12 +479,9 @@ class DatasetStorage:
         )
 
     def _copy_readme(self, ref: DatasetRef, src_file: Optional[Path]) -> list[Path]:
+        self._validate_readme_path(src_file)
         if src_file is None:
             return []
-        if not src_file.is_file():
-            raise FileNotFoundError(f"Could not find README at {src_file}")
-        if not src_file.suffix.lower() == ".md":
-            raise ValueError("readme file must be a markdown (.md) file.")
         return copy_paths(
             files=[src_file], dst=self.public_dataset_dir(ref), exists_ok=True
         )
