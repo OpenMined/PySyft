@@ -94,6 +94,14 @@ itself. Any of these raise `MarkerError`:
 
 `run()` resolves the private region from these markers; a file with none raises `MarkerError`.
 
+### Source encoding
+
+The source file must be UTF-8. The enclave loads it with `importlib`, which honours a PEP 263
+coding cookie (`# -*- coding: X -*-` on line 1 or 2), so a file declaring e.g. `unicode_escape`
+could decode to a different program than the one verified. `run()` therefore raises
+`SourceEncodingError` (regardless of `strict`) for any declared encoding other than UTF-8,
+including a BOM, and for any bytes that are not valid UTF-8.
+
 > [!WARNING]
 > Private code may **call** public wrappers by name. Public code is trusted, not verified.
 >
