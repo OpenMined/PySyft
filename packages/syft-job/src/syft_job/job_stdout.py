@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import html
 import re
 from typing import TYPE_CHECKING
 
@@ -129,17 +130,8 @@ class StdoutViewer:
             </div>
             """
 
-        # Convert ANSI codes to HTML for display
-        html_content = self._convert_ansi_to_html(raw_content)
-
-        # Escape any remaining HTML characters that aren't our color spans
-        # We need to be careful not to escape our intentional HTML
-        html_content = (
-            html_content.replace("&", "&amp;")
-            .replace('"', "&quot;")
-            .replace("'", "&#x27;")
-        )
-        # Don't escape < and > since we want our HTML spans to work
+        # Escape job output before adding the trusted HTML generated from ANSI codes.
+        html_content = self._convert_ansi_to_html(html.escape(raw_content))
 
         # Count lines and characters (use clean content for stats)
         clean_content = self._strip_ansi_codes(raw_content)
