@@ -185,7 +185,9 @@ def _read_source(path: Path) -> str:
     try:
         text = raw.decode("utf-8")
     except UnicodeDecodeError as e:
-        raise SourceEncodingError(f"{path}: not valid UTF-8 ({e.reason} at byte {e.start})") from e
+        raise SourceEncodingError(
+            f"{path}: not valid UTF-8 ({e.reason} at byte {e.start})"
+        ) from e
 
     # convert all line breaks to \n
     return text.replace("\r\n", "\n").replace("\r", "\n")
