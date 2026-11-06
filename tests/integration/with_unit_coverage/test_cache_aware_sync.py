@@ -125,11 +125,11 @@ def test_do_cache_aware_sync_gdrive():
 @pytest.mark.flaky(reruns=3, reruns_delay=2)
 @pytest.mark.usefixtures("setup_delete_syftboxes")
 def test_ds_cache_aware_sync_gdrive():
-    """Real GDrive test: Create DS, sync 3 files, create 2 more, restart with same cache,
-    verify cache has 3 events, sync and end up with 5.
+    """Real GDrive test: Create DS, sync 3 files, create 2 more, restart the DS,
+    verify its state is restored, sync and end up with 5.
 
-    This test verifies that when a DS manager is restarted with a persisted filesystem cache,
-    it uses the cached last_msg_id_per_peer to only download new events.
+    This test verifies that a restarted DS restores last_msg_id_per_peer from
+    its saved state, so it downloads only new events.
     """
     # Create initial pair with filesystem cache
     ds_manager1, do_manager1 = (
@@ -197,17 +197,13 @@ def test_ds_cache_aware_sync_gdrive():
     )
     new_ds_manager = SyftboxManager.from_config(new_ds_config)
 
-    # Verify the new manager's cache loaded existing events from disk
+    # Verify the new manager restored its state from the DS's storage
     new_cache = new_ds_manager.datasite_watcher_syncer.datasite_watcher_cache
-    assert len(new_cache.events_connection) == initial_cache_count, (
-        f"New manager cache should have loaded {initial_cache_count} events from disk, "
-        f"got {len(new_cache.events_connection)}"
-    )
     assert len(new_cache.last_msg_id_per_peer) > 0, (
-        "last_msg_id_per_peer should be pre-populated from disk cache"
+        "last_msg_id_per_peer should be restored from the saved state"
     )
     assert len(new_cache.file_hashes) >= 3, (
-        f"New manager should have at least 3 file hashes pre-populated, got {len(new_cache.file_hashes)}"
+        f"New manager should have at least 3 file hashes restored, got {len(new_cache.file_hashes)}"
     )
 
     # Sync the new manager - should only download the new events

@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 
+from syft.sync.connections.drive.drive_connections import drive_cached_client_of
 from syft.sync.encryption_policy import EncryptionPolicy
 from syft.sync.peers.exceptions import SyftPeerNotReadyError
 from syft.sync.peers.peer import Peer, PeerState
@@ -12,8 +13,6 @@ from syft.sync.peers.peer_store import PeerStore, import_key_file
 from syft.sync.syftbox_manager import SyftboxManager
 from tests.unit.test_sync_manager import path_for_job
 from tests.unit.utils import grant_job_inbox_access
-from syft.sync.connections.drive.drive_connections import drive_cached_client_of
-
 
 # =========================================================================
 # PeerStore unit tests
@@ -447,12 +446,13 @@ def test_encrypted_checkpoint_roundtrip():
 
 def test_encrypted_rolling_state_roundtrip():
     """Rolling state is encrypted at rest and decrypted on read."""
+    from uuid import uuid4
+
     from syft.sync.checkpoints.rolling_state import RollingState
     from syft.sync.events.file_change_event import (
         FileChangeEvent,
         FileChangeEventsMessage,
     )
-    from uuid import uuid4
 
     ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
         encryption=True,
