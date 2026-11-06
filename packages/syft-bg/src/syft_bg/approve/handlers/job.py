@@ -5,6 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING, Callable, Optional, Protocol
 
+from syft.sync.version import VersionError
+from syft_job.api_requests import API_APPROVAL_METHOD
 from syft_job.job import JobInfo
 
 from syft_bg.approve.config import AutoApprovalsConfig
@@ -22,10 +24,10 @@ class StateManager(Protocol):
 
 
 class ApprovedJobHandler:
-    """Runs the approved jobs on the DO's datasite.
+    """Runs the api calls on the DO's datasite.
 
     An api call arrives approved: receiving it turns the request into an
-    approved job. A job the DO approved by hand runs too.
+    approved job. A job the DO approved by hand waits for the DO to run it.
     """
 
     def __init__(
@@ -48,26 +50,35 @@ class ApprovedJobHandler:
         return SyftBgConfig.load(self._config_path).approve.auto_approvals
 
     def run_approved_jobs(self) -> list[JobInfo]:
-        """Receive new jobs, then run every approved one.
+        """Receive new jobs, then run every approved api call.
 
-        Returns the approved jobs not seen before.
+        Returns the approved api calls not seen before.
         """
         if not self.config.enabled:
             return []
         self.client.receive_jobs()
-        approved = [
+        api_calls = [
             job
             for job in self.client.job_client.jobs
             if job.status == "approved"
             and job.datasite_owner_email == self.client.email
+            and job.approval_method == API_APPROVAL_METHOD
         ]
-        new = self._record_new(approved)
-        if approved:
-            self.client.process_approved_jobs(
-                stream_output=self.verbose,
-                share_outputs_with_submitter=True,
-            )
+        new = self._record_new(api_calls)
+        for job in api_calls:
+            self._run(job)
+        if api_calls:
+            self.client.sync()
         return new
+
+    def _run(self, job: JobInfo) -> None:
+        """Run one api call; a submitter on an incompatible version is skipped."""
+        try:
+            self.client.run_job(
+                job, stream_output=self.verbose, share_outputs_with_submitter=True
+            )
+        except VersionError as e:
+            print(f"Skipped: {job.name} from {job.submitted_by}: {e}")
 
     def _record_new(self, approved: list[JobInfo]) -> list[JobInfo]:
         """Mark the jobs not seen before, and call on_approve for each."""
