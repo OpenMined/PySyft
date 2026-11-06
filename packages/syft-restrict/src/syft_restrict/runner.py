@@ -8,7 +8,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field
 
-from .astutil import normalize_ranges, scan_file
+from .astutil import normalize_ranges, scan_file, source_rows
 from .auditor import AuditReport, audit_allow_functions
 from .errors import PolicyViolation
 from .markers import parse_markers
@@ -140,6 +140,18 @@ def _run(
 
     scan = scan_file(ast.parse(source), normalize_ranges(private))
     obfuscated = _obfuscate(source, obfuscate_ranges, hide_ranges, scan)
+    # The certificate's ranges count rows of the source. A copy with a different row count would
+    # put the hiding on the wrong rows, so refuse to write it or certify it.
+    n_src, n_out = len(source_rows(source)), len(source_rows(obfuscated))
+    if n_out != n_src:
+        mismatch = Violation(
+            line=min((lo for lo, _ in normalize_ranges(private)), default=1),
+            code="row-count-mismatch",
+            message=f"the obfuscated copy has {n_out} rows and the source has {n_src}",
+        )
+        if strict:
+            raise PolicyViolation([mismatch])
+        return RunResult(ok=False, violations=[mismatch], audit=audit)
 
     out_path = Path(out) if out is not None else path.with_suffix(".obfuscated.py")
     out_path.write_text(obfuscated)

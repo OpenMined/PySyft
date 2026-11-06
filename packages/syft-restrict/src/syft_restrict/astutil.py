@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import io
 
 from pydantic import BaseModel
 
@@ -20,6 +21,19 @@ def normalize_ranges(private) -> list[tuple[int, int]]:
         if hi < lo:
             raise ValueError(f"invalid range [{lo}, {hi}]: end must be >= start")
     return ranges
+
+
+def source_rows(text: str) -> list[str]:
+    """Split ``text`` into rows on newline characters, ``\\n``, similar to
+    ``tokenize``.
+
+    This function replaces ``str.splitlines`` which splits on form feeds,
+    file separators, and other separator characters.
+
+    See: https://docs.python.org/3/builtins/stdtypes.html#str.splitlines
+    """
+
+    return io.StringIO(text).readlines()
 
 
 def row_in_ranges(row: int, ranges) -> bool:
