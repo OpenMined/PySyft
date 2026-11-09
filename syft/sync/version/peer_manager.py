@@ -32,6 +32,7 @@ from syft.sync.utils.print_utils import (
 from syft.sync.version.exceptions import (
     VersionMismatchError,
     VersionUnknownError,
+    peer_info_unavailable_reason,
 )
 from syft.sync.version.peer_info import PeerInfo
 from syft.sync.version.version_info import CompatibilityStatus, VersionInfo
@@ -397,10 +398,7 @@ class PeerManager(BaseModel):
         # and an incompatible client version is refused by default. Either way the
         # override lets the caller proceed.
         if status == CompatibilityStatus.UNKNOWN:
-            detail = (
-                "version information not available "
-                "(if you are unsure if it is up to date, call client.sync())"
-            )
+            detail = peer_info_unavailable_reason(peer_email)
         else:
             detail = own_version.get_incompatibility_reason(peer_version)
 
