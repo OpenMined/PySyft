@@ -562,6 +562,32 @@ def test_watcher_state_save_replaces_previous(pair):
     assert store.get_rolling_state(DO) == b"rolling state"
 
 
+def _record_lookups(monkeypatch, client) -> list[str]:
+    """Record each folder or file lookup that ``client`` makes."""
+    lookups = []
+    for name in ("list_all_files", "find_folders"):
+        method = getattr(client, name)
+
+        def record(*args, _name=name, _method=method, **kwargs):
+            lookups.append(_name)
+            return _method(*args, **kwargs)
+
+        monkeypatch.setattr(client, name, record)
+    return lookups
+
+
+def test_watcher_state_save_and_load_after_first_save_make_no_lookup(pair, monkeypatch):
+    _, ds_cached_client = pair
+    store = DriveWatcherStoreConnection(ds_cached_client)
+    store.put_rolling_state(DO, b"first")
+    lookups = _record_lookups(monkeypatch, ds_cached_client.client)
+
+    store.put_rolling_state(DO, b"second")
+
+    assert store.get_rolling_state(DO) == b"second"
+    assert lookups == []
+
+
 def test_watcher_state_reset_keeps_other_peers(pair):
     _, ds_cached_client = pair
     store = DriveWatcherStoreConnection(ds_cached_client)
