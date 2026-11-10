@@ -1005,15 +1005,10 @@ class SyftboxManager(BaseModelCallbackMixin):
             if not is_normal_syncable_path(datasite_rel):
                 logger.warning(f"push_job_files: pushing non-syncable path {rel}")
 
-        last_file = False
-        for i, relative_file_path in enumerate(relative_file_paths):
-            # only send a message for the last file, so we reduce the number of messages sent
-            if i == len(relative_file_paths) - 1:
-                last_file = True
-
-            self.datasite_watcher_syncer.on_file_change(
-                relative_file_path, process_now=last_file
-            )
+        # One call, so the whole job goes to its datasite as one message. A
+        # content of None is read from disk.
+        job_files = [(rel, None) for rel in relative_file_paths]
+        self.datasite_watcher_syncer.push_file_changes(job_files)
 
     # --- collection operations (used by the product layer) ---
 

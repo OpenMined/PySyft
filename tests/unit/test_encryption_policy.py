@@ -5,6 +5,7 @@ A client is ``optional`` (encrypt only when the peer requires it) or
 """
 
 import json
+from pathlib import Path
 
 import pytest
 from pydantic import ValidationError
@@ -486,10 +487,6 @@ def test_owner_leaves_envelope_from_peer_without_bundle_in_inbox():
 # =========================================================================
 
 
-def _queued_changes(manager) -> int:
-    return manager.datasite_watcher_syncer.queue.qsize()
-
-
 @pytest.mark.parametrize("do_policy", [OPTIONAL, REQUIRED])
 def test_send_before_owner_accepts_goes_once_accepted(do_policy):
     """Before the owner accepts, its policy is not known. The change is saved,
@@ -503,7 +500,6 @@ def test_send_before_owner_accepts_goes_once_accepted(do_policy):
     file_path = path_for_job(do_manager.email, ds_manager.email, "my.job")
     with pytest.raises(SyftPeerNotReadyError, match="not known.*is saved"):
         ds_manager._send_file_change(file_path, "early content")
-    assert _queued_changes(ds_manager) == 0
     with pytest.warns(UserWarning, match="wait in"):
         ds_manager.sync()
 
@@ -534,10 +530,12 @@ def test_changes_for_two_datasites_go_to_each(monkeypatch):
             (recipient, {fc.datasite_email for fc in message.proposed_file_changes})
         ),
     )
-    watcher = ds_manager.datasite_watcher_syncer
-    watcher.on_file_change(f"{do_manager.email}/a.txt", "a", process_now=False)
-    watcher.on_file_change("other@example.com/b.txt", "b", process_now=False)
-    watcher.process_file_changes_queue()
+    ds_manager.datasite_watcher_syncer.push_file_changes(
+        [
+            (Path(do_manager.email) / "a.txt", "a"),
+            (Path("other@example.com/b.txt"), "b"),
+        ]
+    )
     assert sorted(sent) == sorted(
         [
             (do_manager.email, {do_manager.email}),
@@ -562,13 +560,14 @@ def test_failure_for_one_recipient_still_sends_to_other(monkeypatch):
     monkeypatch.setattr(
         ConnectionRouter, "watcher_send_proposed_file_changes_message", send_message
     )
-    watcher = ds_manager.datasite_watcher_syncer
-    watcher.on_file_change("other@example.com/a.txt", "a", process_now=False)
-    watcher.on_file_change(f"{do_manager.email}/b.txt", "b", process_now=False)
     with pytest.raises(SyftPeerNotReadyError):
-        watcher.process_file_changes_queue()
+        ds_manager.datasite_watcher_syncer.push_file_changes(
+            [
+                (Path("other@example.com/a.txt"), "a"),
+                (Path(do_manager.email) / "b.txt", "b"),
+            ]
+        )
     assert sent == [do_manager.email]
-    assert _queued_changes(ds_manager) == 0
 
 
 def test_unsent_owner_change_stays_pending(monkeypatch):

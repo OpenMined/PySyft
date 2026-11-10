@@ -1,7 +1,6 @@
 import warnings
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from queue import Queue
 from typing import Dict, Iterable, List
 
 from pydantic import BaseModel, Field, PrivateAttr
@@ -40,7 +39,6 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
     connection_router: ConnectionRouter
     datasite_watcher_cache: DataSiteWatcherCache
     spool: Spool
-    queue: Queue = Field(default_factory=Queue)
 
     _executor: ThreadPoolExecutor = PrivateAttr(
         default_factory=lambda: ThreadPoolExecutor(max_workers=10)
@@ -92,10 +90,13 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
             old_hash=old_hash,
         )
 
-    def process_file_changes_queue(self):
-        """Save the queued changes as one message per datasite, then upload the
-        saved messages to those datasites. A message that an upload error stops
-        stays saved, and so do the messages after it.
+    def push_file_changes(self, files: list[tuple[Path, str | bytes | None]]) -> None:
+        """Save the changes to ``files`` as one message per datasite, then
+        upload the saved messages to those datasites. A message that an upload
+        error stops stays saved, and so do the messages after it.
+
+        Each of ``files`` is a path in the syftbox and its content. A content of
+        None is read from the file on disk.
 
         Raises:
             SyftPeerNotReadyError: when a recipient cannot receive yet.
@@ -106,9 +107,7 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
         """
         # One message per datasite: each change goes to the owner of its path.
         changes_by_recipient: Dict[str, List[ProposedFileChange]] = {}
-        while not self.queue.empty():
-            relative_path, content = self.queue.get()
-
+        for relative_path, content in files:
             # for in memory connection we pass content directly
             if content is None:
                 raw = (self.syftbox_folder / relative_path).read_bytes()
@@ -207,15 +206,10 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
             )
 
     def on_file_change(
-        self,
-        relative_path: Path | str,
-        content: str | bytes | None = None,
-        process_now=True,
-    ):
-        relative_path = Path(relative_path)
-        self.queue.put((relative_path, content))
-        if process_now:
-            self.process_file_changes_queue()
+        self, relative_path: Path | str, content: str | bytes | None = None
+    ) -> None:
+        """Push the change to one file; see ``push_file_changes``."""
+        self.push_file_changes([(Path(relative_path), content)])
 
     # --- Pulling from datasite outboxes ---
 

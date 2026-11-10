@@ -2,12 +2,14 @@
 stopped kernel does not lose a submission."""
 
 import json
+from pathlib import Path
 
 import httplib2
 import pytest
 
 from syft.sync.connections.drive.drive_p2p import DriveP2PConnection
 from syft.sync.connections.exceptions import ConnectionUnavailableError
+from syft.sync.connections.types import MessageKind
 from syft.sync.peers.peer import PeerState
 from syft.sync.syftbox_manager import SyftboxManager, SyftboxManagerConfig
 from syft.sync.sync.spool import SPOOL_ENTRY_VERSION, Spool
@@ -95,6 +97,31 @@ def test_crash_after_upload_applies_once(monkeypatch):
     with pytest.warns(UserWarning, match="Archived proposed change"):
         do_manager.sync()
     assert _accepted_contents(do_manager).count("job") == 1
+
+
+def test_job_files_saved_and_sent_as_one_message(monkeypatch):
+    ds_manager, do_manager, _ = _pair_with_job_inbox()
+    job_dir = Path(ds_manager.syftbox_folder) / path_for_job(
+        do_manager.email, ds_manager.email, "my.job"
+    )
+    job_dir.mkdir(parents=True)
+    for name in ("run.sh", "main.py", "config.yaml"):
+        (job_dir / name).write_text(name)
+
+    with monkeypatch.context() as m:
+        _drop_connection(m)
+        with pytest.raises(ConnectionUnavailableError):
+            ds_manager.push_job_files(job_dir)
+    syncer = ds_manager.datasite_watcher_syncer
+    assert syncer is not None
+    [message] = syncer.spool.pending_messages(do_manager.email)
+    assert len(message.proposed_file_changes) == 3
+
+    ds_manager.sync()
+    inbox = do_manager._connection_router.connections.p2p_con.receive(
+        ds_manager.email, MessageKind.PROPOSED_CHANGES
+    )
+    assert len(inbox) == 1
 
 
 def test_edits_saved_offline_apply_in_order(monkeypatch):
