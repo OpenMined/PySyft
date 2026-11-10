@@ -68,10 +68,12 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
 
     def _record_spooled_hashes(self) -> None:
         """Record the hashes of the saved messages, so that a change after a
-        restart builds on a saved change that is not sent yet."""
+        restart builds on a saved change that is not sent yet. The content of
+        the files is not read."""
         for recipient in self.spool.recipients():
-            for message in self.spool.pending_messages(recipient):
-                self._record_proposed_hashes(message)
+            for msg_id in self.spool.msg_ids(recipient):
+                entry = self.spool.read_entry(recipient, msg_id)
+                self._record_proposed_hashes(entry.message)
 
     def get_proposed_file_change_object(
         self,
@@ -187,9 +189,11 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
         return not_ready_errors
 
     def _upload_spooled_to(self, recipient: str) -> None:
-        for message in self.spool.pending_messages(recipient):
-            msg_id = message.message_filename.as_string()
-            # The send drops a message that an upload stored before a stop.
+        """Send the saved messages to ``recipient``, one message in memory at
+        a time."""
+        for msg_id in self.spool.msg_ids(recipient):
+            message = self.spool.read_message(recipient, msg_id)
+            # The DO refuses a copy that an upload stored before a stop.
             self.connection_router.watcher_send_proposed_file_changes_message(
                 recipient, message
             )
