@@ -1,6 +1,6 @@
 [project]
 name = "syft-perms"
-version = "0.1.16"
+version = "0.1.17"
 description = "User-facing permission API for Syft datasites"
 authors = [{ name = "OpenMined", email = "info@openmined.org" }]
 license = { text = "Apache-2.0" }
