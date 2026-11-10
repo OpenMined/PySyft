@@ -485,7 +485,7 @@ def test_compact_with_file_overwrites_across_incrementals():
     # Should have 2 files: file1 (latest version) and file2
     assert len(compacted.files) == 2
     file1 = next(f for f in compacted.files if f.path == "file1.txt")
-    assert file1.content == "modified_v3"
+    assert file1.content == b"modified_v3"
 
 
 def test_compact_with_file_deletions():
@@ -825,11 +825,11 @@ def test_incremental_left_after_compaction_does_not_revert_a_file():
     syncer.event_cache.clear_cache()
     syncer.initial_sync_done = False
     do_manager.sync(auto_checkpoint=False)
-    assert syncer.event_cache.file_connection.read_file("file1.txt") == "v2"
+    assert syncer.event_cache.file_connection.read_file("file1.txt") == b"v2"
 
     compacted = syncer.compact_checkpoints()
     [file1] = [f for f in compacted.files if f.path == "file1.txt"]
-    assert file1.content == "v2"
+    assert file1.content == b"v2"
 
 
 def test_checkpoint_of_later_version_refused():

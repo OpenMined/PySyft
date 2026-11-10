@@ -12,22 +12,10 @@ Flow:
 """
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List
+from typing import TYPE_CHECKING, Dict, List
 
-from pydantic import (
-    BaseModel,
-    Field,
-    computed_field,
-    field_serializer,
-    model_validator,
-)
+from pydantic import BaseModel, ConfigDict, Field
 
-from syft.sync.utils.file_content import (
-    ContentType,
-    content_to_json,
-    content_type_of,
-    decode_content,
-)
 from syft.sync.utils.syftbox_utils import (
     compress_data,
     create_event_timestamp,
@@ -65,27 +53,19 @@ DEFAULT_COMPACTING_THRESHOLD = 4
 DEFAULT_CHECKPOINT_EVENT_THRESHOLD = 50
 
 
+def _as_bytes(content: str | bytes) -> bytes:
+    """``content`` as bytes: text as UTF-8."""
+    return content.encode("utf-8") if isinstance(content, str) else content
+
+
 class CheckpointFile(BaseModel):
     """Represents a single file in the checkpoint."""
 
+    model_config = ConfigDict(ser_json_bytes="base64", val_json_bytes="base64")
+
     path: str  # Relative path in datasite (e.g., "public/syft_datasets/data.csv")
     hash: str  # Hash of the content (SHA256 hex string)
-    content: str | bytes  # File content: bytes for a binary file
-
-    @computed_field
-    @property
-    def content_type(self) -> ContentType | None:
-        """Saved with the file, so that a read gives bytes back as bytes."""
-        return content_type_of(self.content)
-
-    @field_serializer("content", when_used="json")
-    def _content_as_text(self, content: str | bytes) -> str | None:
-        return content_to_json(content)
-
-    @model_validator(mode="before")
-    @classmethod
-    def _content_from_text(cls, data: Any) -> Any:
-        return decode_content(data)
+    content: bytes  # File content; text as UTF-8
 
 
 class Checkpoint(BaseModel):
@@ -126,7 +106,7 @@ class Checkpoint(BaseModel):
         cls,
         email: str,
         file_hashes: Dict[str, str],
-        file_contents: Dict[str, str],
+        file_contents: Dict[str, str | bytes],
         last_event_timestamp: float | None = None,
     ) -> "Checkpoint":
         """
@@ -147,7 +127,7 @@ class Checkpoint(BaseModel):
                     CheckpointFile(
                         path=path_str,
                         hash=hash_value,
-                        content=content,
+                        content=_as_bytes(content),
                     )
                 )
         return cls(
@@ -160,7 +140,7 @@ class Checkpoint(BaseModel):
         """Get file hashes as a dict mapping path to hash."""
         return {Path(f.path): f.hash for f in self.files}
 
-    def get_file_contents(self) -> Dict[str, str]:
+    def get_file_contents(self) -> Dict[str, bytes]:
         """Get file contents as a dict mapping path to content."""
         return {f.path: f.content for f in self.files}
 
@@ -183,7 +163,7 @@ class Checkpoint(BaseModel):
                 )
             else:
                 files[path] = CheckpointFile(
-                    path=path, hash=event.new_hash, content=event.content
+                    path=path, hash=event.new_hash, content=_as_bytes(event.content)
                 )
             if last_event_timestamp is None or event.timestamp > last_event_timestamp:
                 last_event_timestamp = event.timestamp
