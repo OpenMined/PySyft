@@ -8,7 +8,6 @@ import pytest
 
 from syft.sync.connections.drive.drive_p2p import DriveP2PConnection
 from syft.sync.connections.exceptions import ConnectionUnavailableError
-from syft.sync.connections.types import MessageKind
 from syft.sync.peers.peer import PeerState
 from syft.sync.syftbox_manager import SyftboxManager, SyftboxManagerConfig
 from syft.sync.sync.spool import SPOOL_ENTRY_VERSION, Spool
@@ -78,7 +77,7 @@ def test_failed_upload_sent_by_sync_after_restart(monkeypatch):
     assert "job" in _accepted_contents(do_manager)
 
 
-def test_crash_after_upload_sends_once(monkeypatch):
+def test_crash_after_upload_applies_once(monkeypatch):
     ds_manager, do_manager, file_path = _pair_with_job_inbox()
 
     def stop(self, recipient, msg_id):
@@ -88,14 +87,13 @@ def test_crash_after_upload_sends_once(monkeypatch):
         m.setattr(Spool, "remove", stop)
         with pytest.raises(_Stopped):
             ds_manager._send_file_change(file_path, "job")
-    # The DO applies the message and moves it to its archive.
     do_manager.sync()
 
+    # The restarted DS uploads the saved message again. The DO refuses the
+    # copy: its old hash is no longer the hash of the file.
     _restart(ds_manager).sync()
-    inbox = do_manager._connection_router.connections.p2p_con.receive(
-        ds_manager.email, MessageKind.PROPOSED_CHANGES
-    )
-    assert inbox == []
+    with pytest.warns(UserWarning, match="Archived proposed change"):
+        do_manager.sync()
     assert _accepted_contents(do_manager).count("job") == 1
 
 
