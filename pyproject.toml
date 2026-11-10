@@ -75,6 +75,11 @@ where = ["."]
 include = ["syft", "syft.*"]
 namespaces = false
 
+# The frozen release artifacts are data files, and setuptools packs only the
+# files named here. syft loads them at import (syft/migrations/history.py).
+[tool.setuptools.package-data]
+"syft.migrations" = ["history/*/*.json"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
