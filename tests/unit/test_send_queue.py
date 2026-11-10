@@ -16,11 +16,11 @@ from syft.sync.messages.proposed_filechange import (
 )
 from syft.sync.peers.peer import PeerState
 from syft.sync.syftbox_manager import SyftboxManager, SyftboxManagerConfig
-from syft.sync.sync.spool import (
+from syft.sync.sync.send_queue import (
     CONTENT_FILE_SUFFIX,
-    SPOOL_ENTRY_FILE_NAME,
-    SPOOL_ENTRY_VERSION,
-    Spool,
+    SEND_QUEUE_ENTRY_FILE_NAME,
+    SEND_QUEUE_ENTRY_VERSION,
+    SendQueue,
 )
 from syft.sync.utils.syftbox_utils import get_event_hash_from_content
 from tests.unit.test_persisted_cache import _pair_with_unsent_do_file
@@ -65,13 +65,13 @@ def _pair_with_job_inbox(encryption: bool = False):
     return ds_manager, do_manager, path_for_job(do_manager.email, ds_manager.email)
 
 
-def _save_later_version_entry(spool: Spool, recipient: str) -> int:
+def _save_later_version_entry(send_queue: SendQueue, recipient: str) -> int:
     """Save a message to ``recipient`` as a later client writes it, and return
     that later version."""
-    spool.add(recipient, mock_message())
-    entry_folder = next(spool.recipient_folder(recipient).iterdir())
-    entry_path = entry_folder / SPOOL_ENTRY_FILE_NAME
-    later_version = SPOOL_ENTRY_VERSION + 1
+    send_queue.add(recipient, mock_message())
+    entry_folder = next(send_queue.recipient_folder(recipient).iterdir())
+    entry_path = entry_folder / SEND_QUEUE_ENTRY_FILE_NAME
+    later_version = SEND_QUEUE_ENTRY_VERSION + 1
     data = json.loads(entry_path.read_text())
     data.update(version=later_version, new_setting=True)
     entry_path.write_text(json.dumps(data))
@@ -97,7 +97,7 @@ def test_crash_after_upload_applies_once(monkeypatch):
         raise _Stopped()
 
     with monkeypatch.context() as m:
-        m.setattr(Spool, "remove", stop)
+        m.setattr(SendQueue, "remove", stop)
         with pytest.raises(_Stopped):
             ds_manager._send_file_change(file_path, "job")
     do_manager.sync()
@@ -125,8 +125,8 @@ def test_job_files_saved_and_sent_as_one_message(monkeypatch):
             ds_manager.push_job_files(job_dir)
     syncer = ds_manager.datasite_watcher_syncer
     assert syncer is not None
-    [msg_id] = syncer.spool.msg_ids(do_manager.email)
-    entry = syncer.spool.read_entry(do_manager.email, msg_id)
+    [msg_id] = syncer.send_queue.msg_ids(do_manager.email)
+    entry = syncer.send_queue.read_entry(do_manager.email, msg_id)
     assert len(entry.message.proposed_file_changes) == 3
 
     ds_manager.sync()
@@ -171,7 +171,7 @@ def test_restart_records_saved_hashes_without_content(monkeypatch):
             ds_manager._send_file_change(file_path, "job")
     syncer = ds_manager.datasite_watcher_syncer
     assert syncer is not None
-    content_paths = list(syncer.spool.folder.rglob(f"*{CONTENT_FILE_SUFFIX}"))
+    content_paths = list(syncer.send_queue.folder.rglob(f"*{CONTENT_FILE_SUFFIX}"))
     assert content_paths
     for path in content_paths:
         path.unlink()
@@ -204,7 +204,7 @@ def test_saved_message_encrypted_with_peer_key_at_upload(monkeypatch):
 
 
 def test_saved_message_read_back_with_text_and_binary_content(tmp_path):
-    spool = Spool(tmp_path)
+    send_queue = SendQueue(tmp_path)
     message = ProposedFileChangesMessage(
         sender_email="ds@example.com",
         proposed_file_changes=[
@@ -226,25 +226,25 @@ def test_saved_message_read_back_with_text_and_binary_content(tmp_path):
             ),
         ],
     )
-    spool.add("do@example.com", message)
+    send_queue.add("do@example.com", message)
 
-    [msg_id] = spool.msg_ids("do@example.com")
-    assert spool.read_message("do@example.com", msg_id) == message
+    [msg_id] = send_queue.msg_ids("do@example.com")
+    assert send_queue.read_message("do@example.com", msg_id) == message
 
 
-def test_spool_entry_of_later_version_refused(tmp_path):
-    spool = Spool(tmp_path)
-    later_version = _save_later_version_entry(spool, "do@example.com")
-    [msg_id] = spool.msg_ids("do@example.com")
+def test_send_queue_entry_of_later_version_refused(tmp_path):
+    send_queue = SendQueue(tmp_path)
+    later_version = _save_later_version_entry(send_queue, "do@example.com")
+    [msg_id] = send_queue.msg_ids("do@example.com")
 
     with pytest.raises(ValueError, match=f"version {later_version}"):
-        spool.read_entry("do@example.com", msg_id)
+        send_queue.read_entry("do@example.com", msg_id)
 
 
 def test_stuck_message_does_not_block_pull():
     ds_manager, do_manager = _pair_with_unsent_do_file()
-    spool = ds_manager.datasite_watcher_syncer.spool
-    _save_later_version_entry(spool, do_manager.email)
+    send_queue = ds_manager.datasite_watcher_syncer.send_queue
+    _save_later_version_entry(send_queue, do_manager.email)
     do_manager.sync(auto_checkpoint=False)
 
     with pytest.raises(ValueError, match="version"):

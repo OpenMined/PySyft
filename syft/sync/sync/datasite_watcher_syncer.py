@@ -17,7 +17,7 @@ from syft.sync.sync.caches.datasite_watcher_cache import (
     DataSiteWatcherCache,
     DataSiteWatcherCacheConfig,
 )
-from syft.sync.sync.spool import Spool, datasite_spool_path
+from syft.sync.sync.send_queue import SendQueue, datasite_send_queue_path
 
 
 class DatasiteWatcherSyncerConfig(BaseModel):
@@ -38,7 +38,7 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
     email: str
     connection_router: ConnectionRouter
     datasite_watcher_cache: DataSiteWatcherCache
-    spool: Spool
+    send_queue: SendQueue
 
     _executor: ThreadPoolExecutor = PrivateAttr(
         default_factory=lambda: ThreadPoolExecutor(max_workers=10)
@@ -59,20 +59,22 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
             datasite_watcher_cache=DataSiteWatcherCache.from_config(
                 config.datasite_watcher_cache_config, connection_router
             ),
-            spool=Spool(datasite_spool_path(config.syftbox_folder, config.email)),
+            send_queue=SendQueue(
+                datasite_send_queue_path(config.syftbox_folder, config.email)
+            ),
         )
-        syncer._record_spooled_hashes()
+        syncer._record_queued_hashes()
         return syncer
 
     # --- Pushing proposed file changes ---
 
-    def _record_spooled_hashes(self) -> None:
+    def _record_queued_hashes(self) -> None:
         """Record the hashes of the saved messages, so that a change after a
         restart builds on a saved change that is not sent yet. The content of
         the files is not read."""
-        for recipient in self.spool.recipients():
-            for msg_id in self.spool.msg_ids(recipient):
-                entry = self.spool.read_entry(recipient, msg_id)
+        for recipient in self.send_queue.recipients():
+            for msg_id in self.send_queue.msg_ids(recipient):
+                entry = self.send_queue.read_entry(recipient, msg_id)
                 self._record_proposed_hashes(entry.message)
 
     def get_proposed_file_change_object(
@@ -138,11 +140,11 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
             message = ProposedFileChangesMessage(
                 sender_email=self.email, proposed_file_changes=changes
             )
-            self.spool.add(recipient, message)
+            self.send_queue.add(recipient, message)
             # The next change to a path builds on this one, sent or not.
             self._record_proposed_hashes(message)
         try:
-            not_ready_errors = self._upload_spooled(changes_by_recipient)
+            not_ready_errors = self._upload_queued(changes_by_recipient)
         except ConnectionUnavailableError as e:
             raise ConnectionUnavailableError(
                 f"{e} The change is saved, and client.sync() sends it."
@@ -165,7 +167,7 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
             else:
                 hashes[path_key] = fc.new_hash
 
-    def _upload_spooled(
+    def _upload_queued(
         self, recipients: Iterable[str]
     ) -> dict[str, SyftPeerNotReadyError]:
         """Upload the saved messages to each of ``recipients``, oldest first,
@@ -180,33 +182,33 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
                 and the later ones stay saved.
         """
         not_ready_errors = {}
-        with self.spool.locked():
+        with self.send_queue.locked():
             for recipient in recipients:
                 try:
-                    self._upload_spooled_to(recipient)
+                    self._upload_queued_to(recipient)
                 except SyftPeerNotReadyError as e:
                     not_ready_errors[recipient] = e
         return not_ready_errors
 
-    def _upload_spooled_to(self, recipient: str) -> None:
+    def _upload_queued_to(self, recipient: str) -> None:
         """Send the saved messages to ``recipient``, one message in memory at
         a time."""
-        for msg_id in self.spool.msg_ids(recipient):
-            message = self.spool.read_message(recipient, msg_id)
+        for msg_id in self.send_queue.msg_ids(recipient):
+            message = self.send_queue.read_message(recipient, msg_id)
             # The DO refuses a copy that an upload stored before a stop.
             self.connection_router.watcher_send_proposed_file_changes_message(
                 recipient, message
             )
-            self.spool.remove(recipient, msg_id)
+            self.send_queue.remove(recipient, msg_id)
 
     def sync_up(self) -> None:
         """Upload every saved message. Warn for each recipient that cannot
         receive yet; its messages wait for the next sync."""
-        not_ready_errors = self._upload_spooled(self.spool.recipients())
+        not_ready_errors = self._upload_queued(self.send_queue.recipients())
         for recipient, error in not_ready_errors.items():
             warnings.warn(
                 f"Changes to {recipient} wait in "
-                f"{self.spool.recipient_folder(recipient)}: {error}"
+                f"{self.send_queue.recipient_folder(recipient)}: {error}"
             )
 
     def on_file_change(

@@ -1,9 +1,9 @@
-"""The messages a DS saves before it sends them.
+"""The send queue: the messages a DS saves before it sends them, in send order.
 
 A dropped connection or a stopped kernel must not lose a job submission. Each
-message to a peer is saved to ``<syftbox>/<me>/private/spool/<peer>/<msg_id>/``
-before any network call, and it is removed when the peer has it. ``private/``
-is never synced.
+message to a peer is saved to
+``<syftbox>/<me>/private/send_queue/<peer>/<msg_id>/`` before any network
+call, and it is removed when the peer has it. ``private/`` is never synced.
 
 An entry is a folder. ``entry.json`` holds the message without the content of
 its files, and each content is in its own file next to it, so only an upload
@@ -29,22 +29,22 @@ from syft.sync.peers.peer_store import PRIVATE_DIR_NAME
 from syft.sync.sync.caches.persisted_dict import locked_file, write_text_atomic
 from syft.sync.utils.versioned_file import read_versioned_json
 
-SPOOL_DIR_NAME = "spool"
-SPOOL_ENTRY_FILE_NAME = "entry.json"
+SEND_QUEUE_DIR_NAME = "send_queue"
+SEND_QUEUE_ENTRY_FILE_NAME = "entry.json"
 CONTENT_FILE_SUFFIX = ".content"
-# Format of a spool entry. Raise it when the layout of an entry changes. An
+# Format of a send queue entry. Raise it when the layout of an entry changes. An
 # entry of a later version is refused.
-SPOOL_ENTRY_VERSION = 2
+SEND_QUEUE_ENTRY_VERSION = 2
 
 ContentType = Literal["text", "binary"]
 
 
-def datasite_spool_path(syftbox_folder: Path | str, email: str) -> Path:
-    """Per-datasite spool: ``<syftbox_folder>/<email>/private/spool``."""
-    return Path(syftbox_folder) / email / PRIVATE_DIR_NAME / SPOOL_DIR_NAME
+def datasite_send_queue_path(syftbox_folder: Path | str, email: str) -> Path:
+    """Per-datasite send queue: ``<syftbox_folder>/<email>/private/send_queue``."""
+    return Path(syftbox_folder) / email / PRIVATE_DIR_NAME / SEND_QUEUE_DIR_NAME
 
 
-class SpoolEntry(BaseModel):
+class SendQueueEntry(BaseModel):
     """One saved message, without the content of its files."""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
@@ -57,14 +57,16 @@ class SpoolEntry(BaseModel):
     content_types: list[ContentType | None]
 
     @classmethod
-    def read(cls, path: Path) -> "SpoolEntry":
+    def read(cls, path: Path) -> "SendQueueEntry":
         """Read the entry at ``path``.
 
         Raises:
             ValueError: if a later client wrote the entry, or it has another
                 shape.
         """
-        return read_versioned_json(path, cls, SPOOL_ENTRY_VERSION, "spool entry")
+        return read_versioned_json(
+            path, cls, SEND_QUEUE_ENTRY_VERSION, "send queue entry"
+        )
 
 
 def _content_path(entry_folder: Path, index: int) -> Path:
@@ -83,7 +85,7 @@ def _read_content(path: Path, content_type: ContentType | None) -> str | bytes |
     return data.decode("utf-8") if content_type == "text" else data
 
 
-class Spool:
+class SendQueue:
     """The saved messages of one DS, in one folder per recipient. An entry is
     a folder named after the ``msg_id`` its message gets."""
 
@@ -104,17 +106,19 @@ class Spool:
         changes_without_content = [
             change.model_copy(update={"content": None}) for change in changes
         ]
-        entry = SpoolEntry(
-            version=SPOOL_ENTRY_VERSION,
+        entry = SendQueueEntry(
+            version=SEND_QUEUE_ENTRY_VERSION,
             message=message.model_copy(
                 update={"proposed_file_changes": changes_without_content}
             ),
             content_types=[change.content_type for change in changes],
         )
-        write_text_atomic(entry_folder / SPOOL_ENTRY_FILE_NAME, entry.model_dump_json())
+        write_text_atomic(
+            entry_folder / SEND_QUEUE_ENTRY_FILE_NAME, entry.model_dump_json()
+        )
 
     def recipients(self) -> list[str]:
-        """The recipients that have a folder in the spool."""
+        """The recipients that have a folder in the send queue."""
         if not self.folder.is_dir():
             return []
         return sorted(p.name for p in self.folder.iterdir() if p.is_dir())
@@ -124,20 +128,20 @@ class Spool:
         msg_ids = [
             p.name
             for p in self.recipient_folder(recipient).iterdir()
-            if (p / SPOOL_ENTRY_FILE_NAME).is_file()
+            if (p / SEND_QUEUE_ENTRY_FILE_NAME).is_file()
         ]
         return sorted(
             msg_ids, key=lambda m: MessageFileName.from_string(m).submitted_timestamp
         )
 
-    def read_entry(self, recipient: str, msg_id: str) -> SpoolEntry:
+    def read_entry(self, recipient: str, msg_id: str) -> SendQueueEntry:
         """The saved message ``msg_id`` to ``recipient``, without its content.
 
         Raises:
             ValueError: if the entry is of a later version, or has another shape.
         """
-        return SpoolEntry.read(
-            self._entry_folder(recipient, msg_id) / SPOOL_ENTRY_FILE_NAME
+        return SendQueueEntry.read(
+            self._entry_folder(recipient, msg_id) / SEND_QUEUE_ENTRY_FILE_NAME
         )
 
     def read_message(self, recipient: str, msg_id: str) -> ProposedFileChangesMessage:
@@ -166,7 +170,7 @@ class Spool:
     def remove(self, recipient: str, msg_id: str) -> None:
         """Remove the saved message ``msg_id`` to ``recipient``."""
         entry_folder = self._entry_folder(recipient, msg_id)
-        (entry_folder / SPOOL_ENTRY_FILE_NAME).unlink()
+        (entry_folder / SEND_QUEUE_ENTRY_FILE_NAME).unlink()
         for content_path in entry_folder.iterdir():
             content_path.unlink()
         entry_folder.rmdir()
