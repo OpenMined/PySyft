@@ -1,5 +1,5 @@
 version = 1
-revision = 5
+revision = 3
 requires-python = ">=3.11"
 resolution-markers = [
     "python_full_version >= '3.15' and sys_platform == 'win32'",
@@ -4349,7 +4349,6 @@ wheels = [
 [[package]]
 name = "syft"
 source = { editable = "." }
-default-groups = ["dev", "test"]
 dependencies = [
     { name = "google-api-python-client" },
     { name = "google-auth", extra = ["pyjwt"] },
@@ -4444,7 +4443,7 @@ test = [
 
 [[package]]
 name = "syft-bg"
-version = "0.3.13"
+version = "0.3.14"
 source = { editable = "packages/syft-bg" }
 dependencies = [
     { name = "click" },
@@ -4492,7 +4491,7 @@ wheels = [
 
 [[package]]
 name = "syft-dataset"
-version = "0.1.22"
+version = "0.1.23"
 source = { editable = "packages/syft-datasets" }
 dependencies = [
     { name = "pyyaml" },
@@ -4519,7 +4518,7 @@ dev = [{ name = "ipykernel", specifier = ">=7.1.0" }]
 
 [[package]]
 name = "syft-enclave"
-version = "0.1.2"
+version = "0.1.3"
 source = { editable = "packages/syft-enclave" }
 dependencies = [
     { name = "google-auth", extra = ["pyjwt"] },
@@ -4551,7 +4550,7 @@ provides-extras = ["tinfoil"]
 
 [[package]]
 name = "syft-job"
-version = "0.1.41"
+version = "0.1.42"
 source = { editable = "packages/syft-job" }
 dependencies = [
     { name = "pandas" },
@@ -4574,7 +4573,7 @@ requires-dist = [
 
 [[package]]
 name = "syft-migration"
-version = "0.1.2"
+version = "0.1.3"
 source = { editable = "packages/syft-migration" }
 dependencies = [
     { name = "pydantic" },
@@ -4608,7 +4607,7 @@ requires-dist = [
 
 [[package]]
 name = "syft-permissions"
-version = "0.1.16"
+version = "0.1.17"
 source = { editable = "packages/syft-permissions" }
 dependencies = [
     { name = "pydantic" },
@@ -4625,7 +4624,7 @@ requires-dist = [
 
 [[package]]
 name = "syft-perms"
-version = "0.1.16"
+version = "0.1.17"
 source = { editable = "packages/syft-perms" }
 dependencies = [
     { name = "syft-permissions" },
@@ -4636,7 +4635,7 @@ requires-dist = [{ name = "syft-permissions", editable = "packages/syft-permissi
 
 [[package]]
 name = "syft-rds"
-version = "0.6.2"
+version = "0.6.3"
 source = { editable = "packages/syft-rds" }
 dependencies = [
     { name = "syft" },
@@ -4653,7 +4652,7 @@ requires-dist = [
 
 [[package]]
 name = "syft-restrict"
-version = "0.1.1"
+version = "0.1.2"
 source = { editable = "packages/syft-restrict" }
 dependencies = [
     { name = "pydantic" },
