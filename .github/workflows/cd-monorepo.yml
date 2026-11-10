@@ -253,6 +253,9 @@ jobs:
           git diff --cached --quiet || \
             git commit -m "Freeze syft v${{ env.VERSION }} release artifacts"
 
+      - name: Build
+        run: just build
+
       - name: Upload to PyPI
         env:
           TWINE_USERNAME: __token__
