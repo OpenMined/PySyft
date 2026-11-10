@@ -34,7 +34,7 @@ dependencies = [
     "syft-perms==0.1.16",
     "syft-migration==0.1.2",
     "syft-crypto-python>=0.1.2b2",
-    "syft-dataset==0.1.21",
+    "syft-dataset==0.1.22",
 ]
 
 [project.optional-dependencies]
