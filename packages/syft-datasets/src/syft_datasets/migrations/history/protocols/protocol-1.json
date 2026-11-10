@@ -4,12 +4,8 @@
     "version": "1",
     "min_supported_version": "0",
     "supported_versions": {
-      "PrivateDatasetConfig": [
-        "1"
-      ],
-      "Dataset": [
-        "1"
-      ]
+      "PrivateDatasetConfig": ["1"],
+      "Dataset": ["1"]
     },
     "current_object_schemas": {
       "PrivateDatasetConfig": {
@@ -36,10 +32,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "uid",
-          "data_dir"
-        ],
+        "required": ["uid", "data_dir"],
         "title": "PrivateDatasetConfigV1",
         "type": "object"
       },
@@ -143,11 +136,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "name",
-          "mock_url",
-          "private_url"
-        ],
+        "required": ["name", "mock_url", "private_url"],
         "title": "DatasetV1",
         "type": "object"
       }

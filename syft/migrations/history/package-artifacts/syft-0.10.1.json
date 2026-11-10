@@ -9,19 +9,10 @@
     "version": "1",
     "min_supported_version": "0",
     "supported_versions": {
-      "VersionInfo": [
-        "1",
-        "2"
-      ],
-      "PeerInfo": [
-        "1"
-      ],
-      "ProposedFileChangesMessage": [
-        "1"
-      ],
-      "FileChangeEventsMessage": [
-        "1"
-      ]
+      "VersionInfo": ["1", "2"],
+      "PeerInfo": ["1"],
+      "ProposedFileChangesMessage": ["1"],
+      "FileChangeEventsMessage": ["1"]
     },
     "current_object_schemas": {
       "VersionInfo": {
@@ -63,10 +54,7 @@
                 "type": "object"
               }
             },
-            "required": [
-              "protocol_name",
-              "version"
-            ],
+            "required": ["protocol_name", "version"],
             "title": "ProtocolSchema",
             "type": "object"
           }
@@ -154,10 +142,7 @@
         "$defs": {
           "EncryptionPolicy": {
             "description": "What a client asks of the encryption between it and a peer.\n\n- ``OPTIONAL``: encrypt only with a peer that requires it.\n- ``REQUIRED``: encrypt with every peer, and refuse plaintext.\n\nA pair encrypts when one or both sides require it.",
-            "enum": [
-              "optional",
-              "required"
-            ],
+            "enum": ["optional", "required"],
             "title": "EncryptionPolicy",
             "type": "string"
           },
@@ -198,10 +183,7 @@
                 "type": "object"
               }
             },
-            "required": [
-              "protocol_name",
-              "version"
-            ],
+            "required": ["protocol_name", "version"],
             "title": "ProtocolSchema",
             "type": "object"
           },
@@ -305,10 +287,7 @@
             "$ref": "#/$defs/EncryptionPolicy"
           }
         },
-        "required": [
-          "version_info",
-          "encryption_policy"
-        ],
+        "required": ["version_info", "encryption_policy"],
         "title": "PeerInfoV1",
         "type": "object"
       },
@@ -394,10 +373,7 @@
                 "type": "boolean"
               }
             },
-            "required": [
-              "path_in_datasite",
-              "datasite_email"
-            ],
+            "required": ["path_in_datasite", "datasite_email"],
             "title": "ProposedFileChangeV1",
             "type": "object"
           }
@@ -446,10 +422,7 @@
             "title": "Platform Id"
           }
         },
-        "required": [
-          "sender_email",
-          "proposed_file_changes"
-        ],
+        "required": ["sender_email", "proposed_file_changes"],
         "title": "ProposedFileChangesMessageV1",
         "type": "object"
       },
@@ -579,9 +552,7 @@
             "$ref": "#/$defs/FileChangeEventsMessageFileName"
           }
         },
-        "required": [
-          "events"
-        ],
+        "required": ["events"],
         "title": "FileChangeEventsMessageV1",
         "type": "object"
       }
