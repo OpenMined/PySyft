@@ -312,21 +312,33 @@ class DataSiteWatcherCache(BaseModel):
         peer with saved state. A Colab runtime reset loses the local copy.
 
         The state of a peer is saved under its ``_peer_key``, so two spellings
-        of one email share it."""
+        of one email share it. The checkpoint goes first, because the rolling
+        state holds the changes after it."""
         for peer_key in self.connection_router.watcher_peers_with_saved_state():
-            checkpoint = self.connection_router.watcher_load_checkpoint(peer_key)
-            if checkpoint is not None:
-                for file in checkpoint.files:
-                    self._restore_file(checkpoint.email, file)
-            rolling_state = self.connection_router.watcher_load_rolling_state(peer_key)
-            if rolling_state is not None:
-                for event in rolling_state.events:
-                    self._apply_event(event)
-                for msg_id in rolling_state.received_msg_ids:
-                    self._record_received(peer_key, msg_id)
-                self.rolling_state_per_peer[peer_key] = rolling_state.model_copy(
-                    update={"received_msg_ids": []}
-                )
+            self._restore_checkpoint(peer_key)
+            self._restore_rolling_state(peer_key)
+
+    def _restore_checkpoint(self, peer_key: str) -> None:
+        """Write the files of the saved checkpoint of ``peer_key``, if any."""
+        checkpoint = self.connection_router.watcher_load_checkpoint(peer_key)
+        if checkpoint is None:
+            return
+        for file in checkpoint.files:
+            self._restore_file(checkpoint.email, file)
+
+    def _restore_rolling_state(self, peer_key: str) -> None:
+        """Apply the changes of the saved rolling state of ``peer_key``, if any,
+        and record the message ids it received."""
+        rolling_state = self.connection_router.watcher_load_rolling_state(peer_key)
+        if rolling_state is None:
+            return
+        for event in rolling_state.events:
+            self._apply_event(event)
+        for msg_id in rolling_state.received_msg_ids:
+            self._record_received(peer_key, msg_id)
+        self.rolling_state_per_peer[peer_key] = rolling_state.model_copy(
+            update={"received_msg_ids": []}
+        )
 
     def _restore_file(self, datasite_email: str, file: CheckpointFile) -> None:
         path_in_syftbox = Path(datasite_email) / file.path
