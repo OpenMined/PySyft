@@ -2,6 +2,7 @@
 stopped kernel does not lose a submission."""
 
 import json
+from pathlib import Path
 
 import httplib2
 import pytest
@@ -9,9 +10,19 @@ import pytest
 from syft.sync.connections.drive.drive_p2p import DriveP2PConnection
 from syft.sync.connections.exceptions import ConnectionUnavailableError
 from syft.sync.connections.types import MessageKind
+from syft.sync.messages.proposed_filechange import (
+    ProposedFileChange,
+    ProposedFileChangesMessage,
+)
 from syft.sync.peers.peer import PeerState
 from syft.sync.syftbox_manager import SyftboxManager, SyftboxManagerConfig
-from syft.sync.sync.spool import SPOOL_ENTRY_VERSION, Spool
+from syft.sync.sync.send_queue import (
+    CONTENT_FILE_SUFFIX,
+    SEND_QUEUE_ENTRY_FILE_NAME,
+    SEND_QUEUE_ENTRY_VERSION,
+    SendQueue,
+)
+from syft.sync.utils.syftbox_utils import get_event_hash_from_content
 from tests.unit.test_persisted_cache import _pair_with_unsent_do_file
 from tests.unit.test_sync_manager import path_for_job
 from tests.unit.utils import grant_job_inbox_access, mock_message
@@ -54,12 +65,13 @@ def _pair_with_job_inbox(encryption: bool = False):
     return ds_manager, do_manager, path_for_job(do_manager.email, ds_manager.email)
 
 
-def _save_later_version_entry(spool: Spool, recipient: str) -> int:
+def _save_later_version_entry(send_queue: SendQueue, recipient: str) -> int:
     """Save a message to ``recipient`` as a later client writes it, and return
     that later version."""
-    spool.add(recipient, mock_message())
-    entry_path = next(spool.recipient_folder(recipient).iterdir())
-    later_version = SPOOL_ENTRY_VERSION + 1
+    send_queue.add(recipient, mock_message())
+    entry_folder = next(send_queue.recipient_folder(recipient).iterdir())
+    entry_path = entry_folder / SEND_QUEUE_ENTRY_FILE_NAME
+    later_version = SEND_QUEUE_ENTRY_VERSION + 1
     data = json.loads(entry_path.read_text())
     data.update(version=later_version, new_setting=True)
     entry_path.write_text(json.dumps(data))
@@ -78,25 +90,50 @@ def test_failed_upload_sent_by_sync_after_restart(monkeypatch):
     assert "job" in _accepted_contents(do_manager)
 
 
-def test_crash_after_upload_sends_once(monkeypatch):
+def test_crash_after_upload_applies_once(monkeypatch):
     ds_manager, do_manager, file_path = _pair_with_job_inbox()
 
     def stop(self, recipient, msg_id):
         raise _Stopped()
 
     with monkeypatch.context() as m:
-        m.setattr(Spool, "remove", stop)
+        m.setattr(SendQueue, "remove", stop)
         with pytest.raises(_Stopped):
             ds_manager._send_file_change(file_path, "job")
-    # The DO applies the message and moves it to its archive.
     do_manager.sync()
 
+    # The restarted DS uploads the saved message again. The DO refuses the
+    # copy: its old hash is no longer the hash of the file.
     _restart(ds_manager).sync()
+    with pytest.warns(UserWarning, match="Archived proposed change"):
+        do_manager.sync()
+    assert _accepted_contents(do_manager).count("job") == 1
+
+
+def test_job_files_saved_and_sent_as_one_message(monkeypatch):
+    ds_manager, do_manager, _ = _pair_with_job_inbox()
+    job_dir = Path(ds_manager.syftbox_folder) / path_for_job(
+        do_manager.email, ds_manager.email, "my.job"
+    )
+    job_dir.mkdir(parents=True)
+    for name in ("run.sh", "main.py", "config.yaml"):
+        (job_dir / name).write_text(name)
+
+    with monkeypatch.context() as m:
+        _drop_connection(m)
+        with pytest.raises(ConnectionUnavailableError):
+            ds_manager.push_job_files(job_dir)
+    syncer = ds_manager.datasite_watcher_syncer
+    assert syncer is not None
+    [msg_id] = syncer.send_queue.msg_ids(do_manager.email)
+    entry = syncer.send_queue.read_entry(do_manager.email, msg_id)
+    assert len(entry.message.proposed_file_changes) == 3
+
+    ds_manager.sync()
     inbox = do_manager._connection_router.connections.p2p_con.receive(
         ds_manager.email, MessageKind.PROPOSED_CHANGES
     )
-    assert inbox == []
-    assert _accepted_contents(do_manager).count("job") == 1
+    assert len(inbox) == 1
 
 
 def test_edits_saved_offline_apply_in_order(monkeypatch):
@@ -126,6 +163,25 @@ def test_edit_after_restart_builds_on_saved_edit(monkeypatch):
     assert "second" in _accepted_contents(do_manager)
 
 
+def test_restart_records_saved_hashes_without_content(monkeypatch):
+    ds_manager, _, file_path = _pair_with_job_inbox()
+    with monkeypatch.context() as m:
+        _drop_connection(m)
+        with pytest.raises(ConnectionUnavailableError):
+            ds_manager._send_file_change(file_path, "job")
+    syncer = ds_manager.datasite_watcher_syncer
+    assert syncer is not None
+    content_paths = list(syncer.send_queue.folder.rglob(f"*{CONTENT_FILE_SUFFIX}"))
+    assert content_paths
+    for path in content_paths:
+        path.unlink()
+
+    restarted = _restart(ds_manager).datasite_watcher_syncer
+    assert restarted is not None
+    hashes = restarted.datasite_watcher_cache.file_hashes
+    assert hashes[Path(file_path)] == get_event_hash_from_content("job")
+
+
 def test_saved_message_encrypted_with_peer_key_at_upload(monkeypatch):
     ds_manager, do_manager, file_path = _pair_with_job_inbox(encryption=True)
     ds_manager.load_peers()
@@ -147,18 +203,48 @@ def test_saved_message_encrypted_with_peer_key_at_upload(monkeypatch):
     assert "job" in _accepted_contents(do_manager)
 
 
-def test_spool_entry_of_later_version_refused(tmp_path):
-    spool = Spool(tmp_path)
-    later_version = _save_later_version_entry(spool, "do@example.com")
+def test_saved_message_read_back_with_text_and_binary_content(tmp_path):
+    send_queue = SendQueue(tmp_path)
+    message = ProposedFileChangesMessage(
+        sender_email="ds@example.com",
+        proposed_file_changes=[
+            ProposedFileChange(
+                datasite_email="do@example.com",
+                path_in_datasite=Path("a.txt"),
+                content="é",
+            ),
+            ProposedFileChange(
+                datasite_email="do@example.com",
+                path_in_datasite=Path("b.bin"),
+                content=b"\x00\xff",
+            ),
+            ProposedFileChange(
+                datasite_email="do@example.com",
+                path_in_datasite=Path("c.txt"),
+                old_hash="old",
+                is_deleted=True,
+            ),
+        ],
+    )
+    send_queue.add("do@example.com", message)
+
+    [msg_id] = send_queue.msg_ids("do@example.com")
+    assert send_queue.read_message("do@example.com", msg_id) == message
+
+
+def test_send_queue_entry_of_later_version_refused(tmp_path):
+    send_queue = SendQueue(tmp_path)
+    later_version = _save_later_version_entry(send_queue, "do@example.com")
+    [msg_id] = send_queue.msg_ids("do@example.com")
 
     with pytest.raises(ValueError, match=f"version {later_version}"):
-        spool.pending_messages("do@example.com")
+        send_queue.read_entry("do@example.com", msg_id)
 
 
 def test_stuck_message_does_not_block_pull():
     ds_manager, do_manager = _pair_with_unsent_do_file()
-    spool = ds_manager.datasite_watcher_syncer.spool
-    _save_later_version_entry(spool, do_manager.email)
+    send_queue = ds_manager.datasite_watcher_syncer.send_queue
+    _save_later_version_entry(send_queue, do_manager.email)
     do_manager.sync(auto_checkpoint=False)
 
     with pytest.raises(ValueError, match="version"):

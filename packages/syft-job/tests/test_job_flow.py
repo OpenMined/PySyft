@@ -317,6 +317,38 @@ def test_skipping_one_job_spares_its_same_named_sibling(tmp_path: Path):
     assert final[DS2_EMAIL] == "done", "its same-named sibling must still run"
 
 
+def test_run_job_runs_only_that_job(tmp_path: Path):
+    """run_job runs the named job; another approved job stays approved."""
+    syftbox = tmp_path / "SyftBox"
+    syftbox.mkdir()
+    code_file = tmp_path / "main.py"
+    code_file.write_text(MAIN_PY)
+
+    do_config = SyftJobConfig(syftbox_folder=syftbox, current_user_email=DO_EMAIL)
+    do_client = JobClient(config=do_config)
+    do_runner = SyftJobRunner(config=do_config)
+    ds_client = JobClient(
+        config=SyftJobConfig(syftbox_folder=syftbox, current_user_email=DS_EMAIL)
+    )
+    for name in ("run.job", "wait.job", "pending.job"):
+        ds_client.submit_python_job(
+            user=DO_EMAIL, code_path=str(code_file), job_name=name
+        )
+    do_client.jobs["run.job"].approve()
+    do_client.jobs["wait.job"].approve()
+
+    do_runner.run_job("run.job", DS_EMAIL, stream_output=False, timeout=60)
+
+    final = {job.name: job.status for job in do_client.jobs}
+    assert final == {
+        "run.job": "done",
+        "wait.job": "approved",
+        "pending.job": "pending",
+    }
+    with pytest.raises(ValueError, match="is pending, not approved"):
+        do_runner.run_job("pending.job", DS_EMAIL)
+
+
 def test_runner_ignores_approved_jobs_on_another_datasite(tmp_path: Path):
     """`jobs` spans every datasite in the folder; the runner runs only its own.
 

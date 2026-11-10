@@ -603,9 +603,7 @@ class SyftEnclaveClient:
     def _push_approval_file(self, approval_file: Path) -> None:
         """Push a changed approval file to the enclave."""
         relative_path = approval_file.relative_to(self._rds.syftbox_folder)
-        self._rds.sync_engine.datasite_watcher_syncer.on_file_change(
-            relative_path, process_now=True
-        )
+        self._rds.sync_engine.datasite_watcher_syncer.on_file_change(relative_path)
 
     def _require_enclave_job(self, job: JobInfo) -> EnclaveJobInfo:
         """Wrap ``job`` like ``self.jobs`` does, and refuse a job of another kind."""
