@@ -30,7 +30,7 @@ dependencies = [
     "rich>=13.0.0",
     "pydantic-settings>=2.11.0",
     "portalocker>=2.8.0",
-    "syft-permissions==0.1.15",
+    "syft-permissions==0.1.16",
     "syft-perms==0.1.15",
     "syft-migration==0.1.1",
     "syft-crypto-python>=0.1.2b2",
