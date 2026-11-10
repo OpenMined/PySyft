@@ -286,7 +286,7 @@ class DataSiteWatcherCache(BaseModel):
                 continue
             self._apply_event(event)
             if self.saves_watcher_state:
-                self._rolling_state(peer_email).add_event(event)
+                self._rolling_state_local(peer_email).add_event(event)
 
     def _write_denied(self, event: FileChangeEvent) -> bool:
         """Whether ``pre_write_filter`` refuses ``event``."""
@@ -350,7 +350,7 @@ class DataSiteWatcherCache(BaseModel):
         ``DEFAULT_CHECKPOINT_EVENT_THRESHOLD`` paths, fold it into the checkpoint."""
         self._save_rolling_state(peer_email)
         if (
-            self._rolling_state(peer_email).event_count
+            self._rolling_state_local(peer_email).event_count
             >= DEFAULT_CHECKPOINT_EVENT_THRESHOLD
         ):
             self._fold_into_checkpoint(peer_email)
@@ -359,7 +359,7 @@ class DataSiteWatcherCache(BaseModel):
         """Merge the changes since the checkpoint into it, then save an empty
         rolling state. A deleted path leaves the checkpoint."""
         key = _peer_key(peer_email)
-        rolling_state = self._rolling_state(peer_email)
+        rolling_state = self._rolling_state_local(peer_email)
         checkpoint = self.connection_router.watcher_load_checkpoint(key)
         if checkpoint is None:
             # Live events write under the email as the DO's events spell it, so
@@ -377,13 +377,14 @@ class DataSiteWatcherCache(BaseModel):
     def _save_rolling_state(self, peer_email: str) -> None:
         key = _peer_key(peer_email)
         received_msg_ids = sorted(self.received_msg_ids_per_peer[key])
-        saved = self._rolling_state(peer_email).model_copy(
+        saved = self._rolling_state_local(peer_email).model_copy(
             update={"received_msg_ids": received_msg_ids}
         )
         self.connection_router.watcher_save_rolling_state(key, saved)
 
-    def _rolling_state(self, peer_email: str) -> RollingState:
-        """The changes from ``peer_email`` since its checkpoint."""
+    def _rolling_state_local(self, peer_email: str) -> RollingState:
+        """The changes from ``peer_email`` since its checkpoint, as held in
+        memory. ``_save_rolling_state`` writes them to the DS's storage."""
         key = _peer_key(peer_email)
         if key not in self.rolling_state_per_peer:
             # 0.0 means no checkpoint yet, as for the DO's own rolling state.
