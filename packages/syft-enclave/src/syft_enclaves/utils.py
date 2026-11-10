@@ -25,6 +25,7 @@ def create_configs(
         has_ds_role=True,
         use_in_memory_cache=use_in_memory_cache,
         persist_owner_state=enclave_persist_owner_state,
+        persist_watcher_state=enclave_persist_owner_state,
         encryption_policy=enclave_policy,
     )
     do1_config = SyftRDSClientConfig._base_config_for_testing(

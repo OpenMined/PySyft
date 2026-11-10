@@ -109,31 +109,79 @@ def test_file_refused_by_write_filter_not_restored(tmp_path):
     assert not (restarted.syftbox_folder / refused.path_in_syftbox).exists()
 
 
-def test_restart_with_new_key_restores_files_and_cursor(tmp_path):
-    """An enclave gets a new key at each boot. Its watcher state stays
-    readable, because it is not encrypted."""
+def _encrypted_pair() -> tuple[SyftboxManager, SyftboxManager]:
+    """A DS and a DO on disk that require encryption."""
     ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
         use_in_memory_cache=False, encryption=True
     )
-    event = get_mock_event(f"{do_manager.email}/result.txt")
-    _send_to_ds(do_manager, ds_manager, [event])
-    ds_manager.sync()
-    config = SyftboxManagerConfig._base_config_for_testing(
+    return ds_manager, do_manager
+
+
+def _rebooted_config(
+    ds_manager: SyftboxManager, tmp_path, persist_watcher_state: bool = True
+) -> SyftboxManagerConfig:
+    """The config of ``ds_manager`` on an empty folder, so it gets a new key."""
+    return SyftboxManagerConfig._base_config_for_testing(
         email=ds_manager.email,
         syftbox_folder=tmp_path / "SyftBox",
         has_ds_role=True,
         use_in_memory_cache=False,
+        persist_watcher_state=persist_watcher_state,
         encryption_policy=EncryptionPolicy.REQUIRED,
     )
 
-    rebooted = SyftboxManager.from_config(
+
+def test_restart_with_new_key_names_key_file(tmp_path):
+    ds_manager, do_manager = _encrypted_pair()
+    _send_to_ds(do_manager, ds_manager, [get_mock_event(f"{do_manager.email}/a.txt")])
+    ds_manager.sync()
+
+    with pytest.raises(ValueError, match="key_file"):
+        SyftboxManager.from_config(
+            _rebooted_config(ds_manager, tmp_path),
+            ds_manager._connection_router.connections,
+        )
+
+
+def test_watcher_state_off_neither_saved_nor_restored(tmp_path):
+    """An enclave keeps no watcher state: it saves none, and a boot with a new
+    key reads none, even where an earlier run saved some."""
+    ds_manager, do_manager = _encrypted_pair()
+    router = ds_manager._connection_router
+    _send_to_ds(do_manager, ds_manager, [get_mock_event(f"{do_manager.email}/a.txt")])
+    ds_manager.sync()
+    saved = router.watcher_load_rolling_state(do_manager.email.casefold())
+    assert saved is not None
+
+    _watcher_cache(ds_manager).persist_watcher_state = False
+    _send_to_ds(do_manager, ds_manager, [get_mock_event(f"{do_manager.email}/b.txt")])
+    ds_manager.sync()
+    assert router.watcher_load_rolling_state(do_manager.email.casefold()) == saved
+
+    SyftboxManager.from_config(
+        _rebooted_config(ds_manager, tmp_path, persist_watcher_state=False),
+        router.connections,
+    )
+
+
+def test_in_memory_cache_restores_watcher_state():
+    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection()
+    event = get_mock_event(f"{do_manager.email}/a.txt")
+    _send_to_ds(do_manager, ds_manager, [event])
+    ds_manager.sync()
+    config = SyftboxManagerConfig._base_config_for_testing(
+        email=ds_manager.email, has_ds_role=True
+    )
+
+    restarted = SyftboxManager.from_config(
         config, ds_manager._connection_router.connections
     )
 
-    restored = rebooted.syftbox_folder / event.path_in_syftbox
-    assert restored.read_text() == event.content
-    cursor = _watcher_cache(ds_manager).last_msg_id_per_peer
-    assert _watcher_cache(rebooted).last_msg_id_per_peer == cursor
+    restored = _watcher_cache(restarted)
+    assert restored.file_hashes[event.path_in_syftbox] == event.new_hash
+    assert (
+        restored.last_msg_id_per_peer == _watcher_cache(ds_manager).last_msg_id_per_peer
+    )
 
 
 def test_binary_file_restored_from_checkpoint(tmp_path, monkeypatch):

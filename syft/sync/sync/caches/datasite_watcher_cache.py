@@ -74,6 +74,10 @@ SECONDS_BEFORE_SYNCING_DOWN = 0
 class DataSiteWatcherCacheConfig(BaseModel):
     email: str = ""
     use_in_memory_cache: bool = True
+    # Keep the state received from each DO in the DS's storage, and restore it
+    # at startup. Off for a DS that can never restore it, as an enclave with
+    # a new key at each boot.
+    persist_watcher_state: bool = True
     syftbox_folder: Path | None = None
     # Collections to sync down (prefix + local subpath per collection type)
     collection_specs: list[CollectionSyncSpec] = []
@@ -102,7 +106,7 @@ class DataSiteWatcherCache(BaseModel):
     # late messages, and skips these.
     received_msg_ids_per_peer: Dict[str, Set[str]] = {}
     # Whether the state received from each peer is saved in the DS's storage.
-    saves_watcher_state: bool
+    persist_watcher_state: bool
     # The changes from each peer since its checkpoint, keyed by ``_peer_key``.
     # The received ids stay in ``received_msg_ids_per_peer``; a saved copy
     # carries them.
@@ -126,15 +130,14 @@ class DataSiteWatcherCache(BaseModel):
         once and passes it in next to the config (see
         ``SyftboxManager.from_config``)."""
         if config.use_in_memory_cache:
-            res = cls(
+            cache = cls(
                 events_connection=InMemoryCacheFileConnection[FileChangeEvent](),
                 file_connection=InMemoryCacheFileConnection[str](),
                 connection_router=connection_router,
                 syftbox_folder=config.syftbox_folder,
                 collection_specs=config.collection_specs,
-                saves_watcher_state=False,
+                persist_watcher_state=config.persist_watcher_state,
             )
-            return res
         else:
             if config.syftbox_folder is None:
                 raise ValueError("syftbox_folder is required for non-in-memory cache")
@@ -144,11 +147,12 @@ class DataSiteWatcherCache(BaseModel):
                 connection_router=connection_router,
                 syftbox_folder=config.syftbox_folder,
                 collection_specs=config.collection_specs,
-                saves_watcher_state=True,
+                persist_watcher_state=config.persist_watcher_state,
             )
             cache._load_collection_hashes_from_disk()
+        if cache.persist_watcher_state:
             cache._restore_watcher_state()
-            return cache
+        return cache
 
     def _load_collection_hashes_from_disk(self):
         """Scan local collection directories and compute hashes to populate collection_hashes."""
@@ -234,7 +238,7 @@ class DataSiteWatcherCache(BaseModel):
                 self.apply_event_message(event_message, peer_email)
                 event_count += len(event_message.events)
             self._record_received(peer_email, raw.msg_id)
-        if received and self.saves_watcher_state:
+        if received and self.persist_watcher_state:
             self._save_watcher_state(peer_email)
         self.connection_router.mark_all_processed([raw for raw, _ in received])
 
@@ -271,7 +275,7 @@ class DataSiteWatcherCache(BaseModel):
             if self._write_denied(event):
                 continue
             self._apply_event(event)
-            if self.saves_watcher_state:
+            if self.persist_watcher_state:
                 self._rolling_state_local(peer_email).add_event(event)
 
     def _write_denied(self, event: FileChangeEvent) -> bool:
