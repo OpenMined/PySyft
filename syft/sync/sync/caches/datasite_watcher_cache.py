@@ -51,33 +51,20 @@ def _sent_at(msg_id: str) -> float:
     return FileChangeEventsMessageFileName.from_string(msg_id).timestamp
 
 
-def _is_complete(event: FileChangeEvent) -> bool:
-    """Whether ``event`` is a delete, or has the content and the hash of its file."""
-    return event.is_deleted or (
-        event.content is not None and event.new_hash is not None
-    )
-
-
-def _accepted_events(
+def _events_within_peer_datasite(
     events: List[FileChangeEvent], peer_email: str
 ) -> List[FileChangeEvent]:
-    """The events of ``events`` that target ``peer_email``'s datasite and are
-    complete; log the rest."""
+    """The events of ``events`` that target ``peer_email``'s datasite; log the rest."""
     accepted = []
     for event in events:
-        if not _is_within_peer_datasite(event, peer_email):
+        if _is_within_peer_datasite(event, peer_email):
+            accepted.append(event)
+        else:
             logger.warning(
                 f"Dropping event from {peer_email} aimed at "
                 f"{event.path_in_syftbox}: a peer may only change files "
                 "under its own datasite"
             )
-        elif not _is_complete(event):
-            logger.warning(
-                f"Dropping event from {peer_email} for {event.path_in_syftbox}: "
-                "it changes the file but has no content or no hash"
-            )
-        else:
-            accepted.append(event)
     return accepted
 
 
@@ -272,13 +259,12 @@ class DataSiteWatcherCache(BaseModel):
         ``path_in_datasite``), and both fields come from the peer. A peer may
         only change files under its own datasite, mirrored locally at
         ``<syftbox>/<peer_email>/``, so an event aimed anywhere else is dropped
-        before it reaches the local file connection. A change without its
-        content or its hash is dropped too.
+        before it reaches the local file connection.
 
         The record of the message and the saved state of ``peer_email`` hold
         only the accepted events, so a restore never writes a dropped event.
         """
-        accepted = _accepted_events(event_message.events, peer_email)
+        accepted = _events_within_peer_datasite(event_message.events, peer_email)
         saved = event_message.model_copy(update={"events": accepted})
         self.events_connection.write_file(saved.message_filepath.as_string(), saved)
         for event in accepted:

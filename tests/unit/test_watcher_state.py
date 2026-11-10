@@ -1,11 +1,16 @@
+import json
 import time
 import uuid
 
+import pytest
+
+from syft.sync.connections.types import MessageKind
 from syft.sync.encryption_policy import EncryptionPolicy
 from syft.sync.events.file_change_event import FileChangeEvent, FileChangeEventsMessage
 from syft.sync.syftbox_manager import SyftboxManager, SyftboxManagerConfig
 from syft.sync.sync.caches import datasite_watcher_cache
 from syft.sync.sync.caches.datasite_watcher_cache import DataSiteWatcherCache
+from syft.sync.utils.syftbox_utils import compress_data
 from tests.unit.utils import get_mock_event
 
 
@@ -175,21 +180,31 @@ def test_do_state_saved_under_email_without_case(monkeypatch):
     assert router.watcher_peers_with_saved_state() == ["owner@example.com"]
 
 
-def test_change_without_hash_or_content_dropped(monkeypatch):
-    monkeypatch.setattr(datasite_watcher_cache, "DEFAULT_CHECKPOINT_EVENT_THRESHOLD", 1)
+def test_message_with_change_without_content_skipped():
     ds_manager, do_manager = _pair_on_disk()
-    no_hash = get_mock_event(f"{do_manager.email}/no_hash.txt").model_copy(
-        update={"new_hash": None}
+    bad_message = FileChangeEventsMessage(
+        events=[
+            get_mock_event(f"{do_manager.email}/no_content.txt"),
+            get_mock_event(f"{do_manager.email}/beside_bad_change.txt"),
+        ]
     )
-    no_content = get_mock_event(f"{do_manager.email}/no_content.txt").model_copy(
-        update={"content": None}
+    # The model refuses a change without content, so only raw bytes carry one.
+    data = json.loads(bad_message.model_dump_json())
+    data["events"][0]["content"] = None
+    do_manager._connection_router.connections.p2p_con.send(
+        ds_manager.email,
+        bad_message.message_filepath.as_string(),
+        compress_data(json.dumps(data).encode("utf-8")),
+        MessageKind.FILE_EVENTS,
     )
-    good = get_mock_event(f"{do_manager.email}/good.txt")
-    _send_to_ds(do_manager, ds_manager, [no_hash, no_content, good])
+    _send_to_ds(
+        do_manager, ds_manager, [get_mock_event(f"{do_manager.email}/good.txt")]
+    )
 
-    ds_manager.sync()
+    with pytest.warns(UserWarning, match="Skipped unreadable outbox message"):
+        ds_manager.sync()
 
     datasite = ds_manager.syftbox_folder / do_manager.email
     assert (datasite / "good.txt").exists()
-    assert not (datasite / "no_hash.txt").exists()
+    assert not (datasite / "beside_bad_change.txt").exists()
     assert not (datasite / "no_content.txt").exists()

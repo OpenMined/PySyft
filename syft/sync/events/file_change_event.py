@@ -94,6 +94,20 @@ class FileChangeEventV1(BaseModel):
     def pre_init(cls, data: dict[str, Any]) -> dict[str, Any]:
         return decode_content(data)
 
+    @model_validator(mode="after")
+    def _check_change_has_content(self) -> "FileChangeEventV1":
+        """A change that is not a delete has the content and the hash of its file.
+
+        Raises:
+            ValueError: if it has no content or no hash.
+        """
+        if not self.is_deleted and (self.content is None or self.new_hash is None):
+            raise ValueError(
+                f"The change of {self.path_in_datasite} in {self.datasite_email} "
+                "is not a delete and has no content or no hash."
+            )
+        return self
+
     def eventfile_filepath(self) -> str:
         # TODO: remove
         return f"_{self.id}"
