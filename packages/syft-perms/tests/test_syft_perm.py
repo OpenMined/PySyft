@@ -658,3 +658,12 @@ def test_glob_character_in_path_grants_only_that_path(datasite):
     assert sp.can_read("jobs/*/stdout.txt", USER)
     assert not sp.can_read("jobs/secret/outputs/result.txt", USER)
     assert not sp.can_read("jobs/secret/stdout.txt", USER)
+
+
+def test_pattern_grant_reads_each_match_at_its_depth(sp):
+    sp.modifier.add_permission_for_pattern("jobs", "*/state.yaml", "read", USER)
+
+    assert sp.can_read("jobs/a/state.yaml", USER)
+    assert sp.can_read("jobs/b/state.yaml", USER)
+    assert not sp.can_read("jobs/a/stdout.txt", USER)
+    assert not sp.can_read("jobs/a/nested/state.yaml", USER)

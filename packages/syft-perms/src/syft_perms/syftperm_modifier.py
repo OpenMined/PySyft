@@ -56,6 +56,17 @@ class PermissionModifier:
         )
         self._remove_all_rules_from_yaml(target_yaml_path, target_pattern)
 
+    def add_permission_for_pattern(
+        self, folder_in_datasite: str, pattern: str, level: str, user: str
+    ) -> None:
+        """Add a user to the rule for glob ``pattern`` in the permission file of a folder.
+
+        Unlike add_permission_for_user, the pattern is not escaped, so it can match many paths.
+        """
+        datasite = self._perm_context.datasite
+        yaml_path = datasite / folder_in_datasite / PERMISSION_FILE_NAME
+        self._write_user_to_yaml(yaml_path, pattern, level, user)
+
     def copy_permissions(self, path_in_datasite: str, new_abs: Path) -> None:
         """Copy permission entries from old path to new location."""
         node = self._perm_context.service.tree.get_nearest_node(path_in_datasite)
