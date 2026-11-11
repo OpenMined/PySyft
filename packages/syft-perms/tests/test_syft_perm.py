@@ -667,3 +667,12 @@ def test_pattern_grant_reads_each_match_at_its_depth(sp):
     assert sp.can_read("jobs/b/state.yaml", USER)
     assert not sp.can_read("jobs/a/stdout.txt", USER)
     assert not sp.can_read("jobs/a/nested/state.yaml", USER)
+
+
+def test_remove_all_rules_updates_same_context(sp):
+    sp.open("jobs/a/stdout.txt").grant_read_access(USER)
+    assert sp.can_read("jobs/a/stdout.txt", USER)
+
+    sp.modifier.remove_all_rules("jobs/a/stdout.txt")
+
+    assert not sp.can_read("jobs/a/stdout.txt", USER)

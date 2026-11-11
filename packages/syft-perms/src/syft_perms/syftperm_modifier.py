@@ -149,7 +149,7 @@ class PermissionModifier:
             access_list.append(user)
 
         ruleset.save(yaml_path)
-        self._perm_context._reload()
+        self._update_tree(ruleset, yaml_path)
 
     def _remove_user_from_yaml(
         self, yaml_path: Path, pattern: str, level: str, user: str
@@ -166,7 +166,7 @@ class PermissionModifier:
             _remove_user_entry(access_list, user, yaml_path, rule.pattern, level)
 
         ruleset.save(yaml_path)
-        self._perm_context._reload()
+        self._update_tree(ruleset, yaml_path)
 
     def _remove_all_rules_from_yaml(self, yaml_path: Path, pattern: str) -> None:
         """Low-level: remove all rules with a pattern from a yaml file."""
@@ -175,6 +175,13 @@ class PermissionModifier:
         ruleset = RuleSet.load(yaml_path)
         ruleset.rules = [r for r in ruleset.rules if r.pattern != pattern]
         ruleset.save(yaml_path)
+        self._update_tree(ruleset, yaml_path)
+
+    def _update_tree(self, ruleset: RuleSet, yaml_path: Path) -> None:
+        """Replace the node of the saved file in the context's tree, instead of a full rescan."""
+        rel = str(yaml_path.parent.relative_to(self._perm_context.datasite))
+        ruleset.path = "" if rel == "." else rel
+        self._perm_context.service.add_ruleset(ruleset)
 
 
 def _find_or_create_rule(ruleset: RuleSet, pattern: str) -> Rule:
