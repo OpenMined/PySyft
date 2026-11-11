@@ -55,8 +55,9 @@ arguments and their defaults are read from `code/params.json`. See
 - `name` — name for the api (defaults to the job name)
 - `args` — the api's arguments, instead of reading them from `code/params.json`
 - `input_policy`, `output_policy` — scripts that run before and after each call
-- `read_permissions` — what a call's approval releases, e.g. `["logs"]`. Defaults to
-  `default_approved_read_permissions` in config.yaml
+- `read_permissions` — the run files a caller may read once its call ran, e.g.
+  `["stdout.txt"]`: any of `stdout.txt`, `stderr.txt`, `traceback_frames.json` and
+  `returncode.txt`. Defaults to `default_approved_read_permissions` in config.yaml
 
 ## Create an api from files
 

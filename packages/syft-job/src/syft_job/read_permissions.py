@@ -1,121 +1,115 @@
-"""The items of job data that a data owner can release to the submitter."""
+"""A job's read permissions: {file in the job's review folder: [emails]}.
+
+The submitter requests them at submission. Only the data owner approves them,
+and only within the request.
+"""
 
 from __future__ import annotations
 
 import warnings
 from collections.abc import Mapping
-from enum import Enum
-from typing import Iterable, Union
 
 from .traceback_capture import FRAMES_FILENAME
 
-# The data owner's grant for a job with one data owner. It sits in review/.
-APPROVED_READ_PERMISSIONS_FILENAME = "approved_read_permissions.json"
+ReadPermissions = dict[str, list[str]]
+
+# Where the submitter puts its request, in the headers of config.yaml.
+REQUESTED_READ_PERMISSIONS_HEADER = "requested_read_permissions"
+
+RETURN_CODE_FILENAME = "returncode.txt"
+# The files the job's code prints into.
+_PRINTED_FILES = ("stdout.txt", "stderr.txt")
+# What the runner shares when it is told to share the logs.
+LOG_FILES = (*_PRINTED_FILES, RETURN_CODE_FILENAME)
+# The run files a read permission can name. Outputs follow later.
+READABLE_RUN_FILES = (*_PRINTED_FILES, FRAMES_FILENAME, RETURN_CODE_FILENAME)
 
 
-class ReadPermissionItem(str, Enum):
-    """A class of job data that a party can release to the other parties.
+def check_read_permissions(value: object) -> ReadPermissions:
+    """Return ``value`` as read permissions, with each list sorted.
 
-    - ``TRACEBACK_FRAMES``: the file and the line of each frame, and the
-      exception type. Never the exception message.
-    - ``LOGS``: stdout and stderr, as the job wrote them.
-    - ``RETURN_CODE``: the exact exit code of the job.
+    Raises:
+        TypeError: If ``value`` is not a dict of file names to lists of emails.
+        ValueError: If a file is not in READABLE_RUN_FILES, or has no reader.
     """
-
-    TRACEBACK_FRAMES = "traceback_frames"
-    LOGS = "logs"
-    RETURN_CODE = "return_code"
-
-
-READ_PERMISSION_ITEMS = frozenset(item.value for item in ReadPermissionItem)
-
-# The staged files that each item covers.
-GATED_ARTIFACTS = {
-    ReadPermissionItem.LOGS.value: ("stdout.txt", "stderr.txt"),
-    ReadPermissionItem.TRACEBACK_FRAMES.value: (FRAMES_FILENAME,),
-    ReadPermissionItem.RETURN_CODE.value: ("returncode.txt",),
-}
-
-ReadPermissionsArg = Union[
-    str, ReadPermissionItem, Iterable[str], Mapping[str, bool], None
-]
-
-
-def normalize_read_permissions(items: ReadPermissionsArg) -> dict[str, bool]:
-    """Return the known items in ``items`` as a map. Unknown names are dropped.
-
-    A single name is accepted on its own, because iterating a string would
-    produce its characters and grant nothing.
-
-    A map is accepted in the form that this function returns, therefore a
-    caller can read the current grant, set an item to False, and send it back
-    to drop that item.
-    """
-    if not items:
+    if value is None:
         return {}
-    if isinstance(items, (str, ReadPermissionItem)):
-        items = [items]
-    elif isinstance(items, Mapping):
-        items = [name for name, allowed in items.items() if allowed]
-    names = {str(getattr(i, "value", i)) for i in items}
-    return {name: True for name in sorted(names & READ_PERMISSION_ITEMS)}
+    if not isinstance(value, Mapping):
+        raise TypeError(
+            "Read permissions are a dict of file names to lists of emails, "
+            f'e.g. {{"stdout.txt": ["ds@example.org"]}}, not {type(value).__name__}.'
+        )
+    return {file: _check_readers(file, emails) for file, emails in value.items()}
+
+
+def _check_readers(file: object, emails: object) -> list[str]:
+    if file not in READABLE_RUN_FILES:
+        raise ValueError(
+            f"{file!r} is not a file a read permission can name. "
+            f"Name one of: {', '.join(READABLE_RUN_FILES)}."
+        )
+    if not isinstance(emails, (list, tuple)) or not all(
+        isinstance(e, str) and e for e in emails
+    ):
+        raise TypeError(f"The readers of {file!r} must be a list of emails.")
+    if not emails:
+        raise ValueError(f"{file!r} has no reader.")
+    return sorted(set(emails))
+
+
+def valid_read_permissions(value: object) -> ReadPermissions:
+    """The valid entries of ``value``, without the rest. For data the submitter wrote."""
+    if not isinstance(value, Mapping):
+        return {}
+    valid = {}
+    for file, emails in value.items():
+        try:
+            valid[file] = _check_readers(file, emails)
+        except (TypeError, ValueError):
+            continue
+    return valid
 
 
 def restrict_to_request(
-    read_permissions: ReadPermissionsArg, requested: Iterable[str]
-) -> dict[str, bool]:
-    """Return the known items in ``read_permissions`` that ``requested`` also holds.
-
-    The submitter can edit its request after the approval. A grant that is
-    stored in this form cannot grow when the request grows.
-    """
-    requested = set(requested)
-    return {
-        name: True
-        for name in normalize_read_permissions(read_permissions)
-        if name in requested
-    }
+    approved: ReadPermissions, requested: ReadPermissions
+) -> ReadPermissions:
+    """Per file, the emails in ``approved`` that ``requested`` also names."""
+    restricted = {}
+    for file, emails in approved.items():
+        allowed = [email for email in emails if email in requested.get(file, [])]
+        if allowed:
+            restricted[file] = allowed
+    return restricted
 
 
 def check_approval_reason(reason: object) -> None:
-    """Refuse a reason that is not a string, such as a list of items.
+    """Refuse a reason that is not a string, such as a dict of read permissions.
 
-    ``approve(["logs"])`` would record the list as the reason and grant nothing.
+    ``approve({...})`` would record the dict as the reason and approve nothing.
     """
     if reason is not None and not isinstance(reason, str):
         raise TypeError(
             f"reason must be a string, not {type(reason).__name__}. "
-            f"Give the items as read_permissions=[...]."
+            f"Give the read permissions as read_permissions={{...}}."
         )
 
 
-def gated_names(granted: Iterable[str]) -> list[str]:
-    """The filenames that the approved read permission items cover."""
-    granted = set(granted)
-    return [
-        name
-        for item, names in GATED_ARTIFACTS.items()
-        if item in granted
-        for name in names
-    ]
-
-
 LOGS_WARNING = (
-    "This grant can send stdout and stderr to the submitter, as the job wrote "
-    "them. The job code can print private data into them. Grant 'logs' only "
-    "for code that you reviewed for this."
+    "This approval lets someone read stdout or stderr, as the job wrote them. "
+    "The job code can print private data into them. Approve them only for code "
+    "that you reviewed for this."
 )
 
 
-def warn_on_logs_release(
-    granted: Iterable[str], requested: Iterable[str], stacklevel: int = 3
-) -> None:
-    """Warn when a grant releases the logs. An unrequested item releases nothing."""
-    item = ReadPermissionItem.LOGS.value
-    if item in set(granted) and item in set(requested):
+def warn_on_logs_release(approved: ReadPermissions, stacklevel: int = 3) -> None:
+    """Warn when an approval lets anyone read stdout or stderr."""
+    if any(file in approved for file in _PRINTED_FILES):
         warnings.warn(LOGS_WARNING, UserWarning, stacklevel=stacklevel)
 
 
-def format_items(items: Iterable[str]) -> str:
-    """The item names for display, or "none"."""
-    return ", ".join(sorted(items)) or "none"
+def format_read_permissions(permissions: ReadPermissions) -> str:
+    """The permissions for display, e.g. "stdout.txt (a@x.org, b@x.org)", or "none"."""
+    parts = [
+        f"{file} ({', '.join(emails)})" for file, emails in sorted(permissions.items())
+    ]
+    return ", ".join(parts) or "none"

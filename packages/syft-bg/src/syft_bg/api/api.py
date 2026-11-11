@@ -408,9 +408,9 @@ def create_api(
               for what a policy gets and the conventions it follows.
         output_policy: A .py or .sh script that runs after each call's job
               and decides what is shared and with whom. See env.py too.
-        read_permissions: The items in ReadPermissionItem that a call's approval
-              releases, e.g. ["logs"]. Defaults to default_approved_read_permissions in
-              config.yaml.
+        read_permissions: The run files a caller may read once its call ran,
+              e.g. ["stdout.txt"], from syft_job's READABLE_RUN_FILES. Defaults
+              to default_approved_read_permissions in config.yaml.
 
     Returns:
         ApiResult with the created api's details.
@@ -477,7 +477,8 @@ def create_api_from_job(
         output_policy: A .py or .sh script that runs after each call's job.
               See create_api, and syft_job/policies/env.py for what a
               policy gets and the conventions it follows.
-        read_permissions: What a call's approval releases. See create_api.
+        read_permissions: The run files a caller may read, e.g. ["stdout.txt"].
+              See create_api.
 
     Returns:
         ApiResult with the created object details.

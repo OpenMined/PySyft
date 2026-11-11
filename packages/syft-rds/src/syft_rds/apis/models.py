@@ -13,9 +13,10 @@ import hashlib
 from pathlib import Path
 
 import yaml
-from typing import Optional
+from typing import Annotated, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import AfterValidator, BaseModel, Field
+from syft_job.read_permissions import READABLE_RUN_FILES
 
 from syft_rds.apis.args import ApiArg
 
@@ -29,6 +30,29 @@ JOB_CONFIG_PATH = "config.yaml"
 PARAMS_FILE_NAME = "params.json"
 POLICIES_DIR_NAME = "policies"
 POLICY_STATE_DIR_NAME = "policy_state"
+
+
+def check_readable_files(files: object) -> list[str]:
+    """Return ``files`` as a list of run files that a read permission can name.
+
+    Raises TypeError if ``files`` is not a list, ValueError on an unknown file.
+    """
+    if not isinstance(files, (list, tuple)):
+        raise TypeError(
+            'Give the readable files as a list, e.g. ["stdout.txt"], '
+            f"not {type(files).__name__}."
+        )
+    unknown = [f for f in files if f not in READABLE_RUN_FILES]
+    if unknown:
+        raise ValueError(
+            f"A read permission can't name {unknown}. "
+            f"Name files from: {', '.join(READABLE_RUN_FILES)}."
+        )
+    return list(files)
+
+
+# Run files from READABLE_RUN_FILES, e.g. ["stdout.txt"].
+ReadableFiles = Annotated[list[str], AfterValidator(check_readable_files)]
 
 
 class FileEntry(BaseModel):
@@ -59,8 +83,8 @@ class ApiDefinition(BaseModel):
     # Every file of each policy folder, e.g. "policies/input/run.sh", hashed.
     input_policy: list[FileEntry] = Field(default_factory=list)
     output_policy: list[FileEntry] = Field(default_factory=list)
-    # The items in ReadPermissionItem that a call's approval releases, e.g. "logs".
-    approved_read_permissions: list[str] = Field(default_factory=list)
+    # The run files a caller may read once its call ran, e.g. ["stdout.txt"].
+    approved_read_permissions: ReadableFiles = Field(default_factory=list)
 
     @property
     def call_files(self) -> list[str]:

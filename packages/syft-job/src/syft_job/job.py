@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import shutil
 import warnings
 from collections.abc import Mapping
@@ -11,13 +10,11 @@ from typing import TYPE_CHECKING, List, Optional
 from syft_permissions.spec.ruleset import PERMISSION_FILE_NAME
 
 from .read_permissions import (
-    APPROVED_READ_PERMISSIONS_FILENAME,
-    ReadPermissionItem,
-    ReadPermissionsArg,
+    LOG_FILES,
+    ReadPermissions,
     check_approval_reason,
-    format_items,
-    gated_names,
-    normalize_read_permissions,
+    check_read_permissions,
+    format_read_permissions,
     restrict_to_request,
     warn_on_logs_release,
 )
@@ -37,11 +34,6 @@ from .policies import (
     PolicyResolutionError,
 )
 from .submission import API_HEADER, OwnerJobRecord, submission_hash
-
-# The files that ``JobInfo.share_logs`` shares.
-LOG_FILES = tuple(
-    gated_names([ReadPermissionItem.LOGS.value, ReadPermissionItem.RETURN_CODE.value])
-)
 
 if TYPE_CHECKING:
     from .client import JobClient
@@ -110,57 +102,41 @@ class JobInfo:
     # ──────────────────────────────────────────────
 
     @property
-    def requested_read_permissions(self) -> list[str]:
-        """The items the submitter asked for, as recorded at submission."""
-        requested = self.job_headers.get("requested_read_permissions")
-        if not isinstance(requested, list):
-            return []
-        return sorted(normalize_read_permissions(requested))
+    def requested_read_permissions(self) -> ReadPermissions:
+        """Who the submitter asked to read which file, as recorded at receipt."""
+        return self._state.requested_read_permissions
 
     @property
-    def approved_read_permissions(self) -> dict[str, bool]:
-        """The items the data owner released, as recorded at approval."""
-        try:
-            text = (
-                self.job_review_path / APPROVED_READ_PERMISSIONS_FILENAME
-            ).read_text()
-        except FileNotFoundError:
-            return {}
-        return normalize_read_permissions(json.loads(text))
+    def approved_read_permissions(self) -> ReadPermissions:
+        """Who the data owner lets read which file, as recorded at approval."""
+        return self._state.approved_read_permissions
 
-    @property
-    def read_permissions_to_share(self) -> set[str]:
-        """The items that go to the submitter: requested and released."""
-        return set(self.approved_read_permissions) & set(
-            self.requested_read_permissions
+    def _set_approved_read_permissions(
+        self, read_permissions: Optional[ReadPermissions], stacklevel: int = 4
+    ) -> ReadPermissions:
+        """Keep the part of ``read_permissions`` that the submitter requested."""
+        approved = restrict_to_request(
+            check_read_permissions(read_permissions), self.requested_read_permissions
         )
-
-    def _write_approved_read_permissions(
-        self, read_permissions: ReadPermissionsArg, stacklevel: int = 4
-    ) -> dict[str, bool]:
-        granted = restrict_to_request(read_permissions, self.requested_read_permissions)
         # Up to the public caller, update_read_permissions() by default.
-        warn_on_logs_release(granted, self.requested_read_permissions, stacklevel)
-        path = self.job_review_path / APPROVED_READ_PERMISSIONS_FILENAME
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(granted))
-        return granted
+        warn_on_logs_release(approved, stacklevel)
+        self._state.approved_read_permissions = approved
+        return approved
 
     def read_permission_rows(self) -> list[tuple[str, str]]:
         """The read permission state as (label, value) rows, for display."""
         return [
-            ("Requested", format_items(self.requested_read_permissions)),
-            ("Granted", format_items(self.approved_read_permissions)),
-            ("To submitter", format_items(self.read_permissions_to_share)),
+            ("Requested", format_read_permissions(self.requested_read_permissions)),
+            ("Approved", format_read_permissions(self.approved_read_permissions)),
         ]
 
     def update_read_permissions(
-        self, read_permissions: ReadPermissionsArg
-    ) -> dict[str, bool]:
-        """Replace the items the data owner releases, and return the new map.
+        self, read_permissions: Optional[ReadPermissions]
+    ) -> ReadPermissions:
+        """Replace who may read which file, and return what was approved.
 
-        Only the items that the submitter requested are stored. A job that
-        finished shares the newly granted items at once.
+        Only what the submitter requested is kept. A job that finished shares
+        the new files at once. A read already given is not taken back.
 
         Raises:
             ValueError: If the job was not approved
@@ -178,15 +154,15 @@ class JobInfo:
             JobStatus.REJECTED,
         ):
             raise ValueError(f"Approve the job first (current: {self.status}).")
-        granted = self._write_approved_read_permissions(read_permissions)
+        approved = self._set_approved_read_permissions(read_permissions)
+        self._client.manager.write_state(self._ref, self._state)
         if self._state.status in (JobStatus.DONE, JobStatus.FAILED):
             self.share_read_permissions()
-        return granted
+        return approved
 
     def share_read_permissions(self) -> None:
-        """Share the granted items with the submitter."""
-        granted = gated_names(self.read_permissions_to_share)
-        self.share({name: [self.submitted_by] for name in granted})
+        """Give each approved reader read access to its file."""
+        self.share(self.approved_read_permissions)
 
     # ──────────────────────────────────────────────
     # Properties from config (inbox/)
@@ -371,7 +347,7 @@ class JobInfo:
         self,
         reason: Optional[str] = None,
         approval_method: str = "manual",
-        read_permissions: ReadPermissionsArg = None,
+        read_permissions: Optional[ReadPermissions] = None,
     ) -> None:
         """
         Approve a job by updating state.yaml in review/.
@@ -384,34 +360,34 @@ class JobInfo:
         Args:
             reason: Optional reason for approval (recorded as review_reason).
             approval_method: How the job was approved ("manual" or "auto")
-            read_permissions: The items in ``ReadPermissionItem`` that the data owner
-                releases. Only the items that the submitter requested are
-                stored, so a later edit of the request cannot add items.
-                Omit the argument to release nothing.
+            read_permissions: Who may read which file once the job ran, as
+                {file: [emails]}, e.g. {"stdout.txt": [submitter]}. Only what the
+                submitter requested is kept. Omit the argument to approve none.
 
         Raises:
             ValueError: If job is not in pending status, was not fully
                 received, or changed after it was received
             PermissionError: If the current user is not authorized to approve
-            TypeError: If reason is not a string
+            TypeError: If reason is not a string, or read_permissions not a dict
         """
         check_approval_reason(reason)
+        check_read_permissions(read_permissions)
         self._approve(reason, approval_method, read_permissions)
 
     def _approve(
         self,
         reason: Optional[str],
         approval_method: str,
-        read_permissions: ReadPermissionsArg,
+        read_permissions: Optional[ReadPermissions],
     ) -> None:
         self._check_can_approve()
-        # The check runs before any write. The record and the grant go before
-        # the state, so the runner never sees an approved state without them.
+        # The check runs before any write. The record goes before the state, so
+        # the runner never sees an approved state without it.
         record = self._read_owner_record()
         self._check_unchanged(record)
         self._record_approval(record, approval_method)
         # Up to the caller of approve(), through _approve().
-        self._write_approved_read_permissions(read_permissions, stacklevel=5)
+        self._set_approved_read_permissions(read_permissions, stacklevel=5)
         self._state.status = JobStatus.APPROVED
         self._state.approved_by = self.current_user_email
         self._state.approved_at = record.approved_at

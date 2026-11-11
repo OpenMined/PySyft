@@ -88,7 +88,7 @@ class ResolvedApi:
     # The api's pinned files, laid out as in a job: run.sh, code/...
     files_dir: Path
     policies: JobPolicies
-    # The items a call's approval releases to the caller, e.g. "logs".
+    # The run files the caller may read once its call ran, e.g. "stdout.txt".
     approved_read_permissions: list[str] = field(default_factory=list)
 
 

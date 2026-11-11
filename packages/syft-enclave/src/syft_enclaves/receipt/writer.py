@@ -11,7 +11,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional
 
 from syft_job.job import JobInfo
-from syft_job.models import JobState
 
 from syft_enclaves.enclave_job_info import submission_approvals, submission_hash
 from syft_enclaves.receipt.claims import read_job_claims
@@ -100,7 +99,7 @@ def _receipt(
         job=job_entry,
         datasets=_datasets(client, job),
         outputs=outputs_section(outputs_dir),
-        execution=_execution(job, settings, run_public_key),
+        execution=_execution(client, job, settings, run_public_key),
         parties=parties_section(job.submitted_by, owners),
         consent=consent_section(job_entry["code"], _approvals(client, job)),
         policy=policy_section(job.submitted_by, list(owners), shared),
@@ -144,12 +143,15 @@ def _datasets(client: "SyftEnclaveClient", job: JobInfo) -> list[dict[str, Any]]
 
 
 def _execution(
-    job: JobInfo, settings: ReceiptSettings, run_public_key: bytes
+    client: "SyftEnclaveClient",
+    job: JobInfo,
+    settings: ReceiptSettings,
+    run_public_key: bytes,
 ) -> dict[str, Any]:
-    review_dir = job.job_review_path
+    state = client._rds.job_client.manager.read_state(job._ref)
     return execution_section(
-        started_at=_read_started(review_dir),
-        finished_at=JobState.load(review_dir / "state.yaml").completed_at,
+        started_at=_read_started(job.job_review_path),
+        finished_at=state.completed_at,
         run_public_key=run_public_key,
         tinfoil_repo=settings.tinfoil_repo,
         tinfoil_release_tag=settings.tinfoil_release_tag,

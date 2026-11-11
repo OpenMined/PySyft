@@ -26,6 +26,7 @@ from syft.sync.version.peer_manager import CompatAction
 from syft_job.client import JobClient
 from syft_job.job import JobInfo
 from syft_job.job_runner import SyftJobRunner
+from syft_job.read_permissions import ReadPermissions
 from syft_datasets.dataset_manager import SHARE_WITH_ANY, SyftDatasetManager
 from syft_datasets.dataset_ref import DatasetNotFoundError
 from syft_datasets.migrations.registry import DATASET_PROTOCOL_VERSION
@@ -455,8 +456,13 @@ class SyftRDSClient(BaseModel):
         entrypoint: str | None = None,
         force_submission: bool = False,
         ignore_peer_version: bool = False,
-        request_read_permissions: list[str] | None = None,
+        request_read_permissions: ReadPermissions | None = None,
     ):
+        """Submit the code at ``code_path`` as a job to ``user``.
+
+        request_read_permissions asks who may read which run file, as
+        {file: [emails]}, e.g. {"stdout.txt": [ds_email]}.
+        """
         peer_emails = {p.email for p in self.sync_engine.peer_manager.syncable_peers}
         if user not in peer_emails:
             print(f"⚠️  {user} is not in your peer list.")

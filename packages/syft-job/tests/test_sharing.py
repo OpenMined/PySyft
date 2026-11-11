@@ -12,7 +12,7 @@ from syft_job.config import (
     SyftJobConfig,
     protocol_dir_name,
 )
-from syft_job.read_permissions import LOGS_WARNING, ReadPermissionItem
+from syft_job.read_permissions import LOGS_WARNING
 from syft_job.job import JobInfo
 from syft_job.job_runner import SyftJobRunner
 from syft_job.migrations.registry import JOB_PROTOCOL_VERSION
@@ -32,9 +32,10 @@ PROTOCOL_DIR = protocol_dir_name(JOB_PROTOCOL_VERSION)
 DO_EMAIL = "do@test.org"
 DS_EMAIL = "ds@test.org"
 LOG_FILES = ("stdout.txt", "stderr.txt", "returncode.txt")
-LOGS = ReadPermissionItem.LOGS.value
-FRAMES = ReadPermissionItem.TRACEBACK_FRAMES.value
-RETURN_CODE = ReadPermissionItem.RETURN_CODE.value
+# Read permissions of the DS on each kind of run file.
+LOGS = {"stdout.txt": [DS_EMAIL], "stderr.txt": [DS_EMAIL]}
+FRAMES = {FRAMES_FILENAME: [DS_EMAIL]}
+RETURN_CODE = {"returncode.txt": [DS_EMAIL]}
 
 OK_PY = """\
 import os
@@ -64,7 +65,7 @@ def do_config_for(tmp_path: Path) -> SyftJobConfig:
 
 
 def submit_as_ds(
-    tmp_path: Path, requested: list[str] | None = None, code: str = OK_PY
+    tmp_path: Path, requested: dict | None = None, code: str = OK_PY
 ) -> Path:
     """Submit one job as the DS and return its inbox folder; the DO has not seen it."""
     syftbox = tmp_path / "SyftBox"
@@ -86,7 +87,7 @@ def reload_job(tmp_path: Path) -> JobInfo:
 
 
 def submit_only(
-    tmp_path: Path, requested: list[str] | None = None, code: str = OK_PY
+    tmp_path: Path, requested: dict | None = None, code: str = OK_PY
 ) -> JobInfo:
     """Submit one job and return it as the DO sees it, still pending."""
     submit_as_ds(tmp_path, requested, code)
@@ -105,13 +106,13 @@ def run_job(
     tmp_path: Path,
     code: str,
     share_logs: bool | None,
-    requested: list[str] | None = None,
-    grants: list[str] | None = None,
+    requested: dict | None = None,
+    grants: dict | None = None,
 ):
     """Submit and run one job. Returns (job, review_dir).
 
     ``requested`` is what the DS asks for, and ``grants`` is what the DO
-    releases at approval.
+    approves.
     """
     submit_only(tmp_path, requested, code).approve(read_permissions=grants)
     run_approved(tmp_path, share_logs)
@@ -366,51 +367,145 @@ def ds_can_read(tmp_path: Path, name: str) -> bool:
     ).has_read_access(DS_EMAIL)
 
 
-def test_submission_records_known_requests_only(tmp_path):
-    job, _ = run_job(tmp_path, OK_PY, None, requested=[LOGS, "everything"])
-    assert job.requested_read_permissions == [LOGS]
+def ds_job(tmp_path: Path) -> JobInfo:
+    """The job as the DS sees it, on the DO's datasite."""
+    ds_config = SyftJobConfig(
+        syftbox_folder=tmp_path / "SyftBox", current_user_email=DS_EMAIL
+    )
+    return JobClient(config=ds_config).jobs["test.job"]
 
 
-def test_release_is_requested_and_granted(tmp_path):
-    """A granted item that the DS did not request gets no grant."""
-    job, _ = run_job(tmp_path, CRASH_PY, None, requested=[LOGS], grants=[LOGS, FRAMES])
-    assert job.read_permissions_to_share == {LOGS}
+def write_headers(inbox: Path, **headers) -> None:
+    """Rewrite config.yaml headers, as the DS can before the DO receives the job."""
+    path = inbox / "config.yaml"
+    data = yaml.safe_load(path.read_text())
+    data["headers"].update(headers)
+    path.write_text(yaml.safe_dump(data))
+
+
+def test_receipt_copies_request_into_state(tmp_path):
+    job = submit_only(tmp_path, {**LOGS, **FRAMES})
+    assert job.requested_read_permissions == {**LOGS, **FRAMES}
+    state = yaml.safe_load((job.job_review_path / "state.yaml").read_text())
+    assert state["requested_read_permissions"] == {**LOGS, **FRAMES}
+    assert state["approved_read_permissions"] == {}
+
+
+def test_receipt_drops_invalid_request_entries(tmp_path):
+    inbox = submit_as_ds(tmp_path)
+    request = {
+        "stdout.txt": [DS_EMAIL],
+        PERMISSION_FILE_NAME: [DS_EMAIL],
+        f"../{OWNER_RECORD_FILENAME}": [DS_EMAIL],
+        "outputs": [DS_EMAIL],
+        "stderr.txt": [],
+    }
+    write_headers(inbox, requested_read_permissions=request)
+    assert reload_job(tmp_path).requested_read_permissions == {"stdout.txt": [DS_EMAIL]}
+
+
+@pytest.mark.parametrize(
+    "request_value, error",
+    [
+        (["logs"], TypeError),
+        ({PERMISSION_FILE_NAME: [DS_EMAIL]}, ValueError),
+        ({"stdout.txt": []}, ValueError),
+        ({"stdout.txt": DS_EMAIL}, TypeError),
+    ],
+)
+def test_submit_refuses_invalid_request(tmp_path, request_value, error):
+    with pytest.raises(error):
+        submit_as_ds(tmp_path, request_value)
+
+
+def test_ds_header_cannot_approve(tmp_path):
+    """An approval that the DS writes into its submission is ignored."""
+    inbox = submit_as_ds(tmp_path, LOGS)
+    write_headers(inbox, approved_read_permissions=LOGS)
+    job = reload_job(tmp_path)
+    assert job.approved_read_permissions == {}
+
+    job.approve()
+    run_approved(tmp_path)
+
+    assert not ds_can_read(tmp_path, "stdout.txt")
+
+
+def test_ds_cannot_approve_or_update(tmp_path):
+    submit_only(tmp_path, LOGS)
+    with pytest.raises(PermissionError):
+        ds_job(tmp_path).approve(read_permissions=LOGS)
+    reload_job(tmp_path).approve()
+    with pytest.raises(PermissionError):
+        ds_job(tmp_path).update_read_permissions(LOGS)
+    assert reload_job(tmp_path).approved_read_permissions == {}
+
+
+def test_ds_cannot_write_state(tmp_path):
+    (tmp_path / "SyftBox").mkdir()
+    JobClient(config=do_config_for(tmp_path)).setup_ds_job_folder_as_do(DS_EMAIL)
+    job = submit_only(tmp_path, LOGS)
+    ctx = SyftPermContext(datasite=tmp_path / "SyftBox" / DO_EMAIL)
+    state = job.job_review_path / "state.yaml"
+    rel = state.relative_to(tmp_path / "SyftBox" / DO_EMAIL)
+    assert ctx.open(str(rel)).has_read_access(DS_EMAIL)
+    assert not ctx.open(str(rel)).has_write_access(DS_EMAIL)
+
+
+def test_approval_keeps_requested_files_and_emails_only(tmp_path):
+    job = submit_only(tmp_path, {"stdout.txt": [DS_EMAIL, "other@test.org"]})
+    job.approve(
+        read_permissions={
+            "stdout.txt": [DS_EMAIL, "outsider@test.org"],
+            "stderr.txt": [DS_EMAIL],
+        }
+    )
+    assert job.approved_read_permissions == {"stdout.txt": [DS_EMAIL]}
+    assert reload_job(tmp_path).approved_read_permissions == {"stdout.txt": [DS_EMAIL]}
+
+
+def test_approved_files_shared_after_run(tmp_path):
+    """An approved file that the DS did not request gets no grant."""
+    run_job(tmp_path, CRASH_PY, None, requested=LOGS, grants={**LOGS, **FRAMES})
     for name in ("stdout.txt", "stderr.txt"):
         assert ds_can_read(tmp_path, name)
     assert not ds_can_read(tmp_path, FRAMES_FILENAME)
     assert not ds_can_read(tmp_path, "returncode.txt")
 
 
-def test_request_without_grant_releases_nothing(tmp_path):
-    job, _ = run_job(tmp_path, CRASH_PY, None, requested=[LOGS, FRAMES, RETURN_CODE])
-    assert job.read_permissions_to_share == set()
+def test_request_without_approval_shares_nothing(tmp_path):
+    job, _ = run_job(
+        tmp_path, CRASH_PY, None, requested={**LOGS, **FRAMES, **RETURN_CODE}
+    )
+    assert job.approved_read_permissions == {}
     for name in (*LOG_FILES, FRAMES_FILENAME):
         assert not ds_can_read(tmp_path, name)
 
 
-def test_granted_frames_released_without_logs(tmp_path):
-    run_job(tmp_path, CRASH_PY, None, requested=[FRAMES], grants=[FRAMES])
+def test_approved_frames_shared_without_logs(tmp_path):
+    run_job(tmp_path, CRASH_PY, None, requested=FRAMES, grants=FRAMES)
     assert ds_can_read(tmp_path, FRAMES_FILENAME)
     assert not ds_can_read(tmp_path, "stderr.txt")
 
 
-def test_later_grant_releases_finished_job(tmp_path):
-    job, _ = run_job(tmp_path, OK_PY, None, requested=[RETURN_CODE])
+def test_later_approval_shares_finished_job(tmp_path):
+    job, _ = run_job(tmp_path, OK_PY, None, requested=RETURN_CODE)
     assert not ds_can_read(tmp_path, "returncode.txt")
 
-    assert job.update_read_permissions([RETURN_CODE]) == {RETURN_CODE: True}
+    assert job.update_read_permissions(RETURN_CODE) == RETURN_CODE
 
     assert ds_can_read(tmp_path, "returncode.txt")
     assert not ds_can_read(tmp_path, "stdout.txt")
+    assert reload_job(tmp_path).approved_read_permissions == RETURN_CODE
 
 
-def test_later_grant_through_stale_job_releases(tmp_path):
+def test_later_approval_through_stale_job_shares(tmp_path):
     """A job object read before the run still sees that the run finished."""
-    job = submit_only(tmp_path, [LOGS])
+    job = submit_only(tmp_path, LOGS)
     job.approve()
     run_approved(tmp_path)
 
-    job.update_read_permissions([LOGS])
+    job.update_read_permissions(LOGS)
 
     assert ds_can_read(tmp_path, "stdout.txt")
 
@@ -418,13 +513,13 @@ def test_later_grant_through_stale_job_releases(tmp_path):
 def test_update_read_permissions_needs_approval_first(tmp_path):
     job = submit_only(tmp_path)
     with pytest.raises(ValueError, match="Approve the job first"):
-        job.update_read_permissions([LOGS])
+        job.update_read_permissions(LOGS)
 
 
-def test_grant_survives_rerun(tmp_path):
-    job, _ = run_job(tmp_path, OK_PY, None, requested=[LOGS], grants=[LOGS])
+def test_approval_survives_rerun(tmp_path):
+    job, _ = run_job(tmp_path, OK_PY, None, requested=LOGS, grants=LOGS)
     job.rerun()
-    assert job.approved_read_permissions == {LOGS: True}
+    assert reload_job(tmp_path).approved_read_permissions == LOGS
 
 
 # -- warning and display --------------------------------------------------------
@@ -435,83 +530,73 @@ def logs_warnings(record) -> list:
 
 
 def test_approve_warns_when_logs_go_out(tmp_path):
-    job = submit_only(tmp_path, [LOGS])
-    with pytest.warns(UserWarning, match="stdout and stderr") as record:
-        job.approve(read_permissions=[LOGS])
+    job = submit_only(tmp_path, LOGS)
+    with pytest.warns(UserWarning, match="stdout or stderr") as record:
+        job.approve(read_permissions=LOGS)
     # The warning points at the caller, not at the helper.
     assert logs_warnings(record)[0].filename == __file__
 
 
-def test_unrequested_logs_grant_does_not_warn(tmp_path):
-    """A grant of an item the DS did not request releases nothing."""
-    job = submit_only(tmp_path, [FRAMES])
+def test_unrequested_logs_approval_does_not_warn(tmp_path):
+    """Approving a file the DS did not request approves nothing."""
+    job = submit_only(tmp_path, FRAMES)
     with warnings.catch_warnings(record=True) as record:
         warnings.simplefilter("always")
-        job.approve(read_permissions=[LOGS, FRAMES])
+        job.approve(read_permissions={**LOGS, **FRAMES})
     assert logs_warnings(record) == []
 
 
 def test_update_read_permissions_warns_when_logs_go_out(tmp_path):
-    job = submit_only(tmp_path, [LOGS])
+    job = submit_only(tmp_path, LOGS)
     job.approve()
-    with pytest.warns(UserWarning, match="stdout and stderr"):
-        job.update_read_permissions([LOGS])
+    with pytest.warns(UserWarning, match="stdout or stderr"):
+        job.update_read_permissions(LOGS)
 
 
-def test_display_shows_read_permission_state(tmp_path):
-    job = submit_only(tmp_path, [LOGS, FRAMES])
-    job.approve(read_permissions=[FRAMES, RETURN_CODE])
+def test_display_shows_read_permissions(tmp_path):
+    job = submit_only(tmp_path, {**LOGS, **FRAMES})
+    job.approve(read_permissions={**FRAMES, **RETURN_CODE})
 
-    # Only the requested item is stored, so return_code is not granted.
+    # Only the requested file is kept, so returncode.txt is not approved.
+    frames = f"{FRAMES_FILENAME} ({DS_EMAIL})"
+    requested = f"stderr.txt ({DS_EMAIL}), stdout.txt ({DS_EMAIL}), {frames}"
     assert job.read_permission_rows() == [
-        ("Requested", "logs, traceback_frames"),
-        ("Granted", "traceback_frames"),
-        ("To submitter", "traceback_frames"),
+        ("Requested", requested),
+        ("Approved", frames),
     ]
-    assert "To submitter: traceback_frames" in str(job)
-    html = job._repr_html_()
-    assert "To submitter:" in html
-    assert "logs, traceback_frames" in html
+    assert f"Approved: {frames}" in str(job)
+    assert "Approved:" in job._repr_html_()
 
 
 def test_display_without_read_permissions(tmp_path):
     job = submit_only(tmp_path, None)
-    assert "Requested: none; Granted: none; To submitter: none" in str(job)
+    assert "Requested: none; Approved: none" in str(job)
 
 
 # -- the request is DS-writable after the approval ------------------------------
 
 
-def edit_request(job: JobInfo, requested: list[str]) -> None:
+def edit_request(job: JobInfo, requested: dict) -> None:
     """Rewrite the request in config.yaml, as a DS can after the approval."""
-    path = job.job_submission_path / "config.yaml"
-    data = yaml.safe_load(path.read_text())
-    data["headers"]["requested_read_permissions"] = requested
-    path.write_text(yaml.safe_dump(data))
-
-
-def test_grant_stores_only_requested_items(tmp_path):
-    job = submit_only(tmp_path, [FRAMES])
-    job.approve(read_permissions=[LOGS, FRAMES])
-    assert job.approved_read_permissions == {FRAMES: True}
+    write_headers(job.job_submission_path, requested_read_permissions=requested)
 
 
 def test_request_edit_after_approval_adds_nothing(tmp_path):
-    """A wider grant than the request must not release the extra items later."""
-    job = submit_only(tmp_path, [FRAMES])
-    job.approve(read_permissions=[LOGS, FRAMES])
-    edit_request(job, [LOGS, FRAMES])
+    """A wider approval than the request must not share the extra files later."""
+    job = submit_only(tmp_path, FRAMES)
+    job.approve(read_permissions={**LOGS, **FRAMES})
+    edit_request(job, {**LOGS, **FRAMES})
 
     run_approved(tmp_path)
 
     assert not ds_can_read(tmp_path, "stdout.txt")
 
 
-def test_approve_refuses_items_as_reason(tmp_path):
-    """``approve(["logs"])`` would grant nothing and record the list as reason."""
-    job = submit_only(tmp_path, [LOGS])
+def test_approve_refuses_read_permissions_as_reason(tmp_path):
+    """``approve({...})`` would approve nothing and record the dict as reason."""
+    job = submit_only(tmp_path, LOGS)
     with pytest.raises(TypeError, match="read_permissions="):
-        job.approve([LOGS])
+        job.approve(LOGS)
     assert job.status == "pending"
 
 

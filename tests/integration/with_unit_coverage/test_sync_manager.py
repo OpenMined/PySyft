@@ -247,28 +247,36 @@ def test_jobs():
     test_py_path = "/tmp/test.py"
     with open(test_py_path, "w") as f:
         f.write("""
+print("hello from the job")
 with open("outputs/result.json", "w") as f:
     f.write('{"result": 1}')
 """)
 
+    stdout_for_ds = {"stdout.txt": [ds_manager.email]}
     ds_manager.submit_python_job(
         user=do_manager.email,
         code_path=test_py_path,
         job_name="test.job",
+        request_read_permissions=stdout_for_ds,
     )
 
     do_manager.sync()
     assert len(do_manager.job_client.jobs) == 1
     job = do_manager.job_client.jobs[0]
+    assert job.requested_read_permissions == stdout_for_ds
 
-    job.approve()
+    job.approve(read_permissions=stdout_for_ds)
 
     do_manager.job_runner.process_approved_jobs()
 
-    # Before sharing: DS should not see outputs
+    # Before sharing: DS sees the approved stdout, not the outputs
     do_manager.sync()
     ds_manager.sync()
-    assert len(ds_manager.job_client.jobs[-1].output_paths) == 0
+    ds_job = ds_manager.job_client.jobs[-1]
+    assert len(ds_job.output_paths) == 0
+    assert ds_job.approved_read_permissions == stdout_for_ds
+    stdout = Path(ds_job.job_review_path) / "stdout.txt"
+    assert "hello from the job" in stdout.read_text()
 
     # Share outputs with DS
     do_manager.job_runner.share_job_results(

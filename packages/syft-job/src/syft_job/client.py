@@ -12,7 +12,12 @@ from syft_migration import MigrationError, ProtocolSchema
 from syft_perms.syftperm_context import SyftPermContext
 
 from .config import SyftJobConfig
-from .read_permissions import normalize_read_permissions
+from .read_permissions import (
+    REQUESTED_READ_PERMISSIONS_HEADER,
+    ReadPermissions,
+    check_read_permissions,
+    valid_read_permissions,
+)
 from .install_source import get_syft_install_source
 from .job import JobInfo, JobsList
 from .job_ref import RequestRef
@@ -22,7 +27,7 @@ from .job_storage import JobRef, JobStorage
 from .models import JobState, JobStatus, JobSubmissionMetadata, RequestMetadata
 from .api_requests import receive_request
 from .policies import ApiResolver
-from .review_grants import grant_ds_state_and_approved_read_permissions_read
+from .review_grants import grant_ds_state_read
 from .submission import (
     RESERVED_CALL_FILES,
     SUBMISSION_ENTRIES,
@@ -166,7 +171,7 @@ class JobClient(BaseJobClient):
         # until a release grants more.
         ds_review_dir = self.config.get_review_dir(self.current_user_email) / ds_email
         ds_review_dir.mkdir(parents=True, exist_ok=True)
-        grant_ds_state_and_approved_read_permissions_read(ctx, ds_review_dir, ds_email)
+        grant_ds_state_read(ctx, ds_review_dir, ds_email)
 
         return ds_inbox_dir
 
@@ -482,7 +487,7 @@ python {entrypoint_path}
         job_name: Optional[str] = "",
         dependencies: Optional[List[str]] = None,
         entrypoint: Optional[str] = None,
-        request_read_permissions: Optional[List[str]] = None,
+        request_read_permissions: Optional[ReadPermissions] = None,
     ) -> Path:
         """
         Submit a Python job for a user (supports both files and folders).
@@ -493,8 +498,9 @@ python {entrypoint_path}
             job_name: Name of the job (directory name). If empty, auto-generated.
             dependencies: List of Python packages to install
             entrypoint: Entry point file name (auto-detected if not provided)
-            request_read_permissions: The items in ``ReadPermissionItem`` to ask the
-                data owner for. The data owner releases none, some, or all.
+            request_read_permissions: Who should read which run file, as
+                {file: [emails]}, e.g. {"stdout.txt": [me]}. The data owner
+                approves none, some, or all of it.
 
         Returns:
             Path to the created job directory in inbox/
@@ -503,7 +509,9 @@ python {entrypoint_path}
             FileExistsError: If job with same name already exists
             ValueError: If code_path validation fails
             FileNotFoundError: If code_path doesn't exist
+            TypeError: If request_read_permissions is not {file: [emails]}
         """
+        requested = check_read_permissions(request_read_permissions)
         submitting_to_email = user
         # Generate default job name if not provided
         if not job_name:
@@ -569,9 +577,7 @@ python {entrypoint_path}
             is_folder_submission=is_folder_submission,
             code_path=str(code_path_resolved),
             headers={
-                "requested_read_permissions": sorted(
-                    normalize_read_permissions(request_read_permissions)
-                ),
+                REQUESTED_READ_PERMISSIONS_HEADER: requested,
                 SUBMISSION_HASH_HEADER: code_hash(job_dir),
             },
         )
@@ -630,9 +636,18 @@ python {entrypoint_path}
                 return None
 
         self._lock_submission(ref)
-        state = JobState(status=JobStatus.PENDING, received_at=record.received_at)
+        state = JobState(
+            status=JobStatus.PENDING,
+            received_at=record.received_at,
+            requested_read_permissions=self._requested_read_permissions(ref),
+        )
         self.manager.write_state(ref, state)
         return state
+
+    def _requested_read_permissions(self, ref: JobRef) -> ReadPermissions:
+        """The valid part of the submitter's request. Nothing it wrote is approved."""
+        headers = self.manager.read_submission(ref).headers
+        return valid_read_permissions(headers.get(REQUESTED_READ_PERMISSIONS_HEADER))
 
     def _claim_receipt(self, ref: JobRef) -> Optional[OwnerJobRecord]:
         """Record the received hash once every file arrived, and return the record.

@@ -1,4 +1,4 @@
-"""Per-item read permissions: the enclave releases an item only under full agreement."""
+"""Per-file read permissions: the enclave shares a file only under full agreement."""
 
 import inspect
 import json
@@ -13,25 +13,33 @@ import yaml
 
 os.environ["PRE_SYNC"] = "false"
 
-from syft_job.read_permissions import LOGS_WARNING  # noqa: E402
 from syft_job.job import JobInfo  # noqa: E402
 from syft_job.models import JobState, JobStatus  # noqa: E402
+from syft_job.read_permissions import (  # noqa: E402
+    LOGS_WARNING,
+    REQUESTED_READ_PERMISSIONS_HEADER,
+)
 from syft_job.traceback_capture import FRAMES_FILENAME  # noqa: E402
 from syft_perms import SyftPermContext  # noqa: E402
 
 from syft_enclaves import SyftEnclaveClient  # noqa: E402
 from syft_enclaves.enclave_job_info import (  # noqa: E402
-    ReadPermissionItem,
     EnclaveJobInfo,
     PartyApprovalStatus,
-    read_permissions_approved_by_all_parties,
     enclave_approval_file_name,
-    normalize_read_permissions,
+    read_permissions_approved_by_all_parties,
 )
 
-LOGS = ReadPermissionItem.LOGS.value
-FRAMES = ReadPermissionItem.TRACEBACK_FRAMES.value
-RETURN_CODE = ReadPermissionItem.RETURN_CODE.value
+LOGS = ("stdout.txt", "stderr.txt")
+FRAMES = FRAMES_FILENAME
+RETURN_CODE = "returncode.txt"
+DS = "ds@x.com"
+
+
+def readable(files, *emails):
+    """Read permissions that let ``emails`` read ``files`` (one name or several)."""
+    names = [files] if isinstance(files, str) else files
+    return {name: sorted(emails) for name in names}
 
 
 def write_approval(review_dir, party, status, read_permissions):
@@ -44,76 +52,112 @@ def write_approval(review_dir, party, status, read_permissions):
 # -- the resolution rule --------------------------------------------------------
 
 
-def test_item_needs_every_party(tmp_path):
-    write_approval(tmp_path, "do1@x.com", JobStatus.APPROVED, {LOGS: True})
-    write_approval(tmp_path, "do2@x.com", JobStatus.APPROVED, {LOGS: True})
-    assert read_permissions_approved_by_all_parties(tmp_path) == {LOGS}
+def test_file_needs_every_party(tmp_path):
+    write_approval(tmp_path, "do1@x.com", JobStatus.APPROVED, readable(LOGS, DS))
+    write_approval(tmp_path, "do2@x.com", JobStatus.APPROVED, readable(LOGS, DS))
+    approved = read_permissions_approved_by_all_parties(tmp_path, readable(LOGS, DS))
+    assert approved == readable(LOGS, DS)
 
 
-def test_one_party_withholding_blocks_item(tmp_path):
-    write_approval(tmp_path, "do1@x.com", JobStatus.APPROVED, {LOGS: True})
-    write_approval(tmp_path, "do2@x.com", JobStatus.APPROVED, {FRAMES: True})
-    assert read_permissions_approved_by_all_parties(tmp_path) == set()
+def test_one_party_withholding_blocks_file(tmp_path):
+    write_approval(tmp_path, "do1@x.com", JobStatus.APPROVED, readable(LOGS, DS))
+    write_approval(tmp_path, "do2@x.com", JobStatus.APPROVED, readable(FRAMES, DS))
+    requested = readable([*LOGS, FRAMES], DS)
+    assert read_permissions_approved_by_all_parties(tmp_path, requested) == {}
+
+
+def test_reader_needs_every_party(tmp_path):
+    """Each email is agreed on its own: one party leaving it out keeps it out."""
+    both = readable(FRAMES, DS, "do1@x.com")
+    write_approval(tmp_path, "do1@x.com", JobStatus.APPROVED, both)
+    write_approval(tmp_path, "do2@x.com", JobStatus.APPROVED, readable(FRAMES, DS))
+    approved = read_permissions_approved_by_all_parties(tmp_path, both)
+    assert approved == readable(FRAMES, DS)
 
 
 def test_unapproved_party_blocks_everything(tmp_path):
-    write_approval(tmp_path, "do1@x.com", JobStatus.APPROVED, {LOGS: True})
-    write_approval(tmp_path, "do2@x.com", JobStatus.PENDING, {LOGS: True})
-    assert read_permissions_approved_by_all_parties(tmp_path) == set()
+    write_approval(tmp_path, "do1@x.com", JobStatus.APPROVED, readable(LOGS, DS))
+    write_approval(tmp_path, "do2@x.com", JobStatus.PENDING, readable(LOGS, DS))
+    assert read_permissions_approved_by_all_parties(tmp_path, readable(LOGS, DS)) == {}
 
 
 def test_approval_file_without_read_permissions_grants_nothing(tmp_path):
-    """An older client writes no approved_read_permissions key, so it releases nothing."""
+    """An older client writes no approved_read_permissions key, so it approves nothing."""
     path = tmp_path / enclave_approval_file_name("do1@x.com")
     path.write_text(json.dumps({"party": "do1@x.com", "status": "approved"}))
     assert PartyApprovalStatus.load_json(path).approved_read_permissions == {}
-    assert read_permissions_approved_by_all_parties(tmp_path) == set()
+    assert read_permissions_approved_by_all_parties(tmp_path, readable(LOGS, DS)) == {}
 
 
-def test_requested_set_narrows_result(tmp_path):
-    write_approval(
-        tmp_path, "do1@x.com", JobStatus.APPROVED, {LOGS: True, FRAMES: True}
-    )
-    assert read_permissions_approved_by_all_parties(tmp_path, [FRAMES]) == {FRAMES}
+def test_request_narrows_result(tmp_path):
+    approved = readable([*LOGS, FRAMES], DS)
+    write_approval(tmp_path, "do1@x.com", JobStatus.APPROVED, approved)
+    requested = readable(FRAMES, DS)
+    assert read_permissions_approved_by_all_parties(tmp_path, requested) == requested
+
+
+def test_unrequested_reader_never_survives(tmp_path):
+    """Every party approving an email the submitter did not name gives it nothing."""
+    wider = readable(FRAMES, DS, "other@x.com")
+    write_approval(tmp_path, "do1@x.com", JobStatus.APPROVED, wider)
+    write_approval(tmp_path, "do2@x.com", JobStatus.APPROVED, wider)
+    requested = readable(FRAMES, DS)
+    assert read_permissions_approved_by_all_parties(tmp_path, requested) == requested
 
 
 def test_no_approval_file_grants_nothing(tmp_path):
-    assert read_permissions_approved_by_all_parties(tmp_path) == set()
+    assert read_permissions_approved_by_all_parties(tmp_path, readable(LOGS, DS)) == {}
 
 
 def test_named_party_without_file_grants_nothing(tmp_path):
-    """A missing file must not leave the other grants standing alone."""
-    write_approval(tmp_path, "do1@x.com", JobStatus.APPROVED, {LOGS: True})
-    assert read_permissions_approved_by_all_parties(tmp_path) == {LOGS}
-    assert (
-        read_permissions_approved_by_all_parties(
-            tmp_path, parties=["do1@x.com", "do2@x.com"]
-        )
-        == set()
-    )
+    """A missing file must not leave the other approvals standing alone."""
+    logs = readable(LOGS, DS)
+    write_approval(tmp_path, "do1@x.com", JobStatus.APPROVED, logs)
+    assert read_permissions_approved_by_all_parties(tmp_path, logs) == logs
+    parties = ["do1@x.com", "do2@x.com"]
+    assert read_permissions_approved_by_all_parties(tmp_path, logs, parties) == {}
 
 
 def test_no_named_party_grants_nothing(tmp_path):
-    write_approval(tmp_path, "do1@x.com", JobStatus.APPROVED, {LOGS: True})
-    assert read_permissions_approved_by_all_parties(tmp_path, parties=[]) == set()
+    logs = readable(LOGS, DS)
+    write_approval(tmp_path, "do1@x.com", JobStatus.APPROVED, logs)
+    assert read_permissions_approved_by_all_parties(tmp_path, logs, parties=[]) == {}
 
 
-def test_unknown_item_never_survives(tmp_path):
-    write_approval(tmp_path, "do1@x.com", JobStatus.APPROVED, {"everything": True})
-    assert read_permissions_approved_by_all_parties(tmp_path) == set()
-    assert normalize_read_permissions(["everything", LOGS]) == {LOGS: True}
+def test_unknown_file_never_survives(tmp_path):
+    """Neither an item of an older client nor an unknown file approves anything."""
+    path = tmp_path / enclave_approval_file_name("do1@x.com")
+    approved = {"logs": True, "everything": [DS]}
+    path.write_text(
+        json.dumps(
+            {
+                "party": "do1@x.com",
+                "status": "approved",
+                "approved_read_permissions": approved,
+            }
+        )
+    )
+    approval = PartyApprovalStatus.load_json(path)
+    assert approval.status == JobStatus.APPROVED
+    assert approval.approved_read_permissions == {}
+    assert read_permissions_approved_by_all_parties(tmp_path, readable(LOGS, DS)) == {}
 
 
-def test_false_mapping_value_drops_item(tmp_path):
-    """update_read_permissions returns a map, so a caller can send one back.
-
-    Every element used to count as a grant, therefore a map carrying False
-    re-granted the item it was meant to drop.
-    """
-    assert normalize_read_permissions({LOGS: True, FRAMES: False}) == {LOGS: True}
-
-    granted = normalize_read_permissions([LOGS])
-    assert normalize_read_permissions({**granted, LOGS: False}) == {}
+def test_malformed_readers_grant_nothing(tmp_path):
+    """A string of readers is not iterated into characters, and no list is empty."""
+    path = tmp_path / enclave_approval_file_name("do1@x.com")
+    approved = {"stdout.txt": [], "stderr.txt": DS, RETURN_CODE: [DS]}
+    path.write_text(
+        json.dumps(
+            {
+                "party": "do1@x.com",
+                "status": "approved",
+                "approved_read_permissions": approved,
+            }
+        )
+    )
+    loaded = PartyApprovalStatus.load_json(path).approved_read_permissions
+    assert loaded == readable(RETURN_CODE, DS)
 
 
 # -- end to end -----------------------------------------------------------------
@@ -155,6 +199,14 @@ def submit(ds, enclave, do1, do2, code, requested):
     )
 
 
+def distribute(enclave, *dos):
+    """The enclave receives and distributes the job, and each DO syncs it."""
+    enclave.sync()
+    enclave.receive_jobs()
+    for do in dos:
+        do.sync()
+
+
 OK_CODE = "import os, json\nos.makedirs('outputs', exist_ok=True)\nopen('outputs/r.json','w').write('{}')\n"
 CRASH_CODE = "x = 1\ny = 2\nraise ValueError('account 88213 holds 4120550')\n"
 
@@ -163,179 +215,211 @@ CRASH_CODE = "x = 1\ny = 2\nraise ValueError('account 88213 holds 4120550')\n"
 ENTRY_POINTS = pytest.mark.parametrize("via_job", [False, True], ids=["client", "job"])
 
 
-def approve(do, grants, via_job=False):
+def approve(do, approved, via_job=False):
     if via_job:
-        do.jobs["j"].approve(read_permissions=grants)
+        do.jobs["j"].approve(read_permissions=approved)
     else:
-        do.approve_job(do.jobs["j"], grants)
+        do.approve_job(do.jobs["j"], approved)
 
 
-def update(do, grants, via_job=False):
+def update(do, approved, via_job=False):
     if via_job:
-        return do.jobs["j"].update_read_permissions(grants)
-    return do.update_read_permissions(do.jobs["j"], grants)
+        return do.jobs["j"].update_read_permissions(approved)
+    return do.update_read_permissions(do.jobs["j"], approved)
 
 
-def run_to_completion(enclave, do1, do2, ds, grants, via_job=False):
-    enclave.sync()
-    enclave.receive_jobs()
-    do1.sync()
-    do2.sync()
-    approve(do1, grants, via_job)
-    approve(do2, grants, via_job)
+def run_to_completion(enclave, do1, do2, ds, approved, via_job=False):
+    distribute(enclave, do1, do2)
+    approve(do1, approved, via_job)
+    approve(do2, approved, via_job)
+    run_and_share(enclave, ds)
+
+
+def run_and_share(enclave, *readers):
+    """The enclave runs the job and shares what was approved; each reader syncs."""
     enclave.sync()
     enclave.run_jobs()
     enclave.distribute_results()
-    ds.sync()
+    for reader in readers:
+        reader.sync()
 
 
-def test_submitter_gets_no_logs_without_grant():
+def has_file(client, name):
+    return (Path(client.jobs["j"].job_review_path) / name).exists()
+
+
+def readers_of(enclave, name, parties):
+    """The parties that may read ``name`` in the enclave's review folder."""
+    datasite = enclave._rds.syftbox_folder / enclave.email
+    review = Path(enclave._rds.job_client.jobs["j"].job_review_path)
+    path = str((review / name).relative_to(datasite))
+    ctx = SyftPermContext(datasite=datasite)
+    return [p for p in parties if ctx.can_read(path, p.email)]
+
+
+def test_submitter_gets_no_logs_without_approval():
     enclave, do1, do2, ds = build_quad()
-    submit(ds, enclave, do1, do2, OK_CODE, [LOGS])
+    submit(ds, enclave, do1, do2, OK_CODE, readable(LOGS, ds.email))
     run_to_completion(enclave, do1, do2, ds, None)
 
-    review = Path(ds.jobs["j"].job_review_path)
-    assert not (review / "stdout.txt").exists()
-    assert not (review / "stderr.txt").exists()
+    assert not has_file(ds, "stdout.txt")
+    assert not has_file(ds, "stderr.txt")
 
 
 @ENTRY_POINTS
-def test_full_grant_sends_logs_to_submitter(via_job):
+def test_full_approval_sends_logs_to_submitter(via_job):
     enclave, do1, do2, ds = build_quad()
-    submit(ds, enclave, do1, do2, OK_CODE, [LOGS])
-    run_to_completion(enclave, do1, do2, ds, [LOGS], via_job)
+    logs = readable(LOGS, ds.email)
+    submit(ds, enclave, do1, do2, OK_CODE, logs)
+    run_to_completion(enclave, do1, do2, ds, logs, via_job)
 
-    assert enclave.read_permissions_to_share(enclave.jobs["j"]) == {LOGS}
-    assert (Path(ds.jobs["j"].job_review_path) / "stdout.txt").exists()
+    assert enclave.read_permissions_to_share(enclave.jobs["j"]) == logs
+    assert has_file(ds, "stdout.txt")
+    # The enclave records what it shared in the state, which the submitter reads.
+    assert ds.jobs["j"].approved_read_permissions == logs
 
 
-def test_submitter_gets_no_return_code_without_grant():
+def test_submitter_gets_no_return_code_without_approval():
     enclave, do1, do2, ds = build_quad()
-    submit(ds, enclave, do1, do2, CRASH_CODE, [RETURN_CODE])
-    run_to_completion(enclave, do1, do2, ds, [LOGS])
+    submit(ds, enclave, do1, do2, CRASH_CODE, readable(RETURN_CODE, ds.email))
+    run_to_completion(enclave, do1, do2, ds, readable(LOGS, ds.email))
 
     review = Path(ds.jobs["j"].job_review_path)
-    assert not (review / "returncode.txt").exists()
+    assert not (review / RETURN_CODE).exists()
     state = JobState.load(review / "state.yaml")
     assert state.status == JobStatus.FAILED
     assert state.return_code is None
 
 
-def test_return_code_grant_sends_only_exit_code():
+def test_return_code_approval_sends_only_exit_code():
     enclave, do1, do2, ds = build_quad()
-    submit(ds, enclave, do1, do2, CRASH_CODE, [RETURN_CODE])
-    run_to_completion(enclave, do1, do2, ds, [RETURN_CODE])
+    return_code = readable(RETURN_CODE, ds.email)
+    submit(ds, enclave, do1, do2, CRASH_CODE, return_code)
+    run_to_completion(enclave, do1, do2, ds, return_code)
 
     review = Path(ds.jobs["j"].job_review_path)
-    assert (review / "returncode.txt").read_text().strip() == "1"
+    assert (review / RETURN_CODE).read_text().strip() == "1"
     assert not (review / "stderr.txt").exists()
 
 
-def test_granted_frames_carry_position_not_message():
+def test_approved_frames_carry_position_not_message():
     enclave, do1, do2, ds = build_quad()
-    submit(ds, enclave, do1, do2, CRASH_CODE, [FRAMES])
-    run_to_completion(enclave, do1, do2, ds, [FRAMES])
+    frames = readable(FRAMES, ds.email)
+    submit(ds, enclave, do1, do2, CRASH_CODE, frames)
+    run_to_completion(enclave, do1, do2, ds, frames)
 
-    record = json.loads(
-        (Path(ds.jobs["j"].job_review_path) / FRAMES_FILENAME).read_text()
-    )
+    record = json.loads((Path(ds.jobs["j"].job_review_path) / FRAMES).read_text())
     entry = record["chain"][0]
     assert entry["type"] == "ValueError"
     assert {"file": "main.py", "line": 3} in entry["frames"]
     assert "4120550" not in json.dumps(record)
 
 
-def test_frames_reach_data_owners():
-    """A party that releases an item also receives it."""
+def test_frames_reach_named_data_owner():
+    """A data owner that the request names, and every party approved, receives the file."""
     enclave, do1, do2, ds = build_quad()
-    submit(ds, enclave, do1, do2, CRASH_CODE, [FRAMES])
-    run_to_completion(enclave, do1, do2, ds, [FRAMES])
+    frames = readable(FRAMES, ds.email, do1.email)
+    submit(ds, enclave, do1, do2, CRASH_CODE, frames)
+    run_to_completion(enclave, do1, do2, ds, frames)
     do1.sync()
 
-    assert (Path(do1.jobs["j"].job_review_path) / FRAMES_FILENAME).exists()
+    assert has_file(do1, FRAMES)
 
 
-def test_released_artifact_grants_read_to_parties():
+def test_unnamed_data_owner_gets_no_file():
+    """Every party approving the submitter's read gives no data owner a copy."""
     enclave, do1, do2, ds = build_quad()
-    submit(ds, enclave, do1, do2, CRASH_CODE, [FRAMES])
-    run_to_completion(enclave, do1, do2, ds, [FRAMES])
+    frames = readable(FRAMES, ds.email)
+    submit(ds, enclave, do1, do2, CRASH_CODE, frames)
+    run_to_completion(enclave, do1, do2, ds, frames)
+    do1.sync()
+    do2.sync()
 
-    datasite = enclave._rds.syftbox_folder / enclave.email
-    frames = Path(enclave.jobs["j"].job_review_path) / FRAMES_FILENAME
-    ctx = SyftPermContext(datasite=datasite)
-    for party in (ds, do1, do2):
-        assert ctx.open(str(frames.relative_to(datasite))).has_read_access(party.email)
+    assert has_file(ds, FRAMES)
+    assert not has_file(do1, FRAMES)
+    assert not has_file(do2, FRAMES)
+
+
+def test_approved_file_grants_read_to_named_parties():
+    enclave, do1, do2, ds = build_quad()
+    frames = readable(FRAMES, ds.email, do1.email)
+    submit(ds, enclave, do1, do2, CRASH_CODE, frames)
+    run_to_completion(enclave, do1, do2, ds, frames)
+
+    assert readers_of(enclave, FRAMES, (ds, do1, do2)) == [ds, do1]
 
 
 def test_one_owner_withholding_blocks_frames():
     enclave, do1, do2, ds = build_quad()
-    submit(ds, enclave, do1, do2, CRASH_CODE, [FRAMES])
-    enclave.sync()
-    enclave.receive_jobs()
-    do1.sync()
-    do2.sync()
-    do1.approve_job(do1.jobs["j"], [FRAMES])
+    frames = readable(FRAMES, ds.email)
+    submit(ds, enclave, do1, do2, CRASH_CODE, frames)
+    distribute(enclave, do1, do2)
+    do1.approve_job(do1.jobs["j"], frames)
     do2.approve_job(do2.jobs["j"], None)
-    enclave.sync()
-    enclave.run_jobs()
-    enclave.distribute_results()
-    ds.sync()
+    run_and_share(enclave, ds)
 
-    assert not (Path(ds.jobs["j"].job_review_path) / FRAMES_FILENAME).exists()
+    assert not has_file(ds, FRAMES)
+
+
+def test_file_approved_by_some_parties_goes_to_no_one():
+    """Each file has the approval of one party only, so nobody reads either."""
+    enclave, do1, do2, ds = build_quad()
+    parties = (ds, do1, do2)
+    emails = [p.email for p in parties]
+    submit(ds, enclave, do1, do2, CRASH_CODE, readable(["stderr.txt", FRAMES], *emails))
+    distribute(enclave, do1, do2)
+    do1.approve_job(do1.jobs["j"], readable(FRAMES, *emails))
+    do2.approve_job(do2.jobs["j"], readable("stderr.txt", *emails))
+    run_and_share(enclave, *parties)
+
+    assert readers_of(enclave, FRAMES, parties) == []
+    assert readers_of(enclave, "stderr.txt", parties) == []
+    assert not any(has_file(p, FRAMES) for p in parties)
 
 
 @ENTRY_POINTS
-def test_later_grant_releases_withheld_artifact(via_job):
-    """A party can release an item after the run, without a new submission."""
+def test_later_approval_releases_withheld_file(via_job):
+    """A party can approve a file after the run, without a new submission."""
     enclave, do1, do2, ds = build_quad()
-    submit(ds, enclave, do1, do2, OK_CODE, [LOGS])
+    logs = readable(LOGS, ds.email)
+    submit(ds, enclave, do1, do2, OK_CODE, logs)
     run_to_completion(enclave, do1, do2, ds, None)
-    assert not (Path(ds.jobs["j"].job_review_path) / "stdout.txt").exists()
+    assert not has_file(ds, "stdout.txt")
 
-    # Both owners amend their approval, then the enclave applies the grants.
+    # Both owners amend their approval, then the enclave applies it.
     for do in (do1, do2):
-        assert update(do, [LOGS], via_job) == {LOGS: True}
-        assert do.jobs["j"].approved_read_permissions == {LOGS: True}
-    enclave.sync()
-    enclave.run_jobs()
-    enclave.distribute_results()
-    ds.sync()
+        assert update(do, logs, via_job) == logs
+        assert do.jobs["j"].approved_read_permissions == logs
+    run_and_share(enclave, ds)
 
-    assert (Path(ds.jobs["j"].job_review_path) / "stdout.txt").exists()
+    assert has_file(ds, "stdout.txt")
 
 
-def test_ungranted_artifact_unreadable_during_sync(monkeypatch):
-    """An ungranted artifact is never readable, whenever a sync runs.
+def test_unapproved_file_unreadable_during_sync(monkeypatch):
+    """An unapproved file is never readable, whenever a sync runs.
 
     The job runner writes the logs into the review folder while the job runs,
-    so only the grants protect them. This test fails if a later change grants
-    read on a gated artifact that not every party released.
+    so only the permissions protect them. This test fails if a later change
+    grants read on a file that not every party approved.
     """
     enclave, do1, do2, ds = build_quad()
-    submit(ds, enclave, do1, do2, OK_CODE, [LOGS])
-    enclave.sync()
-    enclave.receive_jobs()
-    do1.sync()
-    do2.sync()
+    submit(ds, enclave, do1, do2, OK_CODE, readable(LOGS, ds.email))
+    distribute(enclave, do1, do2)
     do1.approve_job(do1.jobs["j"], None)
     do2.approve_job(do2.jobs["j"], None)
     enclave.sync()
 
-    # Read the review path without a sync, so the spy below cannot recurse.
-    review = Path(enclave._rds.job_client.jobs["j"].job_review_path)
-    datasite = enclave._rds.syftbox_folder / enclave.email
     exposed = []
     engine = enclave._rds.sync_engine
     real_sync = type(engine).sync
 
     def spy(self, *args, **kwargs):
+        # readers_of reads the job list without a sync, so this cannot recurse.
         if self is engine:
-            ctx = SyftPermContext(datasite=datasite)
             exposed.extend(
                 (name, party.email)
-                for name in ("stdout.txt", "stderr.txt")
-                for party in (ds, do1, do2)
-                if ctx.can_read(str((review / name).relative_to(datasite)), party.email)
+                for name in LOGS
+                for party in readers_of(enclave, name, (ds, do1, do2))
             )
         return real_sync(self, *args, **kwargs)
 
@@ -343,54 +427,48 @@ def test_ungranted_artifact_unreadable_during_sync(monkeypatch):
     monkeypatch.setattr(type(engine), "sync", spy)
     enclave.run_jobs()
 
-    assert not exposed, f"ungranted logs were readable during a sync: {exposed}"
+    assert not exposed, f"unapproved logs were readable during a sync: {exposed}"
 
 
 def test_amendment_needs_approval_first():
     enclave, do1, do2, ds = build_quad()
-    submit(ds, enclave, do1, do2, OK_CODE, [LOGS])
-    enclave.sync()
-    enclave.receive_jobs()
-    do1.sync()
+    logs = readable(LOGS, ds.email)
+    submit(ds, enclave, do1, do2, OK_CODE, logs)
+    distribute(enclave, do1)
 
     with pytest.raises(ValueError, match="Approve the job first"):
-        do1.update_read_permissions(do1.jobs["j"], [LOGS])
+        do1.update_read_permissions(do1.jobs["j"], logs)
 
 
-def test_late_grant_reaches_data_owners():
-    """distribute_results runs once, so a later release needs its own path."""
+def test_late_approval_reaches_named_data_owners():
+    """distribute_results runs once, so a later approval needs its own path."""
     enclave, do1, do2, ds = build_quad()
-    submit(ds, enclave, do1, do2, CRASH_CODE, [FRAMES])
+    frames = readable(FRAMES, ds.email, do1.email, do2.email)
+    submit(ds, enclave, do1, do2, CRASH_CODE, frames)
     run_to_completion(enclave, do1, do2, ds, None)
     do1.sync()
-    assert not (Path(do1.jobs["j"].job_review_path) / FRAMES_FILENAME).exists()
+    assert not has_file(do1, FRAMES)
 
     for do in (do1, do2):
-        do.update_read_permissions(do.jobs["j"], [FRAMES])
-    enclave.sync()
-    enclave.run_jobs()
-    enclave.distribute_results()
-    ds.sync()
-    do1.sync()
-    do2.sync()
+        do.update_read_permissions(do.jobs["j"], frames)
+    run_and_share(enclave, ds, do1, do2)
 
-    assert (Path(ds.jobs["j"].job_review_path) / FRAMES_FILENAME).exists()
-    assert (Path(do1.jobs["j"].job_review_path) / FRAMES_FILENAME).exists()
-    assert (Path(do2.jobs["j"].job_review_path) / FRAMES_FILENAME).exists()
+    assert has_file(ds, FRAMES)
+    assert has_file(do1, FRAMES)
+    assert has_file(do2, FRAMES)
 
 
 def test_approve_job_rejects_non_enclave_job():
     """JobInfo.approve takes a reason first, so read permissions would land there.
 
     SyftEnclaveClient.jobs wraps only a job whose job_type header says enclave.
-    An unwrapped job used to record the read permissions as its approval reason and
-    grant nothing, with no error.
+    An unwrapped job used to record the read permissions as its approval reason
+    and approve none, with no error.
     """
     enclave, do1, do2, ds = build_quad()
-    submit(ds, enclave, do1, do2, OK_CODE, [LOGS])
-    enclave.sync()
-    enclave.receive_jobs()
-    do1.sync()
+    logs = readable(LOGS, ds.email)
+    submit(ds, enclave, do1, do2, OK_CODE, logs)
+    distribute(enclave, do1)
 
     # The same job, read through the plain client, is a JobInfo and not an
     # EnclaveJobInfo.
@@ -398,7 +476,7 @@ def test_approve_job_rejects_non_enclave_job():
     assert not isinstance(plain, EnclaveJobInfo)
 
     with pytest.raises(TypeError, match="not an enclave job"):
-        do1.approve_job(plain, [LOGS])
+        do1.approve_job(plain, logs)
 
 
 # -- the job-level calls, same as on a datasite ---------------------------------
@@ -412,17 +490,16 @@ def test_approve_signature_matches_datasite_job():
         assert list(base.parameters) == list(enclave.parameters)
 
 
-def test_data_owner_cannot_read_combined_grant():
+def test_data_owner_cannot_read_combined_approval():
     """A data owner holds only its own approval file."""
     enclave, do1, do2, ds = build_quad()
-    submit(ds, enclave, do1, do2, OK_CODE, [LOGS])
-    enclave.sync()
-    enclave.receive_jobs()
-    do1.sync()
-    do1.jobs["j"].approve(read_permissions=[LOGS])
+    logs = readable(LOGS, ds.email)
+    submit(ds, enclave, do1, do2, OK_CODE, logs)
+    distribute(enclave, do1)
+    do1.jobs["j"].approve(read_permissions=logs)
 
     job = do1.jobs["j"]
-    assert job.approved_read_permissions == {LOGS: True}
+    assert job.approved_read_permissions == logs
     with pytest.raises(LookupError, match="Only the enclave"):
         job.read_permissions_to_share
 
@@ -430,101 +507,102 @@ def test_data_owner_cannot_read_combined_grant():
 # -- warning and display --------------------------------------------------------
 
 
-def test_owner_logs_grant_warns():
+def test_owner_logs_approval_warns():
     enclave, do1, do2, ds = build_quad()
-    submit(ds, enclave, do1, do2, OK_CODE, [LOGS])
-    enclave.sync()
-    enclave.receive_jobs()
-    do1.sync()
+    logs = readable(LOGS, ds.email)
+    submit(ds, enclave, do1, do2, OK_CODE, logs)
+    distribute(enclave, do1)
 
-    with pytest.warns(UserWarning, match="stdout and stderr"):
-        do1.jobs["j"].approve(read_permissions=[LOGS])
+    with pytest.warns(UserWarning, match="stdout or stderr"):
+        do1.jobs["j"].approve(read_permissions=logs)
 
 
 def test_display_on_enclave_shows_every_party():
     enclave, do1, do2, ds = build_quad()
-    submit(ds, enclave, do1, do2, OK_CODE, [LOGS, FRAMES])
-    enclave.sync()
-    enclave.receive_jobs()
-    do1.sync()
-    do1.jobs["j"].approve(read_permissions=[FRAMES])
+    submit(ds, enclave, do1, do2, OK_CODE, readable(["stdout.txt", FRAMES], ds.email))
+    distribute(enclave, do1)
+    do1.jobs["j"].approve(read_permissions=readable(FRAMES, ds.email))
     enclave.sync()
 
     rows = dict(enclave.jobs["j"].read_permission_rows())
-    assert rows["Requested"] == "logs, traceback_frames"
-    assert rows[f"Granted by {do1.email}"] == "traceback_frames"
-    assert rows[f"Granted by {do2.email}"] == "(pending)"
-    assert rows["To submitter"] == "none"
+    # The request survives the distribution, which writes the approval files.
+    assert rows["Requested"] == (
+        f"stdout.txt ({ds.email}), traceback_frames.json ({ds.email})"
+    )
+    assert rows[f"Approved by {do1.email}"] == f"traceback_frames.json ({ds.email})"
+    assert rows[f"Approved by {do2.email}"] == "(pending)"
+    assert rows["Approved by all"] == "none"
 
 
-def test_display_on_data_owner_shows_own_grant():
+def test_display_on_data_owner_shows_own_approval():
     enclave, do1, do2, ds = build_quad()
-    submit(ds, enclave, do1, do2, OK_CODE, [FRAMES])
-    enclave.sync()
-    enclave.receive_jobs()
-    do1.sync()
-    do1.jobs["j"].approve(read_permissions=[FRAMES])
+    frames = readable(FRAMES, ds.email)
+    submit(ds, enclave, do1, do2, OK_CODE, frames)
+    distribute(enclave, do1)
+    do1.jobs["j"].approve(read_permissions=frames)
 
     job = do1.jobs["j"]
     assert job.read_permission_rows() == [
-        ("Requested", "traceback_frames"),
-        ("Your grant", "traceback_frames"),
-        ("To submitter", "needs the grant of every party"),
+        ("Requested", f"traceback_frames.json ({ds.email})"),
+        ("Approved by you", f"traceback_frames.json ({ds.email})"),
+        ("Approved by all", "needs the approval of every party"),
     ]
-    assert "Your grant:" in job._repr_html_()
+    assert "Approved by you:" in job._repr_html_()
 
 
 # -- the request is DS-writable after the approval ------------------------------
 
 
 def test_request_edit_after_approval_adds_nothing():
-    """A wider grant than the request must not release the extra items later."""
+    """A wider approval than the request must not share the extra files later."""
     enclave, do1, do2, ds = build_quad()
-    submit(ds, enclave, do1, do2, OK_CODE, [FRAMES])
-    enclave.sync()
-    enclave.receive_jobs()
-    do1.sync()
-    do2.sync()
+    frames = readable(FRAMES, ds.email)
+    wider = readable([*LOGS, FRAMES], ds.email)
+    submit(ds, enclave, do1, do2, OK_CODE, frames)
+    distribute(enclave, do1, do2)
     for do in (do1, do2):
-        do.jobs["j"].approve(read_permissions=[LOGS, FRAMES])
-        assert do.jobs["j"].approved_read_permissions == {FRAMES: True}
+        do.jobs["j"].approve(read_permissions=wider)
+        assert do.jobs["j"].approved_read_permissions == frames
     enclave.sync()
 
     # The DS widens its request on the enclave's copy after the approval.
     path = Path(enclave._rds.job_client.jobs["j"].job_submission_path) / "config.yaml"
     data = yaml.safe_load(path.read_text())
-    data["headers"]["requested_read_permissions"] = [LOGS, FRAMES]
+    data["headers"][REQUESTED_READ_PERMISSIONS_HEADER] = wider
     path.write_text(yaml.safe_dump(data))
 
     enclave.run_jobs()
     enclave.distribute_results()
     ds.sync()
 
-    assert enclave.jobs["j"].read_permissions_to_share == {FRAMES}
-    assert not (Path(ds.jobs["j"].job_review_path) / "stdout.txt").exists()
+    assert enclave.jobs["j"].read_permissions_to_share == frames
+    assert not has_file(ds, "stdout.txt")
 
 
-def test_enclave_approve_refuses_items_as_reason():
+def test_enclave_approve_refuses_misplaced_read_permissions():
+    """Read permissions given as the reason, or as an item list, are refused."""
     enclave, do1, do2, ds = build_quad()
-    submit(ds, enclave, do1, do2, OK_CODE, [LOGS])
-    enclave.sync()
-    enclave.receive_jobs()
-    do1.sync()
+    logs = readable(LOGS, ds.email)
+    submit(ds, enclave, do1, do2, OK_CODE, logs)
+    distribute(enclave, do1)
 
     with pytest.raises(TypeError, match="read_permissions="):
-        do1.jobs["j"].approve([LOGS])
+        do1.jobs["j"].approve(logs)
+    with pytest.raises(TypeError, match="dict of file names"):
+        do1.jobs["j"].approve(read_permissions=["logs"])
 
 
 # -- every required party, as the approval gate counts them ---------------------
 
 
-def test_deleted_approval_file_blocks_late_grant():
-    """The late-grant path must count every configured party, not the files."""
+def test_deleted_approval_file_blocks_late_approval():
+    """The late-approval path must count every configured party, not the files."""
     enclave, do1, do2, ds = build_quad()
-    submit(ds, enclave, do1, do2, OK_CODE, [LOGS])
+    logs = readable(LOGS, ds.email)
+    submit(ds, enclave, do1, do2, OK_CODE, logs)
     run_to_completion(enclave, do1, do2, ds, None)
 
-    do1.jobs["j"].update_read_permissions([LOGS])
+    do1.jobs["j"].update_read_permissions(logs)
     enclave.sync()
     review = Path(enclave._rds.job_client.jobs["j"].job_review_path)
     (review / enclave_approval_file_name(do2.email)).unlink()
@@ -532,32 +610,29 @@ def test_deleted_approval_file_blocks_late_grant():
     enclave.distribute_results()
     ds.sync()
 
-    assert enclave.read_permissions_to_share(enclave._rds.job_client.jobs["j"]) == set()
-    assert not (Path(ds.jobs["j"].job_review_path) / "stdout.txt").exists()
+    assert enclave.read_permissions_to_share(enclave._rds.job_client.jobs["j"]) == {}
+    assert not has_file(ds, "stdout.txt")
 
 
 def test_display_lists_party_without_file():
     enclave, do1, do2, ds = build_quad()
-    submit(ds, enclave, do1, do2, OK_CODE, [LOGS])
-    enclave.sync()
-    enclave.receive_jobs()
+    submit(ds, enclave, do1, do2, OK_CODE, readable(LOGS, ds.email))
+    distribute(enclave)
     review = Path(enclave._rds.job_client.jobs["j"].job_review_path)
     (review / enclave_approval_file_name(do2.email)).unlink()
 
     rows = dict(enclave.jobs["j"].read_permission_rows())
-    assert rows[f"Granted by {do1.email}"] == "(pending)"
-    assert rows[f"Granted by {do2.email}"] == "(no approval file)"
+    assert rows[f"Approved by {do1.email}"] == "(pending)"
+    assert rows[f"Approved by {do2.email}"] == "(no approval file)"
 
 
 def test_job_reject_reaches_enclave():
     """``job.reject`` on a job from ``jobs`` is pushed like an approval."""
     enclave, do1, do2, ds = build_quad()
-    submit(ds, enclave, do1, do2, OK_CODE, [LOGS])
-    enclave.sync()
-    enclave.receive_jobs()
-    do1.sync()
-    do2.sync()
-    do1.jobs["j"].approve(read_permissions=[LOGS])
+    logs = readable(LOGS, ds.email)
+    submit(ds, enclave, do1, do2, OK_CODE, logs)
+    distribute(enclave, do1, do2)
+    do1.jobs["j"].approve(read_permissions=logs)
     with warnings.catch_warnings(record=True) as record:
         warnings.simplefilter("always")
         do2.jobs["j"].reject("too much data")

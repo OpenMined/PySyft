@@ -4,6 +4,7 @@ from typing import Optional
 from syft_job.client import BaseJobClient, JobClient
 from syft_job.job import JobsList
 from syft_job.models import JobSubmissionMetadata
+from syft_job.read_permissions import ReadPermissions
 
 
 class EnclaveJobClient(BaseJobClient):
@@ -55,7 +56,7 @@ class EnclaveJobClient(BaseJobClient):
         job_name: Optional[str] = "",
         datasets: Optional[dict[str, list[str]]] = None,
         share_results_with_do: bool = False,
-        request_read_permissions: Optional[list[str]] = None,
+        request_read_permissions: Optional[ReadPermissions] = None,
         **kwargs,
     ) -> Path:
         """Submit a Python job with enclave metadata.

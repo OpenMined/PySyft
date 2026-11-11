@@ -3,8 +3,10 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
+from pydantic import ValidationError
 
 from syft_bg.common.state import JsonStateManager
+from syft_bg.email_approve.config import EmailApproveConfig
 from syft_bg.email_approve.gmail_message import (
     _strip_quoted_reply,
 )
@@ -127,6 +129,12 @@ class TestStripQuotedReply:
 
 # --- Handler tests ---
 
+# What the submitter asked for: who may read which run file.
+REQUESTED = {
+    "stdout.txt": ["ds@example.com", "other@example.com"],
+    "stderr.txt": ["ds@example.com"],
+}
+
 
 class TestEmailApproveHandler:
     def _make_handler(self, tmp_path, **kwargs):
@@ -145,18 +153,26 @@ class TestEmailApproveHandler:
         return handler, job_client, job_runner, state, notify_state
 
     @pytest.mark.parametrize(
-        "kwargs, read_permissions",
-        [({}, []), ({"default_approved_read_permissions": ["logs"]}, ["logs"])],
-        ids=["default", "configured"],
+        "default_files, read_permissions",
+        [
+            (None, {}),
+            (["stdout.txt", "stderr.txt"], REQUESTED),
+            (["stdout.txt", "returncode.txt"], {"stdout.txt": REQUESTED["stdout.txt"]}),
+        ],
+        ids=["default", "configured", "only_requested_files_in_config"],
     )
-    def test_approve_job(self, tmp_path, kwargs, read_permissions):
+    def test_approve_job(self, tmp_path, default_files, read_permissions):
         handler, job_client, job_runner, state, notify_state = self._make_handler(
-            tmp_path, **kwargs
+            tmp_path, default_approved_read_permissions=default_files
         )
 
         notify_state.store_thread_id("test.job", "thread123")
 
-        mock_job = MagicMock(status="pending", submitted_by="ds@example.com")
+        mock_job = MagicMock(
+            status="pending",
+            submitted_by="ds@example.com",
+            requested_read_permissions=REQUESTED,
+        )
         mock_job.name = "test.job"
         job_client.jobs = [mock_job]
 
@@ -281,13 +297,25 @@ class TestStateReverseLookup:
 
 
 def test_email_config_loads_default_approved_read_permissions(tmp_path):
-    from syft_bg.email_approve.config import EmailApproveConfig
-
     config_path = tmp_path / "config.yaml"
     config_path.write_text(
         "do_email: do@example.com\n"
         "email_approve:\n"
-        "  default_approved_read_permissions: [logs, traceback_frames]\n"
+        "  default_approved_read_permissions: [stdout.txt, traceback_frames.json]\n"
     )
     config = EmailApproveConfig.load(config_path)
-    assert config.default_approved_read_permissions == ["logs", "traceback_frames"]
+    assert config.default_approved_read_permissions == [
+        "stdout.txt",
+        "traceback_frames.json",
+    ]
+
+
+def test_email_config_refuses_unknown_read_permission_file(tmp_path):
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text(
+        "do_email: do@example.com\n"
+        "email_approve:\n"
+        "  default_approved_read_permissions: [logs]\n"
+    )
+    with pytest.raises(ValidationError, match="'logs'"):
+        EmailApproveConfig.load(config_path)

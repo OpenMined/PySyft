@@ -272,34 +272,54 @@ class TestCreateApi:
 
 
 class TestApiReadPermissions:
-    """A call's approval releases what its api says, set when it was made."""
+    """A caller reads the run files its api names, set when it was made."""
 
-    def test_api_releases_nothing_by_default(self, temp_dir):
+    def test_api_names_no_files_by_default(self, temp_dir):
         with _patched_paths(temp_dir) as store:
             _create(_write_project(temp_dir), allow_any_peer=True)
             assert store.get("main").approved_read_permissions == []
 
-    def test_config_sets_released_items(self, temp_dir):
+    def test_config_sets_readable_files(self, temp_dir):
         with _patched_paths(temp_dir) as store:
             SyftBgConfig(
                 do_email=DO_EMAIL,
                 syftbox_root=temp_dir / "syftbox",
                 approve=AutoApproveConfig(
-                    default_approved_read_permissions=["logs", "return_code"]
+                    default_approved_read_permissions=["stdout.txt", "returncode.txt"]
                 ),
             ).save()
             _create(_write_project(temp_dir), allow_any_peer=True)
             assert store.get("main").approved_read_permissions == [
-                "logs",
-                "return_code",
+                "stdout.txt",
+                "returncode.txt",
             ]
 
     def test_argument_overrides_config(self, temp_dir):
         with _patched_paths(temp_dir) as store:
             _create(
+                _write_project(temp_dir),
+                allow_any_peer=True,
+                read_permissions=["stdout.txt"],
+            )
+            assert store.get("main").approved_read_permissions == ["stdout.txt"]
+
+    def test_unknown_file_refused(self, temp_dir):
+        with _patched_paths(temp_dir) as store:
+            result = _create(
                 _write_project(temp_dir), allow_any_peer=True, read_permissions=["logs"]
             )
-            assert store.get("main").approved_read_permissions == ["logs"]
+            assert result.success is False
+            assert "'logs'" in result.error and "stdout.txt" in result.error
+            assert store.names() == []
+
+    def test_dict_refused(self, temp_dir):
+        with _patched_paths(temp_dir):
+            with pytest.raises(TypeError, match="as a list"):
+                _create(
+                    _write_project(temp_dir),
+                    allow_any_peer=True,
+                    read_permissions={"stdout.txt": ["ds@test.com"]},
+                )
 
 
 def _approved_job(

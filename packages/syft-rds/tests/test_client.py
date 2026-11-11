@@ -153,11 +153,11 @@ def test_submit_python_job_passes_requested_read_permissions(tmp_path):
             do.email,
             str(code),
             force_submission=True,
-            request_read_permissions=["logs"],
+            request_read_permissions={"stdout.txt": [ds.email]},
         )
 
     kwargs = ds.job_client.submit_python_job.call_args.kwargs
-    assert kwargs["request_read_permissions"] == ["logs"]
+    assert kwargs["request_read_permissions"] == {"stdout.txt": [ds.email]}
 
 
 def test_submit_python_job_keeps_positional_order(tmp_path):

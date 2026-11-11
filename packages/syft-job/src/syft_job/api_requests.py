@@ -136,8 +136,10 @@ def _build_job(
 
 
 def _approve(client: JobClient, job_ref: JobRef, api: ResolvedApi) -> None:
-    """Record the job as received from the api, and approve it with the
-    api's approved read permissions."""
+    """Record the job as received from the api, and approve it.
+
+    The call asks for, and gets, read on the api's files for the caller.
+    """
     now = datetime.now(timezone.utc)
     record = OwnerJobRecord(
         received_hash=submission_hash(client.manager.submission_dir(job_ref)),
@@ -146,7 +148,12 @@ def _approve(client: JobClient, job_ref: JobRef, api: ResolvedApi) -> None:
     )
     if not client.manager.claim_owner_record(job_ref, record):
         return
-    state = JobState(status=JobStatus.PENDING, received_at=now)
+    read_permissions = {f: [job_ref.ds_email] for f in api.approved_read_permissions}
+    state = JobState(
+        status=JobStatus.PENDING,
+        received_at=now,
+        requested_read_permissions=read_permissions,
+    )
     client.manager.write_state(job_ref, state)
     job = JobInfo(
         job_metadata=client.manager.read_submission(job_ref),
@@ -157,5 +164,5 @@ def _approve(client: JobClient, job_ref: JobRef, api: ResolvedApi) -> None:
     )
     job.approve(
         approval_method=API_APPROVAL_METHOD,
-        read_permissions=api.approved_read_permissions,
+        read_permissions=read_permissions,
     )

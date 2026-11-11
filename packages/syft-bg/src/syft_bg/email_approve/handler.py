@@ -11,7 +11,9 @@ from syft_bg.common.state import JsonStateManager
 
 if TYPE_CHECKING:
     from syft_job.client import JobClient
+    from syft_job.job import JobInfo
     from syft_job.job_runner import SyftJobRunner
+    from syft_job.read_permissions import ReadPermissions
 
 
 class EmailAction(Enum):
@@ -124,7 +126,7 @@ class EmailApproveHandler:
         """Approve a job, execute it, and share results."""
         job.approve(
             approval_method=approval_method,
-            read_permissions=self.default_approved_read_permissions,
+            read_permissions=self._read_permissions_to_approve(job),
         )
         self.state.mark_notified(state_key, "processed")
 
@@ -132,6 +134,14 @@ class EmailApproveHandler:
             job.name, job.submitted_by, share_outputs_with_submitter=True
         )
         print(f"[EmailApproveHandler] Approved job: {job_name}")
+
+    def _read_permissions_to_approve(self, job: JobInfo) -> ReadPermissions:
+        """The submitter's request, on the files in default_approved_read_permissions."""
+        return {
+            file: emails
+            for file, emails in job.requested_read_permissions.items()
+            if file in self.default_approved_read_permissions
+        }
 
     def _approve_and_create_api(self, job, job_name: str, state_key: str) -> None:
         """Approve a job, and create an api from it that the submitter calls.

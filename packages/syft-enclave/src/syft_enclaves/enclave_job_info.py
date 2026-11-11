@@ -5,15 +5,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable, Iterable, Optional
 
-from pydantic import BaseModel, Field
-from syft_job.read_permissions import (  # noqa: F401 (re-exported)
-    READ_PERMISSION_ITEMS,
-    ReadPermissionItem,
-    ReadPermissionsArg,
+from pydantic import BaseModel, Field, field_validator
+from syft_job.read_permissions import (
+    ReadPermissions,
     check_approval_reason,
-    format_items,
-    normalize_read_permissions,
+    check_read_permissions,
+    format_read_permissions,
     restrict_to_request,
+    valid_read_permissions,
     warn_on_logs_release,
 )
 from syft_job.job import JobInfo
@@ -28,14 +27,20 @@ class PartyApprovalStatus(BaseModel):
     dataset: Optional[str] = None
     status: JobStatus = JobStatus.PENDING
     approved_at: Optional[datetime] = None
-    # The items this party releases. Absent means the party released nothing,
-    # so an approval file from an older client grants nothing.
-    approved_read_permissions: dict[str, bool] = Field(default_factory=dict)
+    # Who this party lets read which file, as {file: [emails]}. Absent means
+    # nobody, so an approval file from an older client approves nothing.
+    approved_read_permissions: dict[str, list[str]] = Field(default_factory=dict)
     # What the party approved: submission_hash() of the job it reviewed. An
     # approval counts only while the job still hashes to this value.
     submission_hash: Optional[str] = None
     rejected_at: Optional[datetime] = None
     reason: Optional[str] = None
+
+    @field_validator("approved_read_permissions", mode="before")
+    @classmethod
+    def _drop_invalid_read_permissions(cls, value: object) -> ReadPermissions:
+        """Keep only the valid entries, so an item-based older file approves nothing."""
+        return valid_read_permissions(value)
 
     def save_json(self, path: Path) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -128,26 +133,30 @@ class EnclaveJobInfo(JobInfo):
             self._on_approval_change(self._approval_file)
 
     @property
-    def approved_read_permissions(self) -> dict[str, bool]:
-        """The items this party released, as recorded in its approval file."""
+    def approved_read_permissions(self) -> ReadPermissions:
+        """A party's own approval, from its approval file.
+
+        Anyone without an approval file, such as the enclave or the submitter,
+        reads what every party approved, as the enclave recorded it in the state.
+        """
         if not self._approval_file.exists():
-            return {}
-        return normalize_read_permissions(
-            PartyApprovalStatus.load_json(self._approval_file).approved_read_permissions
-        )
+            return super().approved_read_permissions
+        return PartyApprovalStatus.load_json(
+            self._approval_file
+        ).approved_read_permissions
 
     @property
-    def read_permissions_to_share(self) -> set[str]:
-        """The items that go out: requested, and released by every party.
+    def read_permissions_to_share(self) -> ReadPermissions:
+        """Per file, the emails that the submitter requested and every party approved.
 
         Raises:
             LookupError: Off the enclave. A data owner holds only its own
-                approval file, so it reads its own grant in ``approved_read_permissions``.
+                approval file, so it reads its own in ``approved_read_permissions``.
         """
         if self.current_user_email != self.datasite_owner_email:
             raise LookupError(
-                "Only the enclave holds the grant of every party. "
-                "Read this party's grant in `approved_read_permissions`."
+                "Only the enclave holds the approval of every party. "
+                "Read this party's approval in `approved_read_permissions`."
             )
         return read_permissions_approved_by_all_parties(
             self.job_review_path,
@@ -198,49 +207,52 @@ class EnclaveJobInfo(JobInfo):
     def read_permission_rows(self) -> list[tuple[str, str]]:
         """The read permission state as (label, value) rows, for display.
 
-        The enclave holds the approval file of every party, so it shows each
-        grant and the combined result. A data owner shows its own grant.
+        The enclave shows the approval of every party and what all approved.
+        A data owner shows its own approval.
         """
-        rows = [("Requested", format_items(self.requested_read_permissions))]
+        rows = [("Requested", format_read_permissions(self.requested_read_permissions))]
         if self.current_user_email == self.datasite_owner_email:
-            for party, approval in _party_approvals(
-                self.job_review_path, self._required_approvers
-            ):
-                if approval is None:
-                    value = "(no approval file)"
-                elif approval.status == JobStatus.APPROVED:
-                    value = format_items(
-                        normalize_read_permissions(approval.approved_read_permissions)
-                    )
-                else:
-                    value = f"({approval.status.value})"
-                rows.append((f"Granted by {party}", value))
-            rows.append(("To submitter", format_items(self.read_permissions_to_share)))
-        elif self._approval_file.exists():
-            rows.append(("Your grant", format_items(self.approved_read_permissions)))
-            rows.append(("To submitter", "needs the grant of every party"))
+            return rows + self._party_rows()
+        if self._approval_file.exists():
+            own = format_read_permissions(self.approved_read_permissions)
+            rows.append(("Approved by you", own))
+            rows.append(("Approved by all", "needs the approval of every party"))
         return rows
+
+    def _party_rows(self) -> list[tuple[str, str]]:
+        """Each party's approval, then what every party approved."""
+        approvals = _party_approvals(self.job_review_path, self._required_approvers)
+        rows = [(f"Approved by {p}", _approval_summary(a)) for p, a in approvals]
+        shared = format_read_permissions(self.read_permissions_to_share)
+        return [*rows, ("Approved by all", shared)]
+
+    def _restrict_to_request(
+        self, read_permissions: Optional[ReadPermissions]
+    ) -> ReadPermissions:
+        """The part of ``read_permissions`` the submitter requested.
+
+        Raises:
+            TypeError, ValueError: If ``read_permissions`` is not {file: [emails]}.
+        """
+        checked = check_read_permissions(read_permissions)
+        return restrict_to_request(checked, self.requested_read_permissions)
 
     def approve(
         self,
         reason: Optional[str] = None,
         approval_method: str = "manual",
-        read_permissions: ReadPermissionsArg = None,
+        read_permissions: Optional[ReadPermissions] = None,
     ) -> None:
         """Approve this submission in the DO's own approval file.
 
-        ``read_permissions`` names the items in ``ReadPermissionItem`` that this party
-        releases to the other parties. The enclave releases an item only when
-        every party released it. Omit the argument to release nothing. Only the
-        items that the submitter requested are stored, so a later edit of the
-        request cannot add items.
-
-        The file records the hash of the submission the DO has, so the enclave
-        runs the job only while it still matches. A DO may approve again after
-        the submission changed. The approval file does not record ``reason`` or
-        ``approval_method``.
+        ``read_permissions`` says who may read which file, as {file: [emails]}.
+        The enclave shares a file with an email only when every party approved
+        it, and only what the submitter requested is kept. The file records the
+        hash of the submission, so the enclave runs the job only while it still
+        matches. ``reason`` and ``approval_method`` are not recorded.
         """
         check_approval_reason(reason)
+        approved = self._restrict_to_request(read_permissions)
         approval = self._load_own_approval()
         current = submission_hash(self.job_submission_path)
         if approval.status == JobStatus.REJECTED or _approves(approval, current):
@@ -248,35 +260,28 @@ class EnclaveJobInfo(JobInfo):
         approval.status = JobStatus.APPROVED
         approval.approved_at = datetime.now(timezone.utc)
         approval.submission_hash = current
-        approval.approved_read_permissions = restrict_to_request(
-            read_permissions, self.requested_read_permissions
-        )
-        warn_on_logs_release(
-            approval.approved_read_permissions, self.requested_read_permissions
-        )
+        approval.approved_read_permissions = approved
+        warn_on_logs_release(approved)
         self._save_own_approval(approval)
         print(f"Job '{self.name}' approved by {self.current_user_email}!")
 
     def update_read_permissions(
-        self, read_permissions: ReadPermissionsArg
-    ) -> dict[str, bool]:
-        """Replace the items this party releases, and return the new map.
+        self, read_permissions: Optional[ReadPermissions]
+    ) -> ReadPermissions:
+        """Replace who this party lets read which file, and return what was kept.
 
-        The enclave applies the new set on its next cycle.
+        The enclave applies the change on its next cycle.
         """
+        approved = self._restrict_to_request(read_permissions)
         approval = self._load_own_approval()
         if approval.status != JobStatus.APPROVED:
             raise ValueError(
                 f"Approve the job first (current: {approval.status.value})."
             )
-        approval.approved_read_permissions = restrict_to_request(
-            read_permissions, self.requested_read_permissions
-        )
-        warn_on_logs_release(
-            approval.approved_read_permissions, self.requested_read_permissions
-        )
+        approval.approved_read_permissions = approved
+        warn_on_logs_release(approved)
         self._save_own_approval(approval)
-        return approval.approved_read_permissions
+        return approved
 
     def reject(self, reason: Optional[str] = None) -> None:
         """Reject this job in the DO's own approval file.
@@ -293,6 +298,15 @@ class EnclaveJobInfo(JobInfo):
         approval.reason = reason
         self._save_own_approval(approval)
         print(f"Job '{self.name}' rejected by {self.current_user_email}.")
+
+
+def _approval_summary(approval: Optional[PartyApprovalStatus]) -> str:
+    """One party's approval for display, or why it has none."""
+    if approval is None:
+        return "(no approval file)"
+    if approval.status != JobStatus.APPROVED:
+        return f"({approval.status.value})"
+    return format_read_permissions(approval.approved_read_permissions)
 
 
 def _approves(approval: PartyApprovalStatus | None, current_hash: str) -> bool:
@@ -332,36 +346,20 @@ def _party_approvals(
 
 def read_permissions_approved_by_all_parties(
     review_dir: Path,
-    requested: Optional[Iterable[str]] = None,
+    requested: ReadPermissions,
     parties: Optional[Iterable[str]] = None,
-) -> set[str]:
-    """Return the items that every party released.
+) -> ReadPermissions:
+    """Per file, the emails in ``requested`` that every party approved.
 
-    An item needs the agreement of all parties, therefore the result is the
-    intersection of the parties' grants. The result is empty if a party did not
-    approve the job yet, because a party grants nothing before it approves.
-    When ``requested`` is given, the result holds only the requested items.
-
-    ``parties`` names the parties that must grant. A named party without a valid
-    approval file grants nothing. With ``parties`` None, the parties are the
-    approval files present.
+    Empty when a party has not approved, or a named party has no valid approval
+    file. With ``parties`` None, the parties are the approval files present.
     """
-    approvals = _party_approvals(review_dir, parties)
-    if not approvals:
-        return set()
-
-    granted: Optional[set[str]] = None
-    for _, approval in approvals:
-        if approval is None or approval.status != JobStatus.APPROVED:
-            return set()
-        party_grant = {
-            name
-            for name, allowed in approval.approved_read_permissions.items()
-            if allowed and name in READ_PERMISSION_ITEMS
-        }
-        granted = party_grant if granted is None else granted & party_grant
-
-    result = granted or set()
-    if requested is not None:
-        result = result & set(normalize_read_permissions(requested))
-    return result
+    approvals = [a for _, a in _party_approvals(review_dir, parties)]
+    if not approvals or not all(
+        a is not None and a.status == JobStatus.APPROVED for a in approvals
+    ):
+        return {}
+    approved = requested
+    for approval in approvals:
+        approved = restrict_to_request(approval.approved_read_permissions, approved)
+    return approved
