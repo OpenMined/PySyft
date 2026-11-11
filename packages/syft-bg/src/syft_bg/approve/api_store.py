@@ -34,7 +34,7 @@ from syft_rds.apis.models import (
     policy_dir,
 )
 
-from syft_rds.apis.models import ApiDefinition, FileEntry, check_readable_files
+from syft_rds.apis.models import ApiDefinition, FileEntry, check_file_list
 from syft_bg.common.config import get_syftbg_dir
 
 EVERYONE = "*"
@@ -71,7 +71,7 @@ class NewApi:
     approved_read_permissions: list[str] = field(default_factory=list)
 
     def __post_init__(self) -> None:
-        check_readable_files(self.approved_read_permissions)
+        check_file_list(self.approved_read_permissions)
 
 
 class ApiStore:

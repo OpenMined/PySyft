@@ -17,7 +17,6 @@ from syft_job.job import JobInfo
 from syft_job.job_runner import SyftJobRunner
 from syft_job.migrations.registry import JOB_PROTOCOL_VERSION
 from syft_job.models import JobState, JobStatus
-from syft_job.policies import OUTPUT_RECIPIENTS_FILENAME
 from syft_job.submission import (
     OWNER_RECORD_FILENAME,
     SUBMISSION_HASH_HEADER,
@@ -324,8 +323,8 @@ os.symlink({str(results)!r}, "outputs")
     assert not (review / "outputs").exists()
 
 
-def test_rerun_drops_outputs_recipients_of_old_run(tmp_path):
-    """A recipient of the old outputs must not read the outputs of the rerun."""
+def test_rerun_drops_outputs_readers_of_old_run(tmp_path):
+    """A reader of the old outputs must not read the outputs of the rerun."""
     peer = "peer@test.org"
     job, _ = run_job(tmp_path, OK_PY, share_logs=None)
     # As on a datasite: the DS review folder has its own permission file, so the
@@ -343,18 +342,6 @@ def test_rerun_drops_outputs_recipients_of_old_run(tmp_path):
     )
     assert result.has_read_access(DS_EMAIL)
     assert not result.has_read_access(peer)
-
-
-def test_new_run_drops_recipients_of_old_run(tmp_path):
-    """A run that blocked its outputs must not block the outputs of the next."""
-    job, review = run_job(tmp_path, OK_PY, share_logs=None)
-    (review / OUTPUT_RECIPIENTS_FILENAME).write_text("[]")
-
-    job.rerun()
-    run_approved(tmp_path)
-
-    assert reload_job(tmp_path).status == "done"
-    assert not (review / OUTPUT_RECIPIENTS_FILENAME).exists()
 
 
 # -- read permissions: requested by the DS, approved by the DO ---------------------
@@ -391,24 +378,26 @@ def test_receipt_copies_request_into_state(tmp_path):
     assert state["approved_read_permissions"] == {}
 
 
-def test_receipt_drops_invalid_request_entries(tmp_path):
+def test_receipt_drops_request_entries_outside_job(tmp_path):
     inbox = submit_as_ds(tmp_path)
     request = {
         "stdout.txt": [DS_EMAIL],
-        PERMISSION_FILE_NAME: [DS_EMAIL],
-        f"../{OWNER_RECORD_FILENAME}": [DS_EMAIL],
         "outputs/result.txt": [DS_EMAIL],
+        f"../{OWNER_RECORD_FILENAME}": [DS_EMAIL],
+        "/etc/passwd": [DS_EMAIL],
         "stderr.txt": [],
     }
     write_headers(inbox, requested_read_permissions=request)
-    assert reload_job(tmp_path).requested_read_permissions == {"stdout.txt": [DS_EMAIL]}
+    assert reload_job(tmp_path).requested_read_permissions == {
+        "stdout.txt": [DS_EMAIL],
+        "outputs/result.txt": [DS_EMAIL],
+    }
 
 
 @pytest.mark.parametrize(
     "request_value, error",
     [
         (["logs"], TypeError),
-        ({PERMISSION_FILE_NAME: [DS_EMAIL]}, ValueError),
         ({"stdout.txt": []}, ValueError),
         ({"stdout.txt": DS_EMAIL}, TypeError),
     ],
@@ -477,17 +466,6 @@ def test_approved_outputs_shared_after_run(tmp_path):
     outputs = {OUTPUTS: [DS_EMAIL]}
     run_job(tmp_path, OK_PY, None, requested=outputs, grants=outputs)
     assert ds_can_read(tmp_path, f"{OUTPUTS}/result.txt")
-
-
-def test_approved_outputs_follow_output_policy(tmp_path):
-    """An output policy that lets nobody read the outputs wins over the approval."""
-    outputs = {OUTPUTS: [DS_EMAIL]}
-    job, review = run_job(tmp_path, OK_PY, None, requested=outputs)
-    (review / OUTPUT_RECIPIENTS_FILENAME).write_text("[]")
-
-    job.update_read_permissions(outputs)
-
-    assert not ds_can_read(tmp_path, f"{OUTPUTS}/result.txt")
 
 
 def test_ds_header_cannot_approve(tmp_path):

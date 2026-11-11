@@ -244,24 +244,24 @@ result = sbg.run_policy(api="word_count", kind="input")
 
 ### What an output policy is for
 
-An output policy runs after each call's job. It checks the outputs before they are shared, and it decides who receives them. It gets the same environment variables as an input policy, and two more:
+An output policy runs after each call's job. It checks the outputs before they are shared, and it decides who may read which file. It gets the same environment variables as an input policy, and two more:
 
-| Variable                      | Contents                                                              |
-| ----------------------------- | --------------------------------------------------------------------- |
-| `SYFT_POLICY_OUTPUTS_DIR`     | The job's `outputs/`. Whatever is here when the policy ends is shared |
-| `SYFT_POLICY_RECIPIENTS_PATH` | `recipients.json`, a JSON list of the emails that receive the outputs |
+| Variable                            | Contents                                                                  |
+| ----------------------------------- | ------------------------------------------------------------------------- |
+| `SYFT_POLICY_OUTPUTS_DIR`           | The job's `outputs/`. Whatever is here when the policy ends can be shared |
+| `SYFT_POLICY_READ_PERMISSIONS_PATH` | `read_permissions.json`, `{file: [emails]}`: who may read which run file  |
 
 When the job itself fails, the output policy does not run and the outputs are not shared.
 
-### Recipients
+### Read permissions
 
-The runner fills `recipients.json` with the submitter's email. The policy can read the list, change it and write it back. After the policy passes, the runner shares `outputs/` with exactly the emails in the list. Only approved peers receive outputs: the runner skips any other email and logs it for the DO, so a typo can't send results to a stranger.
+The runner fills `read_permissions.json` with the api's approved read permissions for this call, e.g. `{"outputs": ["ds@example.org"], "stdout.txt": ["ds@example.org"]}`. The policy can read the dict, change it and write it back: drop or add a file (`outputs`, `stdout.txt`, `stderr.txt`, `returncode.txt`, `traceback_frames.json`) or an email. After the policy passes, the result is the job's approved read permissions, and the runner shares exactly that. Only the submitter and approved peers get read: the runner skips any other email and logs it for the DO, so a typo can't send results to a stranger.
 
-An empty list holds the outputs back, but the job does not fail. The DO can share the outputs by hand later with `share_job_results`.
+An empty dict shares nothing, but the job does not fail. The DO can share the outputs by hand later with `share_job_results`. A deny shares nothing and fails the job.
 
 ### What the DS sees
 
-The DS always sees the job's status. When the output policy denies, the job is `failed` and the DS reads the reason in `job.policy_error`. When the policy removed the DS from the recipients, the job shows "Outputs not shared with you". Blocked outputs stay in the job's review folder, where only the DO reads them.
+The DS always sees the job's status. When the output policy denies, the job is `failed` and the DS reads the reason in `job.policy_error`. When the policy removed the DS from the readers of `outputs`, the job shows "Outputs not shared with you". Blocked outputs stay in the job's review folder, where only the DO reads them.
 
 ### Example: block a word
 
@@ -327,8 +327,8 @@ import json
 import os
 from pathlib import Path
 
-recipients_path = Path(os.environ["SYFT_POLICY_RECIPIENTS_PATH"])
-recipients = json.loads(recipients_path.read_text())
-recipients.append("auditor@example.com")
-recipients_path.write_text(json.dumps(recipients))
+permissions_path = Path(os.environ["SYFT_POLICY_READ_PERMISSIONS_PATH"])
+permissions = json.loads(permissions_path.read_text())
+permissions.setdefault("outputs", []).append("auditor@example.com")
+permissions_path.write_text(json.dumps(permissions))
 ```

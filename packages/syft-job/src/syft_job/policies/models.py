@@ -12,7 +12,6 @@ from .bash_wrapper import PYTHON_POLICY_NAME, RUN_SCRIPT_NAME
 POLICY_ERROR_FILENAME = "policy_error.txt"
 # An empty marker file; see SyftJobRunner._share_job_results().
 OUTPUTS_WITHHELD_FILENAME = "outputs_withheld.txt"
-OUTPUT_RECIPIENTS_FILENAME = "output_recipients.json"
 
 
 def policy_stderr_filename(kind: "PolicyKind") -> str:
@@ -74,8 +73,8 @@ class PolicyResult:
     stderr: str = ""
     # Contents of state.json after the run.
     state: Any = None
-    # Who receives the outputs (output policy only).
-    recipients: list[str] = field(default_factory=list)
+    # Who may read which file after the run (output policy only).
+    read_permissions: dict[str, list[str]] = field(default_factory=dict)
     # The outputs after the run, for sbg.run_policy (output policy only).
     outputs_dir: Optional[Path] = None
 

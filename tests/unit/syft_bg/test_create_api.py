@@ -274,10 +274,10 @@ class TestCreateApi:
 class TestApiReadPermissions:
     """A caller reads the run files its api names, set when it was made."""
 
-    def test_api_names_no_files_by_default(self, temp_dir):
+    def test_api_shares_outputs_by_default(self, temp_dir):
         with _patched_paths(temp_dir) as store:
             _create(_write_project(temp_dir), allow_any_peer=True)
-            assert store.get("main").approved_read_permissions == []
+            assert store.get("main").approved_read_permissions == ["outputs"]
 
     def test_config_sets_readable_files(self, temp_dir):
         with _patched_paths(temp_dir) as store:
@@ -290,6 +290,7 @@ class TestApiReadPermissions:
             ).save()
             _create(_write_project(temp_dir), allow_any_peer=True)
             assert store.get("main").approved_read_permissions == [
+                "outputs",
                 "stdout.txt",
                 "returncode.txt",
             ]
@@ -302,15 +303,6 @@ class TestApiReadPermissions:
                 read_permissions=["stdout.txt"],
             )
             assert store.get("main").approved_read_permissions == ["stdout.txt"]
-
-    def test_unknown_file_refused(self, temp_dir):
-        with _patched_paths(temp_dir) as store:
-            result = _create(
-                _write_project(temp_dir), allow_any_peer=True, read_permissions=["logs"]
-            )
-            assert result.success is False
-            assert "'logs'" in result.error and "stdout.txt" in result.error
-            assert store.names() == []
 
     def test_dict_refused(self, temp_dir):
         with _patched_paths(temp_dir):

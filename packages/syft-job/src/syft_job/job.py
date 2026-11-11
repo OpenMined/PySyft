@@ -11,10 +11,8 @@ from syft_permissions.spec.ruleset import PERMISSION_FILE_NAME
 
 from .read_permissions import (
     LOG_FILES,
-    OUTPUTS,
     ReadPermissions,
     check_approval_reason,
-    check_one_way,
     check_read_permissions,
     format_read_permissions,
     restrict_to_request,
@@ -163,17 +161,8 @@ class JobInfo:
         return approved
 
     def share_read_permissions(self) -> None:
-        """Give each approved reader read access to its file.
-
-        The outputs go only to approved readers that an output policy allows.
-        """
-        approved = dict(self.approved_read_permissions)
-        allowed = self._client.manager.output_recipients(self._ref)
-        if OUTPUTS in approved and allowed is not None:
-            approved[OUTPUTS] = [
-                email for email in approved[OUTPUTS] if email in allowed
-            ]
-        self.share(approved)
+        """Give each approved reader read access to its file."""
+        self.share(self.approved_read_permissions)
 
     # ──────────────────────────────────────────────
     # Properties from config (inbox/)
@@ -395,8 +384,10 @@ class JobInfo:
         self, read_permissions: object, share_requested_files: bool
     ) -> ReadPermissions:
         """The approval's read permissions: the whole request, or the given dict."""
-        flags = {"share_requested_files": share_requested_files}
-        check_one_way("read_permissions", read_permissions, flags)
+        if read_permissions is not None and share_requested_files:
+            raise ValueError(
+                "Give read_permissions or share_requested_files, not both."
+            )
         if share_requested_files:
             return dict(self.requested_read_permissions)
         return check_read_permissions(read_permissions)

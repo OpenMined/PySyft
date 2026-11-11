@@ -5,7 +5,7 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
-from syft_rds.apis.models import FileEntry, ReadableFiles
+from syft_rds.apis.models import FileEntry
 
 from syft_bg.common.config import get_default_paths
 
@@ -53,7 +53,7 @@ class AutoApproveConfig(BaseModel):
     )
     force_ignore_peer_version: bool = False
     # The run files a new api lets its callers read, e.g. ["stdout.txt"].
-    default_approved_read_permissions: ReadableFiles = Field(default_factory=list)
+    default_approved_read_permissions: list[str] = Field(default_factory=list)
 
 
 # --- Backwards-compatible aliases (deprecated, will be removed) ---

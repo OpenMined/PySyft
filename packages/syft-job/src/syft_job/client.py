@@ -15,7 +15,6 @@ from .config import SyftJobConfig
 from .read_permissions import (
     REQUESTED_READ_PERMISSIONS_HEADER,
     ReadPermissions,
-    check_one_way,
     check_read_permissions,
     read_permissions_for,
     valid_read_permissions,
@@ -518,7 +517,10 @@ python {entrypoint_path}
             FileNotFoundError: If code_path doesn't exist
             TypeError: If share_files is not {file: [emails]}
         """
-        requested = self._requested_by_me(share_logs, share_outputs, share_files)
+        self._check_share_args(share_logs, share_outputs, share_files)
+        requested_read_permissions = self._requested_read_permissions(
+            share_logs, share_outputs, share_files
+        )
         submitting_to_email = user
         # Generate default job name if not provided
         if not job_name:
@@ -584,7 +586,7 @@ python {entrypoint_path}
             is_folder_submission=is_folder_submission,
             code_path=str(code_path_resolved),
             headers={
-                REQUESTED_READ_PERMISSIONS_HEADER: requested,
+                REQUESTED_READ_PERMISSIONS_HEADER: requested_read_permissions,
                 SUBMISSION_HASH_HEADER: code_hash(job_dir),
             },
         )
@@ -646,24 +648,31 @@ python {entrypoint_path}
         state = JobState(
             status=JobStatus.PENDING,
             received_at=record.received_at,
-            requested_read_permissions=self._requested_read_permissions(ref),
+            requested_read_permissions=self._request_from_submission(ref),
         )
         self.manager.write_state(ref, state)
         return state
 
-    def _requested_by_me(
+    @staticmethod
+    def _check_share_args(
+        share_logs: bool, share_outputs: bool, share_files: object
+    ) -> None:
+        """Refuse share_files with a flag, or a share_files that isn't {file: [emails]}."""
+        if share_files is not None and (share_logs or share_outputs):
+            raise ValueError("Give share_files or share_logs/share_outputs, not both.")
+        check_read_permissions(share_files)
+
+    def _requested_read_permissions(
         self, share_logs: bool, share_outputs: bool, share_files: object
     ) -> ReadPermissions:
-        """The read permissions a submission asks for: the flags, or share_files."""
-        flags = {"share_logs": share_logs, "share_outputs": share_outputs}
-        check_one_way("share_files", share_files, flags)
+        """The read permissions a submission asks for: share_files, or the flags."""
         if share_files is not None:
             return check_read_permissions(share_files)
         return read_permissions_for(
             [self.current_user_email], share_logs, share_outputs
         )
 
-    def _requested_read_permissions(self, ref: JobRef) -> ReadPermissions:
+    def _request_from_submission(self, ref: JobRef) -> ReadPermissions:
         """The valid part of the submitter's request. Nothing it wrote is approved."""
         headers = self.manager.read_submission(ref).headers
         return valid_read_permissions(headers.get(REQUESTED_READ_PERMISSIONS_HEADER))

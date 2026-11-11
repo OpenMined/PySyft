@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import warnings
 from collections.abc import Mapping
+from pathlib import PurePosixPath
 
 from .traceback_capture import FRAMES_FILENAME
 
@@ -23,36 +24,33 @@ OUTPUTS = "outputs"
 _PRINTED_FILES = ("stdout.txt", "stderr.txt")
 # What the runner shares when it is told to share the logs.
 LOG_FILES = (*_PRINTED_FILES, RETURN_CODE_FILENAME)
-# The run files a read permission can name.
-READABLE_RUN_FILES = (*_PRINTED_FILES, FRAMES_FILENAME, RETURN_CODE_FILENAME, OUTPUTS)
+# The files a run writes into the job's review folder.
+RUN_FILES = (*LOG_FILES, FRAMES_FILENAME, OUTPUTS)
 
 
 def read_permissions_for(
     readers: list[str], logs: bool, outputs: bool
 ) -> ReadPermissions:
-    """Read on stdout and stderr, and on the outputs, for ``readers``."""
-    files = (*(_PRINTED_FILES if logs else ()), *((OUTPUTS,) if outputs else ()))
-    return {file: sorted(set(readers)) for file in files} if readers else {}
+    """Read for ``readers`` on stdout and stderr if ``logs``, on the outputs if ``outputs``."""
+    permissions = {}
+    if logs:
+        permissions["stdout.txt"] = list(readers)
+        permissions["stderr.txt"] = list(readers)
+    if outputs:
+        permissions[OUTPUTS] = list(readers)
+    return permissions
 
 
 def merge_read_permissions(*permissions: ReadPermissions) -> ReadPermissions:
-    """One dict with, per file, every email that any of ``permissions`` names."""
+    """One dict with, per file, every email that any of ``permissions`` names.
+
+    A file that no one names is left out.
+    """
     merged: dict[str, set[str]] = {}
     for permission in permissions:
         for file, emails in permission.items():
             merged.setdefault(file, set()).update(emails)
-    return {file: sorted(emails) for file, emails in merged.items()}
-
-
-def check_one_way(dict_arg: str, given: object, flags: dict[str, bool]) -> None:
-    """Refuse ``dict_arg`` together with any of the ``flags`` that is set.
-
-    Raises:
-        ValueError: If the dict and a flag are both given.
-    """
-    set_flags = [name for name, value in flags.items() if value]
-    if given is not None and set_flags:
-        raise ValueError(f"Give {dict_arg} or {', '.join(set_flags)}, not both.")
+    return {file: sorted(emails) for file, emails in merged.items() if emails}
 
 
 def check_read_permissions(value: object) -> ReadPermissions:
@@ -60,7 +58,7 @@ def check_read_permissions(value: object) -> ReadPermissions:
 
     Raises:
         TypeError: If ``value`` is not a dict of file names to lists of emails.
-        ValueError: If a file is not in READABLE_RUN_FILES, or has no reader.
+        ValueError: If a file has no reader.
     """
     if value is None:
         return {}
@@ -73,11 +71,8 @@ def check_read_permissions(value: object) -> ReadPermissions:
 
 
 def _check_readers(file: object, emails: object) -> list[str]:
-    if file not in READABLE_RUN_FILES:
-        raise ValueError(
-            f"{file!r} is not a file a read permission can name. "
-            f"Name one of: {', '.join(READABLE_RUN_FILES)}."
-        )
+    if not isinstance(file, str) or not file:
+        raise TypeError(f"A read permission names a file as a string, not {file!r}.")
     if not isinstance(emails, (list, tuple)) or not all(
         isinstance(e, str) and e for e in emails
     ):
@@ -88,16 +83,29 @@ def _check_readers(file: object, emails: object) -> list[str]:
 
 
 def valid_read_permissions(value: object) -> ReadPermissions:
-    """The valid entries of ``value``, without the rest. For data the submitter wrote."""
+    """The valid entries of ``value`` that stay in the job's folder.
+
+    For data the submitter wrote: a key is joined to the job's review folder.
+    """
     if not isinstance(value, Mapping):
         return {}
     valid = {}
     for file, emails in value.items():
+        if not _inside_job_folder(file):
+            continue
         try:
             valid[file] = _check_readers(file, emails)
         except (TypeError, ValueError):
             continue
     return valid
+
+
+def _inside_job_folder(file: object) -> bool:
+    """Whether ``file`` is a relative path that stays in the job's folder."""
+    if not isinstance(file, str):
+        return False
+    path = PurePosixPath(file)
+    return not path.is_absolute() and ".." not in path.parts
 
 
 def restrict_to_request(

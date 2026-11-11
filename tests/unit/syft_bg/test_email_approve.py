@@ -3,7 +3,6 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
-from pydantic import ValidationError
 
 from syft_bg.common.state import JsonStateManager
 from syft_bg.email_approve.config import EmailApproveConfig
@@ -308,14 +307,3 @@ def test_email_config_loads_default_approved_read_permissions(tmp_path):
         "stdout.txt",
         "traceback_frames.json",
     ]
-
-
-def test_email_config_refuses_unknown_read_permission_file(tmp_path):
-    config_path = tmp_path / "config.yaml"
-    config_path.write_text(
-        "do_email: do@example.com\n"
-        "email_approve:\n"
-        "  default_approved_read_permissions: [logs]\n"
-    )
-    with pytest.raises(ValidationError, match="'logs'"):
-        EmailApproveConfig.load(config_path)

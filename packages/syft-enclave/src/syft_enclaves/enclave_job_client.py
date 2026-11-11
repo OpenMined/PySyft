@@ -6,7 +6,6 @@ from syft_job.job import JobsList
 from syft_job.models import JobSubmissionMetadata
 from syft_job.read_permissions import (
     ReadPermissions,
-    check_one_way,
     merge_read_permissions,
     read_permissions_for,
 )
@@ -77,36 +76,29 @@ class EnclaveJobClient(BaseJobClient):
         Raises:
             ValueError: If share_files comes with a share flag.
         """
-        flags = {
-            "share_logs": share_logs,
-            "share_outputs": share_outputs,
-            "share_logs_with_owners": share_logs_with_owners,
-            "share_outputs_with_owners": share_outputs_with_owners,
-        }
-        check_one_way("share_files", share_files, flags)
+        any_flag = (
+            share_logs
+            or share_outputs
+            or share_logs_with_owners
+            or share_outputs_with_owners
+        )
+        if share_files is not None and any_flag:
+            raise ValueError("Give share_files or the share flags, not both.")
         if share_files is None:
-            share_files = self._requested_by_flags(list(datasets or {}), **flags)
+            owners = list(datasets or {})
+            share_files = merge_read_permissions(
+                read_permissions_for(
+                    [self.current_user_email], share_logs, share_outputs
+                ),
+                read_permissions_for(
+                    owners, share_logs_with_owners, share_outputs_with_owners
+                ),
+            )
         job_dir = self._job_client.submit_python_job(
             user, code_path, job_name, share_files=share_files, **kwargs
         )
         _mark_as_enclave_job(job_dir, datasets)
         return job_dir
-
-    def _requested_by_flags(
-        self,
-        owners: list[str],
-        share_logs: bool,
-        share_outputs: bool,
-        share_logs_with_owners: bool,
-        share_outputs_with_owners: bool,
-    ) -> ReadPermissions:
-        """The read permissions the share flags ask for."""
-        return merge_read_permissions(
-            read_permissions_for([self.current_user_email], share_logs, share_outputs),
-            read_permissions_for(
-                owners, share_logs_with_owners, share_outputs_with_owners
-            ),
-        )
 
 
 def _mark_as_enclave_job(job_dir: Path, datasets: Optional[dict[str, list[str]]]):

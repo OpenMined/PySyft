@@ -1,4 +1,3 @@
-import json
 import logging
 import shutil
 from pathlib import Path
@@ -14,11 +13,10 @@ from syft_migration import (
 from syft_perms import SyftPermContext
 
 from .config import SyftJobConfig, is_protocol_dir_name
-from .read_permissions import READABLE_RUN_FILES
+from .read_permissions import OUTPUTS, RUN_FILES
 from .job_ref import JobRef, JobStateNotFoundError, RequestRef
 from .migrations.registry import JOB_PROTOCOL_VERSION, job_registry
 from .models import JobState, JobSubmissionMetadata, RequestMetadata
-from .policies.models import OUTPUT_RECIPIENTS_FILENAME
 from .protocolcodecs import CODECS, ProtocolCodec
 from .submission import (
     OWNER_RECORD_FILENAME,
@@ -33,14 +31,9 @@ logger = logging.getLogger(__name__)
 
 __all__ = ["JobRef", "JobStateNotFoundError", "JobStorage"]
 
-OUTPUTS_DIR_NAME = "outputs"
 # The files of a run that a new run deletes, with their grants. Only the
 # outputs are a folder.
-RUN_ARTIFACTS = (
-    OUTPUTS_DIR_NAME,
-    *READABLE_RUN_FILES,
-    OUTPUT_RECIPIENTS_FILENAME,
-)
+RUN_ARTIFACTS = RUN_FILES
 
 
 def _no_peer_schema(peer_email: str) -> Optional[ProtocolSchema]:
@@ -156,7 +149,7 @@ class JobStorage:
         for name in RUN_ARTIFACTS:
             path = self.review_dir(ref) / name
             modifier.remove_all_rules(
-                str(path.relative_to(datasite)), is_folder=name == OUTPUTS_DIR_NAME
+                str(path.relative_to(datasite)), is_folder=name == OUTPUTS
             )
             if path.is_dir():
                 shutil.rmtree(path)
@@ -166,11 +159,6 @@ class JobStorage:
                 continue
             deleted.append(name)
         return deleted
-
-    def output_recipients(self, ref: JobRef) -> Optional[list[str]]:
-        """Who the output policy lets read the outputs, or None with no policy."""
-        path = self.review_dir(ref) / OUTPUT_RECIPIENTS_FILENAME
-        return json.loads(path.read_text()) if path.exists() else None
 
     # -- owner record (owner side, in review/ with no grant) ------------------------
     def owner_record_path(self, ref: JobRef) -> Path:

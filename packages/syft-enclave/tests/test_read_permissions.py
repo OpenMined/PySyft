@@ -125,10 +125,10 @@ def test_no_named_party_grants_nothing(tmp_path):
     assert read_permissions_approved_by_all_parties(tmp_path, logs, parties=[]) == {}
 
 
-def test_unknown_file_never_survives(tmp_path):
-    """Neither an item of an older client nor an unknown file approves anything."""
+def test_older_client_item_approves_nothing(tmp_path):
+    """An item of an older client, e.g. {"logs": true}, approves nothing."""
     path = tmp_path / enclave_approval_file_name("do1@x.com")
-    approved = {"logs": True, "everything": [DS]}
+    approved = {"logs": True}
     path.write_text(
         json.dumps(
             {
@@ -511,7 +511,7 @@ def test_share_files_with_flag_raises():
     enclave, do1, do2, ds = SyftEnclaveClient.quad_with_mock_drive_service_connection(
         use_in_memory_cache=False
     )
-    with pytest.raises(ValueError, match="share_files or share_logs"):
+    with pytest.raises(ValueError, match="share_files or the share flags"):
         submit(
             ds, enclave, do1, do2, OK_CODE, readable(LOGS, ds.email), share_logs=True
         )

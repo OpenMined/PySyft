@@ -8,7 +8,6 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
-from pydantic import ValidationError
 from syft_bg.api import create_api_from_job
 from syft_bg.approve.handlers.job import ApprovedJobHandler
 from syft_bg.common.config import get_default_paths
@@ -141,13 +140,6 @@ PARAMS = "code/params.json"
 def test_definition_error(pinned, name_only, args, error):
     reason = definition_error(_definition(pinned, name_only, args))
     assert (reason is None) if error is None else (error in reason)
-
-
-def test_definition_refuses_unknown_readable_file():
-    """An api.yaml naming a file a read permission can't name does not load."""
-    data = {"approved_read_permissions": ["stdout.txt", "logs"]}
-    with pytest.raises(ValidationError, match="'logs'"):
-        ApiDefinition.model_validate(data)
 
 
 @pytest.mark.parametrize(

@@ -1,4 +1,3 @@
-import json
 import logging
 import os
 import shutil
@@ -20,7 +19,6 @@ from .job import JobInfo
 from .job_storage import JobRef, JobStateNotFoundError, JobStorage
 from .models import JobState, JobStatus, JobSubmissionMetadata
 from .policies import (
-    OUTPUT_RECIPIENTS_FILENAME,
     OUTPUTS_WITHHELD_FILENAME,
     POLICY_ERROR_FILENAME,
     ApiResolver,
@@ -33,6 +31,7 @@ from .policies import (
     PolicyState,
     policy_stderr_filename,
 )
+from .read_permissions import OUTPUTS, ReadPermissions
 from .review_grants import replace_ds_folder_read
 from .submission import (
     InvalidSubmissionError,
@@ -477,6 +476,7 @@ class SyftJobRunner:
         ref: JobRef,
         stream_output: bool = True,
         timeout: int | None = None,
+        approved_peers: list[str] | None = None,
     ) -> bool:
         """
         Execute run.sh of the submission the owner approved.
@@ -490,6 +490,7 @@ class SyftJobRunner:
             ref: Ref of the job to execute.
             stream_output: If True (default), stream output in real-time.
             timeout: Timeout in seconds. Defaults to the configured value or 600.
+            approved_peers: The peers an output policy may give read permissions.
 
         Returns:
             bool: True if run.sh ran, whatever its exit code. False if the job
@@ -504,7 +505,9 @@ class SyftJobRunner:
         try:
             resolved, policies = self._load_policies(ref)
             if resolved:
-                self._run_approved_job(ref, run_dir, stream_output, timeout, policies)
+                self._run_approved_job(
+                    ref, run_dir, stream_output, timeout, policies, approved_peers
+                )
         finally:
             _remove_run_dir(run_dir)
         return resolved
@@ -596,6 +599,7 @@ class SyftJobRunner:
         stream_output: bool,
         timeout: int,
         policies: JobPolicies | None = None,
+        approved_peers: list[str] | None = None,
     ) -> None:
         job_name = ref.job_name
         self._prepare_outputs_dir(ref, run_dir)
@@ -613,7 +617,9 @@ class SyftJobRunner:
                 returncode = self._execute_job_captured(ref, timeout, run_dir)
 
             self._capture_traceback(ref, returncode, run_dir / "code")
-            returncode = self._run_output_policy(ref, run_dir, policies, returncode)
+            returncode = self._run_output_policy(
+                ref, run_dir, policies, returncode, approved_peers
+            )
 
             self._copy_outputs_to_review(ref, run_dir)
 
@@ -646,27 +652,64 @@ class SyftJobRunner:
         return False
 
     def _run_output_policy(
-        self, ref: JobRef, run_dir: Path, policies: JobPolicies | None, returncode: int
+        self,
+        ref: JobRef,
+        run_dir: Path,
+        policies: JobPolicies | None,
+        returncode: int,
+        approved_peers: list[str] | None,
     ) -> int:
-        """Run the output policy, record who gets the outputs, return the exit code.
+        """Run the output policy on the approved read permissions; return the exit code.
 
-        A failed job or a deny shares the outputs with nobody; a deny also
-        fails the job. The outputs still go to review/, for the data owner.
+        The policy starts from the api's approved read permissions and may change
+        them. A deny approves none and fails the job; a failed job shares no outputs.
         """
         if policies is None or policies.output is None:
             return returncode
+        approved = self.manager.read_state(ref).approved_read_permissions
         if returncode != 0:
-            self._write_recipients(ref, [])
+            self._set_approved(ref, {f: e for f, e in approved.items() if f != OUTPUTS})
             return returncode
-        result = self._run_policy(PolicyKind.OUTPUT, ref, run_dir, policies)
-        self._write_recipients(ref, result.recipients if result.passed else [])
-        if result.passed:
-            return returncode
-        self._deny(ref, PolicyKind.OUTPUT, result)
-        return 1
+        result = self._run_policy(PolicyKind.OUTPUT, ref, run_dir, policies, approved)
+        if not result.passed:
+            self._set_approved(ref, {})
+            self._deny(ref, PolicyKind.OUTPUT, result)
+            return 1
+        allowed = self._allowed_readers(ref, result.read_permissions, approved_peers)
+        self._set_approved(ref, allowed)
+        return returncode
+
+    def _set_approved(self, ref: JobRef, approved: ReadPermissions) -> None:
+        state = self.manager.read_state(ref)
+        state.approved_read_permissions = approved
+        self.manager.write_state(ref, state)
+
+    def _allowed_readers(
+        self,
+        ref: JobRef,
+        permissions: ReadPermissions,
+        approved_peers: list[str] | None,
+    ) -> ReadPermissions:
+        """``permissions`` with only the submitter and approved peers as readers."""
+        allowed = set(approved_peers or []) | {ref.ds_email}
+        named = {email for emails in permissions.values() for email in emails}
+        if named - allowed:
+            logger.warning(
+                f"Job {ref.job_name}: no read for {sorted(named - allowed)}, "
+                f"they are not approved peers"
+            )
+        kept = {
+            f: [e for e in emails if e in allowed] for f, emails in permissions.items()
+        }
+        return {f: emails for f, emails in kept.items() if emails}
 
     def _run_policy(
-        self, kind: PolicyKind, ref: JobRef, run_dir: Path, policies: JobPolicies
+        self,
+        kind: PolicyKind,
+        ref: JobRef,
+        run_dir: Path,
+        policies: JobPolicies,
+        read_permissions: ReadPermissions | None = None,
     ) -> PolicyResult:
         """Run one policy of the job's api; its full stderr stays with the DO."""
         policy_env = PolicyEnv(
@@ -677,7 +720,7 @@ class SyftJobRunner:
         )
         if kind == PolicyKind.OUTPUT:
             policy_env.outputs_dir = run_dir / "code" / "outputs"
-            policy_env.recipients = [ref.ds_email]
+            policy_env.read_permissions = read_permissions or {}
         print(f" Running the {kind.value} policy of api '{policies.api_name}'")
         state = PolicyState(policies.state_dir)
         result = self.policy_runner.run(policies.script(kind), state, policy_env)
@@ -689,9 +732,6 @@ class SyftJobRunner:
         self._write_artifact(ref, POLICY_ERROR_FILENAME, f"{result.error}\n")
         self._get_job_info(ref).share({POLICY_ERROR_FILENAME: [ref.ds_email]})
         print(f" Job {ref.job_name} denied by the {kind.value} policy: {result.error}")
-
-    def _write_recipients(self, ref: JobRef, recipients: list[str]) -> None:
-        self._write_artifact(ref, OUTPUT_RECIPIENTS_FILENAME, json.dumps(recipients))
 
     def _write_artifact(self, ref: JobRef, filename: str, content: str) -> None:
         review_dir = self.manager.review_dir(ref)
@@ -885,16 +925,15 @@ class SyftJobRunner:
                 submitter — so skipping by name drops every other job that
                 shares it.
             share_outputs_with_submitter: If True, share the outputs with the
-                output recipients: the submitter, or the list an output policy
-                writes. False shares them with nobody, so only the DO reads
-                them.
+                submitter. An api call's outputs follow its read permissions
+                instead, after its output policy.
             share_logs_with_submitter: If True, share the logs and the exit
                 code with the submitter, whatever the job requested. False
                 (default) shares only the items that the submitter requested
                 and the approval granted. Only the DO reads the rest.
             skip_job_names: Deprecated. The name-only form of ``skip_jobs``.
-            approved_peers: The peers an output policy may send outputs to.
-                None allows the submitter only.
+            approved_peers: The peers an output policy may give read
+                permissions. None allows the submitter only.
             share_requested_files: If True, approve everything each job's
                 submitter requested, and share it once the job ran.
         """
@@ -972,17 +1011,21 @@ class SyftJobRunner:
         approved_peers: list[str] | None,
         share_requested_files: bool,
     ) -> None:
-        """Execute an approved job, then share its results if it ran."""
+        """Execute an approved job, then share its results if it ran.
+
+        An api call's outputs follow its read permissions, not share_outputs.
+        """
         print(f"\n{'=' * 50}")
-        if self._execute_job(ref, stream_output=stream_output, timeout=timeout):
+        if self._execute_job(ref, stream_output, timeout, approved_peers):
+            share_outputs = share_outputs and not self._is_api_call(ref)
             self._share_job_results(
-                ref,
-                share_outputs,
-                share_logs,
-                self._output_recipients(ref, approved_peers),
-                share_requested_files,
+                ref, share_outputs, share_logs, share_requested_files
             )
         print(f"{'=' * 50}")
+
+    def _is_api_call(self, ref: JobRef) -> bool:
+        record = self.manager.read_owner_record(ref)
+        return bool(record and record.api_name)
 
     def share_job_results(
         self,
@@ -1003,14 +1046,13 @@ class SyftJobRunner:
             (self.manager.review_dir(ref) / OUTPUTS_WITHHELD_FILENAME).unlink(
                 missing_ok=True
             )
-        self._share_job_results(ref, share_outputs, share_logs, [ref.ds_email])
+        self._share_job_results(ref, share_outputs, share_logs)
 
     def _share_job_results(
         self,
         ref: JobRef,
         share_outputs: bool,
         share_logs: bool,
-        recipients: list[str],
         share_requested_files: bool = False,
     ) -> None:
         job_info = self._get_job_info(ref)
@@ -1020,34 +1062,21 @@ class SyftJobRunner:
         else:
             job_info.share_read_permissions()
         if share_outputs:
-            job_info.share_outputs(recipients)
-            if ref.ds_email not in recipients:
-                # An empty marker: that the submitter can read this file is
-                # the message. Their job then shows "Outputs not shared with
-                # you" instead of looking like it wrote no outputs.
-                self._write_artifact(ref, OUTPUTS_WITHHELD_FILENAME, "")
-                job_info.share({OUTPUTS_WITHHELD_FILENAME: [ref.ds_email]})
+            job_info.share_outputs([ref.ds_email])
+        elif job_info.api_name:
+            self._mark_outputs_withheld(ref, job_info)
         if share_logs:
             job_info.share_logs([ref.ds_email])
 
-    def _output_recipients(
-        self, ref: JobRef, approved_peers: list[str] | None
-    ) -> list[str]:
-        """Who gets the outputs: the output policy's list, else the submitter.
+    def _mark_outputs_withheld(self, ref: JobRef, job_info: JobInfo) -> None:
+        """Tell the submitter, with an empty marker, that it can't read the outputs.
 
-        Only approved peers receive outputs; other emails are skipped and logged.
+        Their job then shows "Outputs not shared with you" instead of no outputs.
         """
-        requested = self.manager.output_recipients(ref)
-        if requested is None:
-            return [ref.ds_email]
-        allowed = set(approved_peers or []) | {ref.ds_email}
-        skipped = [email for email in requested if email not in allowed]
-        if skipped:
-            logger.warning(
-                f"Job {ref.job_name}: outputs not shared with {skipped}, "
-                f"they are not approved peers"
-            )
-        return [email for email in dict.fromkeys(requested) if email in allowed]
+        if ref.ds_email in job_info.approved_read_permissions.get(OUTPUTS, []):
+            return
+        self._write_artifact(ref, OUTPUTS_WITHHELD_FILENAME, "")
+        job_info.share({OUTPUTS_WITHHELD_FILENAME: [ref.ds_email]})
 
     def run(self) -> None:
         """Start monitoring the inbox and approved folders for jobs."""

@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import Optional
 
 from pydantic import BaseModel, Field
-from syft_rds.apis.models import ReadableFiles
 
 from syft_bg.common.config import get_default_paths, load_yaml, save_yaml
 
@@ -28,7 +27,7 @@ class EmailApproveConfig(BaseModel):
     )
     # The run files an approval by reply approves, for whom the submitter asked,
     # e.g. ["stdout.txt"]. A file the submitter didn't request is skipped.
-    default_approved_read_permissions: ReadableFiles = Field(default_factory=list)
+    default_approved_read_permissions: list[str] = Field(default_factory=list)
 
     @classmethod
     def load(cls, config_path: Optional[Path] = None) -> "EmailApproveConfig":

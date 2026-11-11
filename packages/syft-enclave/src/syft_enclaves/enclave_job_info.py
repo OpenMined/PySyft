@@ -9,7 +9,6 @@ from pydantic import BaseModel, Field, field_validator
 from syft_job.read_permissions import (
     ReadPermissions,
     check_approval_reason,
-    check_one_way,
     check_read_permissions,
     format_read_permissions,
     restrict_to_request,
@@ -244,8 +243,10 @@ class EnclaveJobInfo(JobInfo):
         """The whole request, or the requested part of ``read_permissions``."""
         if share_requested_files is None:
             share_requested_files = read_permissions is None
-        flags = {"share_requested_files": share_requested_files}
-        check_one_way("read_permissions", read_permissions, flags)
+        if read_permissions is not None and share_requested_files:
+            raise ValueError(
+                "Give read_permissions or share_requested_files, not both."
+            )
         if share_requested_files:
             return dict(self.requested_read_permissions)
         return self._restrict_to_request(read_permissions)

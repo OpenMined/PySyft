@@ -10,6 +10,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
+from ..read_permissions import ReadPermissions, check_read_permissions
 from . import env
 from .models import PolicyResult, PolicyScript
 from .state import PolicyState
@@ -18,7 +19,7 @@ DEFAULT_POLICY_TIMEOUT_SECONDS = 60
 POLICY_DIR_NAME = "policy"
 PARAMS_FILE_NAME = "params.json"
 CALL_DIR_NAME = "call"
-RECIPIENTS_FILE_NAME = "recipients.json"
+READ_PERMISSIONS_FILE_NAME = "read_permissions.json"
 
 
 @dataclass
@@ -33,7 +34,7 @@ class PolicyEnv:
     call_files: dict[str, bytes] = field(default_factory=dict)
     # Set for an output policy only.
     outputs_dir: Optional[Path] = None
-    recipients: list[str] = field(default_factory=list)
+    read_permissions: ReadPermissions = field(default_factory=dict)
 
 
 class PolicyRunner:
@@ -60,7 +61,7 @@ class PolicyRunner:
                 result = _result(returncode, stderr, self.timeout)
                 result.state = state.read_default()
             if policy_env.outputs_dir is not None and result.passed:
-                _read_recipients(work_dir / RECIPIENTS_FILE_NAME, result)
+                _read_read_permissions(work_dir / READ_PERMISSIONS_FILE_NAME, result)
         return result
 
     def _environ(
@@ -83,10 +84,10 @@ class PolicyRunner:
             }
         )
         if policy_env.outputs_dir is not None:
-            recipients_path = work_dir / RECIPIENTS_FILE_NAME
-            recipients_path.write_text(json.dumps(policy_env.recipients))
+            permissions_path = work_dir / READ_PERMISSIONS_FILE_NAME
+            permissions_path.write_text(json.dumps(policy_env.read_permissions))
             environ[env.OUTPUTS_DIR] = str(policy_env.outputs_dir)
-            environ[env.RECIPIENTS_PATH] = str(recipients_path)
+            environ[env.READ_PERMISSIONS_PATH] = str(permissions_path)
         return environ
 
     def _execute(self, policy_dir: Path, environ: dict[str, str]) -> tuple[int, str]:
@@ -130,19 +131,13 @@ def _result(returncode: int, stderr: str, timeout: int) -> PolicyResult:
     return PolicyResult(passed=False, error=error, stderr=stderr)
 
 
-def _read_recipients(path: Path, result: PolicyResult) -> None:
-    """Load recipients.json into the result; a malformed file is a deny."""
+def _read_read_permissions(path: Path, result: PolicyResult) -> None:
+    """Load read_permissions.json into the result; a malformed file is a deny."""
     try:
-        recipients = json.loads(path.read_text())
-    except (OSError, ValueError):
-        recipients = None
-    if not isinstance(recipients, list) or not all(
-        isinstance(r, str) for r in recipients
-    ):
+        result.read_permissions = check_read_permissions(json.loads(path.read_text()))
+    except (OSError, TypeError, ValueError) as e:
         result.passed = False
-        result.error = "recipients.json must be a JSON list of emails"
-        return
-    result.recipients = recipients
+        result.error = f"read_permissions.json must be {{file: [emails]}}: {e}"
 
 
 def last_line(text: str) -> Optional[str]:

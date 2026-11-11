@@ -13,6 +13,7 @@ from syft_job.policies import (
     PolicyResolutionError,
     PolicyScript,
 )
+from syft_job.read_permissions import OUTPUTS
 from syft_rds.apis import ApiArg, infer_args
 from syft_rds.apis.models import POLICY_STATE_DIR_NAME, policy_dir
 from syft_rds.apis.policies import load_job_policies
@@ -701,7 +702,7 @@ def policy_test_env(
         job_dir = work_dir / "job"
         policy_env.outputs_dir = _copy_or_create(outputs_dir, job_dir / "outputs")
         _copy_or_create(candidates_dir, job_dir / CANDIDATES_DIR_NAME)
-        policy_env.recipients = [submitter]
+        policy_env.read_permissions = {OUTPUTS: [submitter]}
     return policy_env
 
 
@@ -723,6 +724,7 @@ def _copy_or_create(source: str | Path | None, dest: Path) -> Path:
 # ---------------------------------------------------------------------------
 
 
-def default_approved_read_permissions() -> list[str]:
-    """default_approved_read_permissions from config.yaml; none when syft-bg isn't set up."""
-    return SyftBgConfig.load().approve.default_approved_read_permissions
+def default_api_read_permissions() -> list[str]:
+    """The outputs, plus default_approved_read_permissions from config.yaml."""
+    configured = SyftBgConfig.load().approve.default_approved_read_permissions
+    return list(dict.fromkeys([OUTPUTS, *configured]))

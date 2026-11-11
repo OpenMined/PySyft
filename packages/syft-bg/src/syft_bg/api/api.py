@@ -23,7 +23,7 @@ from syft_bg.api.utils import (
     confirm_no_peers,
     load_apis_or_empty,
     default_api_name,
-    default_approved_read_permissions,
+    default_api_read_permissions,
     api_store_for_job,
     get_api_store,
     new_policy_work_dir,
@@ -409,8 +409,9 @@ def create_api(
         output_policy: A .py or .sh script that runs after each call's job
               and decides what is shared and with whom. See env.py too.
         read_permissions: The run files a caller may read once its call ran,
-              e.g. ["stdout.txt"], from syft_job's READABLE_RUN_FILES. Defaults
-              to default_approved_read_permissions in config.yaml.
+              e.g. ["stdout.txt"], as paths in the job's folder. Defaults
+              to ["outputs"] plus default_approved_read_permissions in
+              config.yaml; [] shares nothing.
 
     Returns:
         ApiResult with the created api's details.
@@ -425,7 +426,7 @@ def create_api(
             args=[ApiArg.model_validate(a) for a in args or []],
             input_policy=Path(input_policy) if input_policy else None,
             output_policy=Path(output_policy) if output_policy else None,
-            approved_read_permissions=default_approved_read_permissions()
+            approved_read_permissions=default_api_read_permissions()
             if read_permissions is None
             else read_permissions,
         )
@@ -571,7 +572,8 @@ def run_policy(
 
     Returns:
         PolicyResult: passed, error (what the data scientist would see), state
-        (state.json after the run), recipients and outputs_dir (output policy).
+        (state.json after the run), read_permissions and outputs_dir (output
+        policy). The output policy starts from {"outputs": [submitter]}.
 
     See syft_job/policies/env.py for what a policy gets and the conventions it
     follows.
