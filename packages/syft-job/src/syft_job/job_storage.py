@@ -1,3 +1,4 @@
+import json
 import logging
 import shutil
 from pathlib import Path
@@ -165,6 +166,11 @@ class JobStorage:
                 continue
             deleted.append(name)
         return deleted
+
+    def output_recipients(self, ref: JobRef) -> Optional[list[str]]:
+        """Who the output policy lets read the outputs, or None with no policy."""
+        path = self.review_dir(ref) / OUTPUT_RECIPIENTS_FILENAME
+        return json.loads(path.read_text()) if path.exists() else None
 
     # -- owner record (owner side, in review/ with no grant) ------------------------
     def owner_record_path(self, ref: JobRef) -> Path:

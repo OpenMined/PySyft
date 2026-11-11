@@ -140,7 +140,7 @@ def test_process_approved_jobs_holds_logs_back_by_default():
     assert kwargs["share_logs_with_submitter"] is False
 
 
-def test_submit_python_job_passes_requested_read_permissions(tmp_path):
+def test_submit_python_job_passes_share_args(tmp_path):
     from unittest.mock import MagicMock, patch
 
     ds, do = SyftRDSClient.pair_with_mock_drive_service_connection()
@@ -153,11 +153,14 @@ def test_submit_python_job_passes_requested_read_permissions(tmp_path):
             do.email,
             str(code),
             force_submission=True,
-            request_read_permissions={"stdout.txt": [ds.email]},
+            share_logs=True,
+            share_files={"stdout.txt": [ds.email]},
         )
 
     kwargs = ds.job_client.submit_python_job.call_args.kwargs
-    assert kwargs["request_read_permissions"] == {"stdout.txt": [ds.email]}
+    assert kwargs["share_logs"] is True
+    assert kwargs["share_outputs"] is False
+    assert kwargs["share_files"] == {"stdout.txt": [ds.email]}
 
 
 def test_submit_python_job_keeps_positional_order(tmp_path):
@@ -173,4 +176,4 @@ def test_submit_python_job_keeps_positional_order(tmp_path):
         ds.submit_python_job(do.email, str(code), "", None, None, True)
 
     kwargs = ds.job_client.submit_python_job.call_args.kwargs
-    assert kwargs["request_read_permissions"] is None
+    assert kwargs["share_files"] is None

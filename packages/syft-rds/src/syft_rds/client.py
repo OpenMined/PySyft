@@ -456,12 +456,14 @@ class SyftRDSClient(BaseModel):
         entrypoint: str | None = None,
         force_submission: bool = False,
         ignore_peer_version: bool = False,
-        request_read_permissions: ReadPermissions | None = None,
+        share_logs: bool = False,
+        share_outputs: bool = False,
+        share_files: ReadPermissions | None = None,
     ):
         """Submit the code at ``code_path`` as a job to ``user``.
 
-        request_read_permissions asks who may read which run file, as
-        {file: [emails]}, e.g. {"stdout.txt": [ds_email]}.
+        share_logs and share_outputs ask to read stdout/stderr and the outputs.
+        share_files asks instead as {file: [emails]}, e.g. {"stdout.txt": [me]}.
         """
         peer_emails = {p.email for p in self.sync_engine.peer_manager.syncable_peers}
         if user not in peer_emails:
@@ -495,7 +497,9 @@ class SyftRDSClient(BaseModel):
             job_name=job_name,
             dependencies=dependencies,
             entrypoint=entrypoint,
-            request_read_permissions=request_read_permissions,
+            share_logs=share_logs,
+            share_outputs=share_outputs,
+            share_files=share_files,
         )
         self.sync_engine.push_job_files(job_dir)
 

@@ -17,12 +17,42 @@ ReadPermissions = dict[str, list[str]]
 REQUESTED_READ_PERMISSIONS_HEADER = "requested_read_permissions"
 
 RETURN_CODE_FILENAME = "returncode.txt"
+# The folder the job writes its results into.
+OUTPUTS = "outputs"
 # The files the job's code prints into.
 _PRINTED_FILES = ("stdout.txt", "stderr.txt")
 # What the runner shares when it is told to share the logs.
 LOG_FILES = (*_PRINTED_FILES, RETURN_CODE_FILENAME)
-# The run files a read permission can name. Outputs follow later.
-READABLE_RUN_FILES = (*_PRINTED_FILES, FRAMES_FILENAME, RETURN_CODE_FILENAME)
+# The run files a read permission can name.
+READABLE_RUN_FILES = (*_PRINTED_FILES, FRAMES_FILENAME, RETURN_CODE_FILENAME, OUTPUTS)
+
+
+def read_permissions_for(
+    readers: list[str], logs: bool, outputs: bool
+) -> ReadPermissions:
+    """Read on stdout and stderr, and on the outputs, for ``readers``."""
+    files = (*(_PRINTED_FILES if logs else ()), *((OUTPUTS,) if outputs else ()))
+    return {file: sorted(set(readers)) for file in files} if readers else {}
+
+
+def merge_read_permissions(*permissions: ReadPermissions) -> ReadPermissions:
+    """One dict with, per file, every email that any of ``permissions`` names."""
+    merged: dict[str, set[str]] = {}
+    for permission in permissions:
+        for file, emails in permission.items():
+            merged.setdefault(file, set()).update(emails)
+    return {file: sorted(emails) for file, emails in merged.items()}
+
+
+def check_one_way(dict_arg: str, given: object, flags: dict[str, bool]) -> None:
+    """Refuse ``dict_arg`` together with any of the ``flags`` that is set.
+
+    Raises:
+        ValueError: If the dict and a flag are both given.
+    """
+    set_flags = [name for name, value in flags.items() if value]
+    if given is not None and set_flags:
+        raise ValueError(f"Give {dict_arg} or {', '.join(set_flags)}, not both.")
 
 
 def check_read_permissions(value: object) -> ReadPermissions:

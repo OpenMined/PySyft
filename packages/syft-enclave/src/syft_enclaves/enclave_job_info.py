@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field, field_validator
 from syft_job.read_permissions import (
     ReadPermissions,
     check_approval_reason,
+    check_one_way,
     check_read_permissions,
     format_read_permissions,
     restrict_to_request,
@@ -237,22 +238,42 @@ class EnclaveJobInfo(JobInfo):
         checked = check_read_permissions(read_permissions)
         return restrict_to_request(checked, self.requested_read_permissions)
 
+    def _read_permissions_to_approve(
+        self, read_permissions: object, share_requested_files: Optional[bool]
+    ) -> ReadPermissions:
+        """The whole request, or the requested part of ``read_permissions``."""
+        if share_requested_files is None:
+            share_requested_files = read_permissions is None
+        flags = {"share_requested_files": share_requested_files}
+        check_one_way("read_permissions", read_permissions, flags)
+        if share_requested_files:
+            return dict(self.requested_read_permissions)
+        return self._restrict_to_request(read_permissions)
+
     def approve(
         self,
         reason: Optional[str] = None,
         approval_method: str = "manual",
         read_permissions: Optional[ReadPermissions] = None,
+        share_requested_files: Optional[bool] = None,
     ) -> None:
         """Approve this submission in the DO's own approval file.
 
         ``read_permissions`` says who may read which file, as {file: [emails]}.
+        ``share_requested_files`` None means True unless read_permissions is
+        given: with neither, the approval covers everything the submitter requested.
         The enclave shares a file with an email only when every party approved
         it, and only what the submitter requested is kept. The file records the
         hash of the submission, so the enclave runs the job only while it still
         matches. ``reason`` and ``approval_method`` are not recorded.
+
+        Raises:
+            ValueError: If read_permissions comes with share_requested_files=True.
         """
         check_approval_reason(reason)
-        approved = self._restrict_to_request(read_permissions)
+        approved = self._read_permissions_to_approve(
+            read_permissions, share_requested_files
+        )
         approval = self._load_own_approval()
         current = submission_hash(self.job_submission_path)
         if approval.status == JobStatus.REJECTED or _approves(approval, current):

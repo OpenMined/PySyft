@@ -196,7 +196,7 @@ def test_enclave_bias_eval_full_flow():
             model_owner.email: ["gpt2_model"],
             benchmark_owner.email: ["eval_benchmark"],
         },
-        share_results_with_do=True,
+        share_outputs_with_owners=True,
     )
 
     # Enclave receives and distributes

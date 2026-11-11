@@ -12,7 +12,7 @@ from syft_job.config import (
     SyftJobConfig,
     protocol_dir_name,
 )
-from syft_job.read_permissions import LOGS_WARNING
+from syft_job.read_permissions import LOGS_WARNING, OUTPUTS
 from syft_job.job import JobInfo
 from syft_job.job_runner import SyftJobRunner
 from syft_job.migrations.registry import JOB_PROTOCOL_VERSION
@@ -77,7 +77,7 @@ def submit_as_ds(
         user=DO_EMAIL,
         code_path=str(code_file),
         job_name="test.job",
-        request_read_permissions=requested,
+        share_files=requested,
     )
 
 
@@ -397,7 +397,7 @@ def test_receipt_drops_invalid_request_entries(tmp_path):
         "stdout.txt": [DS_EMAIL],
         PERMISSION_FILE_NAME: [DS_EMAIL],
         f"../{OWNER_RECORD_FILENAME}": [DS_EMAIL],
-        "outputs": [DS_EMAIL],
+        "outputs/result.txt": [DS_EMAIL],
         "stderr.txt": [],
     }
     write_headers(inbox, requested_read_permissions=request)
@@ -416,6 +416,78 @@ def test_receipt_drops_invalid_request_entries(tmp_path):
 def test_submit_refuses_invalid_request(tmp_path, request_value, error):
     with pytest.raises(error):
         submit_as_ds(tmp_path, request_value)
+
+
+def submit_with(tmp_path: Path, **share) -> JobInfo:
+    """Submit with share_* arguments, and return the job as the DO sees it."""
+    (tmp_path / "SyftBox").mkdir(exist_ok=True)
+    code_file = tmp_path / "main.py"
+    code_file.write_text(OK_PY)
+    ds_config = SyftJobConfig(
+        syftbox_folder=tmp_path / "SyftBox", current_user_email=DS_EMAIL
+    )
+    JobClient(config=ds_config).submit_python_job(
+        user=DO_EMAIL, code_path=str(code_file), job_name="test.job", **share
+    )
+    return reload_job(tmp_path)
+
+
+@pytest.mark.parametrize(
+    "share, requested",
+    [
+        ({"share_logs": True}, LOGS),
+        ({"share_outputs": True}, {OUTPUTS: [DS_EMAIL]}),
+        ({"share_logs": True, "share_outputs": True}, {**LOGS, OUTPUTS: [DS_EMAIL]}),
+        ({}, {}),
+    ],
+)
+def test_share_flags_build_request(tmp_path, share, requested):
+    assert submit_with(tmp_path, **share).requested_read_permissions == requested
+
+
+def test_share_files_with_flag_raises(tmp_path):
+    with pytest.raises(ValueError, match="share_files or share_logs"):
+        submit_with(tmp_path, share_logs=True, share_files=FRAMES)
+
+
+def test_approve_share_requested_files_approves_request(tmp_path):
+    job = submit_only(tmp_path, {**LOGS, **FRAMES})
+    job.approve(share_requested_files=True)
+    assert reload_job(tmp_path).approved_read_permissions == {**LOGS, **FRAMES}
+
+
+def test_approve_with_both_raises(tmp_path):
+    job = submit_only(tmp_path, LOGS)
+    with pytest.raises(ValueError, match="read_permissions or share_requested_files"):
+        job.approve(read_permissions=LOGS, share_requested_files=True)
+    assert reload_job(tmp_path).status == "pending"
+
+
+def test_runner_share_requested_files_shares_request(tmp_path):
+    submit_only(tmp_path, {**LOGS, **RETURN_CODE}).approve()
+    SyftJobRunner(config=do_config_for(tmp_path)).process_approved_jobs(
+        stream_output=False, timeout=180, share_requested_files=True
+    )
+    assert reload_job(tmp_path).approved_read_permissions == {**LOGS, **RETURN_CODE}
+    for name in ("stdout.txt", "stderr.txt", "returncode.txt"):
+        assert ds_can_read(tmp_path, name)
+
+
+def test_approved_outputs_shared_after_run(tmp_path):
+    outputs = {OUTPUTS: [DS_EMAIL]}
+    run_job(tmp_path, OK_PY, None, requested=outputs, grants=outputs)
+    assert ds_can_read(tmp_path, f"{OUTPUTS}/result.txt")
+
+
+def test_approved_outputs_follow_output_policy(tmp_path):
+    """An output policy that lets nobody read the outputs wins over the approval."""
+    outputs = {OUTPUTS: [DS_EMAIL]}
+    job, review = run_job(tmp_path, OK_PY, None, requested=outputs)
+    (review / OUTPUT_RECIPIENTS_FILENAME).write_text("[]")
+
+    job.update_read_permissions(outputs)
+
+    assert not ds_can_read(tmp_path, f"{OUTPUTS}/result.txt")
 
 
 def test_ds_header_cannot_approve(tmp_path):

@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional
 
 from syft_job.job import JobInfo
+from syft_job.read_permissions import OUTPUTS
 
 from syft_enclaves.enclave_job_info import submission_approvals, submission_hash
 from syft_enclaves.receipt.claims import read_job_claims
@@ -93,7 +94,7 @@ def _receipt(
     outputs_dir = job.job_review_path / "outputs"
     job_entry = _job(job)
     owners = job.job_metadata.datasets or {}
-    shared = bool(job.job_headers.get("share_results_with_do"))
+    readers = client.read_permissions_to_share(job).get(OUTPUTS, [])
     return build_receipt(
         read_job_claims(outputs_dir),
         job=job_entry,
@@ -102,7 +103,7 @@ def _receipt(
         execution=_execution(client, job, settings, run_public_key),
         parties=parties_section(job.submitted_by, owners),
         consent=consent_section(job_entry["code"], _approvals(client, job)),
-        policy=policy_section(job.submitted_by, list(owners), shared),
+        policy=policy_section(job.submitted_by, list(owners), readers),
     )
 
 

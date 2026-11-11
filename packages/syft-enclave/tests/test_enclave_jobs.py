@@ -279,7 +279,7 @@ def test_enclave_full_job_flow(encryption):
         code_path,
         "test_job",
         datasets={do1.email: ["dataset1"], do2.email: ["dataset2"]},
-        share_results_with_do=True,
+        share_outputs_with_owners=True,
     )
 
     # Enclave receives and distributes
@@ -331,7 +331,7 @@ def test__only_one_of_two_data_owners_sees_job_result_when_submitting():
 
     Mirrors ``notebooks/enclave/gemma/1. enclave_gemma_inmem_restrict_v2.ipynb``,
     where a data owner both submits and gets the result while the co-owner only
-    gets it when named in ``datasets`` with ``share_results_with_do=True``.
+    gets it when named in ``datasets`` with ``share_outputs_with_owners=True``.
     """
     enclave, do1, do2, ds = SyftEnclaveClient.quad_with_mock_drive_service_connection(
         use_in_memory_cache=False,
@@ -361,7 +361,6 @@ def test__only_one_of_two_data_owners_sees_job_result_when_submitting():
         code_path,
         "test_job",
         datasets={do1.email: ["dataset1"]},
-        share_results_with_do=False,
     )
 
     # Enclave receives and distributes to both data owners for approval.
@@ -589,7 +588,7 @@ def test_parties_run_concurrently_and_meet_through_waits(monkeypatch):
             create_tmp_code_file(make_job_code(do1.email, do2.email)),
             "test_job",
             datasets={do1.email: ["dataset1"], do2.email: ["dataset2"]},
-            share_results_with_do=True,
+            share_outputs_with_owners=True,
         )
         results[ds.email] = ds.wait_until_has_job(
             "test_job", status="done", where=lambda j: bool(j.output_paths), **wait

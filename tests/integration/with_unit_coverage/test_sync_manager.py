@@ -257,7 +257,7 @@ with open("outputs/result.json", "w") as f:
         user=do_manager.email,
         code_path=test_py_path,
         job_name="test.job",
-        request_read_permissions=stdout_for_ds,
+        share_files=stdout_for_ds,
     )
 
     do_manager.sync()

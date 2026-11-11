@@ -134,12 +134,11 @@ def consent_section(
 
 
 def policy_section(
-    submitted_by: str, data_owners: list[str], share_with_owners: bool
+    submitted_by: str, data_owners: list[str], output_readers: list[str]
 ) -> dict[str, Any]:
-    """Who is sent what: the submitter everything, the owners only if shared."""
-    owner_grants = ALL_GRANTS if share_with_owners else []
+    """Who is sent what: the submitter everything, an owner only if a reader."""
     policy = [
-        {"party": owner, "grants": owner_grants}
+        {"party": owner, "grants": ALL_GRANTS if owner in output_readers else []}
         for owner in sorted(data_owners)
         if owner != submitted_by
     ]

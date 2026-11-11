@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Optional
 
 from syft_datasets import Dataset
 from syft_datasets.dataset_manager import SyftDatasetManager
-from syft_job.read_permissions import ReadPermissions
+from syft_job.read_permissions import OUTPUTS, ReadPermissions
 from syft_job.job import JobInfo, JobsList
 from syft_job.job_storage import JobRef
 from syft_job.models import JobStatus
@@ -391,37 +391,54 @@ class SyftEnclaveClient:
         code_path: str,
         job_name: Optional[str] = "",
         datasets: Optional[dict[str, list[str]]] = None,
-        share_results_with_do: bool = False,
-        request_read_permissions: Optional[ReadPermissions] = None,
+        share_logs: bool = False,
+        share_outputs: bool = False,
+        share_logs_with_owners: bool = False,
+        share_outputs_with_owners: bool = False,
+        share_files: Optional[ReadPermissions] = None,
         force_submission: bool = False,
         ignore_peer_version: bool = False,
         **kwargs,
     ):
         """Submit a Python job to an enclave, then push files via sync.
 
-        Mirrors ``SyftboxManager.submit_python_job``'s version guard: if the
-        enclave's version is unknown/incompatible, raise immediately instead of
-        letting ``push_job_files`` silently skip the peer and drop the job (which
-        otherwise surfaces much later as a stuck, never-distributed job).
+        share_logs / share_outputs ask for stdout+stderr / the outputs for the
+        submitter, the ``*_with_owners`` flags for every data owner in
+        ``datasets``. ``share_files`` gives the request as {file: [emails]}
+        instead of the flags. Every party must approve a file for an email.
+
+        Raises:
+            ValueError: If share_files comes with a share flag.
         """
         if not force_submission:
-            result = self._rds.peer_manager.get_peer_compatibility_status(
-                enclave_email,
-                action=CompatAction.SUBMIT,
-                ignore_peer_version=ignore_peer_version,
-            )
-            result.raise_on_skip(operation="submit job")
-            result.maybe_warn()
+            self._check_can_submit_to(enclave_email, ignore_peer_version)
         job_dir = self._rds.job_client.submit_python_job(
             enclave_email,
             code_path,
             job_name,
             datasets=datasets,
-            share_results_with_do=share_results_with_do,
-            request_read_permissions=request_read_permissions,
+            share_logs=share_logs,
+            share_outputs=share_outputs,
+            share_logs_with_owners=share_logs_with_owners,
+            share_outputs_with_owners=share_outputs_with_owners,
+            share_files=share_files,
             **kwargs,
         )
         self._rds.sync_engine.push_job_files(job_dir)
+
+    def _check_can_submit_to(self, enclave_email: str, ignore_peer_version: bool):
+        """Raise when the enclave's version is unknown or incompatible.
+
+        Mirrors ``SyftboxManager.submit_python_job``'s version guard, so a job
+        is not silently skipped by ``push_job_files`` and never distributed.
+        """
+        result = self._rds.peer_manager.get_peer_compatibility_status(
+            enclave_email,
+            action=CompatAction.SUBMIT,
+            ignore_peer_version=ignore_peer_version,
+        )
+        result.raise_on_skip(operation="submit job")
+        result.maybe_warn()
 
     def run_jobs(self) -> None:
         """Run approved enclave jobs.
@@ -479,7 +496,8 @@ class SyftEnclaveClient:
         """Share each file of a finished enclave job with the emails all approved.
 
         A file goes to an email only when the submitter requested it for that
-        email and every party approved the same. Nobody else reads it.
+        email and every party approved the same. Nobody else reads it. The
+        outputs go out with the receipt, in ``distribute_results``.
         """
         for job in self._local_jobs():
             if job.job_headers.get("job_type") != "enclave":
@@ -487,7 +505,7 @@ class SyftEnclaveClient:
             if job.status not in ("done", "failed"):
                 continue
             approved = self.read_permissions_to_share(job)
-            job.share(approved)
+            job.share({f: e for f, e in approved.items() if f != OUTPUTS})
             self._record_approved_read_permissions(job._ref, approved)
 
     def _record_approved_read_permissions(
@@ -501,7 +519,7 @@ class SyftEnclaveClient:
             manager.write_state(ref, state)
 
     def distribute_results(self) -> None:
-        """Distribute job results to DS (always) and optionally to DOs."""
+        """Share the outputs with the DS, and with whoever every party approved."""
         for job in self.jobs:
             if job.status not in ("done", "failed"):
                 continue
@@ -510,7 +528,10 @@ class SyftEnclaveClient:
         self._rds.sync()
 
     def _share_results_once(self, job: JobInfo) -> None:
-        """Share the outputs, the first time the job finishes."""
+        """Share the outputs, the first time the job finishes.
+
+        The submitter always gets them; anyone else when every party approved it.
+        """
         marker = job.job_review_path / RESULTS_SHARED_MARKER
         if marker.exists():
             return
@@ -518,15 +539,8 @@ class SyftEnclaveClient:
         if self.receipts is not None and job.status == "done":
             self._try_write_receipt(job)
 
-        # Always share results with the DS (submitter)
-        job.share_outputs([job.submitted_by])
-
-        # Optionally share with DOs
-        datasets = job.job_metadata.datasets
-        if job.job_headers.get("share_results_with_do") and datasets:
-            do_emails = list(datasets)
-            job.share_outputs(do_emails)
-
+        approved = self.read_permissions_to_share(job).get(OUTPUTS, [])
+        job.share_outputs(list(dict.fromkeys([job.submitted_by, *approved])))
         marker.write_text("shared")
 
     def _try_write_receipt(self, job: JobInfo) -> None:
@@ -558,16 +572,23 @@ class SyftEnclaveClient:
         return self._as_enclave_job(job)
 
     def approve_job(
-        self, job: JobInfo, read_permissions: Optional[ReadPermissions] = None
+        self,
+        job: JobInfo,
+        read_permissions: Optional[ReadPermissions] = None,
+        share_requested_files: Optional[bool] = None,
     ) -> None:
         """Approve an enclave job and push the approval state file to the enclave.
 
-        Same as ``job.approve(read_permissions=...)`` on a job from ``self.jobs``.
+        Same as ``job.approve(...)`` on a job from ``self.jobs``: with no
+        read_permissions, it approves everything the submitter requested.
         """
         job = self._require_enclave_job(job)
         if pre_sync_enabled():
             self._rds.sync()
-        job.approve(read_permissions=read_permissions)
+        job.approve(
+            read_permissions=read_permissions,
+            share_requested_files=share_requested_files,
+        )
 
     def reject_job(self, job: JobInfo, reason: Optional[str] = None) -> None:
         """Reject an enclave job and push the approval state file to the enclave.

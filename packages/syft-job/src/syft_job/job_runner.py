@@ -873,6 +873,7 @@ class SyftJobRunner:
         share_logs_with_submitter: bool = False,
         skip_job_names: list[str] | None = None,
         approved_peers: list[str] | None = None,
+        share_requested_files: bool = False,
     ) -> None:
         """Process all jobs in approved status.
 
@@ -894,6 +895,8 @@ class SyftJobRunner:
             skip_job_names: Deprecated. The name-only form of ``skip_jobs``.
             approved_peers: The peers an output policy may send outputs to.
                 None allows the submitter only.
+            share_requested_files: If True, approve everything each job's
+                submitter requested, and share it once the job ran.
         """
         self._replace_ds_folder_reads()
         approved_jobs = self._get_jobs_in_approved()
@@ -920,6 +923,7 @@ class SyftJobRunner:
                 share_outputs_with_submitter,
                 share_logs_with_submitter,
                 approved_peers,
+                share_requested_files,
             )
 
         if approved_jobs:
@@ -934,6 +938,7 @@ class SyftJobRunner:
         share_outputs_with_submitter: bool = False,
         share_logs_with_submitter: bool = False,
         approved_peers: list[str] | None = None,
+        share_requested_files: bool = False,
     ) -> None:
         """Run one approved job, and share its results as asked.
 
@@ -954,6 +959,7 @@ class SyftJobRunner:
             share_outputs_with_submitter,
             share_logs_with_submitter,
             approved_peers,
+            share_requested_files,
         )
 
     def _run_job(
@@ -964,6 +970,7 @@ class SyftJobRunner:
         share_outputs: bool,
         share_logs: bool,
         approved_peers: list[str] | None,
+        share_requested_files: bool,
     ) -> None:
         """Execute an approved job, then share its results if it ran."""
         print(f"\n{'=' * 50}")
@@ -973,6 +980,7 @@ class SyftJobRunner:
                 share_outputs,
                 share_logs,
                 self._output_recipients(ref, approved_peers),
+                share_requested_files,
             )
         print(f"{'=' * 50}")
 
@@ -998,10 +1006,19 @@ class SyftJobRunner:
         self._share_job_results(ref, share_outputs, share_logs, [ref.ds_email])
 
     def _share_job_results(
-        self, ref: JobRef, share_outputs: bool, share_logs: bool, recipients: list[str]
+        self,
+        ref: JobRef,
+        share_outputs: bool,
+        share_logs: bool,
+        recipients: list[str],
+        share_requested_files: bool = False,
     ) -> None:
         job_info = self._get_job_info(ref)
-        job_info.share_read_permissions()
+        if share_requested_files:
+            # Approving a finished job also shares what it approves.
+            job_info.update_read_permissions(job_info.requested_read_permissions)
+        else:
+            job_info.share_read_permissions()
         if share_outputs:
             job_info.share_outputs(recipients)
             if ref.ds_email not in recipients:
@@ -1020,11 +1037,10 @@ class SyftJobRunner:
 
         Only approved peers receive outputs; other emails are skipped and logged.
         """
-        path = self.manager.review_dir(ref) / OUTPUT_RECIPIENTS_FILENAME
-        if not path.exists():
+        requested = self.manager.output_recipients(ref)
+        if requested is None:
             return [ref.ds_email]
         allowed = set(approved_peers or []) | {ref.ds_email}
-        requested = json.loads(path.read_text())
         skipped = [email for email in requested if email not in allowed]
         if skipped:
             logger.warning(

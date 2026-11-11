@@ -17,6 +17,7 @@ from syft_job.job import JobInfo  # noqa: E402
 from syft_job.models import JobState, JobStatus  # noqa: E402
 from syft_job.read_permissions import (  # noqa: E402
     LOGS_WARNING,
+    OUTPUTS,
     REQUESTED_READ_PERMISSIONS_HEADER,
 )
 from syft_job.traceback_capture import FRAMES_FILENAME  # noqa: E402
@@ -187,7 +188,7 @@ def build_quad():
     return enclave, do1, do2, ds
 
 
-def submit(ds, enclave, do1, do2, code, requested):
+def submit(ds, enclave, do1, do2, code, requested=None, **share_flags):
     path = Path(tempfile.mkdtemp()) / "main.py"
     path.write_text(code)
     ds.submit_python_job(
@@ -195,7 +196,8 @@ def submit(ds, enclave, do1, do2, code, requested):
         str(path),
         "j",
         datasets={do1.email: ["dataset1"], do2.email: ["dataset2"]},
-        request_read_permissions=requested,
+        share_files=requested,
+        **share_flags,
     )
 
 
@@ -208,6 +210,7 @@ def distribute(enclave, *dos):
 
 
 OK_CODE = "import os, json\nos.makedirs('outputs', exist_ok=True)\nopen('outputs/r.json','w').write('{}')\n"
+RESULT = "outputs/r.json"
 CRASH_CODE = "x = 1\ny = 2\nraise ValueError('account 88213 holds 4120550')\n"
 
 
@@ -216,6 +219,7 @@ ENTRY_POINTS = pytest.mark.parametrize("via_job", [False, True], ids=["client", 
 
 
 def approve(do, approved, via_job=False):
+    """``{}`` approves nothing; None approves the whole request."""
     if via_job:
         do.jobs["j"].approve(read_permissions=approved)
     else:
@@ -260,7 +264,7 @@ def readers_of(enclave, name, parties):
 def test_submitter_gets_no_logs_without_approval():
     enclave, do1, do2, ds = build_quad()
     submit(ds, enclave, do1, do2, OK_CODE, readable(LOGS, ds.email))
-    run_to_completion(enclave, do1, do2, ds, None)
+    run_to_completion(enclave, do1, do2, ds, {})
 
     assert not has_file(ds, "stdout.txt")
     assert not has_file(ds, "stderr.txt")
@@ -355,7 +359,7 @@ def test_one_owner_withholding_blocks_frames():
     submit(ds, enclave, do1, do2, CRASH_CODE, frames)
     distribute(enclave, do1, do2)
     do1.approve_job(do1.jobs["j"], frames)
-    do2.approve_job(do2.jobs["j"], None)
+    do2.approve_job(do2.jobs["j"], {})
     run_and_share(enclave, ds)
 
     assert not has_file(ds, FRAMES)
@@ -383,7 +387,7 @@ def test_later_approval_releases_withheld_file(via_job):
     enclave, do1, do2, ds = build_quad()
     logs = readable(LOGS, ds.email)
     submit(ds, enclave, do1, do2, OK_CODE, logs)
-    run_to_completion(enclave, do1, do2, ds, None)
+    run_to_completion(enclave, do1, do2, ds, {})
     assert not has_file(ds, "stdout.txt")
 
     # Both owners amend their approval, then the enclave applies it.
@@ -405,8 +409,8 @@ def test_unapproved_file_unreadable_during_sync(monkeypatch):
     enclave, do1, do2, ds = build_quad()
     submit(ds, enclave, do1, do2, OK_CODE, readable(LOGS, ds.email))
     distribute(enclave, do1, do2)
-    do1.approve_job(do1.jobs["j"], None)
-    do2.approve_job(do2.jobs["j"], None)
+    do1.approve_job(do1.jobs["j"], {})
+    do2.approve_job(do2.jobs["j"], {})
     enclave.sync()
 
     exposed = []
@@ -445,7 +449,7 @@ def test_late_approval_reaches_named_data_owners():
     enclave, do1, do2, ds = build_quad()
     frames = readable(FRAMES, ds.email, do1.email, do2.email)
     submit(ds, enclave, do1, do2, CRASH_CODE, frames)
-    run_to_completion(enclave, do1, do2, ds, None)
+    run_to_completion(enclave, do1, do2, ds, {})
     do1.sync()
     assert not has_file(do1, FRAMES)
 
@@ -477,6 +481,62 @@ def test_approve_job_rejects_non_enclave_job():
 
     with pytest.raises(TypeError, match="not an enclave job"):
         do1.approve_job(plain, logs)
+
+
+# -- the submitter's share flags, and the outputs ------------------------------
+
+
+@pytest.mark.parametrize(
+    "flags, logs_to, outputs_to",
+    [
+        ({"share_logs": True, "share_outputs_with_owners": True}, "ds", "owners"),
+        ({"share_outputs": True, "share_logs_with_owners": True}, "owners", "ds"),
+    ],
+)
+def test_share_flags_build_request(flags, logs_to, outputs_to):
+    """The submitter flags name the submitter, the owner flags every data owner."""
+    enclave, do1, do2, ds = build_quad()
+    readers = {"ds": [ds.email], "owners": [do1.email, do2.email]}
+    submit(ds, enclave, do1, do2, OK_CODE, **flags)
+    distribute(enclave)
+
+    expected = {
+        **readable(LOGS, *readers[logs_to]),
+        **readable(OUTPUTS, *readers[outputs_to]),
+    }
+    assert enclave.jobs["j"].requested_read_permissions == expected
+
+
+def test_share_files_with_flag_raises():
+    enclave, do1, do2, ds = SyftEnclaveClient.quad_with_mock_drive_service_connection(
+        use_in_memory_cache=False
+    )
+    with pytest.raises(ValueError, match="share_files or share_logs"):
+        submit(
+            ds, enclave, do1, do2, OK_CODE, readable(LOGS, ds.email), share_logs=True
+        )
+
+
+def test_outputs_reach_owner_only_after_every_party_approved():
+    """do2 approves the outputs for itself only, so do1 gets none.
+
+    The outputs go out in distribute_results, with the receipt, not after the run.
+    """
+    enclave, do1, do2, ds = build_quad()
+    submit(ds, enclave, do1, do2, OK_CODE, share_outputs_with_owners=True)
+    distribute(enclave, do1, do2)
+    do1.approve_job(do1.jobs["j"])
+    do2.approve_job(do2.jobs["j"], readable(OUTPUTS, do2.email))
+    enclave.sync()
+    enclave.run_jobs()
+    assert readers_of(enclave, RESULT, (do1, do2)) == []
+
+    enclave.distribute_results()
+    do1.sync()
+    do2.sync()
+    assert readers_of(enclave, RESULT, (do1, do2)) == [do2]
+    assert has_file(do2, RESULT)
+    assert not has_file(do1, RESULT)
 
 
 # -- the job-level calls, same as on a datasite ---------------------------------
@@ -600,7 +660,7 @@ def test_deleted_approval_file_blocks_late_approval():
     enclave, do1, do2, ds = build_quad()
     logs = readable(LOGS, ds.email)
     submit(ds, enclave, do1, do2, OK_CODE, logs)
-    run_to_completion(enclave, do1, do2, ds, None)
+    run_to_completion(enclave, do1, do2, ds, {})
 
     do1.jobs["j"].update_read_permissions(logs)
     enclave.sync()

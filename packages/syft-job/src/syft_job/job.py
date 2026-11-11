@@ -11,8 +11,10 @@ from syft_permissions.spec.ruleset import PERMISSION_FILE_NAME
 
 from .read_permissions import (
     LOG_FILES,
+    OUTPUTS,
     ReadPermissions,
     check_approval_reason,
+    check_one_way,
     check_read_permissions,
     format_read_permissions,
     restrict_to_request,
@@ -161,8 +163,17 @@ class JobInfo:
         return approved
 
     def share_read_permissions(self) -> None:
-        """Give each approved reader read access to its file."""
-        self.share(self.approved_read_permissions)
+        """Give each approved reader read access to its file.
+
+        The outputs go only to approved readers that an output policy allows.
+        """
+        approved = dict(self.approved_read_permissions)
+        allowed = self._client.manager.output_recipients(self._ref)
+        if OUTPUTS in approved and allowed is not None:
+            approved[OUTPUTS] = [
+                email for email in approved[OUTPUTS] if email in allowed
+            ]
+        self.share(approved)
 
     # ──────────────────────────────────────────────
     # Properties from config (inbox/)
@@ -348,6 +359,7 @@ class JobInfo:
         reason: Optional[str] = None,
         approval_method: str = "manual",
         read_permissions: Optional[ReadPermissions] = None,
+        share_requested_files: bool = False,
     ) -> None:
         """
         Approve a job by updating state.yaml in review/.
@@ -362,17 +374,32 @@ class JobInfo:
             approval_method: How the job was approved ("manual" or "auto")
             read_permissions: Who may read which file once the job ran, as
                 {file: [emails]}, e.g. {"stdout.txt": [submitter]}. Only what the
-                submitter requested is kept. Omit the argument to approve none.
+                submitter requested is kept.
+            share_requested_files: Instead of read_permissions, approve
+                everything the submitter requested. With neither, none is approved.
 
         Raises:
             ValueError: If job is not in pending status, was not fully
-                received, or changed after it was received
+                received, or changed after it was received, or if both
+                read_permissions and share_requested_files are given
             PermissionError: If the current user is not authorized to approve
             TypeError: If reason is not a string, or read_permissions not a dict
         """
         check_approval_reason(reason)
-        check_read_permissions(read_permissions)
-        self._approve(reason, approval_method, read_permissions)
+        approved = self._read_permissions_to_approve(
+            read_permissions, share_requested_files
+        )
+        self._approve(reason, approval_method, approved)
+
+    def _read_permissions_to_approve(
+        self, read_permissions: object, share_requested_files: bool
+    ) -> ReadPermissions:
+        """The approval's read permissions: the whole request, or the given dict."""
+        flags = {"share_requested_files": share_requested_files}
+        check_one_way("read_permissions", read_permissions, flags)
+        if share_requested_files:
+            return dict(self.requested_read_permissions)
+        return check_read_permissions(read_permissions)
 
     def _approve(
         self,

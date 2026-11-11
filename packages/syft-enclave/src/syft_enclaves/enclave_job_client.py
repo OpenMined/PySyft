@@ -4,14 +4,20 @@ from typing import Optional
 from syft_job.client import BaseJobClient, JobClient
 from syft_job.job import JobsList
 from syft_job.models import JobSubmissionMetadata
-from syft_job.read_permissions import ReadPermissions
+from syft_job.read_permissions import (
+    ReadPermissions,
+    check_one_way,
+    merge_read_permissions,
+    read_permissions_for,
+)
 
 
 class EnclaveJobClient(BaseJobClient):
     """Wraps a JobClient to add enclave-specific job submission behavior.
 
     All methods delegate to the inner JobClient except submit_python_job,
-    which patches config.yaml with enclave metadata after submission.
+    which builds the read permission request and patches config.yaml with
+    enclave metadata after submission.
     """
 
     def __init__(self, job_client: JobClient):
@@ -55,31 +61,58 @@ class EnclaveJobClient(BaseJobClient):
         code_path: str,
         job_name: Optional[str] = "",
         datasets: Optional[dict[str, list[str]]] = None,
-        share_results_with_do: bool = False,
-        request_read_permissions: Optional[ReadPermissions] = None,
+        share_logs: bool = False,
+        share_outputs: bool = False,
+        share_logs_with_owners: bool = False,
+        share_outputs_with_owners: bool = False,
+        share_files: Optional[ReadPermissions] = None,
         **kwargs,
     ) -> Path:
         """Submit a Python job with enclave metadata.
 
-        Calls the inner job_client's submit_python_job, then patches config.yaml
-        to set job_type="enclave" and store the datasets mapping.
+        The flags request the logs or outputs for the submitter, or for every
+        data owner in ``datasets``. ``share_files`` gives the request as
+        {file: [emails]} instead. Every party must approve a file for an email.
+
+        Raises:
+            ValueError: If share_files comes with a share flag.
         """
+        flags = {
+            "share_logs": share_logs,
+            "share_outputs": share_outputs,
+            "share_logs_with_owners": share_logs_with_owners,
+            "share_outputs_with_owners": share_outputs_with_owners,
+        }
+        check_one_way("share_files", share_files, flags)
+        if share_files is None:
+            share_files = self._requested_by_flags(list(datasets or {}), **flags)
         job_dir = self._job_client.submit_python_job(
-            user,
-            code_path,
-            job_name,
-            request_read_permissions=request_read_permissions,
-            **kwargs,
+            user, code_path, job_name, share_files=share_files, **kwargs
+        )
+        _mark_as_enclave_job(job_dir, datasets)
+        return job_dir
+
+    def _requested_by_flags(
+        self,
+        owners: list[str],
+        share_logs: bool,
+        share_outputs: bool,
+        share_logs_with_owners: bool,
+        share_outputs_with_owners: bool,
+    ) -> ReadPermissions:
+        """The read permissions the share flags ask for."""
+        return merge_read_permissions(
+            read_permissions_for([self.current_user_email], share_logs, share_outputs),
+            read_permissions_for(
+                owners, share_logs_with_owners, share_outputs_with_owners
+            ),
         )
 
-        config = JobSubmissionMetadata.load(job_dir / "config.yaml")
-        config.job_type = "enclave"
-        config.datasets = datasets
-        config.headers = {
-            **config.headers,
-            "job_type": "enclave",
-            "share_results_with_do": share_results_with_do,
-        }
-        config.save(job_dir / "config.yaml")
 
-        return job_dir
+def _mark_as_enclave_job(job_dir: Path, datasets: Optional[dict[str, list[str]]]):
+    """Set job_type="enclave" and the datasets mapping in config.yaml."""
+    config = JobSubmissionMetadata.load(job_dir / "config.yaml")
+    config.job_type = "enclave"
+    config.datasets = datasets
+    config.headers = {**config.headers, "job_type": "enclave"}
+    config.save(job_dir / "config.yaml")

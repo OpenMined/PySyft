@@ -15,7 +15,9 @@ from .config import SyftJobConfig
 from .read_permissions import (
     REQUESTED_READ_PERMISSIONS_HEADER,
     ReadPermissions,
+    check_one_way,
     check_read_permissions,
+    read_permissions_for,
     valid_read_permissions,
 )
 from .install_source import get_syft_install_source
@@ -487,7 +489,9 @@ python {entrypoint_path}
         job_name: Optional[str] = "",
         dependencies: Optional[List[str]] = None,
         entrypoint: Optional[str] = None,
-        request_read_permissions: Optional[ReadPermissions] = None,
+        share_logs: bool = False,
+        share_outputs: bool = False,
+        share_files: Optional[ReadPermissions] = None,
     ) -> Path:
         """
         Submit a Python job for a user (supports both files and folders).
@@ -498,20 +502,23 @@ python {entrypoint_path}
             job_name: Name of the job (directory name). If empty, auto-generated.
             dependencies: List of Python packages to install
             entrypoint: Entry point file name (auto-detected if not provided)
-            request_read_permissions: Who should read which run file, as
-                {file: [emails]}, e.g. {"stdout.txt": [me]}. The data owner
-                approves none, some, or all of it.
+            share_logs: Ask the data owner to let you read stdout and stderr.
+            share_outputs: Ask the data owner to let you read the outputs.
+            share_files: Instead of the two flags, who should read which run
+                file, as {file: [emails]}, e.g. {"stdout.txt": [me]}. The data
+                owner approves none, some, or all of the request.
 
         Returns:
             Path to the created job directory in inbox/
 
         Raises:
             FileExistsError: If job with same name already exists
-            ValueError: If code_path validation fails
+            ValueError: If code_path validation fails, or share_files comes
+                with a share flag
             FileNotFoundError: If code_path doesn't exist
-            TypeError: If request_read_permissions is not {file: [emails]}
+            TypeError: If share_files is not {file: [emails]}
         """
-        requested = check_read_permissions(request_read_permissions)
+        requested = self._requested_by_me(share_logs, share_outputs, share_files)
         submitting_to_email = user
         # Generate default job name if not provided
         if not job_name:
@@ -643,6 +650,18 @@ python {entrypoint_path}
         )
         self.manager.write_state(ref, state)
         return state
+
+    def _requested_by_me(
+        self, share_logs: bool, share_outputs: bool, share_files: object
+    ) -> ReadPermissions:
+        """The read permissions a submission asks for: the flags, or share_files."""
+        flags = {"share_logs": share_logs, "share_outputs": share_outputs}
+        check_one_way("share_files", share_files, flags)
+        if share_files is not None:
+            return check_read_permissions(share_files)
+        return read_permissions_for(
+            [self.current_user_email], share_logs, share_outputs
+        )
 
     def _requested_read_permissions(self, ref: JobRef) -> ReadPermissions:
         """The valid part of the submitter's request. Nothing it wrote is approved."""
