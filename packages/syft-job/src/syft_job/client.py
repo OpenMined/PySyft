@@ -22,7 +22,7 @@ from .job_storage import JobRef, JobStorage
 from .models import JobState, JobStatus, JobSubmissionMetadata, RequestMetadata
 from .api_requests import receive_request
 from .policies import ApiResolver
-from .review_grants import grant_ds_review_read
+from .review_grants import grant_ds_state_and_disclosures_read
 from .submission import (
     RESERVED_CALL_FILES,
     SUBMISSION_ENTRIES,
@@ -166,7 +166,7 @@ class JobClient(BaseJobClient):
         # until a release grants more.
         ds_review_dir = self.config.get_review_dir(self.current_user_email) / ds_email
         ds_review_dir.mkdir(parents=True, exist_ok=True)
-        grant_ds_review_read(ds_review_dir, ds_email)
+        grant_ds_state_and_disclosures_read(ctx, ds_review_dir, ds_email)
 
         return ds_inbox_dir
 

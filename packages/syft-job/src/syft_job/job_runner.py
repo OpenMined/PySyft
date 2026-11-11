@@ -794,8 +794,9 @@ class SyftJobRunner:
         review_root = self.config.get_review_dir(self.config.current_user_email)
         if not review_root.is_dir():
             return
+        datasite = self.config.syftbox_folder / self.config.current_user_email
         for ds_dir in sorted(p for p in review_root.iterdir() if p.is_dir()):
-            replace_ds_folder_read(ds_dir, ds_dir.name)
+            replace_ds_folder_read(datasite, ds_dir, ds_dir.name)
 
     def _get_job_metadata(self, ref: JobRef) -> JobSubmissionMetadata | None:
         try:
