@@ -109,6 +109,29 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
             ConnectionUnavailableError: when the backend cannot be reached.
                 ``sync_up`` sends the messages later.
         """
+        recipients = self._queue_file_changes(files)
+        try:
+            not_ready_errors = self._upload_queued(recipients)
+        except ConnectionUnavailableError as e:
+            raise ConnectionUnavailableError(
+                f"{e} The change is saved, and client.sync() sends it."
+            ) from e
+        if not_ready_errors:
+            error = next(iter(not_ready_errors.values()))
+            raise SyftPeerNotReadyError(
+                error.peer_email,
+                cause=error.cause,
+                remedy=f"{error.remedy} The change is saved, and client.sync() "
+                "sends it once the peer is ready.",
+            ) from error
+
+    def _queue_file_changes(
+        self, files: list[tuple[Path, str | bytes | None]]
+    ) -> list[str]:
+        """Save the changes to ``files`` in the send queue, as one message per
+        datasite, and return those datasites. The content of the files is not
+        held in memory after this returns, so the upload reads it back one
+        message at a time."""
         # One message per datasite: each change goes to the owner of its path.
         changes_by_recipient: Dict[str, List[ProposedFileChange]] = {}
         for relative_path, content in files:
@@ -143,20 +166,7 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
             self.send_queue.add(recipient, message)
             # The next change to a path builds on this one, sent or not.
             self._record_proposed_hashes(message)
-        try:
-            not_ready_errors = self._upload_queued(changes_by_recipient)
-        except ConnectionUnavailableError as e:
-            raise ConnectionUnavailableError(
-                f"{e} The change is saved, and client.sync() sends it."
-            ) from e
-        if not_ready_errors:
-            error = next(iter(not_ready_errors.values()))
-            raise SyftPeerNotReadyError(
-                error.peer_email,
-                cause=error.cause,
-                remedy=f"{error.remedy} The change is saved, and client.sync() "
-                "sends it once the peer is ready.",
-            ) from error
+        return list(changes_by_recipient)
 
     def _record_proposed_hashes(self, message: ProposedFileChangesMessage) -> None:
         hashes = self.datasite_watcher_cache.file_hashes
