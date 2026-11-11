@@ -723,6 +723,6 @@ def _copy_or_create(source: str | Path | None, dest: Path) -> Path:
 # ---------------------------------------------------------------------------
 
 
-def default_disclosures() -> list[str]:
-    """default_disclosures from config.yaml; none when syft-bg isn't set up."""
-    return SyftBgConfig.load().approve.default_disclosures
+def default_approved_read_permissions() -> list[str]:
+    """default_approved_read_permissions from config.yaml; none when syft-bg isn't set up."""
+    return SyftBgConfig.load().approve.default_approved_read_permissions

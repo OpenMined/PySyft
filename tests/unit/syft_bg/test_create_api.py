@@ -271,28 +271,35 @@ class TestCreateApi:
             assert list(store.apis_dir.iterdir()) == []
 
 
-class TestApiDisclosures:
+class TestApiReadPermissions:
     """A call's approval releases what its api says, set when it was made."""
 
     def test_api_releases_nothing_by_default(self, temp_dir):
         with _patched_paths(temp_dir) as store:
             _create(_write_project(temp_dir), allow_any_peer=True)
-            assert store.get("main").disclosures == []
+            assert store.get("main").approved_read_permissions == []
 
     def test_config_sets_released_items(self, temp_dir):
         with _patched_paths(temp_dir) as store:
             SyftBgConfig(
                 do_email=DO_EMAIL,
                 syftbox_root=temp_dir / "syftbox",
-                approve=AutoApproveConfig(default_disclosures=["logs", "return_code"]),
+                approve=AutoApproveConfig(
+                    default_approved_read_permissions=["logs", "return_code"]
+                ),
             ).save()
             _create(_write_project(temp_dir), allow_any_peer=True)
-            assert store.get("main").disclosures == ["logs", "return_code"]
+            assert store.get("main").approved_read_permissions == [
+                "logs",
+                "return_code",
+            ]
 
     def test_argument_overrides_config(self, temp_dir):
         with _patched_paths(temp_dir) as store:
-            _create(_write_project(temp_dir), allow_any_peer=True, disclosures=["logs"])
-            assert store.get("main").disclosures == ["logs"]
+            _create(
+                _write_project(temp_dir), allow_any_peer=True, read_permissions=["logs"]
+            )
+            assert store.get("main").approved_read_permissions == ["logs"]
 
 
 def _approved_job(

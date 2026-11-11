@@ -7,7 +7,7 @@ from syft_perms import SyftPermContext
 
 from syft_job.client import JobClient
 from syft_job.config import SyftJobConfig
-from syft_job.disclosures import DISCLOSURES_FILENAME
+from syft_job.read_permissions import APPROVED_READ_PERMISSIONS_FILENAME
 from syft_job.job_runner import SyftJobRunner
 from syft_job.config import protocol_dir_name
 from syft_job.migrations.registry import JOB_PROTOCOL_VERSION
@@ -80,7 +80,7 @@ def test_nested_files_named_like_state_are_not_readable_by_ds(env):
     script = (
         f"mkdir -p '{review_dir}/nested'\n"
         f"echo private > '{review_dir}/nested/state.yaml'\n"
-        f"echo private > '{review_dir}/nested/{DISCLOSURES_FILENAME}'\n"
+        f"echo private > '{review_dir}/nested/{APPROVED_READ_PERMISSIONS_FILENAME}'\n"
     )
     _submit_and_approve(env, script)
 
@@ -88,29 +88,31 @@ def test_nested_files_named_like_state_are_not_readable_by_ds(env):
 
     assert (review_dir / "nested" / "state.yaml").exists()
     assert not _ds_reads(env, f"{JOB_REVIEW_REL}/nested/state.yaml")
-    assert not _ds_reads(env, f"{JOB_REVIEW_REL}/nested/{DISCLOSURES_FILENAME}")
+    assert not _ds_reads(
+        env, f"{JOB_REVIEW_REL}/nested/{APPROVED_READ_PERMISSIONS_FILENAME}"
+    )
     assert not _ds_reads(env, f"{REVIEW_REL}/{JOB_NAME}/nested/state.yaml")
     assert _ds_reads(env, f"{JOB_REVIEW_REL}/state.yaml")
 
 
-def test_ds_reads_state_and_disclosures_before_release(env):
+def test_ds_reads_state_and_approved_read_permissions_before_release(env):
     env["do_client"].setup_ds_job_folder_as_do(DS_EMAIL)
     _submit_and_approve(env, "echo hi\n")
 
     assert _ds_reads(env, f"{JOB_REVIEW_REL}/state.yaml")
-    assert _ds_reads(env, f"{JOB_REVIEW_REL}/{DISCLOSURES_FILENAME}")
+    assert _ds_reads(env, f"{JOB_REVIEW_REL}/{APPROVED_READ_PERMISSIONS_FILENAME}")
     assert not _ds_reads(env, f"{JOB_REVIEW_REL}/other.txt")
 
 
 @pytest.mark.parametrize(
     "version", [v for codec in CODECS for v in codec.protocol_versions]
 )
-def test_ds_reads_state_and_disclosures_in_every_layout(env, version):
+def test_ds_reads_state_and_approved_read_permissions_in_every_layout(env, version):
     env["do_client"].setup_ds_job_folder_as_do(DS_EMAIL)
     job_rel = "/".join(filter(None, (REVIEW_REL, protocol_dir_name(version), JOB_NAME)))
 
     assert _ds_reads(env, f"{job_rel}/state.yaml")
-    assert _ds_reads(env, f"{job_rel}/{DISCLOSURES_FILENAME}")
+    assert _ds_reads(env, f"{job_rel}/{APPROVED_READ_PERMISSIONS_FILENAME}")
     assert not _ds_reads(env, f"{job_rel}/stdout.txt")
 
 

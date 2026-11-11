@@ -145,11 +145,11 @@ class TestEmailApproveHandler:
         return handler, job_client, job_runner, state, notify_state
 
     @pytest.mark.parametrize(
-        "kwargs, disclosures",
-        [({}, []), ({"default_disclosures": ["logs"]}, ["logs"])],
+        "kwargs, read_permissions",
+        [({}, []), ({"default_approved_read_permissions": ["logs"]}, ["logs"])],
         ids=["default", "configured"],
     )
-    def test_approve_job(self, tmp_path, kwargs, disclosures):
+    def test_approve_job(self, tmp_path, kwargs, read_permissions):
         handler, job_client, job_runner, state, notify_state = self._make_handler(
             tmp_path, **kwargs
         )
@@ -163,7 +163,7 @@ class TestEmailApproveHandler:
         handler.handle_reply(thread_id="thread123", reply_text="approve")
 
         mock_job.approve.assert_called_once_with(
-            approval_method="manual", disclosures=disclosures
+            approval_method="manual", read_permissions=read_permissions
         )
         job_runner.run_job.assert_called_once_with(
             "test.job", "ds@example.com", share_outputs_with_submitter=True
@@ -280,14 +280,14 @@ class TestStateReverseLookup:
         assert state.get_job_name_by_thread_id("thread_unknown") is None
 
 
-def test_email_config_loads_default_disclosures(tmp_path):
+def test_email_config_loads_default_approved_read_permissions(tmp_path):
     from syft_bg.email_approve.config import EmailApproveConfig
 
     config_path = tmp_path / "config.yaml"
     config_path.write_text(
         "do_email: do@example.com\n"
         "email_approve:\n"
-        "  default_disclosures: [logs, traceback_frames]\n"
+        "  default_approved_read_permissions: [logs, traceback_frames]\n"
     )
     config = EmailApproveConfig.load(config_path)
-    assert config.default_disclosures == ["logs", "traceback_frames"]
+    assert config.default_approved_read_permissions == ["logs", "traceback_frames"]

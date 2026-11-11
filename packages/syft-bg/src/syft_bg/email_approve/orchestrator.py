@@ -87,7 +87,7 @@ class EmailApproveOrchestrator(BaseOrchestrator):
             state=state,
             notify_state=notify_state,
             do_email=config.do_email,
-            default_disclosures=config.default_disclosures,
+            default_approved_read_permissions=config.default_approved_read_permissions,
         )
 
         # Auto-create Pub/Sub resources if needed

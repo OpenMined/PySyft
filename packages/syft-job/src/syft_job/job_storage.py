@@ -13,7 +13,7 @@ from syft_migration import (
 from syft_perms import SyftPermContext
 
 from .config import SyftJobConfig, is_protocol_dir_name
-from .disclosures import DISCLOSURE_ITEMS, gated_names
+from .read_permissions import READ_PERMISSION_ITEMS, gated_names
 from .job_ref import JobRef, JobStateNotFoundError, RequestRef
 from .migrations.registry import JOB_PROTOCOL_VERSION, job_registry
 from .models import JobState, JobSubmissionMetadata, RequestMetadata
@@ -37,7 +37,7 @@ OUTPUTS_DIR_NAME = "outputs"
 # outputs are a folder.
 RUN_ARTIFACTS = (
     OUTPUTS_DIR_NAME,
-    *gated_names(DISCLOSURE_ITEMS),
+    *gated_names(READ_PERMISSION_ITEMS),
     OUTPUT_RECIPIENTS_FILENAME,
 )
 

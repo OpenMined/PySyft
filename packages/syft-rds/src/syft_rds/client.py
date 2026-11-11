@@ -455,7 +455,7 @@ class SyftRDSClient(BaseModel):
         entrypoint: str | None = None,
         force_submission: bool = False,
         ignore_peer_version: bool = False,
-        request_disclosures: list[str] | None = None,
+        request_read_permissions: list[str] | None = None,
     ):
         peer_emails = {p.email for p in self.sync_engine.peer_manager.syncable_peers}
         if user not in peer_emails:
@@ -489,7 +489,7 @@ class SyftRDSClient(BaseModel):
             job_name=job_name,
             dependencies=dependencies,
             entrypoint=entrypoint,
-            request_disclosures=request_disclosures,
+            request_read_permissions=request_read_permissions,
         )
         self.sync_engine.push_job_files(job_dir)
 

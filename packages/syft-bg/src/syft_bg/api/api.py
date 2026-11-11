@@ -23,7 +23,7 @@ from syft_bg.api.utils import (
     confirm_no_peers,
     load_apis_or_empty,
     default_api_name,
-    default_disclosures,
+    default_approved_read_permissions,
     api_store_for_job,
     get_api_store,
     new_policy_work_dir,
@@ -365,7 +365,7 @@ def create_api(
     args: list[ApiArg | dict] | None = None,
     input_policy: str | Path | None = None,
     output_policy: str | Path | None = None,
-    disclosures: list[str] | None = None,
+    read_permissions: list[str] | None = None,
 ) -> ApiResult:
     """Create an api in SyftBox, which peers call with client.api.<name>(...).
 
@@ -408,8 +408,8 @@ def create_api(
               for what a policy gets and the conventions it follows.
         output_policy: A .py or .sh script that runs after each call's job
               and decides what is shared and with whom. See env.py too.
-        disclosures: The items in DisclosureItem that a call's approval
-              releases, e.g. ["logs"]. Defaults to default_disclosures in
+        read_permissions: The items in ReadPermissionItem that a call's approval
+              releases, e.g. ["logs"]. Defaults to default_approved_read_permissions in
               config.yaml.
 
     Returns:
@@ -425,7 +425,9 @@ def create_api(
             args=[ApiArg.model_validate(a) for a in args or []],
             input_policy=Path(input_policy) if input_policy else None,
             output_policy=Path(output_policy) if output_policy else None,
-            disclosures=default_disclosures() if disclosures is None else disclosures,
+            approved_read_permissions=default_approved_read_permissions()
+            if read_permissions is None
+            else read_permissions,
         )
         _check_peers_confirmed(new_api.peers, allow_any_peer)
         store = api_store or get_api_store()
@@ -451,7 +453,7 @@ def create_api_from_job(
     args: list[ApiArg | dict] | None = None,
     input_policy: str | Path | None = None,
     output_policy: str | Path | None = None,
-    disclosures: list[str] | None = None,
+    read_permissions: list[str] | None = None,
 ) -> ApiResult:
     """Create an api from a job you have reviewed.
 
@@ -475,7 +477,7 @@ def create_api_from_job(
         output_policy: A .py or .sh script that runs after each call's job.
               See create_api, and syft_job/policies/env.py for what a
               policy gets and the conventions it follows.
-        disclosures: What a call's approval releases. See create_api.
+        read_permissions: What a call's approval releases. See create_api.
 
     Returns:
         ApiResult with the created object details.
@@ -503,7 +505,7 @@ def create_api_from_job(
         args=read_job_args(job, name_only) if args is None else args,
         input_policy=input_policy,
         output_policy=output_policy,
-        disclosures=disclosures,
+        read_permissions=read_permissions,
     )
 
 

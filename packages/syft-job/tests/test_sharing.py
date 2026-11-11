@@ -12,7 +12,7 @@ from syft_job.config import (
     SyftJobConfig,
     protocol_dir_name,
 )
-from syft_job.disclosures import LOGS_WARNING, DisclosureItem
+from syft_job.read_permissions import LOGS_WARNING, ReadPermissionItem
 from syft_job.job import JobInfo
 from syft_job.job_runner import SyftJobRunner
 from syft_job.migrations.registry import JOB_PROTOCOL_VERSION
@@ -32,9 +32,9 @@ PROTOCOL_DIR = protocol_dir_name(JOB_PROTOCOL_VERSION)
 DO_EMAIL = "do@test.org"
 DS_EMAIL = "ds@test.org"
 LOG_FILES = ("stdout.txt", "stderr.txt", "returncode.txt")
-LOGS = DisclosureItem.LOGS.value
-FRAMES = DisclosureItem.TRACEBACK_FRAMES.value
-RETURN_CODE = DisclosureItem.RETURN_CODE.value
+LOGS = ReadPermissionItem.LOGS.value
+FRAMES = ReadPermissionItem.TRACEBACK_FRAMES.value
+RETURN_CODE = ReadPermissionItem.RETURN_CODE.value
 
 OK_PY = """\
 import os
@@ -76,7 +76,7 @@ def submit_as_ds(
         user=DO_EMAIL,
         code_path=str(code_file),
         job_name="test.job",
-        request_disclosures=requested,
+        request_read_permissions=requested,
     )
 
 
@@ -113,7 +113,7 @@ def run_job(
     ``requested`` is what the DS asks for, and ``grants`` is what the DO
     releases at approval.
     """
-    submit_only(tmp_path, requested, code).approve(disclosures=grants)
+    submit_only(tmp_path, requested, code).approve(read_permissions=grants)
     run_approved(tmp_path, share_logs)
     do_config = do_config_for(tmp_path)
     return (
@@ -356,7 +356,7 @@ def test_new_run_drops_recipients_of_old_run(tmp_path):
     assert not (review / OUTPUT_RECIPIENTS_FILENAME).exists()
 
 
-# -- disclosures: requested by the DS, granted by the DO ------------------------
+# -- read permissions: requested by the DS, approved by the DO ---------------------
 
 
 def ds_can_read(tmp_path: Path, name: str) -> bool:
@@ -368,13 +368,13 @@ def ds_can_read(tmp_path: Path, name: str) -> bool:
 
 def test_submission_records_known_requests_only(tmp_path):
     job, _ = run_job(tmp_path, OK_PY, None, requested=[LOGS, "everything"])
-    assert job.requested_disclosures == [LOGS]
+    assert job.requested_read_permissions == [LOGS]
 
 
 def test_release_is_requested_and_granted(tmp_path):
     """A granted item that the DS did not request gets no grant."""
     job, _ = run_job(tmp_path, CRASH_PY, None, requested=[LOGS], grants=[LOGS, FRAMES])
-    assert job.granted_disclosures == {LOGS}
+    assert job.read_permissions_to_share == {LOGS}
     for name in ("stdout.txt", "stderr.txt"):
         assert ds_can_read(tmp_path, name)
     assert not ds_can_read(tmp_path, FRAMES_FILENAME)
@@ -383,7 +383,7 @@ def test_release_is_requested_and_granted(tmp_path):
 
 def test_request_without_grant_releases_nothing(tmp_path):
     job, _ = run_job(tmp_path, CRASH_PY, None, requested=[LOGS, FRAMES, RETURN_CODE])
-    assert job.granted_disclosures == set()
+    assert job.read_permissions_to_share == set()
     for name in (*LOG_FILES, FRAMES_FILENAME):
         assert not ds_can_read(tmp_path, name)
 
@@ -398,7 +398,7 @@ def test_later_grant_releases_finished_job(tmp_path):
     job, _ = run_job(tmp_path, OK_PY, None, requested=[RETURN_CODE])
     assert not ds_can_read(tmp_path, "returncode.txt")
 
-    assert job.update_disclosures([RETURN_CODE]) == {RETURN_CODE: True}
+    assert job.update_read_permissions([RETURN_CODE]) == {RETURN_CODE: True}
 
     assert ds_can_read(tmp_path, "returncode.txt")
     assert not ds_can_read(tmp_path, "stdout.txt")
@@ -410,21 +410,21 @@ def test_later_grant_through_stale_job_releases(tmp_path):
     job.approve()
     run_approved(tmp_path)
 
-    job.update_disclosures([LOGS])
+    job.update_read_permissions([LOGS])
 
     assert ds_can_read(tmp_path, "stdout.txt")
 
 
-def test_update_disclosures_needs_approval_first(tmp_path):
+def test_update_read_permissions_needs_approval_first(tmp_path):
     job = submit_only(tmp_path)
     with pytest.raises(ValueError, match="Approve the job first"):
-        job.update_disclosures([LOGS])
+        job.update_read_permissions([LOGS])
 
 
 def test_grant_survives_rerun(tmp_path):
     job, _ = run_job(tmp_path, OK_PY, None, requested=[LOGS], grants=[LOGS])
     job.rerun()
-    assert job.disclosures == {LOGS: True}
+    assert job.approved_read_permissions == {LOGS: True}
 
 
 # -- warning and display --------------------------------------------------------
@@ -437,7 +437,7 @@ def logs_warnings(record) -> list:
 def test_approve_warns_when_logs_go_out(tmp_path):
     job = submit_only(tmp_path, [LOGS])
     with pytest.warns(UserWarning, match="stdout and stderr") as record:
-        job.approve(disclosures=[LOGS])
+        job.approve(read_permissions=[LOGS])
     # The warning points at the caller, not at the helper.
     assert logs_warnings(record)[0].filename == __file__
 
@@ -447,23 +447,23 @@ def test_unrequested_logs_grant_does_not_warn(tmp_path):
     job = submit_only(tmp_path, [FRAMES])
     with warnings.catch_warnings(record=True) as record:
         warnings.simplefilter("always")
-        job.approve(disclosures=[LOGS, FRAMES])
+        job.approve(read_permissions=[LOGS, FRAMES])
     assert logs_warnings(record) == []
 
 
-def test_update_disclosures_warns_when_logs_go_out(tmp_path):
+def test_update_read_permissions_warns_when_logs_go_out(tmp_path):
     job = submit_only(tmp_path, [LOGS])
     job.approve()
     with pytest.warns(UserWarning, match="stdout and stderr"):
-        job.update_disclosures([LOGS])
+        job.update_read_permissions([LOGS])
 
 
-def test_display_shows_disclosure_state(tmp_path):
+def test_display_shows_read_permission_state(tmp_path):
     job = submit_only(tmp_path, [LOGS, FRAMES])
-    job.approve(disclosures=[FRAMES, RETURN_CODE])
+    job.approve(read_permissions=[FRAMES, RETURN_CODE])
 
     # Only the requested item is stored, so return_code is not granted.
-    assert job.disclosure_rows() == [
+    assert job.read_permission_rows() == [
         ("Requested", "logs, traceback_frames"),
         ("Granted", "traceback_frames"),
         ("To submitter", "traceback_frames"),
@@ -474,7 +474,7 @@ def test_display_shows_disclosure_state(tmp_path):
     assert "logs, traceback_frames" in html
 
 
-def test_display_without_disclosures(tmp_path):
+def test_display_without_read_permissions(tmp_path):
     job = submit_only(tmp_path, None)
     assert "Requested: none; Granted: none; To submitter: none" in str(job)
 
@@ -486,20 +486,20 @@ def edit_request(job: JobInfo, requested: list[str]) -> None:
     """Rewrite the request in config.yaml, as a DS can after the approval."""
     path = job.job_submission_path / "config.yaml"
     data = yaml.safe_load(path.read_text())
-    data["headers"]["requested_disclosures"] = requested
+    data["headers"]["requested_read_permissions"] = requested
     path.write_text(yaml.safe_dump(data))
 
 
 def test_grant_stores_only_requested_items(tmp_path):
     job = submit_only(tmp_path, [FRAMES])
-    job.approve(disclosures=[LOGS, FRAMES])
-    assert job.disclosures == {FRAMES: True}
+    job.approve(read_permissions=[LOGS, FRAMES])
+    assert job.approved_read_permissions == {FRAMES: True}
 
 
 def test_request_edit_after_approval_adds_nothing(tmp_path):
     """A wider grant than the request must not release the extra items later."""
     job = submit_only(tmp_path, [FRAMES])
-    job.approve(disclosures=[LOGS, FRAMES])
+    job.approve(read_permissions=[LOGS, FRAMES])
     edit_request(job, [LOGS, FRAMES])
 
     run_approved(tmp_path)
@@ -510,7 +510,7 @@ def test_request_edit_after_approval_adds_nothing(tmp_path):
 def test_approve_refuses_items_as_reason(tmp_path):
     """``approve(["logs"])`` would grant nothing and record the list as reason."""
     job = submit_only(tmp_path, [LOGS])
-    with pytest.raises(TypeError, match="disclosures="):
+    with pytest.raises(TypeError, match="read_permissions="):
         job.approve([LOGS])
     assert job.status == "pending"
 

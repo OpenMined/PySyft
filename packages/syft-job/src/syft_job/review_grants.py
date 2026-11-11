@@ -15,18 +15,18 @@ from syft_perms import SyftPermContext
 # <job>/ for protocol 0, v<n>/<job>/ after. A test checks every protocol is here.
 DS_READABLE_REVIEW_PATTERNS = (
     "*/state.yaml",
-    "*/disclosures.json",
+    "*/approved_read_permissions.json",
     "v1/*/state.yaml",
-    "v1/*/disclosures.json",
+    "v1/*/approved_read_permissions.json",
     "v2/*/state.yaml",
-    "v2/*/disclosures.json",
+    "v2/*/approved_read_permissions.json",
 )
 
 # The read grant on the whole folder that earlier versions wrote.
 _FOLDER_PATTERN = "**"
 
 
-def grant_ds_state_and_disclosures_read(
+def grant_ds_state_and_approved_read_permissions_read(
     ctx: SyftPermContext, ds_review_dir: Path, ds_email: str
 ) -> None:
     """Give ``ds_email`` read on the state and the grant file of each job."""
@@ -44,7 +44,7 @@ def replace_ds_folder_read(datasite: Path, ds_review_dir: Path, ds_email: str) -
     if not _drop_folder_read(ds_review_dir, ds_email):
         return False
     ctx = SyftPermContext(datasite=datasite)
-    grant_ds_state_and_disclosures_read(ctx, ds_review_dir, ds_email)
+    grant_ds_state_and_approved_read_permissions_read(ctx, ds_review_dir, ds_email)
     return True
 
 

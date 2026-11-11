@@ -1001,7 +1001,7 @@ class SyftJobRunner:
         self, ref: JobRef, share_outputs: bool, share_logs: bool, recipients: list[str]
     ) -> None:
         job_info = self._get_job_info(ref)
-        job_info.share_disclosures()
+        job_info.share_read_permissions()
         if share_outputs:
             job_info.share_outputs(recipients)
             if ref.ds_email not in recipients:

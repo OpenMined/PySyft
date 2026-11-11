@@ -55,7 +55,7 @@ class EnclaveJobClient(BaseJobClient):
         job_name: Optional[str] = "",
         datasets: Optional[dict[str, list[str]]] = None,
         share_results_with_do: bool = False,
-        request_disclosures: Optional[list[str]] = None,
+        request_read_permissions: Optional[list[str]] = None,
         **kwargs,
     ) -> Path:
         """Submit a Python job with enclave metadata.
@@ -67,7 +67,7 @@ class EnclaveJobClient(BaseJobClient):
             user,
             code_path,
             job_name,
-            request_disclosures=request_disclosures,
+            request_read_permissions=request_read_permissions,
             **kwargs,
         )
 

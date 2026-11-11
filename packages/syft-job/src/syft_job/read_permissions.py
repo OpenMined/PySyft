@@ -10,10 +10,10 @@ from typing import Iterable, Union
 from .traceback_capture import FRAMES_FILENAME
 
 # The data owner's grant for a job with one data owner. It sits in review/.
-DISCLOSURES_FILENAME = "disclosures.json"
+APPROVED_READ_PERMISSIONS_FILENAME = "approved_read_permissions.json"
 
 
-class DisclosureItem(str, Enum):
+class ReadPermissionItem(str, Enum):
     """A class of job data that a party can release to the other parties.
 
     - ``TRACEBACK_FRAMES``: the file and the line of each frame, and the
@@ -27,19 +27,21 @@ class DisclosureItem(str, Enum):
     RETURN_CODE = "return_code"
 
 
-DISCLOSURE_ITEMS = frozenset(item.value for item in DisclosureItem)
+READ_PERMISSION_ITEMS = frozenset(item.value for item in ReadPermissionItem)
 
 # The staged files that each item covers.
 GATED_ARTIFACTS = {
-    DisclosureItem.LOGS.value: ("stdout.txt", "stderr.txt"),
-    DisclosureItem.TRACEBACK_FRAMES.value: (FRAMES_FILENAME,),
-    DisclosureItem.RETURN_CODE.value: ("returncode.txt",),
+    ReadPermissionItem.LOGS.value: ("stdout.txt", "stderr.txt"),
+    ReadPermissionItem.TRACEBACK_FRAMES.value: (FRAMES_FILENAME,),
+    ReadPermissionItem.RETURN_CODE.value: ("returncode.txt",),
 }
 
-DisclosuresArg = Union[str, DisclosureItem, Iterable[str], Mapping[str, bool], None]
+ReadPermissionsArg = Union[
+    str, ReadPermissionItem, Iterable[str], Mapping[str, bool], None
+]
 
 
-def normalize_disclosures(items: DisclosuresArg) -> dict[str, bool]:
+def normalize_read_permissions(items: ReadPermissionsArg) -> dict[str, bool]:
     """Return the known items in ``items`` as a map. Unknown names are dropped.
 
     A single name is accepted on its own, because iterating a string would
@@ -51,25 +53,27 @@ def normalize_disclosures(items: DisclosuresArg) -> dict[str, bool]:
     """
     if not items:
         return {}
-    if isinstance(items, (str, DisclosureItem)):
+    if isinstance(items, (str, ReadPermissionItem)):
         items = [items]
     elif isinstance(items, Mapping):
         items = [name for name, allowed in items.items() if allowed]
     names = {str(getattr(i, "value", i)) for i in items}
-    return {name: True for name in sorted(names & DISCLOSURE_ITEMS)}
+    return {name: True for name in sorted(names & READ_PERMISSION_ITEMS)}
 
 
 def restrict_to_request(
-    disclosures: DisclosuresArg, requested: Iterable[str]
+    read_permissions: ReadPermissionsArg, requested: Iterable[str]
 ) -> dict[str, bool]:
-    """Return the known items in ``disclosures`` that ``requested`` also holds.
+    """Return the known items in ``read_permissions`` that ``requested`` also holds.
 
     The submitter can edit its request after the approval. A grant that is
     stored in this form cannot grow when the request grows.
     """
     requested = set(requested)
     return {
-        name: True for name in normalize_disclosures(disclosures) if name in requested
+        name: True
+        for name in normalize_read_permissions(read_permissions)
+        if name in requested
     }
 
 
@@ -81,12 +85,12 @@ def check_approval_reason(reason: object) -> None:
     if reason is not None and not isinstance(reason, str):
         raise TypeError(
             f"reason must be a string, not {type(reason).__name__}. "
-            f"Give the items as disclosures=[...]."
+            f"Give the items as read_permissions=[...]."
         )
 
 
 def gated_names(granted: Iterable[str]) -> list[str]:
-    """The filenames that the granted disclosure items cover."""
+    """The filenames that the approved read permission items cover."""
     granted = set(granted)
     return [
         name
@@ -107,7 +111,7 @@ def warn_on_logs_release(
     granted: Iterable[str], requested: Iterable[str], stacklevel: int = 3
 ) -> None:
     """Warn when a grant releases the logs. An unrequested item releases nothing."""
-    item = DisclosureItem.LOGS.value
+    item = ReadPermissionItem.LOGS.value
     if item in set(granted) and item in set(requested):
         warnings.warn(LOGS_WARNING, UserWarning, stacklevel=stacklevel)
 

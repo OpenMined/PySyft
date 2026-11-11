@@ -42,7 +42,7 @@ class ApiResolver:
             name=api_name,
             files_dir=api_dir / FILES_DIR_NAME,
             policies=policies,
-            disclosures=definition.disclosures,
+            approved_read_permissions=definition.approved_read_permissions,
         )
 
     def check_request(self, api_name: str, request_dir: Path, submitter: str) -> None:

@@ -6,13 +6,13 @@ from pathlib import Path
 from typing import Callable, Iterable, Optional
 
 from pydantic import BaseModel, Field
-from syft_job.disclosures import (  # noqa: F401 (re-exported)
-    DISCLOSURE_ITEMS,
-    DisclosureItem,
-    DisclosuresArg,
+from syft_job.read_permissions import (  # noqa: F401 (re-exported)
+    READ_PERMISSION_ITEMS,
+    ReadPermissionItem,
+    ReadPermissionsArg,
     check_approval_reason,
     format_items,
-    normalize_disclosures,
+    normalize_read_permissions,
     restrict_to_request,
     warn_on_logs_release,
 )
@@ -30,7 +30,7 @@ class PartyApprovalStatus(BaseModel):
     approved_at: Optional[datetime] = None
     # The items this party releases. Absent means the party released nothing,
     # so an approval file from an older client grants nothing.
-    disclosures: dict[str, bool] = Field(default_factory=dict)
+    approved_read_permissions: dict[str, bool] = Field(default_factory=dict)
     # What the party approved: submission_hash() of the job it reviewed. An
     # approval counts only while the job still hashes to this value.
     submission_hash: Optional[str] = None
@@ -128,29 +128,31 @@ class EnclaveJobInfo(JobInfo):
             self._on_approval_change(self._approval_file)
 
     @property
-    def disclosures(self) -> dict[str, bool]:
+    def approved_read_permissions(self) -> dict[str, bool]:
         """The items this party released, as recorded in its approval file."""
         if not self._approval_file.exists():
             return {}
-        return normalize_disclosures(
-            PartyApprovalStatus.load_json(self._approval_file).disclosures
+        return normalize_read_permissions(
+            PartyApprovalStatus.load_json(self._approval_file).approved_read_permissions
         )
 
     @property
-    def granted_disclosures(self) -> set[str]:
+    def read_permissions_to_share(self) -> set[str]:
         """The items that go out: requested, and released by every party.
 
         Raises:
             LookupError: Off the enclave. A data owner holds only its own
-                approval file, so it reads its own grant in ``disclosures``.
+                approval file, so it reads its own grant in ``approved_read_permissions``.
         """
         if self.current_user_email != self.datasite_owner_email:
             raise LookupError(
                 "Only the enclave holds the grant of every party. "
-                "Read this party's grant in `disclosures`."
+                "Read this party's grant in `approved_read_permissions`."
             )
-        return approved_disclosures(
-            self.job_review_path, self.requested_disclosures, self._required_approvers
+        return read_permissions_approved_by_all_parties(
+            self.job_review_path,
+            self.requested_read_permissions,
+            self._required_approvers,
         )
 
     @property
@@ -193,13 +195,13 @@ class EnclaveJobInfo(JobInfo):
             return JobStatus.APPROVED.value
         return JobStatus.PENDING.value
 
-    def disclosure_rows(self) -> list[tuple[str, str]]:
-        """The disclosure state as (label, value) rows, for display.
+    def read_permission_rows(self) -> list[tuple[str, str]]:
+        """The read permission state as (label, value) rows, for display.
 
         The enclave holds the approval file of every party, so it shows each
         grant and the combined result. A data owner shows its own grant.
         """
-        rows = [("Requested", format_items(self.requested_disclosures))]
+        rows = [("Requested", format_items(self.requested_read_permissions))]
         if self.current_user_email == self.datasite_owner_email:
             for party, approval in _party_approvals(
                 self.job_review_path, self._required_approvers
@@ -207,13 +209,15 @@ class EnclaveJobInfo(JobInfo):
                 if approval is None:
                     value = "(no approval file)"
                 elif approval.status == JobStatus.APPROVED:
-                    value = format_items(normalize_disclosures(approval.disclosures))
+                    value = format_items(
+                        normalize_read_permissions(approval.approved_read_permissions)
+                    )
                 else:
                     value = f"({approval.status.value})"
                 rows.append((f"Granted by {party}", value))
-            rows.append(("To submitter", format_items(self.granted_disclosures)))
+            rows.append(("To submitter", format_items(self.read_permissions_to_share)))
         elif self._approval_file.exists():
-            rows.append(("Your grant", format_items(self.disclosures)))
+            rows.append(("Your grant", format_items(self.approved_read_permissions)))
             rows.append(("To submitter", "needs the grant of every party"))
         return rows
 
@@ -221,11 +225,11 @@ class EnclaveJobInfo(JobInfo):
         self,
         reason: Optional[str] = None,
         approval_method: str = "manual",
-        disclosures: DisclosuresArg = None,
+        read_permissions: ReadPermissionsArg = None,
     ) -> None:
         """Approve this submission in the DO's own approval file.
 
-        ``disclosures`` names the items in ``DisclosureItem`` that this party
+        ``read_permissions`` names the items in ``ReadPermissionItem`` that this party
         releases to the other parties. The enclave releases an item only when
         every party released it. Omit the argument to release nothing. Only the
         items that the submitter requested are stored, so a later edit of the
@@ -244,14 +248,18 @@ class EnclaveJobInfo(JobInfo):
         approval.status = JobStatus.APPROVED
         approval.approved_at = datetime.now(timezone.utc)
         approval.submission_hash = current
-        approval.disclosures = restrict_to_request(
-            disclosures, self.requested_disclosures
+        approval.approved_read_permissions = restrict_to_request(
+            read_permissions, self.requested_read_permissions
         )
-        warn_on_logs_release(approval.disclosures, self.requested_disclosures)
+        warn_on_logs_release(
+            approval.approved_read_permissions, self.requested_read_permissions
+        )
         self._save_own_approval(approval)
         print(f"Job '{self.name}' approved by {self.current_user_email}!")
 
-    def update_disclosures(self, disclosures: DisclosuresArg) -> dict[str, bool]:
+    def update_read_permissions(
+        self, read_permissions: ReadPermissionsArg
+    ) -> dict[str, bool]:
         """Replace the items this party releases, and return the new map.
 
         The enclave applies the new set on its next cycle.
@@ -261,12 +269,14 @@ class EnclaveJobInfo(JobInfo):
             raise ValueError(
                 f"Approve the job first (current: {approval.status.value})."
             )
-        approval.disclosures = restrict_to_request(
-            disclosures, self.requested_disclosures
+        approval.approved_read_permissions = restrict_to_request(
+            read_permissions, self.requested_read_permissions
         )
-        warn_on_logs_release(approval.disclosures, self.requested_disclosures)
+        warn_on_logs_release(
+            approval.approved_read_permissions, self.requested_read_permissions
+        )
         self._save_own_approval(approval)
-        return approval.disclosures
+        return approval.approved_read_permissions
 
     def reject(self, reason: Optional[str] = None) -> None:
         """Reject this job in the DO's own approval file.
@@ -320,7 +330,7 @@ def _party_approvals(
     return [(p, load_party_approval(review_dir, p)) for p in parties]
 
 
-def approved_disclosures(
+def read_permissions_approved_by_all_parties(
     review_dir: Path,
     requested: Optional[Iterable[str]] = None,
     parties: Optional[Iterable[str]] = None,
@@ -346,12 +356,12 @@ def approved_disclosures(
             return set()
         party_grant = {
             name
-            for name, allowed in approval.disclosures.items()
-            if allowed and name in DISCLOSURE_ITEMS
+            for name, allowed in approval.approved_read_permissions.items()
+            if allowed and name in READ_PERMISSION_ITEMS
         }
         granted = party_grant if granted is None else granted & party_grant
 
     result = granted or set()
     if requested is not None:
-        result = result & set(normalize_disclosures(requested))
+        result = result & set(normalize_read_permissions(requested))
     return result

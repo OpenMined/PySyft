@@ -465,13 +465,13 @@ def job_info_repr_html(job: "JobInfo") -> str:
                 </div>"""
     policy_details, policy_section = _policy_html(job)
 
-    disclosure_details = "".join(
+    read_permission_details = "".join(
         f"""
                     <div class="syftjob-single-detail">
                         <div class="syftjob-single-detail-label">{escape(label)}:</div>
                         <div class="syftjob-single-detail-value">{escape(value)}</div>
                     </div>"""
-        for label, value in job.disclosure_rows()
+        for label, value in job.read_permission_rows()
     )
 
     return f"""
@@ -738,7 +738,7 @@ def job_info_repr_html(job: "JobInfo") -> str:
                     <div class="syftjob-single-detail">
                         <div class="syftjob-single-detail-label">Review reason:</div>
                         <div class="syftjob-single-detail-value">{job.review_reason or ""}</div>
-                    </div>{disclosure_details}{policy_details}
+                    </div>{read_permission_details}{policy_details}
                 </div>
                 <div class="syftjob-single-section">
                     <h4>📜 Script</h4>

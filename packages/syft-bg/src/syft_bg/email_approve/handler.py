@@ -74,10 +74,10 @@ class EmailApproveHandler:
         state: JsonStateManager,
         notify_state: JsonStateManager,
         do_email: str,
-        default_disclosures: Optional[list[str]] = None,
+        default_approved_read_permissions: Optional[list[str]] = None,
     ):
         self.job_client = job_client
-        self.default_disclosures = default_disclosures or []
+        self.default_approved_read_permissions = default_approved_read_permissions or []
         self.job_runner = job_runner
         self.state = state
         self.notify_state = notify_state
@@ -123,7 +123,8 @@ class EmailApproveHandler:
     ) -> None:
         """Approve a job, execute it, and share results."""
         job.approve(
-            approval_method=approval_method, disclosures=self.default_disclosures
+            approval_method=approval_method,
+            read_permissions=self.default_approved_read_permissions,
         )
         self.state.mark_notified(state_key, "processed")
 

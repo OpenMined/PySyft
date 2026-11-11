@@ -10,14 +10,14 @@ from typing import TYPE_CHECKING, List, Optional
 
 from syft_permissions.spec.ruleset import PERMISSION_FILE_NAME
 
-from .disclosures import (
-    DISCLOSURES_FILENAME,
-    DisclosureItem,
-    DisclosuresArg,
+from .read_permissions import (
+    APPROVED_READ_PERMISSIONS_FILENAME,
+    ReadPermissionItem,
+    ReadPermissionsArg,
     check_approval_reason,
     format_items,
     gated_names,
-    normalize_disclosures,
+    normalize_read_permissions,
     restrict_to_request,
     warn_on_logs_release,
 )
@@ -40,7 +40,7 @@ from .submission import API_HEADER, OwnerJobRecord, submission_hash
 
 # The files that ``JobInfo.share_logs`` shares.
 LOG_FILES = tuple(
-    gated_names([DisclosureItem.LOGS.value, DisclosureItem.RETURN_CODE.value])
+    gated_names([ReadPermissionItem.LOGS.value, ReadPermissionItem.RETURN_CODE.value])
 )
 
 if TYPE_CHECKING:
@@ -106,51 +106,57 @@ class JobInfo:
             self._grant_read(present)
 
     # ──────────────────────────────────────────────
-    # Disclosures
+    # Read permissions
     # ──────────────────────────────────────────────
 
     @property
-    def requested_disclosures(self) -> list[str]:
+    def requested_read_permissions(self) -> list[str]:
         """The items the submitter asked for, as recorded at submission."""
-        requested = self.job_headers.get("requested_disclosures")
+        requested = self.job_headers.get("requested_read_permissions")
         if not isinstance(requested, list):
             return []
-        return sorted(normalize_disclosures(requested))
+        return sorted(normalize_read_permissions(requested))
 
     @property
-    def disclosures(self) -> dict[str, bool]:
+    def approved_read_permissions(self) -> dict[str, bool]:
         """The items the data owner released, as recorded at approval."""
         try:
-            text = (self.job_review_path / DISCLOSURES_FILENAME).read_text()
+            text = (
+                self.job_review_path / APPROVED_READ_PERMISSIONS_FILENAME
+            ).read_text()
         except FileNotFoundError:
             return {}
-        return normalize_disclosures(json.loads(text))
+        return normalize_read_permissions(json.loads(text))
 
     @property
-    def granted_disclosures(self) -> set[str]:
+    def read_permissions_to_share(self) -> set[str]:
         """The items that go to the submitter: requested and released."""
-        return set(self.disclosures) & set(self.requested_disclosures)
+        return set(self.approved_read_permissions) & set(
+            self.requested_read_permissions
+        )
 
-    def _write_disclosures(
-        self, disclosures: DisclosuresArg, stacklevel: int = 4
+    def _write_approved_read_permissions(
+        self, read_permissions: ReadPermissionsArg, stacklevel: int = 4
     ) -> dict[str, bool]:
-        granted = restrict_to_request(disclosures, self.requested_disclosures)
-        # Up to the public caller, update_disclosures() by default.
-        warn_on_logs_release(granted, self.requested_disclosures, stacklevel)
-        path = self.job_review_path / DISCLOSURES_FILENAME
+        granted = restrict_to_request(read_permissions, self.requested_read_permissions)
+        # Up to the public caller, update_read_permissions() by default.
+        warn_on_logs_release(granted, self.requested_read_permissions, stacklevel)
+        path = self.job_review_path / APPROVED_READ_PERMISSIONS_FILENAME
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(granted))
         return granted
 
-    def disclosure_rows(self) -> list[tuple[str, str]]:
-        """The disclosure state as (label, value) rows, for display."""
+    def read_permission_rows(self) -> list[tuple[str, str]]:
+        """The read permission state as (label, value) rows, for display."""
         return [
-            ("Requested", format_items(self.requested_disclosures)),
-            ("Granted", format_items(self.disclosures)),
-            ("To submitter", format_items(self.granted_disclosures)),
+            ("Requested", format_items(self.requested_read_permissions)),
+            ("Granted", format_items(self.approved_read_permissions)),
+            ("To submitter", format_items(self.read_permissions_to_share)),
         ]
 
-    def update_disclosures(self, disclosures: DisclosuresArg) -> dict[str, bool]:
+    def update_read_permissions(
+        self, read_permissions: ReadPermissionsArg
+    ) -> dict[str, bool]:
         """Replace the items the data owner releases, and return the new map.
 
         Only the items that the submitter requested are stored. A job that
@@ -163,7 +169,7 @@ class JobInfo:
         if self.datasite_owner_email != self.current_user_email:
             raise PermissionError(
                 f"Only the admin user ({self.datasite_owner_email}) can change "
-                f"the disclosures of a job."
+                f"the read permissions of a job."
             )
         self._state = self._client.manager.read_state(self._ref)
         if self._state.status in (
@@ -172,14 +178,14 @@ class JobInfo:
             JobStatus.REJECTED,
         ):
             raise ValueError(f"Approve the job first (current: {self.status}).")
-        granted = self._write_disclosures(disclosures)
+        granted = self._write_approved_read_permissions(read_permissions)
         if self._state.status in (JobStatus.DONE, JobStatus.FAILED):
-            self.share_disclosures()
+            self.share_read_permissions()
         return granted
 
-    def share_disclosures(self) -> None:
+    def share_read_permissions(self) -> None:
         """Share the granted items with the submitter."""
-        granted = gated_names(self.granted_disclosures)
+        granted = gated_names(self.read_permissions_to_share)
         self.share({name: [self.submitted_by] for name in granted})
 
     # ──────────────────────────────────────────────
@@ -365,7 +371,7 @@ class JobInfo:
         self,
         reason: Optional[str] = None,
         approval_method: str = "manual",
-        disclosures: DisclosuresArg = None,
+        read_permissions: ReadPermissionsArg = None,
     ) -> None:
         """
         Approve a job by updating state.yaml in review/.
@@ -378,7 +384,7 @@ class JobInfo:
         Args:
             reason: Optional reason for approval (recorded as review_reason).
             approval_method: How the job was approved ("manual" or "auto")
-            disclosures: The items in ``DisclosureItem`` that the data owner
+            read_permissions: The items in ``ReadPermissionItem`` that the data owner
                 releases. Only the items that the submitter requested are
                 stored, so a later edit of the request cannot add items.
                 Omit the argument to release nothing.
@@ -390,10 +396,13 @@ class JobInfo:
             TypeError: If reason is not a string
         """
         check_approval_reason(reason)
-        self._approve(reason, approval_method, disclosures)
+        self._approve(reason, approval_method, read_permissions)
 
     def _approve(
-        self, reason: Optional[str], approval_method: str, disclosures: DisclosuresArg
+        self,
+        reason: Optional[str],
+        approval_method: str,
+        read_permissions: ReadPermissionsArg,
     ) -> None:
         self._check_can_approve()
         # The check runs before any write. The record and the grant go before
@@ -402,7 +411,7 @@ class JobInfo:
         self._check_unchanged(record)
         self._record_approval(record, approval_method)
         # Up to the caller of approve(), through _approve().
-        self._write_disclosures(disclosures, stacklevel=5)
+        self._write_approved_read_permissions(read_permissions, stacklevel=5)
         self._state.status = JobStatus.APPROVED
         self._state.approved_by = self.current_user_email
         self._state.approved_at = record.approved_at
@@ -630,8 +639,10 @@ class JobInfo:
         base = f"{emoji} {self.name} ({self.status}{approval_info}) -> {self.datasite_owner_email}"
         if self.review_reason:
             base += f" | Review reason: {self.review_reason}"
-        rows = "; ".join(f"{label}: {value}" for label, value in self.disclosure_rows())
-        return f"{base} | Disclosures: {rows}"
+        rows = "; ".join(
+            f"{label}: {value}" for label, value in self.read_permission_rows()
+        )
+        return f"{base} | Read permissions: {rows}"
 
     def __repr__(self) -> str:
         parts = [

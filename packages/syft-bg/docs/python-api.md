@@ -55,8 +55,8 @@ arguments and their defaults are read from `code/params.json`. See
 - `name` — name for the api (defaults to the job name)
 - `args` — the api's arguments, instead of reading them from `code/params.json`
 - `input_policy`, `output_policy` — scripts that run before and after each call
-- `disclosures` — what a call's approval releases, e.g. `["logs"]`. Defaults to
-  `default_disclosures` in config.yaml
+- `read_permissions` — what a call's approval releases, e.g. `["logs"]`. Defaults to
+  `default_approved_read_permissions` in config.yaml
 
 ## Create an api from files
 

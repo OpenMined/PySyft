@@ -137,7 +137,7 @@ def _build_job(
 
 def _approve(client: JobClient, job_ref: JobRef, api: ResolvedApi) -> None:
     """Record the job as received from the api, and approve it with the
-    api's disclosures."""
+    api's approved read permissions."""
     now = datetime.now(timezone.utc)
     record = OwnerJobRecord(
         received_hash=submission_hash(client.manager.submission_dir(job_ref)),
@@ -155,4 +155,7 @@ def _approve(client: JobClient, job_ref: JobRef, api: ResolvedApi) -> None:
         client=client,
         ref=job_ref,
     )
-    job.approve(approval_method=API_APPROVAL_METHOD, disclosures=api.disclosures)
+    job.approve(
+        approval_method=API_APPROVAL_METHOD,
+        read_permissions=api.approved_read_permissions,
+    )

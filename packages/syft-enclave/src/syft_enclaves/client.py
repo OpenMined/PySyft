@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Optional
 
 from syft_datasets import Dataset
 from syft_datasets.dataset_manager import SyftDatasetManager
-from syft_job.disclosures import DisclosuresArg, gated_names
+from syft_job.read_permissions import ReadPermissionsArg, gated_names
 from syft_job.job import JobInfo, JobsList
 from syft_job.job_storage import JobRef
 from syft_job.models import JobState, JobStatus
@@ -393,7 +393,7 @@ class SyftEnclaveClient:
         job_name: Optional[str] = "",
         datasets: Optional[dict[str, list[str]]] = None,
         share_results_with_do: bool = False,
-        request_disclosures: Optional[list[str]] = None,
+        request_read_permissions: Optional[list[str]] = None,
         force_submission: bool = False,
         ignore_peer_version: bool = False,
         **kwargs,
@@ -419,7 +419,7 @@ class SyftEnclaveClient:
             job_name,
             datasets=datasets,
             share_results_with_do=share_results_with_do,
-            request_disclosures=request_disclosures,
+            request_read_permissions=request_read_permissions,
             **kwargs,
         )
         self._rds.sync_engine.push_job_files(job_dir)
@@ -457,11 +457,11 @@ class SyftEnclaveClient:
             share_outputs_with_submitter=self.receipts is None,
             share_logs_with_submitter=False,
         )
-        self._apply_disclosure_policy()
+        self._apply_read_permission_policy()
 
-    def granted_disclosures(self, job: JobInfo) -> set[str]:
+    def read_permissions_to_share(self, job: JobInfo) -> set[str]:
         """The items that every party released for this job."""
-        return self._as_enclave_job(job).granted_disclosures
+        return self._as_enclave_job(job).read_permissions_to_share
 
     def _local_jobs(self) -> JobsList:
         """The job list read from disk, with no sync.
@@ -471,7 +471,7 @@ class SyftEnclaveClient:
         """
         return self._rds.job_client.jobs
 
-    def _apply_disclosure_policy(self) -> None:
+    def _apply_read_permission_policy(self) -> None:
         """Share each granted artifact with the parties of its job.
 
         An artifact that not every party released gets no grant, so only the
@@ -480,11 +480,11 @@ class SyftEnclaveClient:
         for job in self._local_jobs():
             if job.status not in ("done", "failed"):
                 continue
-            granted = gated_names(self.granted_disclosures(job))
-            recipients = self._disclosure_recipients(job)
+            granted = gated_names(self.read_permissions_to_share(job))
+            recipients = self._read_permission_recipients(job)
             job.share({name: recipients for name in granted})
 
-    def _disclosure_recipients(self, job: JobInfo) -> list[str]:
+    def _read_permission_recipients(self, job: JobInfo) -> list[str]:
         """The submitter and each DO of the job, who all get a shared artifact."""
         datasets = job.job_metadata.datasets or {}
         return list(
@@ -544,19 +544,21 @@ class SyftEnclaveClient:
         if not isinstance(job, EnclaveJobInfo):
             raise TypeError(
                 f"Job '{job.name}' is not an enclave job, so it carries no "
-                f"disclosures. Approve it through the datasite client."
+                f"read permissions. Approve it through the datasite client."
             )
         return self._as_enclave_job(job)
 
-    def approve_job(self, job: JobInfo, disclosures: DisclosuresArg = None) -> None:
+    def approve_job(
+        self, job: JobInfo, read_permissions: ReadPermissionsArg = None
+    ) -> None:
         """Approve an enclave job and push the approval state file to the enclave.
 
-        Same as ``job.approve(disclosures=...)`` on a job from ``self.jobs``.
+        Same as ``job.approve(read_permissions=...)`` on a job from ``self.jobs``.
         """
         job = self._require_enclave_job(job)
         if pre_sync_enabled():
             self._rds.sync()
-        job.approve(disclosures=disclosures)
+        job.approve(read_permissions=read_permissions)
 
     def reject_job(self, job: JobInfo, reason: Optional[str] = None) -> None:
         """Reject an enclave job and push the approval state file to the enclave.
@@ -569,15 +571,17 @@ class SyftEnclaveClient:
             self._rds.sync()
         job.reject(reason)
 
-    def update_disclosures(self, job: JobInfo, disclosures: DisclosuresArg) -> dict:
+    def update_read_permissions(
+        self, job: JobInfo, read_permissions: ReadPermissionsArg
+    ) -> dict:
         """Change the items this data owner releases, and push the new set.
 
-        Same as ``job.update_disclosures(...)`` on a job from ``self.jobs``.
+        Same as ``job.update_read_permissions(...)`` on a job from ``self.jobs``.
         """
         job = self._require_enclave_job(job)
         if pre_sync_enabled():
             self._rds.sync()
-        return job.update_disclosures(disclosures)
+        return job.update_read_permissions(read_permissions)
 
     def receive_jobs(self):
         """Receive and distribute enclave jobs to relevant DOs.

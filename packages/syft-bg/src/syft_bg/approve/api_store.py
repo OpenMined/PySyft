@@ -67,7 +67,7 @@ class NewApi:
     args: list[ApiArg] = field(default_factory=list)
     input_policy: Optional[Path] = None
     output_policy: Optional[Path] = None
-    disclosures: list[str] = field(default_factory=list)
+    approved_read_permissions: list[str] = field(default_factory=list)
 
 
 class ApiStore:
@@ -238,7 +238,7 @@ def _build_definition(staging: Path, new_api: NewApi) -> ApiDefinition:
         args=new_api.args,
         input_policy=store_policy(staging, PolicyKind.INPUT, new_api.input_policy),
         output_policy=store_policy(staging, PolicyKind.OUTPUT, new_api.output_policy),
-        disclosures=new_api.disclosures,
+        approved_read_permissions=new_api.approved_read_permissions,
     )
     error = definition_error(definition)
     if error:

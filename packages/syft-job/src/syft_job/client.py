@@ -12,7 +12,7 @@ from syft_migration import MigrationError, ProtocolSchema
 from syft_perms.syftperm_context import SyftPermContext
 
 from .config import SyftJobConfig
-from .disclosures import normalize_disclosures
+from .read_permissions import normalize_read_permissions
 from .install_source import get_syft_install_source
 from .job import JobInfo, JobsList
 from .job_ref import RequestRef
@@ -22,7 +22,7 @@ from .job_storage import JobRef, JobStorage
 from .models import JobState, JobStatus, JobSubmissionMetadata, RequestMetadata
 from .api_requests import receive_request
 from .policies import ApiResolver
-from .review_grants import grant_ds_state_and_disclosures_read
+from .review_grants import grant_ds_state_and_approved_read_permissions_read
 from .submission import (
     RESERVED_CALL_FILES,
     SUBMISSION_ENTRIES,
@@ -166,7 +166,7 @@ class JobClient(BaseJobClient):
         # until a release grants more.
         ds_review_dir = self.config.get_review_dir(self.current_user_email) / ds_email
         ds_review_dir.mkdir(parents=True, exist_ok=True)
-        grant_ds_state_and_disclosures_read(ctx, ds_review_dir, ds_email)
+        grant_ds_state_and_approved_read_permissions_read(ctx, ds_review_dir, ds_email)
 
         return ds_inbox_dir
 
@@ -482,7 +482,7 @@ python {entrypoint_path}
         job_name: Optional[str] = "",
         dependencies: Optional[List[str]] = None,
         entrypoint: Optional[str] = None,
-        request_disclosures: Optional[List[str]] = None,
+        request_read_permissions: Optional[List[str]] = None,
     ) -> Path:
         """
         Submit a Python job for a user (supports both files and folders).
@@ -493,7 +493,7 @@ python {entrypoint_path}
             job_name: Name of the job (directory name). If empty, auto-generated.
             dependencies: List of Python packages to install
             entrypoint: Entry point file name (auto-detected if not provided)
-            request_disclosures: The items in ``DisclosureItem`` to ask the
+            request_read_permissions: The items in ``ReadPermissionItem`` to ask the
                 data owner for. The data owner releases none, some, or all.
 
         Returns:
@@ -569,8 +569,8 @@ python {entrypoint_path}
             is_folder_submission=is_folder_submission,
             code_path=str(code_path_resolved),
             headers={
-                "requested_disclosures": sorted(
-                    normalize_disclosures(request_disclosures)
+                "requested_read_permissions": sorted(
+                    normalize_read_permissions(request_read_permissions)
                 ),
                 SUBMISSION_HASH_HEADER: code_hash(job_dir),
             },

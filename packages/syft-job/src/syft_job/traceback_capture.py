@@ -1,8 +1,8 @@
 """Record where a job failed, from the traceback the job printed to stderr.
 
 The record holds the file and the line of each frame, and the exception type.
-It never holds the exception message, because ``traceback_frames`` discloses
-where a job failed and ``logs`` discloses what the job wrote. A party that
+It never holds the exception message, because ``traceback_frames`` shares
+where a job failed and ``logs`` shares what the job wrote. A party that
 needs the message asks for ``logs`` as well.
 """
 
@@ -16,7 +16,7 @@ from typing import Optional
 FRAMES_FILENAME = "traceback_frames.json"
 FALLBACK_TYPE = "Exception"
 
-# Size limits, not disclosure limits. Deep recursion prints thousands of
+# Size limits, not read permission limits. Deep recursion prints thousands of
 # frames, and the record is a summary of where the job stopped.
 MAX_CHAIN = 5
 MAX_FRAMES = 50
