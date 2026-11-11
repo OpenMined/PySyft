@@ -15,6 +15,16 @@ from syft_permissions.engine.tree import _relative_path
 if TYPE_CHECKING:
     from syft_perms.syftperm_context import SyftPermContext
 
+# The characters that a rule pattern reads as syntax: the glob characters, the
+# glob escape character, and the start of a template such as {{.UserEmail}}.
+# Each one in a class of its own matches only that character.
+_PATTERN_ESCAPES = {"\\": "[\\\\]", "*": "[*]", "?": "[?]", "[": "[[]", "{": "[{]"}
+
+
+def _literal_pattern(path: str) -> str:
+    """Return a rule pattern that matches ``path`` and no other path."""
+    return "".join(_PATTERN_ESCAPES.get(char, char) for char in path)
+
 
 class PermissionModifier:
     def __init__(self, perm_context: SyftPermContext):
@@ -35,10 +45,8 @@ class PermissionModifier:
     ) -> None:
         """Remove a user from a specific access level, resolving the correct yaml."""
         target_yaml_path = self._find_governing_yaml(path_in_datasite, is_folder)
-        target_pattern = self._compute_pattern(
-            target_yaml_path, path_in_datasite, is_folder
-        )
-        self._remove_user_from_yaml(target_yaml_path, target_pattern, level, user)
+        target = self._compute_target(target_yaml_path, path_in_datasite, is_folder)
+        self._remove_user_from_yaml(target_yaml_path, target, level, user)
 
     def remove_all_rules(self, path_in_datasite: str, is_folder: bool = False) -> None:
         """Remove all permission rules for a path, resolving the correct yaml."""
@@ -62,7 +70,9 @@ class PermissionModifier:
         new_yaml = new_abs.parent / PERMISSION_FILE_NAME
         for level in ("read", "write", "admin"):
             for user in getattr(rule.access, level):
-                self._write_user_to_yaml(new_yaml, new_abs.name, level, user)
+                self._write_user_to_yaml(
+                    new_yaml, _literal_pattern(new_abs.name), level, user
+                )
 
     def _find_governing_yaml(self, path_in_datasite: str, is_folder: bool) -> Path:
         """Find the yaml file that governs this path (nearest node in the ACL tree)."""
@@ -89,7 +99,16 @@ class PermissionModifier:
     def _compute_pattern(
         self, yaml_path: Path, path_in_datasite: str, is_folder: bool
     ) -> str:
-        """Compute the rule pattern relative to the governing yaml's directory."""
+        """Compute the rule pattern that matches the target and nothing else."""
+        target = self._compute_target(yaml_path, path_in_datasite, is_folder)
+        if is_folder:
+            return _literal_pattern(target.removesuffix("**")) + "**"
+        return _literal_pattern(target)
+
+    def _compute_target(
+        self, yaml_path: Path, path_in_datasite: str, is_folder: bool
+    ) -> str:
+        """Compute the target path relative to the governing yaml's directory."""
         datasite = self._perm_context.datasite
         # Path of the yaml's directory relative to the datasite
         yaml_dir = yaml_path.parent.relative_to(datasite)
