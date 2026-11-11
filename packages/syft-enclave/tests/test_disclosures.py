@@ -299,12 +299,12 @@ def test_later_grant_releases_withheld_artifact(via_job):
     assert (Path(ds.jobs["j"].job_review_path) / "stdout.txt").exists()
 
 
-def test_no_sync_while_ungranted_artifact_in_review(monkeypatch):
+def test_ungranted_artifact_unreadable_during_sync(monkeypatch):
     """An ungranted artifact is never readable, whenever a sync runs.
 
-    The job runner writes the logs into staging, so no ordering rule protects
-    them. This test guards that property: it fails if a later change writes a
-    gated artifact into the review folder before a release.
+    The job runner writes the logs into the review folder while the job runs,
+    so only the grants protect them. This test fails if a later change grants
+    read on a gated artifact that not every party released.
     """
     enclave, do1, do2, ds = build_quad()
     submit(ds, enclave, do1, do2, OK_CODE, [LOGS])
@@ -318,18 +318,19 @@ def test_no_sync_while_ungranted_artifact_in_review(monkeypatch):
 
     # Read the review path without a sync, so the spy below cannot recurse.
     review = Path(enclave._rds.job_client.jobs["j"].job_review_path)
+    datasite = enclave._rds.syftbox_folder / enclave.email
     exposed = []
     engine = enclave._rds.sync_engine
     real_sync = type(engine).sync
 
     def spy(self, *args, **kwargs):
         if self is engine:
-            exposed.append(
-                sorted(
-                    name
-                    for name in ("stdout.txt", "stderr.txt")
-                    if (review / name).exists()
-                )
+            ctx = SyftPermContext(datasite=datasite)
+            exposed.extend(
+                (name, party.email)
+                for name in ("stdout.txt", "stderr.txt")
+                for party in (ds, do1, do2)
+                if ctx.can_read(str((review / name).relative_to(datasite)), party.email)
             )
         return real_sync(self, *args, **kwargs)
 
@@ -337,7 +338,7 @@ def test_no_sync_while_ungranted_artifact_in_review(monkeypatch):
     monkeypatch.setattr(type(engine), "sync", spy)
     enclave.run_jobs()
 
-    assert not any(exposed), f"ungranted logs were readable during a sync: {exposed}"
+    assert not exposed, f"ungranted logs were readable during a sync: {exposed}"
 
 
 def test_amendment_needs_approval_first():
@@ -395,25 +396,6 @@ def test_released_files_travel_by_grant_not_push(monkeypatch):
     review = Path(ds.jobs["j"].job_review_path)
     assert (review / "stdout.txt").exists()
     assert (review / "outputs" / "r.json").exists()
-
-
-def test_released_artifact_not_granted_every_tick(monkeypatch):
-    """A tick with nothing left in staging does no permission work."""
-    enclave, do1, do2, ds = build_quad()
-    submit(ds, enclave, do1, do2, CRASH_CODE, [FRAMES])
-    run_to_completion(enclave, do1, do2, ds, [FRAMES])
-
-    granted = []
-    real_grant_read = JobInfo._grant_read
-
-    def counted_grant_read(self, files):
-        granted.append(list(files))
-        real_grant_read(self, files)
-
-    monkeypatch.setattr(JobInfo, "_grant_read", counted_grant_read)
-    enclave.run_jobs()
-
-    assert granted == []
 
 
 def test_approve_job_rejects_non_enclave_job():

@@ -21,6 +21,7 @@ from .job_storage import JobRef, JobStateNotFoundError, JobStorage
 from .models import JobState, JobStatus, JobSubmissionMetadata
 from .policies import (
     OUTPUT_RECIPIENTS_FILENAME,
+    OUTPUTS_ERROR_FILENAME,
     OUTPUTS_WITHHELD_FILENAME,
     POLICY_ERROR_FILENAME,
     ApiResolver,
@@ -106,9 +107,6 @@ NO_APPROVED_HASH_REASON = (
     "approved without a record of the approved submission; review and approve it again"
 )
 CHANGED_SUBMISSION_REASON = "the submission changed after it was approved"
-# Why the runner failed a job for its outputs. No release names it, so only
-# the DO reads it.
-OUTPUTS_ERROR_FILENAME = "outputs_error.txt"
 
 logger = logging.getLogger(__name__)
 
@@ -153,8 +151,8 @@ def _kill_process_tree(pid: int, timeout: float = 2.0) -> None:
 class SyftJobRunner:
     """Job runner that monitors and executes approved jobs.
 
-    Reads run.sh from inbox/. State goes to review/. Outputs, logs and the
-    return code go to staging/, until a release moves them to review/.
+    Reads run.sh from inbox/. State, outputs, logs and the return code go to
+    review/. Only the DO reads a run file there until a share grants read.
     """
 
     def __init__(
@@ -333,7 +331,7 @@ class SyftJobRunner:
     def _execute_job_streaming(self, ref: JobRef, timeout: int, run_dir: Path) -> int:
         """Execute job with real-time streaming output.
 
-        Runs run.sh from ``run_dir``, writes stdout/stderr to staging/.
+        Runs run.sh from ``run_dir``, writes stdout/stderr to review/.
         """
         run_script = run_dir / "run.sh"
         job_name = ref.job_name
@@ -351,10 +349,10 @@ class SyftJobRunner:
         env[IS_IN_JOB_ENV_VAR] = "true"
         env["PYTHONUNBUFFERED"] = "1"
 
-        staging_dir = self.manager.staging_dir(ref)
-        staging_dir.mkdir(parents=True, exist_ok=True)
-        stdout_file = staging_dir / "stdout.txt"
-        stderr_file = staging_dir / "stderr.txt"
+        review_dir = self.manager.review_dir(ref)
+        review_dir.mkdir(parents=True, exist_ok=True)
+        stdout_file = review_dir / "stdout.txt"
+        stderr_file = review_dir / "stderr.txt"
 
         import selectors
 
@@ -427,7 +425,7 @@ class SyftJobRunner:
     def _execute_job_captured(self, ref: JobRef, timeout: int, run_dir: Path) -> int:
         """Execute job with captured output (non-streaming).
 
-        Runs run.sh from ``run_dir``, writes stdout/stderr to staging/.
+        Runs run.sh from ``run_dir``, writes stdout/stderr to review/.
         """
         run_script = run_dir / "run.sh"
         job_name = ref.job_name
@@ -462,14 +460,14 @@ class SyftJobRunner:
             stderr = (stderr or "") + "\n--- PROCESS TIMED OUT ---\n"
             print(f" Job {job_name} timed out after {_format_timeout(timeout)}")
 
-        staging_dir = self.manager.staging_dir(ref)
-        staging_dir.mkdir(parents=True, exist_ok=True)
+        review_dir = self.manager.review_dir(ref)
+        review_dir.mkdir(parents=True, exist_ok=True)
 
-        stdout_file = staging_dir / "stdout.txt"
+        stdout_file = review_dir / "stdout.txt"
         with open(stdout_file, "w") as f:
             f.write(stdout)
 
-        stderr_file = staging_dir / "stderr.txt"
+        stderr_file = review_dir / "stderr.txt"
         with open(stderr_file, "w") as f:
             f.write(stderr)
 
@@ -486,8 +484,8 @@ class SyftJobRunner:
 
         The inbox is copied into a fresh folder outside the SyftBox, and the
         copy must match the approved hash before anything runs, so an edit of
-        the submitter's inbox never runs. State goes to review/. Outputs, logs
-        and the return code go to staging/, until a release moves them.
+        the submitter's inbox never runs. State, outputs, logs and the return
+        code go to review/, where only the DO reads them until a share.
 
         Args:
             ref: Ref of the job to execute.
@@ -618,7 +616,7 @@ class SyftJobRunner:
             self._capture_traceback(ref, returncode, run_dir / "code")
             returncode = self._run_output_policy(ref, run_dir, policies, returncode)
 
-            skipped = self._copy_outputs_to_staging(ref, run_dir)
+            skipped = self._copy_outputs_to_review(ref, run_dir)
             returncode = self._fail_on_output_permission_files(ref, skipped, returncode)
 
             self._finalize(ref, returncode)
@@ -655,7 +653,7 @@ class SyftJobRunner:
         """Run the output policy, record who gets the outputs, return the exit code.
 
         A failed job or a deny shares the outputs with nobody; a deny also
-        fails the job. The outputs still go to staging/, for the data owner.
+        fails the job. The outputs still go to review/, for the data owner.
         """
         if policies is None or policies.output is None:
             return returncode
@@ -672,7 +670,7 @@ class SyftJobRunner:
     def _run_policy(
         self, kind: PolicyKind, ref: JobRef, run_dir: Path, policies: JobPolicies
     ) -> PolicyResult:
-        """Run one policy of the job's api; its full stderr stays in staging."""
+        """Run one policy of the job's api; its full stderr stays with the DO."""
         policy_env = PolicyEnv(
             api_name=policies.api_name,
             submitter=ref.ds_email,
@@ -685,28 +683,28 @@ class SyftJobRunner:
         print(f" Running the {kind.value} policy of api '{policies.api_name}'")
         state = PolicyState(policies.state_dir)
         result = self.policy_runner.run(policies.script(kind), state, policy_env)
-        self._write_staged(ref, policy_stderr_filename(kind), result.stderr)
+        self._write_artifact(ref, policy_stderr_filename(kind), result.stderr)
         return result
 
     def _deny(self, ref: JobRef, kind: PolicyKind, result: PolicyResult) -> None:
         """Share the reason of a deny with the submitter."""
-        self._write_staged(ref, POLICY_ERROR_FILENAME, f"{result.error}\n")
+        self._write_artifact(ref, POLICY_ERROR_FILENAME, f"{result.error}\n")
         self._get_job_info(ref).share({POLICY_ERROR_FILENAME: [ref.ds_email]})
         print(f" Job {ref.job_name} denied by the {kind.value} policy: {result.error}")
 
     def _write_recipients(self, ref: JobRef, recipients: list[str]) -> None:
-        self._write_staged(ref, OUTPUT_RECIPIENTS_FILENAME, json.dumps(recipients))
+        self._write_artifact(ref, OUTPUT_RECIPIENTS_FILENAME, json.dumps(recipients))
 
-    def _write_staged(self, ref: JobRef, filename: str, content: str) -> None:
-        staging_dir = self.manager.staging_dir(ref)
-        staging_dir.mkdir(parents=True, exist_ok=True)
-        (staging_dir / filename).write_text(content)
+    def _write_artifact(self, ref: JobRef, filename: str, content: str) -> None:
+        review_dir = self.manager.review_dir(ref)
+        review_dir.mkdir(parents=True, exist_ok=True)
+        (review_dir / filename).write_text(content)
 
     def _report_result(self, ref: JobRef, returncode: int) -> None:
         """Print how the job ended and where its logs are."""
-        staging_dir = self.manager.staging_dir(ref)
-        stdout_file = staging_dir / "stdout.txt"
-        stderr_file = staging_dir / "stderr.txt"
+        review_dir = self.manager.review_dir(ref)
+        stdout_file = review_dir / "stdout.txt"
+        stderr_file = review_dir / "stderr.txt"
         if returncode == 0:
             print(f" Job {ref.job_name} completed successfully")
             print(f" Output written to {stdout_file}")
@@ -720,28 +718,29 @@ class SyftJobRunner:
             pass
 
     def _capture_traceback(self, ref: JobRef, returncode: int, code_root: Path) -> None:
-        """Stage where the job failed, from the traceback it printed.
+        """Record where the job failed, from the traceback it printed.
 
         A run that succeeds prints no traceback, so it leaves no record.
         """
         if returncode == 0:
             return
-        staging_dir = self.manager.staging_dir(ref)
-        write_frames_record(staging_dir / "stderr.txt", staging_dir, code_root)
+        review_dir = self.manager.review_dir(ref)
+        write_frames_record(review_dir / "stderr.txt", review_dir, code_root)
 
     def _finalize(self, ref: JobRef, returncode: int) -> None:
-        """Stage the exit code, and set the state to DONE or FAILED.
+        """Write the exit code, and set the state to DONE or FAILED.
 
-        The exit code carries more than DONE or FAILED, so it waits in staging/.
+        The exit code carries more than DONE or FAILED, so it goes to its own
+        file, not to the state that the DS reads.
         """
-        staging_dir = self.manager.staging_dir(ref)
-        staging_dir.mkdir(parents=True, exist_ok=True)
-        (staging_dir / "returncode.txt").write_text(str(returncode))
+        review_dir = self.manager.review_dir(ref)
+        review_dir.mkdir(parents=True, exist_ok=True)
+        (review_dir / "returncode.txt").write_text(str(returncode))
 
         state = self.manager.read_state(ref)
         state.status = JobStatus.DONE if returncode == 0 else JobStatus.FAILED
         state.completed_at = datetime.now(timezone.utc)
-        # The exact code is in staged returncode.txt.
+        # The exact code is in returncode.txt.
         state.return_code = None
         self.manager.write_state(ref, state)
 
@@ -750,9 +749,9 @@ class SyftJobRunner:
     ) -> int:
         """Fail the job when it wrote a permission file into outputs/.
 
-        In staging/, that file would decide who reads the outputs, so the job
-        could release them itself. The copy to staging/ skips the file, the job
-        shares its outputs with nobody, and the reason goes to staging/ for the
+        In review/, that file would decide who reads the outputs, so the job
+        could share them itself. The copy to review/ skips the file, the job
+        shares its outputs with nobody, and the reason goes to review/ for the
         DO. Returns the exit code to record.
         """
         if not permission_files:
@@ -763,14 +762,14 @@ class SyftJobRunner:
             f"outputs with nobody."
         )
         logger.error(reason)
-        self._write_staged(ref, OUTPUTS_ERROR_FILENAME, f"{reason}\n")
+        self._write_artifact(ref, OUTPUTS_ERROR_FILENAME, f"{reason}\n")
         self._write_recipients(ref, [])
         return returncode or 1
 
-    def _copy_outputs_to_staging(self, ref: JobRef, run_dir: Path) -> list[str]:
-        """Copy the outputs from the run copy to staging/, to wait for a release.
+    def _copy_outputs_to_review(self, ref: JobRef, run_dir: Path) -> list[str]:
+        """Copy the outputs from the run copy to review/, with no grant.
 
-        The copy follows symlinks, so staging/ holds only real files. It skips
+        The copy follows symlinks, so review/ holds only real files. It skips
         each permission file, and returns their paths in outputs/.
         """
         run_outputs = run_dir / "code" / "outputs"
@@ -785,26 +784,21 @@ class SyftJobRunner:
 
         shutil.copytree(
             run_outputs,
-            self.manager.staging_dir(ref) / "outputs",
+            self.manager.review_dir(ref) / "outputs",
             ignore=skip_permission_files,
         )
         return sorted(skipped)
 
     def _prepare_outputs_dir(self, ref: JobRef, run_dir: Path) -> None:
-        """Create outputs/ in the run copy, and remove the outputs of a previous run.
+        """Create outputs/ in the run copy, and delete the files of the last run.
 
         The job writes its outputs in the run copy, outside the SyftBox, so no
-        sync can send them to the submitter before they are released. The
-        recipients and the outputs error of a previous run go too, or this run
-        inherits them.
+        sync can send them before they are shared. The files of the last run go
+        with their grants, or this run inherits them.
         """
         # Create outputs/ inside code/ dir so job scripts can write there (cwd is code/)
         (run_dir / "code" / "outputs").mkdir(parents=True, exist_ok=True)
-
-        self.manager.remove_outputs(ref)
-        staging_dir = self.manager.staging_dir(ref)
-        for filename in (OUTPUT_RECIPIENTS_FILENAME, OUTPUTS_ERROR_FILENAME):
-            (staging_dir / filename).unlink(missing_ok=True)
+        self.manager.reset_run(ref)
 
     def _replace_ds_folder_reads(self) -> None:
         """Replace the read grant on a whole DS review folder with the named files.
@@ -903,15 +897,14 @@ class SyftJobRunner:
                 does not identify a job — it is unique per datasite and
                 submitter — so skipping by name drops every other job that
                 shares it.
-            share_outputs_with_submitter: If True, release the outputs to the
+            share_outputs_with_submitter: If True, share the outputs with the
                 output recipients: the submitter, or the list an output policy
-                writes. False keeps them in staging, where only the DO reads
+                writes. False shares them with nobody, so only the DO reads
                 them.
-            share_logs_with_submitter: If True, release the logs and the exit
-                code to the submitter, whatever the job requested. False
-                (default) releases only the items that the submitter requested
-                and the approval granted. The rest stays in staging, where only
-                the datasite owner reads it.
+            share_logs_with_submitter: If True, share the logs and the exit
+                code with the submitter, whatever the job requested. False
+                (default) shares only the items that the submitter requested
+                and the approval granted. Only the DO reads the rest.
             skip_job_names: Deprecated. The name-only form of ``skip_jobs``.
             approved_peers: The peers an output policy may send outputs to.
                 None allows the submitter only.
@@ -1029,7 +1022,7 @@ class SyftJobRunner:
                 # An empty marker: that the submitter can read this file is
                 # the message. Their job then shows "Outputs not shared with
                 # you" instead of looking like it wrote no outputs.
-                self._write_staged(ref, OUTPUTS_WITHHELD_FILENAME, "")
+                self._write_artifact(ref, OUTPUTS_WITHHELD_FILENAME, "")
                 job_info.share({OUTPUTS_WITHHELD_FILENAME: [ref.ds_email]})
         if share_logs:
             job_info.share_logs([ref.ds_email])
@@ -1041,7 +1034,7 @@ class SyftJobRunner:
 
         Only approved peers receive outputs; other emails are skipped and logged.
         """
-        path = self.manager.staging_dir(ref) / OUTPUT_RECIPIENTS_FILENAME
+        path = self.manager.review_dir(ref) / OUTPUT_RECIPIENTS_FILENAME
         if not path.exists():
             return [ref.ds_email]
         allowed = set(approved_peers or []) | {ref.ds_email}

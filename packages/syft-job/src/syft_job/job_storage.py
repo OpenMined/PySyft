@@ -13,9 +13,11 @@ from syft_migration import (
 from syft_perms import SyftPermContext
 
 from .config import SyftJobConfig, is_protocol_dir_name
+from .disclosures import DISCLOSURE_ITEMS, gated_names
 from .job_ref import JobRef, JobStateNotFoundError, RequestRef
 from .migrations.registry import JOB_PROTOCOL_VERSION, job_registry
 from .models import JobState, JobSubmissionMetadata, RequestMetadata
+from .policies.models import OUTPUT_RECIPIENTS_FILENAME, OUTPUTS_ERROR_FILENAME
 from .protocolcodecs import CODECS, ProtocolCodec
 from .submission import (
     OWNER_RECORD_FILENAME,
@@ -29,6 +31,16 @@ from .submission import (
 logger = logging.getLogger(__name__)
 
 __all__ = ["JobRef", "JobStateNotFoundError", "JobStorage"]
+
+OUTPUTS_DIR_NAME = "outputs"
+# The files of a run that a new run deletes, with their grants. Only the
+# outputs are a folder.
+RUN_ARTIFACTS = (
+    OUTPUTS_DIR_NAME,
+    *gated_names(DISCLOSURE_ITEMS),
+    OUTPUT_RECIPIENTS_FILENAME,
+    OUTPUTS_ERROR_FILENAME,
+)
 
 
 def _no_peer_schema(peer_email: str) -> Optional[ProtocolSchema]:
@@ -131,34 +143,33 @@ class JobStorage:
     def review_dir(self, ref: JobRef) -> Path:
         return self._codec_for(ref.protocol_version).review_dir(ref)
 
-    def staging_dir(self, ref: JobRef) -> Path:
-        return self._codec_for(ref.protocol_version).staging_dir(ref)
+    def reset_run(self, ref: JobRef) -> list[str]:
+        """Delete the files of the last run of ``ref``, and every grant on them.
 
-    def remove_outputs(self, ref: JobRef) -> bool:
-        """Delete outputs/ in review/ and in staging/, and the read grant on them.
-
-        Returns True if one of the folders existed. The grant can sit in a
-        permission file above outputs/, so it goes on its own, and the next
-        release starts with no recipient.
+        Returns the names it deleted. A grant can sit in a permission file above
+        the job folder and outlive the file, so each grant goes on its own. A
+        file of the next run then starts with no recipient.
         """
         datasite = self.config.syftbox_folder / ref.datasite_email
-        released = self.review_dir(ref) / "outputs"
-        SyftPermContext(datasite=datasite).modifier.remove_all_rules(
-            str(released.relative_to(datasite)), is_folder=True
-        )
-        removed = False
-        for outputs_dir in (
-            self.review_dir(ref) / "outputs",
-            self.staging_dir(ref) / "outputs",
-        ):
-            if outputs_dir.is_dir():
-                shutil.rmtree(outputs_dir)
-                removed = True
-        return removed
+        modifier = SyftPermContext(datasite=datasite).modifier
+        deleted = []
+        for name in RUN_ARTIFACTS:
+            path = self.review_dir(ref) / name
+            modifier.remove_all_rules(
+                str(path.relative_to(datasite)), is_folder=name == OUTPUTS_DIR_NAME
+            )
+            if path.is_dir():
+                shutil.rmtree(path)
+            elif path.exists():
+                path.unlink()
+            else:
+                continue
+            deleted.append(name)
+        return deleted
 
-    # -- owner record (owner side, in staging/) ------------------------------------
+    # -- owner record (owner side, in review/ with no grant) ------------------------
     def owner_record_path(self, ref: JobRef) -> Path:
-        return self.staging_dir(ref) / OWNER_RECORD_FILENAME
+        return self.review_dir(ref) / OWNER_RECORD_FILENAME
 
     def read_owner_record(self, ref: JobRef) -> Optional[OwnerJobRecord]:
         return read_owner_record(self.owner_record_path(ref))

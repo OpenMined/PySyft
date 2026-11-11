@@ -7,12 +7,14 @@ from typing import Any, Optional, Protocol
 
 from .bash_wrapper import PYTHON_POLICY_NAME, RUN_SCRIPT_NAME
 
-# Job artifacts. policy_error.txt and outputs_withheld.txt are released to the
-# submitter; the rest stays in staging, with the data owner.
+# Job artifacts in the review folder. The runner shares policy_error.txt and
+# outputs_withheld.txt with the submitter; only the data owner reads the rest.
 POLICY_ERROR_FILENAME = "policy_error.txt"
 # An empty marker file; see SyftJobRunner._share_job_results().
 OUTPUTS_WITHHELD_FILENAME = "outputs_withheld.txt"
 OUTPUT_RECIPIENTS_FILENAME = "output_recipients.json"
+# Why the runner failed a job for its outputs.
+OUTPUTS_ERROR_FILENAME = "outputs_error.txt"
 
 
 def policy_stderr_filename(kind: "PolicyKind") -> str:

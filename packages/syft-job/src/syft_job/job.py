@@ -6,12 +6,11 @@ import warnings
 from collections.abc import Mapping
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import TYPE_CHECKING, Iterable, List, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 from syft_permissions.spec.ruleset import PERMISSION_FILE_NAME
 
 from .disclosures import (
-    DISCLOSURE_ITEMS,
     DISCLOSURES_FILENAME,
     DisclosureItem,
     DisclosuresArg,
@@ -40,7 +39,7 @@ from .policies import (
 from .submission import API_HEADER, OwnerJobRecord, submission_hash
 
 # The files that ``JobInfo.share_logs`` shares.
-STAGED_LOG_FILES = tuple(
+LOG_FILES = tuple(
     gated_names([DisclosureItem.LOGS.value, DisclosureItem.RETURN_CODE.value])
 )
 
@@ -80,71 +79,31 @@ class JobInfo:
     def job_review_path(self) -> Path:
         return self._client.manager.review_dir(self._ref)
 
-    @property
-    def job_staging_path(self) -> Path:
-        """Where an artifact waits until a party releases it."""
-        return self._client.manager.staging_dir(self._ref)
+    def share_outputs(self, recipients: list[str]) -> None:
+        """Share the outputs with ``recipients``."""
+        self.share({"outputs": recipients})
 
-    def artifact_path(self, filename: str) -> Path:
-        """Return where ``filename`` is now: released, or still staged.
-
-        A released artifact sits in the review directory. Every other artifact
-        sits in the staging directory. The datasite owner reads both, so a
-        viewer on the owner side finds the file either way.
-        """
-        released = self.job_review_path / filename
-        if released.exists():
-            return released
-        return self.job_staging_path / filename
-
-    def share_outputs(self, recipients: list[str]) -> list[str]:
-        """Share the outputs with ``recipients``. Returns the names that moved."""
-        return self.share({"outputs": recipients})
-
-    def share_logs(self, recipients: list[str]) -> list[str]:
+    def share_logs(self, recipients: list[str]) -> None:
         """Share the logs and the exit code with ``recipients``.
 
-        Returns the names that moved. This call cannot take back a copy that
-        another party already has.
+        This call cannot take back a copy that another party already has.
         """
-        return self.share({name: recipients for name in STAGED_LOG_FILES})
+        self.share({name: recipients for name in LOG_FILES})
 
-    def share(self, files: Mapping[str, list[str]]) -> list[str]:
-        """Move each named staged file to review/, for its recipients to read.
+    def share(self, files: Mapping[str, list[str]]) -> None:
+        """Grant each recipient read access to its named file in review/.
 
-        ``files`` maps each file name to its recipients. Returns the names that
-        moved. A file with no recipients stays in staging/, and a name with no
-        file is skipped. A file that is already in review/ also gets the read
-        access, so a caller can add a recipient later. A user with read access
-        on the whole review folder also sees each file that moves.
+        ``files`` maps each file name to its recipients. A name with no
+        recipients, or with no file, is skipped. A user with read access on the
+        whole review folder reads every file, shared or not.
         """
-        files = {name: recipients for name, recipients in files.items() if recipients}
-        moved = self._move_to_review(files)
-        in_review = {
+        present = {
             name: recipients
             for name, recipients in files.items()
-            if (self.job_review_path / name).exists()
+            if recipients and (self.job_review_path / name).exists()
         }
-        if in_review:
-            self._grant_read(in_review)
-        return moved
-
-    def _move_to_review(self, filenames: Iterable[str]) -> list[str]:
-        """Move the named staged files to review/, and give no read access.
-
-        Returns the names that moved. The method skips a name that is not in
-        staging/, for example a file that moved before.
-        """
-        moved = []
-        for filename in filenames:
-            staged = self.job_staging_path / filename
-            if not staged.exists():
-                continue
-            target = self.job_review_path / filename
-            target.parent.mkdir(parents=True, exist_ok=True)
-            shutil.move(str(staged), str(target))
-            moved.append(filename)
-        return moved
+        if present:
+            self._grant_read(present)
 
     # ──────────────────────────────────────────────
     # Disclosures
@@ -218,10 +177,10 @@ class JobInfo:
             self.share_disclosures()
         return granted
 
-    def share_disclosures(self) -> list[str]:
-        """Share the granted items with the submitter. Returns the names that moved."""
+    def share_disclosures(self) -> None:
+        """Share the granted items with the submitter."""
         granted = gated_names(self.granted_disclosures)
-        return self.share({name: [self.submitted_by] for name in granted})
+        self.share({name: [self.submitted_by] for name in granted})
 
     # ──────────────────────────────────────────────
     # Properties from config (inbox/)
@@ -281,7 +240,7 @@ class JobInfo:
         status = self._state.status
 
         def _list_output_files() -> List[Path]:
-            outputs_dir = self.artifact_path("outputs")
+            outputs_dir = self.job_review_path / "outputs"
             if not outputs_dir.exists():
                 return []
             try:
@@ -387,7 +346,7 @@ class JobInfo:
     @property
     def policy_error(self) -> Optional[str]:
         """Why a policy denied the job, as the submitter sees it."""
-        path = self.artifact_path(POLICY_ERROR_FILENAME)
+        path = self.job_review_path / POLICY_ERROR_FILENAME
         try:
             return path.read_text().strip() or None
         except OSError:
@@ -400,7 +359,7 @@ class JobInfo:
         The runner shares an empty marker file with the submitter for this;
         only whether it exists matters.
         """
-        return self.artifact_path(OUTPUTS_WITHHELD_FILENAME).exists()
+        return (self.job_review_path / OUTPUTS_WITHHELD_FILENAME).exists()
 
     def approve(
         self,
@@ -549,7 +508,7 @@ class JobInfo:
             path: Path to the result file or folder to deposit
 
         Returns:
-            Path to the deposited result in the staging/outputs directory
+            Path to the deposited result in the review/outputs directory
 
         Raises:
             ValueError: If job is not in pending or approved status
@@ -564,8 +523,7 @@ class JobInfo:
         if not result_path.exists():
             raise FileNotFoundError(f"Result path not found: {path}")
 
-        # The result waits in staging/ until a release, like a run's outputs.
-        outputs_dir = self.job_staging_path / "outputs"
+        outputs_dir = self.job_review_path / "outputs"
         outputs_dir.mkdir(parents=True, exist_ok=True)
 
         # Handle both files and folders
@@ -611,21 +569,7 @@ class JobInfo:
                 f"Only completed or failed jobs can be rerun."
             )
 
-        changes_made = []
-
-        # Clean up the artifacts of the previous run. A staged copy must go
-        # too, or a later release sends a log that belongs to the old run.
-        for filename in gated_names(DISCLOSURE_ITEMS):
-            for f in (
-                self.job_review_path / filename,
-                self.job_staging_path / filename,
-            ):
-                if f.exists():
-                    f.unlink()
-                    changes_made.append(filename)
-
-        if self._client.manager.remove_outputs(self._ref):
-            changes_made.append("outputs directory")
+        removed = self._client.manager.reset_run(self._ref)
 
         # Reset state to approved
         self._state.status = JobStatus.APPROVED
@@ -633,9 +577,9 @@ class JobInfo:
         self._state.return_code = None
         self._client.manager.write_state(self._ref, self._state)
 
-        if changes_made:
+        if removed:
             print(
-                f"Job '{self.name}' prepared for rerun! Removed: {', '.join(changes_made)}"
+                f"Job '{self.name}' prepared for rerun! Removed: {', '.join(removed)}"
             )
         else:
             print(f"Job '{self.name}' prepared for rerun! (No cleanup needed)")

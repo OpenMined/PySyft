@@ -447,8 +447,8 @@ class SyftEnclaveClient:
                     state.save(job.job_review_path / "state.yaml")
                 mark_started(job.job_review_path, job.job_submission_path)
 
-        # share_logs_with_submitter=False keeps the logs in staging. Only a
-        # grant from every party releases them. With receipts on, outputs
+        # share_logs_with_submitter=False shares the logs with nobody. Only a
+        # grant from every party shares them. With receipts on, outputs
         # reach the submitter only through distribute_results, after the
         # receipt is written, so results and receipt arrive together instead
         # of the receipt a sync later.
@@ -474,16 +474,13 @@ class SyftEnclaveClient:
     def _apply_disclosure_policy(self) -> None:
         """Share each granted artifact with the parties of its job.
 
-        An artifact that no party released stays in the staging folder, where no
-        party holds a grant. A job with no granted artifact left in staging is
-        skipped, because each share scans the datasite permissions.
+        An artifact that not every party released gets no grant, so only the
+        enclave reads it.
         """
         for job in self._local_jobs():
             if job.status not in ("done", "failed"):
                 continue
             granted = gated_names(self.granted_disclosures(job))
-            if not any((job.job_staging_path / name).exists() for name in granted):
-                continue
             recipients = self._disclosure_recipients(job)
             job.share({name: recipients for name in granted})
 

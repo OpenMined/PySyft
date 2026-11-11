@@ -102,12 +102,12 @@ def _reject(client: JobClient, ref: RequestRef, reason: str) -> None:
 def _create_job(client: JobClient, ref: RequestRef, api: ResolvedApi) -> bool:
     """Write the job to inbox/: the call's files, the api's code, config.yaml.
 
-    The job is built in staging/, which only the DO reads, locked, and then
-    moved into place in one step, so the DS never sees half a job or writes
-    into it. Returns False when another process created it first.
+    The job is built in a hidden folder in review/, which only the DO reads,
+    locked, and then moved into place in one step, so the DS never sees half a
+    job or writes into it. Returns False when another process created it first.
     """
     job_ref = ref.job_ref
-    building = client.manager.staging_dir(job_ref).parent / f".{ref.job_name}.building"
+    building = client.manager.review_dir(job_ref).parent / f".{ref.job_name}.building"
     _build_job(client, ref, api, building)
     job_dir = client.manager.submission_dir(job_ref)
     job_dir.parent.mkdir(parents=True, exist_ok=True)

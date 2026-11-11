@@ -234,17 +234,17 @@ def test_block_without_type_line_falls_back(code_root):
 # -- the file the runner writes -------------------------------------------------
 
 
-def test_write_frames_record_writes_staged_file(tmp_path, code_root):
+def test_write_frames_record_writes_record_file(tmp_path, code_root):
     stderr_path = tmp_path / "stderr.txt"
     stderr_path.write_text(run(code_root, CRASH))
-    staging = tmp_path / "staging"
+    out_dir = tmp_path / "out"
 
-    out = write_frames_record(stderr_path, staging, code_root)
-    assert out == staging / FRAMES_FILENAME
+    out = write_frames_record(stderr_path, out_dir, code_root)
+    assert out == out_dir / FRAMES_FILENAME
     assert json.loads(out.read_text())["chain"][0]["type"] == "ValueError"
 
 
 def test_no_stderr_file_means_no_record(tmp_path, code_root):
-    staging = tmp_path / "staging"
-    assert write_frames_record(tmp_path / "absent.txt", staging, code_root) is None
-    assert not (staging / FRAMES_FILENAME).exists()
+    out_dir = tmp_path / "out"
+    assert write_frames_record(tmp_path / "absent.txt", out_dir, code_root) is None
+    assert not (out_dir / FRAMES_FILENAME).exists()

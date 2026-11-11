@@ -5,7 +5,7 @@ in any number of batches. A job counts as received only when its files hash to
 the value the submitter declared in config.yaml. The data owner then records
 the hash of what it received, later the hash of what it approved, and the
 runner executes a fresh copy only after checking it against the approved hash.
-The record lives in the owner's staging/, which no submitter can write.
+The record lives in the owner's review/, where the submitter holds no grant on it.
 """
 
 import hashlib
@@ -55,7 +55,7 @@ SYNC_EXCLUDED_NAMES = frozenset(
 # config.yaml header where the submitter declares code_hash() of its job.
 SUBMISSION_HASH_HEADER = "submission_hash"
 
-# The data owner's record of a job, in staging/.
+# The data owner's record of a job, in review/.
 OWNER_RECORD_FILENAME = "owner_record.json"
 
 

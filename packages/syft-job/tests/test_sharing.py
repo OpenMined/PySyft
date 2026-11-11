@@ -1,4 +1,4 @@
-"""Staged artifacts reach the submitter only when a release moves them."""
+"""Run files reach the submitter only when a share grants read on them."""
 
 import json
 import warnings
@@ -10,10 +10,10 @@ from syft_job.client import JobClient
 from syft_job.config import SyftJobConfig, protocol_dir_name
 from syft_job.disclosures import LOGS_WARNING, DisclosureItem
 from syft_job.job import JobInfo
-from syft_job.job_runner import OUTPUTS_ERROR_FILENAME, SyftJobRunner
+from syft_job.job_runner import SyftJobRunner
 from syft_job.migrations.registry import JOB_PROTOCOL_VERSION
 from syft_job.models import JobState, JobStatus
-from syft_job.policies import OUTPUT_RECIPIENTS_FILENAME
+from syft_job.policies import OUTPUT_RECIPIENTS_FILENAME, OUTPUTS_ERROR_FILENAME
 from syft_job.submission import (
     OWNER_RECORD_FILENAME,
     SUBMISSION_HASH_HEADER,
@@ -104,7 +104,7 @@ def run_job(
     requested: list[str] | None = None,
     grants: list[str] | None = None,
 ):
-    """Submit and run one job. Returns (job, review_dir, staging_dir).
+    """Submit and run one job. Returns (job, review_dir).
 
     ``requested`` is what the DS asks for, and ``grants`` is what the DO
     releases at approval.
@@ -115,130 +115,130 @@ def run_job(
     return (
         JobClient(config=do_config).jobs[0],
         do_config.get_review_job_dir(DO_EMAIL, DS_EMAIL, "test.job"),
-        do_config.get_staging_job_dir(DO_EMAIL, DS_EMAIL, "test.job"),
     )
 
 
 def test_state_yaml_omits_exit_code(tmp_path):
     """The DS reads state.yaml, so the exact exit code must not be in it."""
-    job, review, staging = run_job(tmp_path, EXIT_3_PY, share_logs=None)
+    job, review = run_job(tmp_path, EXIT_3_PY, share_logs=None)
     state = JobState.load(review / "state.yaml")
     assert state.status == JobStatus.FAILED
     assert state.return_code is None
-    assert (staging / "returncode.txt").read_text().strip() == "3"
+    assert (review / "returncode.txt").read_text().strip() == "3"
+    assert not ds_can_read(tmp_path, "returncode.txt")
 
 
-def test_failure_after_run_stages_return_code(tmp_path, monkeypatch):
-    """The runner stages -1 when it fails after the job ran."""
+def test_failure_after_run_writes_return_code(tmp_path, monkeypatch):
+    """The runner writes -1 when it fails after the job ran."""
 
     def fail(*args, **kwargs):
         raise OSError("disk full")
 
-    monkeypatch.setattr(SyftJobRunner, "_copy_outputs_to_staging", fail)
-    job, review, staging = run_job(tmp_path, OK_PY, share_logs=None)
+    monkeypatch.setattr(SyftJobRunner, "_copy_outputs_to_review", fail)
+    job, review = run_job(tmp_path, OK_PY, share_logs=None)
 
-    assert (staging / "returncode.txt").read_text().strip() == "-1"
-    assert not (review / "returncode.txt").exists()
+    assert (review / "returncode.txt").read_text().strip() == "-1"
+    assert not ds_can_read(tmp_path, "returncode.txt")
     state = JobState.load(review / "state.yaml")
     assert state.status == JobStatus.FAILED
     assert state.return_code is None
 
 
-def test_share_logs_moves_logs_into_review(tmp_path):
-    job, review, staging = run_job(tmp_path, OK_PY, share_logs=False)
-    assert sorted(job.share_logs([DS_EMAIL])) == sorted(LOG_FILES)
-    assert (review / "stdout.txt").exists()
-    assert (review / "returncode.txt").exists()
-    assert not (staging / "stdout.txt").exists()
+def test_share_logs_grants_read(tmp_path):
+    job, _ = run_job(tmp_path, OK_PY, share_logs=False)
+    job.share_logs([DS_EMAIL])
+    for name in LOG_FILES:
+        assert ds_can_read(tmp_path, name)
 
 
 def test_default_holds_logs_back(tmp_path):
-    """The DS reads a log only after the DO releases it."""
-    job, review, staging = run_job(tmp_path, OK_PY, share_logs=None)
+    """The DS reads a log only after the DO shares it."""
+    job, review = run_job(tmp_path, OK_PY, share_logs=None)
     for name in LOG_FILES:
-        assert (staging / name).exists()
-        assert not (review / name).exists()
-    assert (staging / "returncode.txt").read_text().strip() == "0"
+        assert (review / name).exists()
+        assert not ds_can_read(tmp_path, name)
+    assert (review / "returncode.txt").read_text().strip() == "0"
 
 
-def test_share_logs_releases_logs(tmp_path):
-    job, review, staging = run_job(tmp_path, OK_PY, share_logs=True)
-    assert (review / "stdout.txt").exists()
-    assert (review / "returncode.txt").exists()
-    assert not (staging / "stdout.txt").exists()
+def test_share_logs_flag_shares_logs(tmp_path):
+    run_job(tmp_path, OK_PY, share_logs=True)
     for name in LOG_FILES:
         assert ds_can_read(tmp_path, name)
 
 
 def test_second_share_is_harmless(tmp_path):
-    job, review, staging = run_job(tmp_path, OK_PY, share_logs=False)
+    job, _ = run_job(tmp_path, OK_PY, share_logs=False)
     job.share_logs([DS_EMAIL])
-    assert job.share_logs([DS_EMAIL]) == []
-    assert (review / "stdout.txt").exists()
+    job.share_logs([DS_EMAIL])
+    assert ds_can_read(tmp_path, "stdout.txt")
 
 
-def test_owner_reads_staged_log_through_viewer(tmp_path):
-    job, review, staging = run_job(tmp_path, OK_PY, share_logs=False)
+def test_owner_reads_unshared_log_through_viewer(tmp_path):
+    job, _ = run_job(tmp_path, OK_PY, share_logs=False)
     assert "hello from job" in str(job.stdout)
-    assert job.artifact_path("stdout.txt") == staging / "stdout.txt"
-    job.share_logs([DS_EMAIL])
-    assert job.artifact_path("stdout.txt") == review / "stdout.txt"
 
 
-def test_traceback_record_is_staged(tmp_path):
-    job, review, staging = run_job(tmp_path, CRASH_PY, share_logs=False)
-    record_path = staging / FRAMES_FILENAME
+def test_traceback_record_waits_for_share(tmp_path):
+    job, review = run_job(tmp_path, CRASH_PY, share_logs=False)
+    record_path = review / FRAMES_FILENAME
     assert record_path.exists()
-    assert not (review / FRAMES_FILENAME).exists()
+    assert not ds_can_read(tmp_path, FRAMES_FILENAME)
 
     record = json.loads(record_path.read_text())
     assert record["chain"][0]["type"] == "ValueError"
     assert "4120550" not in record_path.read_text()
 
-    assert job.share({FRAMES_FILENAME: [DS_EMAIL]}) == [FRAMES_FILENAME]
-    assert (review / FRAMES_FILENAME).exists()
+    job.share({FRAMES_FILENAME: [DS_EMAIL]})
+    assert ds_can_read(tmp_path, FRAMES_FILENAME)
 
 
 def test_share_with_nothing_to_share_skips_permissions(tmp_path, monkeypatch):
     """The permission context scans the whole datasite, so build it only to grant."""
-    job, _, _ = run_job(tmp_path, OK_PY, share_logs=None)
+    job, _ = run_job(tmp_path, OK_PY, share_logs=None)
 
     def no_permission_work(self):
         raise AssertionError("share built a permission context")
 
     monkeypatch.setattr(JobInfo, "_get_perm_context", no_permission_work)
 
-    assert job.share({FRAMES_FILENAME: [DS_EMAIL]}) == []
+    job.share({FRAMES_FILENAME: [DS_EMAIL]})
 
 
-def test_rerun_clears_both_locations(tmp_path):
-    """A staged log from the old run must not survive into a later release."""
-    job, review, staging = run_job(tmp_path, OK_PY, share_logs=False)
-    (review / "returncode.txt").write_text("0")
-    assert (staging / "stdout.txt").exists()
-    assert job.share_outputs([DS_EMAIL]) == ["outputs"]
-    assert (review / "outputs").exists()
+def test_rerun_clears_files_of_old_run(tmp_path):
+    """A log from the old run must not survive into a later share."""
+    job, review = run_job(tmp_path, OK_PY, share_logs=False)
+    job.share_outputs([DS_EMAIL])
+    assert (review / "stdout.txt").exists()
 
     job.rerun()
 
-    assert not (staging / "stdout.txt").exists()
-    assert not (staging / "stderr.txt").exists()
-    assert not (review / "stdout.txt").exists()
-    assert not (review / "outputs").exists()
+    for name in ("stdout.txt", "stderr.txt", "returncode.txt", "outputs"):
+        assert not (review / name).exists()
+
+
+def test_rerun_drops_log_grant_of_old_run(tmp_path):
+    """A log shared in the old run must not reach the DS from the rerun."""
+    JobClient(config=do_config_for(tmp_path)).setup_ds_job_folder_as_do(DS_EMAIL)
+    job, _ = run_job(tmp_path, OK_PY, share_logs=True)
+
+    job.rerun()
+    run_approved(tmp_path, share_logs=False)
+
+    for name in LOG_FILES:
+        assert not ds_can_read(tmp_path, name)
 
 
 def test_rerun_clears_crash_record(tmp_path):
-    """A crash record from the old run must not survive a later release.
+    """A crash record from the old run must not survive a later share.
 
     A rerun that succeeds writes no record, so a leftover record would describe
     a failure that the new run never had.
     """
-    job, review, staging = run_job(tmp_path, CRASH_PY, share_logs=False)
-    assert (staging / FRAMES_FILENAME).exists()
+    job, review = run_job(tmp_path, CRASH_PY, share_logs=False)
+    assert (review / FRAMES_FILENAME).exists()
 
     job.rerun()
 
-    assert not (staging / FRAMES_FILENAME).exists()
     assert not (review / FRAMES_FILENAME).exists()
 
 
@@ -254,21 +254,17 @@ with open("outputs/{PERMISSION_FILE_NAME}", "w") as f:
 
 
 def test_permission_file_in_outputs_fails_job(tmp_path):
-    """A job must not decide who reads its own staged outputs."""
-    job, _, staging = run_job(tmp_path, PERMISSION_FILE_PY, share_logs=None)
+    """A job must not decide who reads its own outputs."""
+    job, review = run_job(tmp_path, PERMISSION_FILE_PY, share_logs=None)
 
     assert job.status == "failed"
-    assert (staging / "outputs" / "result.txt").exists()
-    assert not (staging / "outputs" / PERMISSION_FILE_NAME).exists()
-    ctx = SyftPermContext(datasite=tmp_path / "SyftBox" / DO_EMAIL)
-    staged_result = (
-        f"app_data/job/staging/{DS_EMAIL}/{PROTOCOL_DIR}/test.job/outputs/result.txt"
-    )
-    assert not ctx.open(staged_result).has_read_access(DS_EMAIL)
-    assert PERMISSION_FILE_NAME in (staging / OUTPUTS_ERROR_FILENAME).read_text()
+    assert (review / "outputs" / "result.txt").exists()
+    assert not (review / "outputs" / PERMISSION_FILE_NAME).exists()
+    assert not ds_can_read(tmp_path, "outputs/result.txt")
+    assert PERMISSION_FILE_NAME in (review / OUTPUTS_ERROR_FILENAME).read_text()
 
 
-def test_symlinked_outputs_staged_as_files(tmp_path):
+def test_symlinked_outputs_copied_as_files(tmp_path):
     external = tmp_path / "external.txt"
     external.write_text("external")
     code = f"""\
@@ -280,15 +276,15 @@ with open("checkpoint.txt", "w") as f:
 os.symlink("../checkpoint.txt", "outputs/latest.txt")
 os.symlink({str(external)!r}, "outputs/external.txt")
 """
-    _, _, staging = run_job(tmp_path, code, share_logs=None)
+    _, review = run_job(tmp_path, code, share_logs=None)
 
     for name, content in (("latest.txt", "checkpoint"), ("external.txt", "external")):
-        staged = staging / "outputs" / name
-        assert not staged.is_symlink()
-        assert staged.read_text() == content
+        copied = review / "outputs" / name
+        assert not copied.is_symlink()
+        assert copied.read_text() == content
 
 
-def test_symlinked_outputs_folder_staged_as_folder(tmp_path):
+def test_symlinked_outputs_folder_copied_as_folder(tmp_path):
     results = tmp_path / "results"
     results.mkdir()
     (results / "result.txt").write_text("done")
@@ -299,18 +295,18 @@ import shutil
 shutil.rmtree("outputs", ignore_errors=True)
 os.symlink({str(results)!r}, "outputs")
 """
-    job, _, staging = run_job(tmp_path, code, share_logs=None)
+    job, review = run_job(tmp_path, code, share_logs=None)
 
-    assert not (staging / "outputs").is_symlink()
-    assert (staging / "outputs" / "result.txt").read_text() == "done"
+    assert not (review / "outputs").is_symlink()
+    assert (review / "outputs" / "result.txt").read_text() == "done"
     job.rerun()
-    assert not (staging / "outputs").exists()
+    assert not (review / "outputs").exists()
 
 
 def test_rerun_drops_outputs_recipients_of_old_run(tmp_path):
     """A recipient of the old outputs must not read the outputs of the rerun."""
     peer = "peer@test.org"
-    job, _, _ = run_job(tmp_path, OK_PY, share_logs=None)
+    job, _ = run_job(tmp_path, OK_PY, share_logs=None)
     # As on a datasite: the DS review folder has its own permission file, so the
     # outputs grant goes there, not inside outputs/.
     JobClient(config=do_config_for(tmp_path)).setup_ds_job_folder_as_do(DS_EMAIL)
@@ -330,16 +326,16 @@ def test_rerun_drops_outputs_recipients_of_old_run(tmp_path):
 
 def test_new_run_drops_recipients_and_outputs_error_of_old_run(tmp_path):
     """A run that blocked its outputs must not block the outputs of the next."""
-    job, _, staging = run_job(tmp_path, OK_PY, share_logs=None)
-    (staging / OUTPUT_RECIPIENTS_FILENAME).write_text("[]")
-    (staging / OUTPUTS_ERROR_FILENAME).write_text("old run\n")
+    job, review = run_job(tmp_path, OK_PY, share_logs=None)
+    (review / OUTPUT_RECIPIENTS_FILENAME).write_text("[]")
+    (review / OUTPUTS_ERROR_FILENAME).write_text("old run\n")
 
     job.rerun()
     run_approved(tmp_path)
 
     assert reload_job(tmp_path).status == "done"
-    assert not (staging / OUTPUT_RECIPIENTS_FILENAME).exists()
-    assert not (staging / OUTPUTS_ERROR_FILENAME).exists()
+    assert not (review / OUTPUT_RECIPIENTS_FILENAME).exists()
+    assert not (review / OUTPUTS_ERROR_FILENAME).exists()
 
 
 # -- disclosures: requested by the DS, granted by the DO ------------------------
@@ -353,49 +349,41 @@ def ds_can_read(tmp_path: Path, name: str) -> bool:
 
 
 def test_submission_records_known_requests_only(tmp_path):
-    job, _, _ = run_job(tmp_path, OK_PY, None, requested=[LOGS, "everything"])
+    job, _ = run_job(tmp_path, OK_PY, None, requested=[LOGS, "everything"])
     assert job.requested_disclosures == [LOGS]
 
 
 def test_release_is_requested_and_granted(tmp_path):
-    """A granted item that the DS did not request stays in staging."""
-    job, review, staging = run_job(
-        tmp_path, CRASH_PY, None, requested=[LOGS], grants=[LOGS, FRAMES]
-    )
+    """A granted item that the DS did not request gets no grant."""
+    job, _ = run_job(tmp_path, CRASH_PY, None, requested=[LOGS], grants=[LOGS, FRAMES])
     assert job.granted_disclosures == {LOGS}
     for name in ("stdout.txt", "stderr.txt"):
-        assert (review / name).exists()
         assert ds_can_read(tmp_path, name)
-    assert (staging / FRAMES_FILENAME).exists()
-    assert (staging / "returncode.txt").exists()
+    assert not ds_can_read(tmp_path, FRAMES_FILENAME)
+    assert not ds_can_read(tmp_path, "returncode.txt")
 
 
 def test_request_without_grant_releases_nothing(tmp_path):
-    job, review, staging = run_job(
-        tmp_path, CRASH_PY, None, requested=[LOGS, FRAMES, RETURN_CODE]
-    )
+    job, _ = run_job(tmp_path, CRASH_PY, None, requested=[LOGS, FRAMES, RETURN_CODE])
     assert job.granted_disclosures == set()
     for name in (*LOG_FILES, FRAMES_FILENAME):
-        assert not (review / name).exists()
+        assert not ds_can_read(tmp_path, name)
 
 
 def test_granted_frames_released_without_logs(tmp_path):
-    job, review, staging = run_job(
-        tmp_path, CRASH_PY, None, requested=[FRAMES], grants=[FRAMES]
-    )
-    assert (review / FRAMES_FILENAME).exists()
-    assert not (review / "stderr.txt").exists()
+    run_job(tmp_path, CRASH_PY, None, requested=[FRAMES], grants=[FRAMES])
+    assert ds_can_read(tmp_path, FRAMES_FILENAME)
+    assert not ds_can_read(tmp_path, "stderr.txt")
 
 
 def test_later_grant_releases_finished_job(tmp_path):
-    job, review, staging = run_job(tmp_path, OK_PY, None, requested=[RETURN_CODE])
-    assert not (review / "returncode.txt").exists()
+    job, _ = run_job(tmp_path, OK_PY, None, requested=[RETURN_CODE])
+    assert not ds_can_read(tmp_path, "returncode.txt")
 
     assert job.update_disclosures([RETURN_CODE]) == {RETURN_CODE: True}
 
-    assert (review / "returncode.txt").read_text().strip() == "0"
     assert ds_can_read(tmp_path, "returncode.txt")
-    assert not (review / "stdout.txt").exists()
+    assert not ds_can_read(tmp_path, "stdout.txt")
 
 
 def test_later_grant_through_stale_job_releases(tmp_path):
@@ -406,8 +394,7 @@ def test_later_grant_through_stale_job_releases(tmp_path):
 
     job.update_disclosures([LOGS])
 
-    review = do_config_for(tmp_path).get_review_job_dir(DO_EMAIL, DS_EMAIL, "test.job")
-    assert (review / "stdout.txt").exists()
+    assert ds_can_read(tmp_path, "stdout.txt")
 
 
 def test_update_disclosures_needs_approval_first(tmp_path):
@@ -417,9 +404,7 @@ def test_update_disclosures_needs_approval_first(tmp_path):
 
 
 def test_grant_survives_rerun(tmp_path):
-    job, review, staging = run_job(
-        tmp_path, OK_PY, None, requested=[LOGS], grants=[LOGS]
-    )
+    job, _ = run_job(tmp_path, OK_PY, None, requested=[LOGS], grants=[LOGS])
     job.rerun()
     assert job.disclosures == {LOGS: True}
 
@@ -501,8 +486,6 @@ def test_request_edit_after_approval_adds_nothing(tmp_path):
 
     run_approved(tmp_path)
 
-    review = do_config_for(tmp_path).get_review_job_dir(DO_EMAIL, DS_EMAIL, "test.job")
-    assert not (review / "stdout.txt").exists()
     assert not ds_can_read(tmp_path, "stdout.txt")
 
 
@@ -536,7 +519,7 @@ def test_edit_after_approval_fails_run(tmp_path):
 
     job = reload_job(tmp_path)
     assert job.status == "failed"
-    assert not (job.job_staging_path / "stdout.txt").exists()
+    assert not (job.job_review_path / "stdout.txt").exists()
 
 
 def test_approve_refuses_changed_submission(tmp_path):
@@ -558,13 +541,13 @@ def test_job_without_approved_hash_goes_back_to_pending(tmp_path, origin):
         reload_job(tmp_path).rerun()
     else:
         job.approve()
-        (job.job_staging_path / OWNER_RECORD_FILENAME).unlink()
+        (job.job_review_path / OWNER_RECORD_FILENAME).unlink()
 
     run_approved(tmp_path)
 
     job = reload_job(tmp_path)
     assert job.status == "pending"
-    assert not (job.job_staging_path / "stdout.txt").exists()
+    assert not (job.job_review_path / "stdout.txt").exists()
 
 
 @pytest.mark.parametrize("client", ["declares_hash", "declares_no_hash"])
@@ -619,16 +602,16 @@ def test_local_copy_error_leaves_job_approved(tmp_path, monkeypatch, caplog):
 
     job = reload_job(tmp_path)
     assert job.status == "approved"
-    assert not (job.job_staging_path / "stdout.txt").exists()
+    assert not (job.job_review_path / "stdout.txt").exists()
     assert "disk full" in caplog.text
 
 
 def test_pending_job_from_before_hashes_gets_record_and_lock(tmp_path):
     job = submit_only(tmp_path)
-    (job.job_staging_path / OWNER_RECORD_FILENAME).unlink()
+    (job.job_review_path / OWNER_RECORD_FILENAME).unlink()
     (job.job_submission_path / PERMISSION_FILE_NAME).unlink()
 
     job = reload_job(tmp_path)
 
-    assert (job.job_staging_path / OWNER_RECORD_FILENAME).exists()
+    assert (job.job_review_path / OWNER_RECORD_FILENAME).exists()
     assert (job.job_submission_path / PERMISSION_FILE_NAME).exists()

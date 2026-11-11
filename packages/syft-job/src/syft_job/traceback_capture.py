@@ -113,10 +113,10 @@ def frames_from_stderr(stderr: str, code_root: Path) -> Optional[dict]:
 def write_frames_record(
     stderr_path: Path, out_dir: Path, code_root: Path
 ) -> Optional[Path]:
-    """Read the staged stderr and write ``traceback_frames.json`` beside it.
+    """Read the job's stderr and write ``traceback_frames.json`` beside it.
 
-    ``out_dir`` is the staging directory, therefore the record waits there
-    until a party releases it.
+    ``out_dir`` is the review folder of the job. Only the DO reads the record
+    there until a party shares it.
 
     Returns the path written, or None when the job printed no traceback.
     """

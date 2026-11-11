@@ -85,7 +85,7 @@ def test_full_job_lifecycle(tmp_path: Path):
     job.approve()
     assert job.status == "approved"
 
-    # --- DO runs approved jobs. By default the logs stay in staging/ ---
+    # --- DO runs approved jobs. By default the DS reads no log ---
     do_runner.process_approved_jobs(stream_output=False, timeout=120)
 
     # Re-fetch to get updated status
@@ -98,19 +98,14 @@ def test_full_job_lifecycle(tmp_path: Path):
     result_file = next(p for p in job.output_paths if p.name == "result.txt")
     assert result_file.read_text().strip() == "done"
 
-    # --- Check stdout / stderr (staged until released) ---
-    staging_path = do_config.get_staging_job_dir(DO_EMAIL, DS_EMAIL, "test.job")
-    stdout_path = staging_path / "stdout.txt"
-    stderr_path = staging_path / "stderr.txt"
+    # --- Check stdout / stderr (no grant until a share) ---
+    stdout_path = review_path / "stdout.txt"
+    stderr_path = review_path / "stderr.txt"
     assert stdout_path.exists()
     assert stderr_path.exists()
     assert "hello from job" in stdout_path.read_text()
-    returncode_path = staging_path / "returncode.txt"
+    returncode_path = review_path / "returncode.txt"
     assert returncode_path.read_text().strip() == "0"
-    # Nothing readable sits in review/ before the release.
-    for name in (*LOG_FILES, "outputs"):
-        assert not (review_path / name).exists()
-    # The viewer finds the staged file, because the DO reads both directories.
     assert "hello from job" in str(job.stdout)
 
     # --- Before sharing, DS should NOT have read access ---
@@ -124,17 +119,12 @@ def test_full_job_lifecycle(tmp_path: Path):
     ).has_read_access(DS_EMAIL)
     for name in LOG_FILES:
         assert not ctx.open(
-            f"app_data/job/staging/{DS_EMAIL}/{PROTOCOL_DIR}/test.job/{name}"
+            f"app_data/job/review/{DS_EMAIL}/{PROTOCOL_DIR}/test.job/{name}"
         ).has_read_access(DS_EMAIL)
 
     # --- Share the outputs and the logs with the DS ---
-    assert job.share_outputs([DS_EMAIL]) == ["outputs"]
-    assert sorted(job.share_logs([DS_EMAIL])) == sorted(LOG_FILES)
-
-    # The share moved the files into review/, which is the disclosure.
-    for name in (*LOG_FILES, "outputs"):
-        assert (review_path / name).exists()
-        assert not (staging_path / name).exists()
+    job.share_outputs([DS_EMAIL])
+    job.share_logs([DS_EMAIL])
 
     # --- Verify DS has read access via SyftPermContext ---
     ctx = SyftPermContext(datasite=syftbox / DO_EMAIL)
@@ -496,7 +486,7 @@ def test_streaming_timeout_with_partial_line(tmp_path: Path):
 
     # Run main.py with the test's own Python, skipping the venv setup of a real job.
     run_dir = tmp_path / "run"
-    staging_dir = runner.manager.staging_dir(ref)
+    review_dir = runner.manager.review_dir(ref)
     run_dir.mkdir()
     (run_dir / "main.py").write_text(PARTIAL_OUTPUT_PY)
     (run_dir / "run.sh").write_text(f'#!/bin/bash\n"{sys.executable}" main.py\n')
@@ -507,6 +497,6 @@ def test_streaming_timeout_with_partial_line(tmp_path: Path):
 
     assert elapsed < 5, f"streaming read blocked for {elapsed:.1f}s"
     assert returncode == -1
-    stdout = (staging_dir / "stdout.txt").read_text()
+    stdout = (review_dir / "stdout.txt").read_text()
     assert "working" in stdout
     assert "--- PROCESS TIMED OUT ---" in stdout
