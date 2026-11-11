@@ -32,6 +32,7 @@ from syft.sync.utils.print_utils import (
 from syft.sync.version.exceptions import (
     VersionMismatchError,
     VersionUnknownError,
+    peer_info_unavailable_reason,
 )
 from syft.sync.version.peer_info import PeerInfo
 from syft.sync.version.version_info import CompatibilityStatus, VersionInfo
@@ -397,10 +398,7 @@ class PeerManager(BaseModel):
         # and an incompatible client version is refused by default. Either way the
         # override lets the caller proceed.
         if status == CompatibilityStatus.UNKNOWN:
-            detail = (
-                "version information not available "
-                "(if you are unsure if it is up to date, call client.sync())"
-            )
+            detail = peer_info_unavailable_reason(peer_email)
         else:
             detail = own_version.get_incompatibility_reason(peer_version)
 
@@ -458,10 +456,12 @@ class PeerManager(BaseModel):
         )
         if not any_compatible:
             warnings.warn(
-                f"All connected peers ({len(peer_emails)}) run an incompatible "
-                "client version, or their version is unknown. Such a peer is "
-                "skipped, and cannot receive jobs or datasets; call client.sync() "
-                "to read the version of each peer."
+                f"None of your peers ({len(peer_emails)}) can receive jobs or "
+                "datasets yet. For each one, either their account info is not "
+                "available yet (usually the connection request has not been "
+                "approved yet, or they have not created their account yet, or "
+                "recently deleted it), or they run an incompatible client version. "
+                "Once that is fixed, call client.sync()."
             )
 
     def shutdown(self) -> None:

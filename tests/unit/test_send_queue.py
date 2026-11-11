@@ -1,12 +1,15 @@
 """The DS saves each message before it sends it, so a dropped connection or a
 stopped kernel does not lose a submission."""
 
+import gc
 import json
 from pathlib import Path
+from uuid import uuid4
 
 import httplib2
 import pytest
 
+from syft.sync.connections.connection_router import ConnectionRouter
 from syft.sync.connections.drive.drive_p2p import DriveP2PConnection
 from syft.sync.connections.exceptions import ConnectionUnavailableError
 from syft.sync.connections.types import MessageKind
@@ -108,6 +111,33 @@ def test_crash_after_upload_applies_once(monkeypatch):
     with pytest.warns(UserWarning, match="Archived proposed change"):
         do_manager.sync()
     assert _accepted_contents(do_manager).count("job") == 1
+
+
+def test_push_holds_one_copy_of_content_during_upload(monkeypatch):
+    """While a push uploads, only the message read back from the send queue
+    holds the content of the files."""
+    ds_manager, _, file_path = _pair_with_job_inbox()
+    content = f"job {uuid4().hex}"
+    copies_during_upload = []
+
+    def count_copies(self, recipient, message):
+        gc.collect()
+        copies_during_upload.append(
+            sum(
+                isinstance(o, ProposedFileChange) and o.content == content
+                for o in gc.get_objects()
+            )
+        )
+
+    monkeypatch.setattr(
+        ConnectionRouter, "watcher_send_proposed_file_changes_message", count_copies
+    )
+    syncer = ds_manager.datasite_watcher_syncer
+    assert syncer is not None
+
+    syncer.push_file_changes([(Path(file_path), content)])
+
+    assert copies_during_upload == [1]
 
 
 def test_job_files_saved_and_sent_as_one_message(monkeypatch):
