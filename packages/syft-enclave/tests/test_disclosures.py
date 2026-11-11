@@ -374,30 +374,6 @@ def test_late_grant_reaches_data_owners():
     assert (Path(do2.jobs["j"].job_review_path) / FRAMES_FILENAME).exists()
 
 
-def test_released_files_travel_by_grant_not_push(monkeypatch):
-    """The sync sends a released file to each party with read on it.
-
-    A push of the same file would send it twice. Only the job state is pushed,
-    because the data owners hold no read on it.
-    """
-    enclave, do1, do2, ds = build_quad()
-    submit(ds, enclave, do1, do2, OK_CODE, [LOGS])
-    pushed = []
-    real_push = SyftEnclaveClient._push_files_to_recipients
-
-    def recording_push(self, files_by_datasite_path, recipients):
-        pushed.extend(Path(path).name for path in files_by_datasite_path)
-        real_push(self, files_by_datasite_path, recipients)
-
-    monkeypatch.setattr(SyftEnclaveClient, "_push_files_to_recipients", recording_push)
-    run_to_completion(enclave, do1, do2, ds, [LOGS])
-
-    assert set(pushed) == {"state.yaml"}
-    review = Path(ds.jobs["j"].job_review_path)
-    assert (review / "stdout.txt").exists()
-    assert (review / "outputs" / "r.json").exists()
-
-
 def test_approve_job_rejects_non_enclave_job():
     """JobInfo.approve takes a reason first, so disclosures would land there.
 

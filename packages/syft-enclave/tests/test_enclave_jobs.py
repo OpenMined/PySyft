@@ -396,9 +396,10 @@ def test__only_one_of_two_data_owners_sees_job_result_when_submitting():
         result = json.loads(f.read())
     assert result["status"] == "ok"
 
-    # do2 approved the job but never received the result.
+    # do2 never received the result, but it reads the job state.
     do2_job = do2.jobs["test_job"]
     assert len(do2_job.output_paths) == 0
+    assert do2_job.status == "done"
 
 
 def _job_distributed_to_both_data_owners():

@@ -501,7 +501,7 @@ class SyftEnclaveClient:
         self._rds.sync()
 
     def _share_results_once(self, job: JobInfo) -> None:
-        """Share the outputs and send the state, the first time the job finishes."""
+        """Share the outputs, the first time the job finishes."""
         marker = job.job_review_path / RESULTS_SHARED_MARKER
         if marker.exists():
             return
@@ -510,13 +510,13 @@ class SyftEnclaveClient:
             self._try_write_receipt(job)
 
         # Always share results with the DS (submitter)
-        self._share_outputs(job, [job.submitted_by])
+        job.share_outputs([job.submitted_by])
 
         # Optionally share with DOs
         datasets = job.job_metadata.datasets
         if job.job_headers.get("share_results_with_do") and datasets:
             do_emails = list(datasets)
-            self._share_outputs(job, do_emails)
+            job.share_outputs(do_emails)
 
         marker.write_text("shared")
 
@@ -531,39 +531,6 @@ class SyftEnclaveClient:
         except Exception:
             logger.exception("Could not write a receipt for job %s", job.name)
             write_receipt_error(job)
-
-    def _read_state_file(self, job: JobInfo) -> dict[Path, bytes]:
-        """Read the job state.yaml as a {path_in_datasite: bytes} dict."""
-        state_file = job.job_review_path / "state.yaml"
-        if not state_file.exists():
-            return {}
-        datasite_dir = self._rds.syftbox_folder / self._rds.email
-        state_rel = state_file.relative_to(datasite_dir)
-        return {state_rel: state_file.read_bytes()}
-
-    def _share_outputs(self, job: JobInfo, recipients: list[str]) -> None:
-        """Share the outputs with ``recipients``, and push the job state to them.
-
-        The sync sends the outputs, because the recipients now read them. The
-        data owners do not read the job state, so it goes by push.
-        """
-        job.share_outputs(recipients)
-        self._push_files_to_recipients(self._read_state_file(job), recipients)
-
-    def _push_files_to_recipients(
-        self, files_by_datasite_path: dict, recipients: list[str]
-    ) -> None:
-        """Queue the files for the recipients through the event outbox."""
-        if not files_by_datasite_path:
-            return
-        syncer = self._rds.sync_engine.datasite_owner_syncer
-        events_message = syncer.event_cache.create_events_for_files(
-            files_by_datasite_path
-        )
-        syncer.process_events_for_own_state_and_peers(
-            recipients=recipients,
-            file_change_events_message=events_message,
-        )
 
     def _push_approval_file(self, approval_file: Path) -> None:
         """Push a changed approval file to the enclave."""
@@ -729,7 +696,8 @@ class SyftEnclaveClient:
         approval_dos: list[str],
     ):
         """Grant inbox read to everyone who needs to see the job (referenced +
-        approving DOs), and approval-file write to the approving DOs."""
+        approving DOs), state read to them and the submitter, and approval-file
+        write to the approving DOs."""
         job_manager = self._rds.job_client.manager
         datasite = self._rds.syftbox_folder / self._rds.email
         ctx = SyftPermContext(datasite=datasite)
@@ -738,6 +706,11 @@ class SyftEnclaveClient:
 
         for do_email in dict.fromkeys([*read_dos, *approval_dos]):
             ctx.open(inbox_rel).grant_read_access(do_email)
+
+        # A rule for one file replaces the folder rule that lets the submitter
+        # read the state, so this rule names the submitter too.
+        for email in dict.fromkeys([ref.ds_email, *read_dos, *approval_dos]):
+            ctx.open(review_rel / "state.yaml").grant_read_access(email)
 
         for do_email in approval_dos:
             approval_rel = review_rel / enclave_approval_file_name(do_email)
