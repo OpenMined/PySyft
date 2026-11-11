@@ -80,7 +80,6 @@ class DriveWatcherStoreConnection(WatcherStoreConnection):
         peer_folders = self._cached_client.client.find_folders(
             parent_id=watcher_folder_id
         )
-        self._peer_folder_ids.update({name: id_ for id_, name in peer_folders})
         return [name for _, name in peer_folders]
 
     def _save_file(self, peer: str, name: str, data: bytes) -> None:
