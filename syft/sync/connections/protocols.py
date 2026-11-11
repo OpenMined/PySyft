@@ -66,8 +66,13 @@ class P2PConnection(RouterConnection, ABC):
         """Send ``data`` to ``peer`` under ``msg_id``.
 
         ``msg_id`` is chosen by the sender and stays the same if the message is
-        sent again. ``kind`` lets a connection keep the two kinds apart, as
-        Drive does with an inbox and an outbox.
+        sent again, as after a stop. The peer then applies it once: the
+        connection drops the second copy, or the peer skips it. ``kind`` lets a
+        connection keep the two kinds apart, as Drive does with an inbox and an
+        outbox.
+
+        Raises:
+            ConnectionUnavailableError: when the backend cannot be reached.
         """
 
     @abstractmethod
