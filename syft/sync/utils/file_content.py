@@ -17,6 +17,11 @@ def content_type_of(content: str | bytes | None) -> ContentType | None:
     return "binary" if isinstance(content, bytes) else "text"
 
 
+def content_bytes(content: str | bytes) -> bytes:
+    """``content`` as bytes: text as UTF-8."""
+    return content.encode("utf-8") if isinstance(content, str) else content
+
+
 def content_to_json(content: str | bytes | None) -> str | None:
     """``content`` as JSON text: bytes go as base64."""
     if isinstance(content, bytes):

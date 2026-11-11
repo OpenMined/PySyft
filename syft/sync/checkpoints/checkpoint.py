@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING, Dict, List
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from syft.sync.utils.file_content import content_bytes
 from syft.sync.utils.syftbox_utils import (
     compress_data,
     create_event_timestamp,
@@ -51,11 +52,6 @@ DEFAULT_COMPACTING_THRESHOLD = 4
 # Default threshold for a checkpoint: this many events in the DO's rolling
 # state, or this many paths in the rolling state that a DS keeps for a DO
 DEFAULT_CHECKPOINT_EVENT_THRESHOLD = 50
-
-
-def _as_bytes(content: str | bytes) -> bytes:
-    """``content`` as bytes: text as UTF-8."""
-    return content.encode("utf-8") if isinstance(content, str) else content
 
 
 class CheckpointFile(BaseModel):
@@ -127,7 +123,7 @@ class Checkpoint(BaseModel):
                     CheckpointFile(
                         path=path_str,
                         hash=hash_value,
-                        content=_as_bytes(content),
+                        content=content_bytes(content),
                     )
                 )
         return cls(
@@ -163,7 +159,7 @@ class Checkpoint(BaseModel):
                 )
             else:
                 files[path] = CheckpointFile(
-                    path=path, hash=event.new_hash, content=_as_bytes(event.content)
+                    path=path, hash=event.new_hash, content=content_bytes(event.content)
                 )
             if last_event_timestamp is None or event.timestamp > last_event_timestamp:
                 last_event_timestamp = event.timestamp
