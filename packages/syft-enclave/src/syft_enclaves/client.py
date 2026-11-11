@@ -472,11 +472,11 @@ class SyftEnclaveClient:
         return self._rds.job_client.jobs
 
     def _apply_disclosure_policy(self) -> None:
-        """Release each granted artifact to the parties of its job.
+        """Share each granted artifact with the parties of its job.
 
         An artifact that no party released stays in the staging folder, where no
         party holds a grant. A job with no granted artifact left in staging is
-        skipped, because each release scans the datasite permissions.
+        skipped, because each share scans the datasite permissions.
         """
         for job in self._local_jobs():
             if job.status not in ("done", "failed"):
@@ -484,10 +484,11 @@ class SyftEnclaveClient:
             granted = gated_names(self.granted_disclosures(job))
             if not any((job.job_staging_path / name).exists() for name in granted):
                 continue
-            job.release(granted, self._disclosure_recipients(job))
+            recipients = self._disclosure_recipients(job)
+            job.share({name: recipients for name in granted})
 
     def _disclosure_recipients(self, job: JobInfo) -> list[str]:
-        """The submitter and each DO of the job, who all get a released artifact."""
+        """The submitter and each DO of the job, who all get a shared artifact."""
         datasets = job.job_metadata.datasets or {}
         return list(
             dict.fromkeys([job.submitted_by, *(e for e in datasets if e != self.email)])
@@ -498,12 +499,12 @@ class SyftEnclaveClient:
         for job in self.jobs:
             if job.status not in ("done", "failed"):
                 continue
-            self._release_results_once(job)
+            self._share_results_once(job)
 
         self._rds.sync()
 
-    def _release_results_once(self, job: JobInfo) -> None:
-        """Release the outputs and send the state, the first time the job finishes."""
+    def _share_results_once(self, job: JobInfo) -> None:
+        """Share the outputs and send the state, the first time the job finishes."""
         marker = job.job_review_path / RESULTS_SHARED_MARKER
         if marker.exists():
             return
@@ -512,13 +513,13 @@ class SyftEnclaveClient:
             self._try_write_receipt(job)
 
         # Always share results with the DS (submitter)
-        self._release_outputs(job, [job.submitted_by])
+        self._share_outputs(job, [job.submitted_by])
 
         # Optionally share with DOs
         datasets = job.job_metadata.datasets
         if job.job_headers.get("share_results_with_do") and datasets:
             do_emails = list(datasets)
-            self._release_outputs(job, do_emails)
+            self._share_outputs(job, do_emails)
 
         marker.write_text("shared")
 
@@ -543,13 +544,13 @@ class SyftEnclaveClient:
         state_rel = state_file.relative_to(datasite_dir)
         return {state_rel: state_file.read_bytes()}
 
-    def _release_outputs(self, job: JobInfo, recipients: list[str]) -> None:
-        """Release the outputs to ``recipients``, and push the job state to them.
+    def _share_outputs(self, job: JobInfo, recipients: list[str]) -> None:
+        """Share the outputs with ``recipients``, and push the job state to them.
 
         The sync sends the outputs, because the recipients now read them. The
         data owners do not read the job state, so it goes by push.
         """
-        job.release(["outputs"], recipients)
+        job.share_outputs(recipients)
         self._push_files_to_recipients(self._read_state_file(job), recipients)
 
     def _push_files_to_recipients(

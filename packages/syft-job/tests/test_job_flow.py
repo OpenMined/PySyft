@@ -127,11 +127,11 @@ def test_full_job_lifecycle(tmp_path: Path):
             f"app_data/job/staging/{DS_EMAIL}/{PROTOCOL_DIR}/test.job/{name}"
         ).has_read_access(DS_EMAIL)
 
-    # --- Release the outputs and the logs to the DS ---
-    assert job.release(["outputs"], [DS_EMAIL]) == ["outputs"]
-    assert sorted(job.release_logs()) == sorted(LOG_FILES)
+    # --- Share the outputs and the logs with the DS ---
+    assert job.share_outputs([DS_EMAIL]) == ["outputs"]
+    assert sorted(job.share_logs([DS_EMAIL])) == sorted(LOG_FILES)
 
-    # The release moved the files into review/, which is the disclosure.
+    # The share moved the files into review/, which is the disclosure.
     for name in (*LOG_FILES, "outputs"):
         assert (review_path / name).exists()
         assert not (staging_path / name).exists()

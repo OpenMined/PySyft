@@ -689,9 +689,9 @@ class SyftJobRunner:
         return result
 
     def _deny(self, ref: JobRef, kind: PolicyKind, result: PolicyResult) -> None:
-        """Release the reason of a deny to the submitter."""
+        """Share the reason of a deny with the submitter."""
         self._write_staged(ref, POLICY_ERROR_FILENAME, f"{result.error}\n")
-        self._get_job_info(ref).release([POLICY_ERROR_FILENAME], [ref.ds_email])
+        self._get_job_info(ref).share({POLICY_ERROR_FILENAME: [ref.ds_email]})
         print(f" Job {ref.job_name} denied by the {kind.value} policy: {result.error}")
 
     def _write_recipients(self, ref: JobRef, recipients: list[str]) -> None:
@@ -989,7 +989,7 @@ class SyftJobRunner:
         """Execute an approved job, then share its results if it ran."""
         print(f"\n{'=' * 50}")
         if self._execute_job(ref, stream_output=stream_output, timeout=timeout):
-            self._release_job_results(
+            self._share_job_results(
                 ref,
                 share_outputs,
                 share_logs,
@@ -1016,23 +1016,23 @@ class SyftJobRunner:
             (self.manager.review_dir(ref) / OUTPUTS_WITHHELD_FILENAME).unlink(
                 missing_ok=True
             )
-        self._release_job_results(ref, share_outputs, share_logs, [ref.ds_email])
+        self._share_job_results(ref, share_outputs, share_logs, [ref.ds_email])
 
-    def _release_job_results(
+    def _share_job_results(
         self, ref: JobRef, share_outputs: bool, share_logs: bool, recipients: list[str]
     ) -> None:
         job_info = self._get_job_info(ref)
-        job_info.release_disclosures()
+        job_info.share_disclosures()
         if share_outputs:
-            job_info.release(["outputs"], recipients)
+            job_info.share_outputs(recipients)
             if ref.ds_email not in recipients:
                 # An empty marker: that the submitter can read this file is
                 # the message. Their job then shows "Outputs not shared with
                 # you" instead of looking like it wrote no outputs.
                 self._write_staged(ref, OUTPUTS_WITHHELD_FILENAME, "")
-                job_info.release([OUTPUTS_WITHHELD_FILENAME], [ref.ds_email])
+                job_info.share({OUTPUTS_WITHHELD_FILENAME: [ref.ds_email]})
         if share_logs:
-            job_info.release_logs()
+            job_info.share_logs([ref.ds_email])
 
     def _output_recipients(
         self, ref: JobRef, approved_peers: list[str] | None

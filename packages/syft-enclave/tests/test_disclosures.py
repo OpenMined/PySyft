@@ -406,9 +406,9 @@ def test_released_artifact_not_granted_every_tick(monkeypatch):
     granted = []
     real_grant_read = JobInfo._grant_read
 
-    def counted_grant_read(self, filenames, recipients):
-        granted.append(list(filenames))
-        real_grant_read(self, filenames, recipients)
+    def counted_grant_read(self, files):
+        granted.append(list(files))
+        real_grant_read(self, files)
 
     monkeypatch.setattr(JobInfo, "_grant_read", counted_grant_read)
     enclave.run_jobs()

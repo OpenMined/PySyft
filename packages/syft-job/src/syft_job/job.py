@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import shutil
 import warnings
+from collections.abc import Mapping
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Iterable, List, Optional
@@ -38,7 +39,7 @@ from .policies import (
 )
 from .submission import API_HEADER, OwnerJobRecord, submission_hash
 
-# The files that ``share_logs_with_submitter`` releases.
+# The files that ``JobInfo.share_logs`` shares.
 STAGED_LOG_FILES = tuple(
     gated_names([DisclosureItem.LOGS.value, DisclosureItem.RETURN_CODE.value])
 )
@@ -96,29 +97,36 @@ class JobInfo:
             return released
         return self.job_staging_path / filename
 
-    def release_logs(self) -> list[str]:
-        """Move the logs and the exit code to review/, for the submitter to read.
+    def share_outputs(self, recipients: list[str]) -> list[str]:
+        """Share the outputs with ``recipients``. Returns the names that moved."""
+        return self.share({"outputs": recipients})
+
+    def share_logs(self, recipients: list[str]) -> list[str]:
+        """Share the logs and the exit code with ``recipients``.
 
         Returns the names that moved. This call cannot take back a copy that
         another party already has.
         """
-        return self.release(STAGED_LOG_FILES, [self.submitted_by])
+        return self.share({name: recipients for name in STAGED_LOG_FILES})
 
-    def release(self, filenames: Iterable[str], recipients: list[str]) -> list[str]:
-        """Move the named staged files to review/, for ``recipients`` to read.
+    def share(self, files: Mapping[str, list[str]]) -> list[str]:
+        """Move each named staged file to review/, for its recipients to read.
 
-        Returns the names that moved. With no ``recipients``, no file moves. A
-        file that is already in review/ also gets the read access, so a caller
-        can add a recipient later. A user with read access on the whole review
-        folder also sees each file that moves.
+        ``files`` maps each file name to its recipients. Returns the names that
+        moved. A file with no recipients stays in staging/, and a name with no
+        file is skipped. A file that is already in review/ also gets the read
+        access, so a caller can add a recipient later. A user with read access
+        on the whole review folder also sees each file that moves.
         """
-        if not recipients:
-            return []
-        filenames = list(filenames)
-        moved = self._move_to_review(filenames)
-        released = [n for n in filenames if (self.job_review_path / n).exists()]
-        if released:
-            self._grant_read(released, recipients)
+        files = {name: recipients for name, recipients in files.items() if recipients}
+        moved = self._move_to_review(files)
+        in_review = {
+            name: recipients
+            for name, recipients in files.items()
+            if (self.job_review_path / name).exists()
+        }
+        if in_review:
+            self._grant_read(in_review)
         return moved
 
     def _move_to_review(self, filenames: Iterable[str]) -> list[str]:
@@ -187,7 +195,7 @@ class JobInfo:
         """Replace the items the data owner releases, and return the new map.
 
         Only the items that the submitter requested are stored. A job that
-        finished releases the newly granted items at once.
+        finished shares the newly granted items at once.
 
         Raises:
             ValueError: If the job was not approved
@@ -207,15 +215,13 @@ class JobInfo:
             raise ValueError(f"Approve the job first (current: {self.status}).")
         granted = self._write_disclosures(disclosures)
         if self._state.status in (JobStatus.DONE, JobStatus.FAILED):
-            self.release_disclosures()
+            self.share_disclosures()
         return granted
 
-    def release_disclosures(self) -> list[str]:
-        """Move the granted items to review/, for the submitter to read.
-
-        Returns the names that moved.
-        """
-        return self.release(gated_names(self.granted_disclosures), [self.submitted_by])
+    def share_disclosures(self) -> list[str]:
+        """Share the granted items with the submitter. Returns the names that moved."""
+        granted = gated_names(self.granted_disclosures)
+        return self.share({name: [self.submitted_by] for name in granted})
 
     # ──────────────────────────────────────────────
     # Properties from config (inbox/)
@@ -391,7 +397,7 @@ class JobInfo:
     def outputs_withheld(self) -> bool:
         """True when the output policy kept the outputs from the submitter.
 
-        The runner releases an empty marker file to the submitter for this;
+        The runner shares an empty marker file with the submitter for this;
         only whether it exists matters.
         """
         return self.artifact_path(OUTPUTS_WITHHELD_FILENAME).exists()
@@ -651,10 +657,10 @@ class JobInfo:
         )
         return rel / subpath
 
-    def _grant_read(self, filenames: Iterable[str], recipients: list[str]) -> None:
-        """Grant ``recipients`` read access to the named review/ files."""
+    def _grant_read(self, files: Mapping[str, list[str]]) -> None:
+        """Grant each recipient read access to its named review/ file."""
         ctx = self._get_perm_context()
-        for filename in filenames:
+        for filename, recipients in files.items():
             f = ctx.open(self._relative_review_path(filename))
             for recipient in recipients:
                 f.grant_read_access(recipient)

@@ -144,9 +144,9 @@ def test_failure_after_run_stages_return_code(tmp_path, monkeypatch):
     assert state.return_code is None
 
 
-def test_release_moves_logs_into_review(tmp_path):
+def test_share_logs_moves_logs_into_review(tmp_path):
     job, review, staging = run_job(tmp_path, OK_PY, share_logs=False)
-    assert sorted(job.release_logs()) == sorted(LOG_FILES)
+    assert sorted(job.share_logs([DS_EMAIL])) == sorted(LOG_FILES)
     assert (review / "stdout.txt").exists()
     assert (review / "returncode.txt").exists()
     assert not (staging / "stdout.txt").exists()
@@ -170,10 +170,10 @@ def test_share_logs_releases_logs(tmp_path):
         assert ds_can_read(tmp_path, name)
 
 
-def test_second_release_is_harmless(tmp_path):
+def test_second_share_is_harmless(tmp_path):
     job, review, staging = run_job(tmp_path, OK_PY, share_logs=False)
-    job.release_logs()
-    assert job.release_logs() == []
+    job.share_logs([DS_EMAIL])
+    assert job.share_logs([DS_EMAIL]) == []
     assert (review / "stdout.txt").exists()
 
 
@@ -181,7 +181,7 @@ def test_owner_reads_staged_log_through_viewer(tmp_path):
     job, review, staging = run_job(tmp_path, OK_PY, share_logs=False)
     assert "hello from job" in str(job.stdout)
     assert job.artifact_path("stdout.txt") == staging / "stdout.txt"
-    job.release_logs()
+    job.share_logs([DS_EMAIL])
     assert job.artifact_path("stdout.txt") == review / "stdout.txt"
 
 
@@ -195,20 +195,20 @@ def test_traceback_record_is_staged(tmp_path):
     assert record["chain"][0]["type"] == "ValueError"
     assert "4120550" not in record_path.read_text()
 
-    assert job.release([FRAMES_FILENAME], [DS_EMAIL]) == [FRAMES_FILENAME]
+    assert job.share({FRAMES_FILENAME: [DS_EMAIL]}) == [FRAMES_FILENAME]
     assert (review / FRAMES_FILENAME).exists()
 
 
-def test_release_with_nothing_released_skips_permissions(tmp_path, monkeypatch):
+def test_share_with_nothing_to_share_skips_permissions(tmp_path, monkeypatch):
     """The permission context scans the whole datasite, so build it only to grant."""
     job, _, _ = run_job(tmp_path, OK_PY, share_logs=None)
 
     def no_permission_work(self):
-        raise AssertionError("release built a permission context")
+        raise AssertionError("share built a permission context")
 
     monkeypatch.setattr(JobInfo, "_get_perm_context", no_permission_work)
 
-    assert job.release([FRAMES_FILENAME], [DS_EMAIL]) == []
+    assert job.share({FRAMES_FILENAME: [DS_EMAIL]}) == []
 
 
 def test_rerun_clears_both_locations(tmp_path):
@@ -216,7 +216,7 @@ def test_rerun_clears_both_locations(tmp_path):
     job, review, staging = run_job(tmp_path, OK_PY, share_logs=False)
     (review / "returncode.txt").write_text("0")
     assert (staging / "stdout.txt").exists()
-    assert job.release(["outputs"], [DS_EMAIL]) == ["outputs"]
+    assert job.share_outputs([DS_EMAIL]) == ["outputs"]
     assert (review / "outputs").exists()
 
     job.rerun()
@@ -314,11 +314,11 @@ def test_rerun_drops_outputs_recipients_of_old_run(tmp_path):
     # As on a datasite: the DS review folder has its own permission file, so the
     # outputs grant goes there, not inside outputs/.
     JobClient(config=do_config_for(tmp_path)).setup_ds_job_folder_as_do(DS_EMAIL)
-    job.release(["outputs"], [DS_EMAIL, peer])
+    job.share_outputs([DS_EMAIL, peer])
 
     job.rerun()
     run_approved(tmp_path)
-    reload_job(tmp_path).release(["outputs"], [DS_EMAIL])
+    reload_job(tmp_path).share_outputs([DS_EMAIL])
 
     ctx = SyftPermContext(datasite=tmp_path / "SyftBox" / DO_EMAIL)
     result = ctx.open(
