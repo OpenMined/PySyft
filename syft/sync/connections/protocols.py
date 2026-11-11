@@ -15,6 +15,7 @@ backend may override when it can do them faster.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections.abc import Container
 from typing import TYPE_CHECKING, Self
 
 from pydantic import BaseModel, ConfigDict
@@ -54,6 +55,10 @@ class P2PConnection(RouterConnection, ABC):
       is sent back to the peer.
     """
 
+    # Whether sent messages stay where the peer reads them, as in Drive's
+    # outbox, so the owner compacts them. A live link drops them on receipt.
+    keeps_sent_messages: bool = False
+
     @abstractmethod
     def send(
         self, peer: str, msg_id: str, data: bytes, kind: MessageKind
@@ -72,10 +77,22 @@ class P2PConnection(RouterConnection, ABC):
 
     @abstractmethod
     def receive(
-        self, peer: str, kind: MessageKind, max_messages: int | None = None
+        self,
+        peer: str,
+        kind: MessageKind,
+        after: str | None = None,
+        max_messages: int | None = None,
+        already_received: Container[str] = frozenset(),
     ) -> list[RawMessage]:
         """Messages of ``kind`` from ``peer`` that are not processed yet, oldest
         first, at most ``max_messages`` of them.
+
+        ``after`` is the ``msg_id`` of the newest message the receiver
+        processed. A connection that keeps processed messages, as Drive keeps
+        the outbox, returns the later ones with no gap: a message it cannot
+        return now ends the list. It may also list back a bit before ``after``
+        for late messages, skipping the ones in ``already_received``. A
+        connection that drops processed messages ignores both.
 
         A peer whose channel does not exist yet has no messages. The connection
         sets each ``RawMessage.sender`` from where the message came from.
@@ -84,7 +101,8 @@ class P2PConnection(RouterConnection, ABC):
     @abstractmethod
     def mark_processed(self, message: RawMessage) -> None:
         """Record that ``message`` was processed; ``receive`` never returns it
-        again."""
+        again, or, on a connection that keeps processed messages, not once
+        ``after`` is at or past it."""
 
     def mark_all_processed(self, messages: list[RawMessage]) -> None:
         """``mark_processed`` for each of ``messages``."""

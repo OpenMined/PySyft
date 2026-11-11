@@ -1,6 +1,6 @@
 import logging
 from concurrent.futures import ThreadPoolExecutor
-from typing import Callable, Dict, List
+from typing import Callable, Dict, List, Set
 from syft.sync.sync.caches.cache_file_writer_connection import FSFileConnection
 from pathlib import Path
 from pydantic import BaseModel, Field
@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 from syft.sync.events.file_change_event import (
     FileChangeEvent,
     FileChangeEventsMessage,
+    FileChangeEventsMessageFileName,
 )
 from syft.sync.connections.connection_router import ConnectionRouter
 from syft.sync.sync.caches.cache_file_writer_connection import (
@@ -30,6 +31,16 @@ def _is_within_peer_datasite(event: FileChangeEvent, peer_email: str) -> bool:
         return False
     path = event.path_in_datasite
     return not path.is_absolute() and ".." not in path.parts
+
+
+def _peer_key(email: str) -> str:
+    """``email`` without case, as peers' emails are compared elsewhere."""
+    return email.casefold()
+
+
+def _sent_at(msg_id: str) -> float:
+    """The send time in the name of an events message."""
+    return FileChangeEventsMessageFileName.from_string(msg_id).timestamp
 
 
 def _events_within_peer_datasite(
@@ -76,7 +87,12 @@ class DataSiteWatcherCache(BaseModel):
     last_sync: datetime | None = None
     seconds_before_syncing_down: int = SECONDS_BEFORE_SYNCING_DOWN
     peers: List[str] = []
-    last_event_timestamp_per_peer: Dict[str, float] = {}
+    # The msg_id of the newest events message received from each peer, keyed
+    # by ``_peer_key``.
+    last_msg_id_per_peer: Dict[str, str] = {}
+    # The msg_id of each events message received. The connection lists back a
+    # bit before the last one for late messages, and skips these.
+    received_msg_ids: Set[str] = set()
     # Base syftbox folder
     syftbox_folder: Path | None = None
     # Collections to sync down (prefix + local subpath per collection type)
@@ -125,39 +141,36 @@ class DataSiteWatcherCache(BaseModel):
             return cache
 
     def _load_cached_state(self):
-        """Load cached state from disk: file hashes, timestamps, and collection hashes."""
-        self._load_file_hashes_from_events()
+        """Load cached state from disk: file hashes, last messages, and collection hashes."""
+        self._load_saved_messages()
         self._load_collection_hashes_from_disk()
 
-    def _load_file_hashes_from_events(self):
-        """Load file hashes and timestamps from cached events."""
+    def _load_saved_messages(self):
+        """Restore the received messages, last messages and file hashes from
+        the saved events messages, oldest first."""
         try:
-            cached_messages = self.events_connection.get_all()
+            saved_messages = self.events_connection.get_all()
         except Exception:
-            cached_messages = []
+            saved_messages = []
+        for events_message in sorted(saved_messages, key=lambda m: m.timestamp):
+            self._restore_received(events_message)
+            self._restore_file_hashes(events_message)
 
-        if not cached_messages:
-            return
+    def _restore_received(self, events_message: FileChangeEventsMessage) -> None:
+        """Record a saved message as received. It does not store its sender, but
+        its events name it: only events for the sender's datasite are saved."""
+        msg_id = events_message.message_filepath.as_string()
+        self.received_msg_ids.add(msg_id)
+        if events_message.events:
+            self._record_received(events_message.events[0].datasite_email, msg_id)
 
-        sorted_messages = sorted(cached_messages, key=lambda m: m.timestamp)
-
-        for events_message in sorted_messages:
-            for event in events_message.events:
-                # Update last_event_timestamp_per_peer
-                peer_email = event.datasite_email
-                current_ts = self.last_event_timestamp_per_peer.get(peer_email)
-                if current_ts is None or events_message.timestamp > current_ts:
-                    self.last_event_timestamp_per_peer[peer_email] = (
-                        events_message.timestamp
-                    )
-
-                # Update file_hashes
-                path_key = Path(event.path_in_syftbox)
-                if event.is_deleted:
-                    if path_key in self.file_hashes:
-                        del self.file_hashes[path_key]
-                else:
-                    self.file_hashes[path_key] = event.new_hash
+    def _restore_file_hashes(self, events_message: FileChangeEventsMessage) -> None:
+        for event in events_message.events:
+            path_key = Path(event.path_in_syftbox)
+            if event.is_deleted:
+                self.file_hashes.pop(path_key, None)
+            else:
+                self.file_hashes[path_key] = event.new_hash
 
     def _load_collection_hashes_from_disk(self):
         """Scan local collection directories and compute hashes to populate collection_hashes."""
@@ -212,7 +225,8 @@ class DataSiteWatcherCache(BaseModel):
         self.last_sync = None
         self.peers = []
         self.current_check_point = None
-        self.last_event_timestamp_per_peer = {}
+        self.last_msg_id_per_peer = {}
+        self.received_msg_ids = set()
         self.collection_hashes = {}
 
     @property
@@ -221,59 +235,35 @@ class DataSiteWatcherCache(BaseModel):
             return None
         return self.events_connection.get_latest().timestamp
 
-    def sync_down(self, peer_email: str):
-        # Use per-peer timestamp to avoid filtering out events from other peers
-        peer_timestamp = self.last_event_timestamp_per_peer.get(peer_email)
-
-        new_event_messages = self.connection_router.watcher_get_events_messages(
-            peer_email=peer_email,
-            since_timestamp=peer_timestamp,
+    def sync_down(self, peer_email: str) -> int:
+        """Apply the events messages of ``peer_email`` not received yet: those
+        after the last one, and any that landed late. Returns the number of
+        events applied. A message that can never be read is passed over, so it
+        does not hold back the later ones."""
+        received = self.connection_router.watcher_receive_events_messages(
+            peer_email,
+            after=self.last_msg_id_per_peer.get(_peer_key(peer_email)),
+            already_received=self.received_msg_ids,
         )
-        for event_message in sorted(new_event_messages, key=lambda x: x.timestamp):
-            self.apply_event_message(event_message, peer_email)
-            self.last_event_timestamp_per_peer[peer_email] = event_message.timestamp
-
-        self.last_sync = datetime.now()
-
-    def sync_down_parallel(
-        self,
-        peer_email: str,
-        executor: ThreadPoolExecutor,
-        download_fn: Callable[[str], FileChangeEventsMessage | None],
-    ) -> int:
-        """Sync with parallel file downloads. Returns the number of events applied.
-
-        ``download_fn`` gets the id of one file. It returns None for a message
-        that it skips.
-        """
-        peer_timestamp = self.last_event_timestamp_per_peer.get(peer_email)
-
-        # Get file metadata (no download yet)
-        file_metadatas = self.connection_router.watcher_get_outbox_file_metadatas(
-            peer_email=peer_email,
-            since_timestamp=peer_timestamp,
-        )
-
-        if not file_metadatas:
-            # No new messages to download
-            self.last_sync = datetime.now()
-            return 0
-
-        # Download all files in parallel
-        file_ids = [m["file_id"] for m in file_metadatas]
-        downloaded_messages = [
-            m for m in executor.map(download_fn, file_ids) if m is not None
-        ]
-
-        # Apply in timestamp order
         event_count = 0
-        for event_message in sorted(downloaded_messages, key=lambda x: x.timestamp):
-            self.apply_event_message(event_message, peer_email)
-            self.last_event_timestamp_per_peer[peer_email] = event_message.timestamp
-            event_count += len(event_message.events)
+        for raw, event_message in received:
+            if event_message is not None:
+                self.apply_event_message(event_message, peer_email)
+                event_count += len(event_message.events)
+            self._record_received(peer_email, raw.msg_id)
+        self.connection_router.mark_all_processed([raw for raw, _ in received])
 
         self.last_sync = datetime.now()
         return event_count
+
+    def _record_received(self, peer_email: str, msg_id: str) -> None:
+        """Remember ``msg_id``, and make it ``peer_email``'s last message when
+        it is newer. A message that landed late is older than the last one."""
+        self.received_msg_ids.add(msg_id)
+        key = _peer_key(peer_email)
+        last = self.last_msg_id_per_peer.get(key)
+        if last is None or _sent_at(msg_id) > _sent_at(last):
+            self.last_msg_id_per_peer[key] = msg_id
 
     def apply_event_message(
         self, event_message: FileChangeEventsMessage, peer_email: str
@@ -287,7 +277,7 @@ class DataSiteWatcherCache(BaseModel):
         before it reaches the local file connection.
 
         The saved copy of the message holds only the accepted events.
-        ``_load_file_hashes_from_events`` reads saved messages back on start,
+        ``_load_saved_messages`` reads saved messages back on start,
         and a saved message does not record its sender, so a dropped event
         cannot be checked again there.
         """

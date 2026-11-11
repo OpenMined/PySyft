@@ -38,6 +38,9 @@ class EnclaveJobClient(BaseJobClient):
     def setup_ds_job_folder_as_do(self, ds_email: str) -> Path:
         return self._job_client.setup_ds_job_folder_as_do(ds_email)
 
+    def setup_ds_request_folder_as_do(self, ds_email: str) -> Path:
+        return self._job_client.setup_ds_request_folder_as_do(ds_email)
+
     def scan_inbox(self) -> None:
         return self._job_client.scan_inbox()
 

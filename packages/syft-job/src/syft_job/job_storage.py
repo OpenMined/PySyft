@@ -92,10 +92,7 @@ class JobStorage:
         """
         schema = self.peer_schema(peer_email)
         if schema is not None:
-            return self.registry.infer_protocol_version_to_use(
-                peer_version=schema.version,
-                peer_min=schema.min_supported_version,
-            )
+            return self.registry.infer_protocol_version_to_use(schema)
         if raise_on_unknown:
             raise MigrationError(
                 f"No job protocol schema known for peer {peer_email!r}"

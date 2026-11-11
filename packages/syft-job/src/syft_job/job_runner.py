@@ -934,18 +934,68 @@ class SyftJobRunner:
         print(f" Found {len(approved_jobs)} job(s) in approved status")
 
         for ref in approved_jobs:
-            print(f"\n{'=' * 50}")
-            if self._execute_job(ref, stream_output=stream_output, timeout=timeout):
-                self._release_job_results(
-                    ref,
-                    share_outputs_with_submitter,
-                    share_logs_with_submitter,
-                    self._output_recipients(ref, approved_peers),
-                )
-            print(f"{'=' * 50}")
+            self._run_job(
+                ref,
+                stream_output,
+                timeout,
+                share_outputs_with_submitter,
+                share_logs_with_submitter,
+                approved_peers,
+            )
 
         if approved_jobs:
             print(f"\n Processed {len(approved_jobs)} job(s)")
+
+    def run_job(
+        self,
+        job_name: str,
+        ds_email: str,
+        stream_output: bool = True,
+        timeout: int | None = None,
+        share_outputs_with_submitter: bool = False,
+        share_logs_with_submitter: bool = False,
+        approved_peers: list[str] | None = None,
+    ) -> None:
+        """Run one approved job, and share its results as asked.
+
+        Takes the same options as ``process_approved_jobs``. Raises if the job
+        is not approved.
+        """
+        ref = self._find_jobref_from_name(job_name, ds_email)
+        status = self._get_job_state(ref).status
+        if status != JobStatus.APPROVED:
+            raise ValueError(
+                f"Job '{job_name}' from {ds_email} is {status.value}, not approved"
+            )
+        self._replace_ds_folder_reads()
+        self._run_job(
+            ref,
+            stream_output,
+            timeout,
+            share_outputs_with_submitter,
+            share_logs_with_submitter,
+            approved_peers,
+        )
+
+    def _run_job(
+        self,
+        ref: JobRef,
+        stream_output: bool,
+        timeout: int | None,
+        share_outputs: bool,
+        share_logs: bool,
+        approved_peers: list[str] | None,
+    ) -> None:
+        """Execute an approved job, then share its results if it ran."""
+        print(f"\n{'=' * 50}")
+        if self._execute_job(ref, stream_output=stream_output, timeout=timeout):
+            self._release_job_results(
+                ref,
+                share_outputs,
+                share_logs,
+                self._output_recipients(ref, approved_peers),
+            )
+        print(f"{'=' * 50}")
 
     def share_job_results(
         self,

@@ -90,6 +90,28 @@ jobs:
       - name: Run integration tests in mock mode
         run: just test-integration-mock-mode
 
+  webrtc-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install the project
+        run: uv sync --all-extras
+
+      - name: Install just
+        uses: extractions/setup-just@v3
+
+      - name: Run real WebRTC tests
+        run: just test-webrtc
+
   job-tests:
     runs-on: ubuntu-latest
     steps:

@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 
 class JobMonitor(Monitor):
-    """Watches for approved jobs, and runs them."""
+    """Watches for approved api calls, and runs them."""
 
     def __init__(
         self,
@@ -34,5 +34,5 @@ class JobMonitor(Monitor):
         )
 
     def _check_all_entities(self):
-        """Run approved jobs."""
+        """Run approved api calls."""
         self.handler.run_approved_jobs()

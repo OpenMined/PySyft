@@ -24,6 +24,7 @@ from syft_datasets.dataset_manager import (
 from syft.sync.utils.pre_submit_scan import run_pre_submit_check
 from syft.sync.version.peer_manager import CompatAction
 from syft_job.client import JobClient
+from syft_job.job import JobInfo
 from syft_job.job_runner import SyftJobRunner
 from syft_datasets.dataset_manager import SHARE_WITH_ANY, SyftDatasetManager
 from syft_datasets.dataset_ref import DatasetNotFoundError
@@ -226,6 +227,30 @@ class SyftRDSClient(BaseModel):
         """(ds, do) pair of self-contained RDS clients sharing one mock Drive."""
         ds_mgr, do_mgr = SyftboxManager.pair_with_mock_drive_service_connection(
             collection_specs=DATASET_COLLECTION_SPECS, **kwargs
+        )
+        return cls._build_rds_pair_from_managers(ds_mgr, do_mgr)
+
+    @classmethod
+    def pair_with_mock_drive_and_mock_webrtc_connection(
+        cls, **kwargs: Any
+    ) -> tuple["SyftRDSClient", "SyftRDSClient"]:
+        """(ds, do) pair like ``pair_with_mock_drive_service_connection``, with
+        messages over WebRTC joined by a fake channel."""
+        ds_mgr, do_mgr = SyftboxManager.pair_with_mock_drive_and_mock_webrtc_connection(
+            collection_specs=DATASET_COLLECTION_SPECS, **kwargs
+        )
+        return cls._build_rds_pair_from_managers(ds_mgr, do_mgr)
+
+    @classmethod
+    def pair_with_mock_drive_and_local_webrtc_connection(
+        cls, **kwargs: Any
+    ) -> tuple["SyftRDSClient", "SyftRDSClient"]:
+        """(ds, do) pair like ``pair_with_mock_drive_service_connection``, with
+        messages over real WebRTC on this machine. Needs the ``webrtc`` extra."""
+        ds_mgr, do_mgr = (
+            SyftboxManager.pair_with_mock_drive_and_local_webrtc_connection(
+                collection_specs=DATASET_COLLECTION_SPECS, **kwargs
+            )
         )
         return cls._build_rds_pair_from_managers(ds_mgr, do_mgr)
 
@@ -645,11 +670,7 @@ class SyftRDSClient(BaseModel):
         ignore_peer_version: bool = False,
     ) -> None:
         """Process approved jobs (DO only). Auto-syncs after unless PRE_SYNC=false."""
-        if not self.has_do_role:
-            raise ValueError("Only dataset owners can process approved jobs")
-        if self.job_runner is None:
-            raise ValueError("Job runner is not configured for this client")
-
+        job_runner = self._job_runner_for_do()
         skipped: list[tuple[str, str, str]] = []
 
         if not force_execution:
@@ -679,13 +700,13 @@ class SyftRDSClient(BaseModel):
                         )
                     )
 
-        self.job_runner.process_approved_jobs(
+        job_runner.process_approved_jobs(
             stream_output=stream_output,
             timeout=timeout,
             skip_jobs=[(name, peer) for name, peer, _ in skipped] or None,
             share_outputs_with_submitter=share_outputs_with_submitter,
             share_logs_with_submitter=share_logs_with_submitter,
-            approved_peers=[p.email for p in self.peer_manager.approved_peers],
+            approved_peers=self._approved_peer_emails(),
         )
 
         # maybe_warn() above logs the peer, never the job.
@@ -694,6 +715,52 @@ class SyftRDSClient(BaseModel):
 
         if self._pre_sync_enabled:
             self.sync_engine.sync()
+
+    def run_job(
+        self,
+        job: JobInfo,
+        stream_output: bool = True,
+        timeout: int | None = None,
+        share_outputs_with_submitter: bool = False,
+        share_logs_with_submitter: bool = False,
+        ignore_peer_version: bool = False,
+        sync: bool = False,
+    ) -> None:
+        """Run one approved job (DO only).
+
+        Raises if the submitter's version is incompatible. Syncs after only
+        with ``sync=True``, so a caller running several jobs syncs once.
+        """
+        job_runner = self._job_runner_for_do()
+        result = self.sync_engine.peer_manager.get_peer_compatibility_status(
+            job.submitted_by,
+            action=CompatAction.EXECUTE,
+            ignore_peer_version=ignore_peer_version,
+        )
+        result.raise_on_skip(operation="run job")
+        result.maybe_warn()
+        job_runner.run_job(
+            job.name,
+            job.submitted_by,
+            stream_output=stream_output,
+            timeout=timeout,
+            share_outputs_with_submitter=share_outputs_with_submitter,
+            share_logs_with_submitter=share_logs_with_submitter,
+            approved_peers=self._approved_peer_emails(),
+        )
+        if sync:
+            self.sync_engine.sync()
+
+    def _job_runner_for_do(self) -> SyftJobRunner:
+        """The job runner; raises unless this is a DO client that has one."""
+        if not self.has_do_role:
+            raise ValueError("Only dataset owners can run jobs")
+        if self.job_runner is None:
+            raise ValueError("Job runner is not configured for this client")
+        return self.job_runner
+
+    def _approved_peer_emails(self) -> list[str]:
+        return [p.email for p in self.peer_manager.approved_peers]
 
     # ------------------------------------------------------------------ #
     # dataset product surface (RDS-owned)

@@ -48,7 +48,8 @@ jobs:
       # version while people develop.
       - name: Read the version to release
         run: |
-          git pull
+          # Only this branch and no tags: a bare `git pull` fetches every old
+          git pull --ff-only --no-tags origin "${{ github.ref_name }}"
           VERSION=$(python -c "import tomllib; print(tomllib.load(open('packages/syft-perms/pyproject.toml','rb'))['project']['version'])")
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "Releasing syft-perms $VERSION"
@@ -66,7 +67,9 @@ jobs:
 
       # The tag must name the published version, so it is created before the bump.
       # The tag is annotated and pushed explicitly: `--follow-tags` only pushes
-      # annotated tags, so a lightweight tag would never reach origin.
+      # annotated tags, so a lightweight tag would never reach origin. The bump
+      # and the tag are pushed together (--atomic), so a re-run never finds one
+      # without the other.
       - name: Tag the release, then bump for the next one
         run: |
           git tag -a "syft-perms/v${{ env.VERSION }}" -m "syft-perms v${{ env.VERSION }}"
@@ -76,5 +79,4 @@ jobs:
           MODIFIED=$(echo "$OUTPUT" | sed -n '2p')
           git add $MODIFIED
           git commit -m "Bump syft-perms to $NEXT for the next release"
-          git push origin HEAD
-          git push origin "refs/tags/syft-perms/v${{ env.VERSION }}"
+          git push --atomic origin HEAD "refs/tags/syft-perms/v${{ env.VERSION }}"

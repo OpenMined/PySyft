@@ -24,6 +24,7 @@ from syft_bg.approve.config import AutoApproveConfig
 from syft_bg.approve.handlers.job import ApprovedJobHandler
 from syft_bg.common.config import get_default_paths
 from syft_bg.common.syft_bg_config import SyftBgConfig
+from syft.sync.version import VersionUnknownError
 
 DO_EMAIL = "do@test.com"
 PINNED = ["run.sh", "code/main.py"]
@@ -294,8 +295,18 @@ class TestApiDisclosures:
             assert store.get("main").disclosures == ["logs"]
 
 
+def _approved_job(
+    approval_method: str = "api", datasite_owner_email: str = DO_EMAIL
+) -> MagicMock:
+    return MagicMock(
+        status="approved",
+        datasite_owner_email=datasite_owner_email,
+        approval_method=approval_method,
+    )
+
+
 class TestApprovedJobHandler:
-    """The approve service runs what is approved; calls arrive approved."""
+    """The approve service runs api calls; they arrive approved."""
 
     def _handler(
         self, temp_dir: Path, jobs: list
@@ -307,24 +318,35 @@ class TestApprovedJobHandler:
         )
         return handler, client
 
-    def test_runs_approved_jobs_on_own_datasite(self, temp_dir):
-        call = MagicMock(status="approved", datasite_owner_email=DO_EMAIL)
+    def test_runs_api_calls_on_own_datasite(self, temp_dir):
+        call = _approved_job()
         handler, client = self._handler(temp_dir, [call])
 
         assert handler.run_approved_jobs() == [call]
         client.receive_jobs.assert_called_once()
-        client.process_approved_jobs.assert_called_once()
-        assert "share_logs_with_submitter" not in (
-            client.process_approved_jobs.call_args.kwargs
+        client.run_job.assert_called_once_with(
+            call, stream_output=False, share_outputs_with_submitter=True
         )
+        client.sync.assert_called_once()
 
-    def test_runs_nothing_without_approved_jobs(self, temp_dir):
+    def test_runs_nothing_without_approved_api_calls(self, temp_dir):
         pending = MagicMock(status="pending", datasite_owner_email=DO_EMAIL)
-        elsewhere = MagicMock(status="approved", datasite_owner_email="other@test.com")
-        handler, client = self._handler(temp_dir, [pending, elsewhere])
+        elsewhere = _approved_job(datasite_owner_email="other@test.com")
+        by_hand = _approved_job(approval_method="manual")
+        handler, client = self._handler(temp_dir, [pending, elsewhere, by_hand])
 
         assert handler.run_approved_jobs() == []
-        client.process_approved_jobs.assert_not_called()
+        client.run_job.assert_not_called()
+        client.sync.assert_not_called()
+
+    def test_incompatible_submitter_does_not_stop_next_call(self, temp_dir):
+        blocked, call = _approved_job(), _approved_job()
+        handler, client = self._handler(temp_dir, [blocked, call])
+        client.run_job.side_effect = [VersionUnknownError("ds@test.com", "run"), None]
+
+        handler.run_approved_jobs()
+
+        assert [c.args[0] for c in client.run_job.call_args_list] == [blocked, call]
 
 
 class TestJobUserFiles:

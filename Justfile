@@ -81,6 +81,12 @@ test-integration-without-unit-coverage:
     uv run pytest -s ./tests/integration/without_unit_coverage
 
 
+# Real WebRTC on this machine; needs the webrtc extra (uv sync --all-extras)
+test-webrtc:
+    #!/bin/bash
+    uv run pytest ./tests/integration/webrtc
+
+
 benchmark:
     #!/bin/bash
     python ./benchmarks/benchmark_loadtime.py

@@ -330,7 +330,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             for raw, message in received:
                 if self._apply_proposed_message(raw, message):
                     proposed_count += len(message.proposed_file_changes)
-            self.connection_router.owner_mark_all_processed([r for r, _ in received])
+            self.connection_router.mark_all_processed([r for r, _ in received])
         except SyftPeerNotReadyError as e:
             warnings.warn(f"Messages from {peer_email} stay in the inbox: {e}")
         except Exception as e:
@@ -979,9 +979,12 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         and deletes the originals.
 
         Returns the number of source messages compacted (0 if below threshold,
-        if no outbox folder, or if peer encryption is on — DO can't read
-        peer-encrypted bytes back to merge).
+        if no outbox folder, if the p2p connection keeps no sent messages, or
+        if peer encryption is on — DO can't read peer-encrypted bytes back to
+        merge).
         """
+        if not self.connection_router.connections.p2p_con.keeps_sent_messages:
+            return 0
         peer_store = self.connection_router.peer_store
         if peer_store.pair_encrypts(peer_store.get_cached_peer(recipient_email)):
             logger.debug(

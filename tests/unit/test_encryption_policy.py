@@ -9,9 +9,10 @@ import json
 import pytest
 from pydantic import ValidationError
 
-from syft.sync.connections.drive.drive_peering import DrivePeeringConnection
 from syft.sync.connections.connection_router import ConnectionRouter
 from syft.sync.connections.drive import mock_drive_service
+from syft.sync.connections.drive.drive_peering import DrivePeeringConnection
+from syft.sync.connections.types import MessageKind
 from syft.sync.encryption_policy import (
     EncryptionPolicy,
     EncryptionPolicyMismatchError,
@@ -23,13 +24,13 @@ from syft.sync.events.file_change_event import (
 from syft.sync.peers.exceptions import SyftPeerNotReadyError
 from syft.sync.peers.peer import Peer
 from syft.sync.peers.peer_store import (
+    DATASITE_SETTINGS_VERSION,
     PeerStore,
     datasite_settings_path,
     resolve_encryption_policy,
 )
 from syft.sync.syftbox_manager import SyftboxManager
 from syft.sync.sync.datasite_owner_syncer import OutgoingMessage
-from syft.sync.connections.types import MessageKind
 from syft.sync.version.peer_info import PeerInfo
 from syft.sync.version.peer_manager import PeerManager, PeerManagerConfig
 from syft.sync.version.version_info import VersionInfo
@@ -280,6 +281,19 @@ def test_client_with_other_policy_than_disk_raises(tmp_path):
         resolve_encryption_policy(path, REQUIRED)
 
 
+def test_settings_file_of_later_version_refused(tmp_path):
+    path = tmp_path / "syft_settings.json"
+    resolve_encryption_policy(path, OPTIONAL)
+    later_version = DATASITE_SETTINGS_VERSION + 1
+    data = json.loads(path.read_text())
+    # A later release that bumps the version also changes the fields.
+    data.update(version=later_version, new_setting=True)
+    path.write_text(json.dumps(data))
+
+    with pytest.raises(ValueError, match=f"version {later_version}"):
+        resolve_encryption_policy(path, None)
+
+
 def test_client_without_policy_takes_policy_of_syftbox(tmp_path):
     """syft-bg starts after a notebook that required encryption."""
 
@@ -512,10 +526,8 @@ def test_changes_for_two_datasites_go_to_each(monkeypatch):
     monkeypatch.setattr(
         ConnectionRouter,
         "watcher_send_proposed_file_changes_message",
-        lambda self, recipient, message: (
-            sent.append(
-                (recipient, {fc.datasite_email for fc in message.proposed_file_changes})
-            )
+        lambda self, recipient, message: sent.append(
+            (recipient, {fc.datasite_email for fc in message.proposed_file_changes})
         ),
     )
     watcher = ds_manager.datasite_watcher_syncer
