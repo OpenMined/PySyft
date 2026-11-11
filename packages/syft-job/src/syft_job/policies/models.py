@@ -13,8 +13,6 @@ POLICY_ERROR_FILENAME = "policy_error.txt"
 # An empty marker file; see SyftJobRunner._share_job_results().
 OUTPUTS_WITHHELD_FILENAME = "outputs_withheld.txt"
 OUTPUT_RECIPIENTS_FILENAME = "output_recipients.json"
-# Why the runner failed a job for its outputs.
-OUTPUTS_ERROR_FILENAME = "outputs_error.txt"
 
 
 def policy_stderr_filename(kind: "PolicyKind") -> str:

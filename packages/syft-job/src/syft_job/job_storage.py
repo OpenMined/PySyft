@@ -17,7 +17,7 @@ from .disclosures import DISCLOSURE_ITEMS, gated_names
 from .job_ref import JobRef, JobStateNotFoundError, RequestRef
 from .migrations.registry import JOB_PROTOCOL_VERSION, job_registry
 from .models import JobState, JobSubmissionMetadata, RequestMetadata
-from .policies.models import OUTPUT_RECIPIENTS_FILENAME, OUTPUTS_ERROR_FILENAME
+from .policies.models import OUTPUT_RECIPIENTS_FILENAME
 from .protocolcodecs import CODECS, ProtocolCodec
 from .submission import (
     OWNER_RECORD_FILENAME,
@@ -39,7 +39,6 @@ RUN_ARTIFACTS = (
     OUTPUTS_DIR_NAME,
     *gated_names(DISCLOSURE_ITEMS),
     OUTPUT_RECIPIENTS_FILENAME,
-    OUTPUTS_ERROR_FILENAME,
 )
 
 

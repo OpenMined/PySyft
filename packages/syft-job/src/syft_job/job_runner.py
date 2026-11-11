@@ -21,7 +21,6 @@ from .job_storage import JobRef, JobStateNotFoundError, JobStorage
 from .models import JobState, JobStatus, JobSubmissionMetadata
 from .policies import (
     OUTPUT_RECIPIENTS_FILENAME,
-    OUTPUTS_ERROR_FILENAME,
     OUTPUTS_WITHHELD_FILENAME,
     POLICY_ERROR_FILENAME,
     ApiResolver,
@@ -616,8 +615,7 @@ class SyftJobRunner:
             self._capture_traceback(ref, returncode, run_dir / "code")
             returncode = self._run_output_policy(ref, run_dir, policies, returncode)
 
-            skipped = self._copy_outputs_to_review(ref, run_dir)
-            returncode = self._fail_on_output_permission_files(ref, skipped, returncode)
+            self._copy_outputs_to_review(ref, run_dir)
 
             self._finalize(ref, returncode)
             self._report_result(ref, returncode)
@@ -744,50 +742,37 @@ class SyftJobRunner:
         state.return_code = None
         self.manager.write_state(ref, state)
 
-    def _fail_on_output_permission_files(
-        self, ref: JobRef, permission_files: list[str], returncode: int
-    ) -> int:
-        """Fail the job when it wrote a permission file into outputs/.
-
-        In review/, that file would decide who reads the outputs, so the job
-        could share them itself. The copy to review/ skips the file, the job
-        shares its outputs with nobody, and the reason goes to review/ for the
-        DO. Returns the exit code to record.
-        """
-        if not permission_files:
-            return returncode
-        reason = (
-            f"Job {ref.job_name} wrote permission files into outputs/: "
-            f"{', '.join(permission_files)}. The job failed and shares its "
-            f"outputs with nobody."
-        )
-        logger.error(reason)
-        self._write_artifact(ref, OUTPUTS_ERROR_FILENAME, f"{reason}\n")
-        self._write_recipients(ref, [])
-        return returncode or 1
-
-    def _copy_outputs_to_review(self, ref: JobRef, run_dir: Path) -> list[str]:
+    def _copy_outputs_to_review(self, ref: JobRef, run_dir: Path) -> None:
         """Copy the outputs from the run copy to review/, with no grant.
 
-        The copy follows symlinks, so review/ holds only real files. It skips
-        each permission file, and returns their paths in outputs/.
+        The copy follows symlinks, so review/ holds only real files. In review/,
+        a permission file would decide who reads the outputs, so the copy skips
+        each one unless the config allows them. macOS and Windows match the
+        name without case, so the skip does too.
         """
         run_outputs = run_dir / "code" / "outputs"
         skipped: list[str] = []
 
         def skip_permission_files(folder: str, names: list[str]) -> set[str]:
-            if PERMISSION_FILE_NAME not in names:
-                return set()
-            relative = (Path(folder) / PERMISSION_FILE_NAME).relative_to(run_outputs)
-            skipped.append(relative.as_posix())
-            return {PERMISSION_FILE_NAME}
+            found = {name for name in names if name.casefold() == PERMISSION_FILE_NAME}
+            skipped.extend(
+                (Path(folder) / name).relative_to(run_outputs).as_posix()
+                for name in found
+            )
+            return found
 
         shutil.copytree(
             run_outputs,
             self.manager.review_dir(ref) / "outputs",
-            ignore=skip_permission_files,
+            ignore=None
+            if self.config.allow_output_permission_files
+            else skip_permission_files,
         )
-        return sorted(skipped)
+        if skipped:
+            logger.warning(
+                f"Job {ref.job_name}: skipped the permission files in outputs/: "
+                f"{', '.join(sorted(skipped))}"
+            )
 
     def _prepare_outputs_dir(self, ref: JobRef, run_dir: Path) -> None:
         """Create outputs/ in the run copy, and delete the files of the last run.

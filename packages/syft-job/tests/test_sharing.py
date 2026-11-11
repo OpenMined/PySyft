@@ -7,13 +7,17 @@ from pathlib import Path
 import pytest
 import yaml
 from syft_job.client import JobClient
-from syft_job.config import SyftJobConfig, protocol_dir_name
+from syft_job.config import (
+    ALLOW_OUTPUT_PERMISSION_FILES_ENV,
+    SyftJobConfig,
+    protocol_dir_name,
+)
 from syft_job.disclosures import LOGS_WARNING, DisclosureItem
 from syft_job.job import JobInfo
 from syft_job.job_runner import SyftJobRunner
 from syft_job.migrations.registry import JOB_PROTOCOL_VERSION
 from syft_job.models import JobState, JobStatus
-from syft_job.policies import OUTPUT_RECIPIENTS_FILENAME, OUTPUTS_ERROR_FILENAME
+from syft_job.policies import OUTPUT_RECIPIENTS_FILENAME
 from syft_job.submission import (
     OWNER_RECORD_FILENAME,
     SUBMISSION_HASH_HEADER,
@@ -242,26 +246,42 @@ def test_rerun_clears_crash_record(tmp_path):
     assert not (review / FRAMES_FILENAME).exists()
 
 
-PERMISSION_FILE_PY = f"""\
+def permission_file_code(name: str) -> str:
+    """Job code that writes a result and a permission file ``name`` to outputs/."""
+    return f"""\
 import os
 
 os.makedirs("outputs", exist_ok=True)
 with open("outputs/result.txt", "w") as f:
     f.write("done")
-with open("outputs/{PERMISSION_FILE_NAME}", "w") as f:
+with open("outputs/{name}", "w") as f:
     f.write("rules:\\n- pattern: '**'\\n  access:\\n    read: ['*']\\n")
 """
 
 
-def test_permission_file_in_outputs_fails_job(tmp_path):
+@pytest.mark.parametrize("name", [PERMISSION_FILE_NAME, "Syft.Pub.Yaml"])
+def test_permission_file_in_outputs_not_copied(tmp_path, monkeypatch, name):
     """A job must not decide who reads its own outputs."""
-    job, review = run_job(tmp_path, PERMISSION_FILE_PY, share_logs=None)
+    monkeypatch.delenv(ALLOW_OUTPUT_PERMISSION_FILES_ENV, raising=False)
+    job, review = run_job(tmp_path, permission_file_code(name), share_logs=None)
 
-    assert job.status == "failed"
-    assert (review / "outputs" / "result.txt").exists()
-    assert not (review / "outputs" / PERMISSION_FILE_NAME).exists()
+    assert job.status == "done"
+    assert [path.name for path in (review / "outputs").iterdir()] == ["result.txt"]
     assert not ds_can_read(tmp_path, "outputs/result.txt")
-    assert PERMISSION_FILE_NAME in (review / OUTPUTS_ERROR_FILENAME).read_text()
+
+
+def test_permission_file_in_outputs_kept_when_allowed(tmp_path, monkeypatch):
+    monkeypatch.setenv(ALLOW_OUTPUT_PERMISSION_FILES_ENV, "true")
+    code = permission_file_code(PERMISSION_FILE_NAME)
+    _, review = run_job(tmp_path, code, share_logs=None)
+
+    assert (review / "outputs" / PERMISSION_FILE_NAME).exists()
+
+
+def test_bad_output_permission_files_value_raises(tmp_path, monkeypatch):
+    monkeypatch.setenv(ALLOW_OUTPUT_PERMISSION_FILES_ENV, "yes")
+    with pytest.raises(ValueError, match="must be 'true' or 'false', got 'yes'"):
+        do_config_for(tmp_path)
 
 
 def test_symlinked_outputs_copied_as_files(tmp_path):
@@ -324,18 +344,16 @@ def test_rerun_drops_outputs_recipients_of_old_run(tmp_path):
     assert not result.has_read_access(peer)
 
 
-def test_new_run_drops_recipients_and_outputs_error_of_old_run(tmp_path):
+def test_new_run_drops_recipients_of_old_run(tmp_path):
     """A run that blocked its outputs must not block the outputs of the next."""
     job, review = run_job(tmp_path, OK_PY, share_logs=None)
     (review / OUTPUT_RECIPIENTS_FILENAME).write_text("[]")
-    (review / OUTPUTS_ERROR_FILENAME).write_text("old run\n")
 
     job.rerun()
     run_approved(tmp_path)
 
     assert reload_job(tmp_path).status == "done"
     assert not (review / OUTPUT_RECIPIENTS_FILENAME).exists()
-    assert not (review / OUTPUTS_ERROR_FILENAME).exists()
 
 
 # -- disclosures: requested by the DS, granted by the DO ------------------------

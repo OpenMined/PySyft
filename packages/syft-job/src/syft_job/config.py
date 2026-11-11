@@ -1,3 +1,4 @@
+import os
 import re
 from pathlib import Path
 from typing import Optional
@@ -9,6 +10,26 @@ from .migrations.registry import JOB_PROTOCOL_VERSION
 # Job dirs under inbox/<ds_email>/ and review/<ds_email>/ live inside a
 # protocol-version segment ("v1", "v2", ...); protocol 0 (<= 0.1.38) had none.
 PROTOCOL_DIR_RE = re.compile(r"^v\d+$")
+
+# "true" lets a job keep the permission files that it writes into outputs/.
+ALLOW_OUTPUT_PERMISSION_FILES_ENV = "SYFT_JOB_ALLOW_OUTPUT_PERMISSION_FILES"
+
+
+def output_permission_files_allowed() -> bool:
+    """Read ALLOW_OUTPUT_PERMISSION_FILES_ENV. Unset means False.
+
+    Raises:
+        ValueError: If the value is not "true" or "false".
+    """
+    value = os.environ.get(ALLOW_OUTPUT_PERMISSION_FILES_ENV)
+    if value is None:
+        return False
+    if value.lower() not in ("true", "false"):
+        raise ValueError(
+            f"{ALLOW_OUTPUT_PERMISSION_FILES_ENV} must be 'true' or 'false', "
+            f"got {value!r}"
+        )
+    return value.lower() == "true"
 
 
 def is_protocol_dir_name(name: str) -> bool:
@@ -27,6 +48,10 @@ class SyftJobConfig(BaseModel):
     current_user_email: str = Field(..., description="User email address")
     has_do_role: bool = Field(
         default=False, description="Whether the owning manager has the DO role"
+    )
+    allow_output_permission_files: bool = Field(
+        default_factory=output_permission_files_allowed,
+        description="Whether a job keeps the permission files it writes into outputs/",
     )
 
     @property
