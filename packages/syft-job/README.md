@@ -5,11 +5,13 @@ into a data owner's inbox, the data owner reviews, approves, and runs them.
 
 ## Releasing
 
-On **every** release (after bumping the version), run both release scripts:
+On **every** release, the release job runs `export_release_artifact.py` before
+the build. After the release, check out the `syft-job/v<version>` tag and run
+the fixture script:
 
 ```bash
-uv run python scripts/export_release_artifact.py
-uv run python scripts/generate_release_fixture.py
+uv run python scripts/export_release_artifact.py   # run by the release job
+uv run python scripts/generate_release_fixture.py  # at the syft-job release tag
 ```
 
 `export_release_artifact.py` always writes

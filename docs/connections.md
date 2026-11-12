@@ -25,8 +25,8 @@ Syft uses Google Drive as its file-based transport layer. All peer-to-peer commu
 
 ```
 /SyftBox/
-├── syft_datasetcollection_{tag}_{hash}/               # Mock data — shared as reader with DS
-├── syft_privatecollection_{tag}_{hash}/               # Private data — owner-only, never shared
+├── syft_datasetcollectionv{n}_{tag}_{hash}/           # Mock data — shared as reader with DS
+├── syft_privatecollectionv{n}_{tag}_{hash}/           # Private data — owner-only, never shared
 ```
 
 **Encryption bundles** — public keys only, no secrets:

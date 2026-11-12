@@ -276,8 +276,9 @@ class PeerStore(BaseModel):
         """The schema ``email`` advertises for ``protocol_name``, or None when not known."""
         peer = self.get_cached_peer(email)
         version = peer.version if peer is not None else None
-        # getattr: a peer's version may be a V1 object (no schemas attribute).
-        return (getattr(version, "protocol_schemas", None) or {}).get(protocol_name)
+        if version is None:
+            return None
+        return version.protocol_schemas.get(protocol_name)
 
     def set_peer(self, peer: Peer) -> None:
         for i, p in enumerate(self._peers):

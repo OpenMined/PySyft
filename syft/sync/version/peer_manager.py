@@ -30,9 +30,11 @@ from syft.sync.utils.print_utils import (
     print_peer_request_sent,
 )
 from syft.sync.version.exceptions import (
+    UnreadablePeerInfoError,
     VersionMismatchError,
     VersionUnknownError,
     peer_info_unavailable_reason,
+    unsupported_peer_reason,
 )
 from syft.sync.version.peer_info import PeerInfo
 from syft.sync.version.version_info import CompatibilityStatus, VersionInfo
@@ -64,6 +66,8 @@ class PeerCompatibilityResult(BaseModel):
     suppress_version_warnings: bool = False
     local_version: Optional[VersionInfo] = None
     peer_version: Optional[VersionInfo] = None
+    # Why an UNKNOWN peer is unknown, when that is more than "not shared yet".
+    unknown_reason: Optional[str] = None
 
     # TODO: rename `maybe_warn` -> `maybe_log` and `suppress_version_warnings`
     # -> `suppress_version_logs`. The body now emits via logger.info() rather
@@ -91,7 +95,9 @@ class PeerCompatibilityResult(BaseModel):
         if not self.should_skip:
             return
         elif self.status == CompatibilityStatus.UNKNOWN:
-            raise VersionUnknownError(self.peer_email, operation)
+            raise VersionUnknownError(
+                self.peer_email, operation, reason=self.unknown_reason
+            )
         else:
             reason = self.explanation_skip or "version mismatch"
             raise VersionMismatchError(
@@ -156,6 +162,9 @@ class PeerManager(BaseModel):
     _executor: Optional[ThreadPoolExecutor] = PrivateAttr(default=None)
     # Set by the first load_peers(), which records Peer.state_at_start.
     _first_load_done: bool = PrivateAttr(default=False)
+    # peer email -> why its info file could not be read. Such a peer runs a
+    # syft release this one does not support, and is refused with that reason.
+    _unreadable_peer_info: Dict[str, str] = PrivateAttr(default_factory=dict)
 
     # ========== Peer List Properties ==========
 
@@ -256,9 +265,33 @@ class PeerManager(BaseModel):
         return self.peer_store.get_cached_peer(email)
 
     def load_peer_info(self, peer_email: str) -> Optional[PeerInfo]:
-        """Load the info of a single peer (blocking)."""
-        peer_info = self.connection_router.read_peer_info_file(peer_email)
+        """Load the info of a single peer (blocking).
+
+        Returns None when the peer has no file, or one this release cannot read.
+        """
+        peer_info = self._read_peer_info_or_none(
+            peer_email, self.connection_router.read_peer_info_file
+        )
         self._set_peer_info(peer_email, peer_info)
+        return peer_info
+
+    def _read_peer_info_or_none(self, peer_email: str, read) -> Optional[PeerInfo]:
+        """``read(peer_email)``, or None when the file cannot be read.
+
+        An unreadable file means the peer runs a syft release this one does
+        not support; the reason is kept so the peer is refused with it.
+
+        Raises:
+            ConnectionUnavailableError: when the backend cannot be reached.
+        """
+        try:
+            peer_info = read(peer_email)
+        except UnreadablePeerInfoError as e:
+            self._unreadable_peer_info[peer_email] = str(e)
+            if not self.suppress_version_warnings:
+                warnings.warn(unsupported_peer_reason(peer_email, str(e)))
+            return None
+        self._unreadable_peer_info.pop(peer_email, None)
         return peer_info
 
     def _set_peer_info(self, peer_email: str, peer_info: Optional[PeerInfo]) -> None:
@@ -266,11 +299,16 @@ class PeerManager(BaseModel):
 
         A read that finds nothing keeps the info known before: a peer that
         deleted its SyftBox still sends messages under its last policy, such
-        as the deletes of its files.
+        as the deletes of its files. A file this release cannot read drops it:
+        the peer now runs a release this one does not support.
         """
         cached_peer = self.get_cached_peer(peer_email)
-        if cached_peer and peer_info is not None:
+        if cached_peer is None:
+            return
+        if peer_info is not None:
             cached_peer.info = peer_info
+        elif peer_email in self._unreadable_peer_info:
+            cached_peer.info = None
 
     def _load_single_peer_info(self, peer_email: str) -> tuple[str, Optional[PeerInfo]]:
         """Load the info of a single peer. Used by parallel loader.
@@ -283,7 +321,10 @@ class PeerManager(BaseModel):
         # A copy per thread: the connection may not be thread-safe
         peering = self.connection_router.connections.peering_con.clone_for_thread()
         try:
-            return (peer_email, peering.read_peer_info(peer_email))
+            return (
+                peer_email,
+                self._read_peer_info_or_none(peer_email, peering.read_peer_info),
+            )
         except ConnectionUnavailableError:
             raise
         except Exception as e:
@@ -398,7 +439,12 @@ class PeerManager(BaseModel):
         # and an incompatible client version is refused by default. Either way the
         # override lets the caller proceed.
         if status == CompatibilityStatus.UNKNOWN:
-            detail = peer_info_unavailable_reason(peer_email)
+            unreadable = self._unreadable_peer_info.get(peer_email)
+            if unreadable is not None:
+                detail = unsupported_peer_reason(peer_email, unreadable)
+                common["unknown_reason"] = detail
+            else:
+                detail = peer_info_unavailable_reason(peer_email)
         else:
             detail = own_version.get_incompatibility_reason(peer_version)
 
@@ -496,7 +542,11 @@ class PeerManager(BaseModel):
         # Both sides publish their bundle at peering, so a pair can start to
         # encrypt in a later session. The peer's bundle is None until it does.
         self._write_encryption_bundle_for_peer(peer_email)
-        peer.info = self.connection_router.read_peer_info_file(peer_email)
+        # A peer on an unsupported release still completes peering; every
+        # version check then refuses it with the reason.
+        peer.info = self._read_peer_info_or_none(
+            peer_email, self.connection_router.read_peer_info_file
+        )
         peer.public_encryption_bundle = self._read_peer_encryption_bundle(peer_email)
 
         self.connection_router.update_peer_state(

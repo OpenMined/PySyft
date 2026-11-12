@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 from syft_job.client import JobClient
-from syft_job.config import SyftJobConfig
+from syft_job.config import SyftJobConfig, protocol_dir_name
 from syft_job.migrations import job_registry
 from syft_job.migrations.registry import JOB_PROTOCOL_VERSION
 from syft_migration import MigrationError
@@ -27,23 +27,24 @@ def test_reserved_job_name_rejected(tmp_path: Path):
     ds_client.submit_bash_job(user=DO_EMAIL, script="echo hi", job_name="version1")
 
 
-def test_ds_perms_cover_v1_subfolder(tmp_path: Path):
+def test_ds_perms_cover_the_protocol_subfolder(tmp_path: Path):
     syftbox = tmp_path / "SyftBox"
     syftbox.mkdir()
     do_config = SyftJobConfig(syftbox_folder=syftbox, current_user_email=DO_EMAIL)
     do_client = JobClient(config=do_config)
 
     do_client.setup_ds_job_folder_as_do(DS_EMAIL)
-    v1_job_dir = do_config.get_job_submission_dir(DO_EMAIL, DS_EMAIL, "some.job")
-    v1_job_dir.mkdir(parents=True)
+    job_dir = do_config.get_job_submission_dir(DO_EMAIL, DS_EMAIL, "some.job")
+    job_dir.mkdir(parents=True)
 
-    # The grants on inbox/<ds>/ and review/<ds>/ cover the v1/<job> subfolder.
+    # The grants on inbox/<ds>/ and review/<ds>/ cover the v<n>/<job> subfolder.
+    segment = protocol_dir_name(JOB_PROTOCOL_VERSION)
     ctx = SyftPermContext(datasite=syftbox / DO_EMAIL)
-    assert ctx.open(f"app_data/job/inbox/{DS_EMAIL}/v1/some.job/").has_write_access(
-        DS_EMAIL
-    )
     assert ctx.open(
-        f"app_data/job/review/{DS_EMAIL}/v1/some.job/state.yaml"
+        f"app_data/job/inbox/{DS_EMAIL}/{segment}/some.job/"
+    ).has_write_access(DS_EMAIL)
+    assert ctx.open(
+        f"app_data/job/review/{DS_EMAIL}/{segment}/some.job/state.yaml"
     ).has_read_access(DS_EMAIL)
 
 
@@ -51,13 +52,15 @@ def test_negotiated_protocol_version_for_peer_raises_on_unknown(tmp_path: Path):
     syftbox = tmp_path / "SyftBox"
     syftbox.mkdir()
     ds_config = SyftJobConfig(syftbox_folder=syftbox, current_user_email=DS_EMAIL)
-    protocol0_schema = job_registry.schema_for_protocol_version("0")
+    current_schema = job_registry.compute_protocol_schema()
     manager = JobClient(
-        config=ds_config, peer_schema={DO_EMAIL: protocol0_schema}.get
+        config=ds_config, peer_schema={DO_EMAIL: current_schema}.get
     ).manager
 
-    # An older peer negotiates down to the version both sides can read.
-    assert manager.negotiated_protocol_version_for_peer(DO_EMAIL) == "0"
+    # A known peer negotiates the version both sides read.
+    assert manager.negotiated_protocol_version_for_peer(DO_EMAIL) == (
+        JOB_PROTOCOL_VERSION
+    )
     with pytest.raises(MigrationError):
         manager.negotiated_protocol_version_for_peer("stranger@test.org")
     # Opting out assumes the current protocol.

@@ -227,7 +227,7 @@ class JobStorage:
     def find_submission_ref(
         self, datasite_email: str, job_name: str, ds_email: Optional[str] = None
     ) -> JobRef:
-        """The unique inbox/<ds_email>/[v<n>/]<job_name>/ ref; ``ds_email`` disambiguates."""
+        """The unique inbox/<ds_email>/v<n>/<job_name>/ ref; ``ds_email`` disambiguates."""
         matches = [
             ref
             for ref in self.iter_submission_refs(datasite_email)

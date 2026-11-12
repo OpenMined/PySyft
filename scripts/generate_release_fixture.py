@@ -20,9 +20,6 @@ Unlike syft-job there is no local SyftBox tree to snapshot (storage is the
 Google Drive transport), so fixtures are directories of captured blobs; future
 releases loop over them (test_older_protocol_compatibility.py) to prove they
 can still read and round-trip older serialized data.
-
-Protocol 0 / release 0.1.117 predates this script; its fixture
-(syft_client-0.1.117-protocol0) is hand-authored, like protocol-0.json.
 """
 
 import sys

@@ -372,7 +372,7 @@ class SyftDatasetManager:
         """Get private dataset files as {path_in_datasite: content}.
 
         Returns paths relative to the datasite (e.g.
-        private/syft_datasets/[v<n>/]{name}/{file}); the paths carry the copy's
+        private/syft_datasets/v<n>/{name}/{file}); the paths carry the copy's
         protocol layout, so ``protocol_version`` selects the copy a specific
         reader scans (the preferred/newest copy by default). For
         private_metadata.yaml, clears data_dir before including it.

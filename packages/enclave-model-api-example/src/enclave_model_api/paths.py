@@ -58,8 +58,7 @@ def resolve_weights_dir(
     """The layout that holds the synced weights, or the newest candidate so far.
 
     Re-resolved on each poll, not fixed at startup: the weights arrive in the
-    layout their owner writes, and an owner on an earlier release writes the
-    flat one.
+    layout their owner writes, which can be any layout this client reads.
     """
     config = SyftBoxConfig(syftbox_folder=Path(syftbox_folder), email=datasite)
     storage = DatasetStorage(config=config)

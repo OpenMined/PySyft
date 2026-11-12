@@ -1,8 +1,14 @@
 """Generate a p2p backward-compatibility fixture for the current syft-job release.
 
-Run on EVERY release, after bumping the version:
+Run on EVERY release, at the released commit:
 
-    uv run python scripts/generate_release_fixture.py
+    git checkout syft-job/v<released version>
+    uv run python packages/syft-job/scripts/generate_release_fixture.py
+
+The fixture name comes from the syft-job version in the tree. The release job
+publishes the version on the branch, tags it, then bumps, and syft-job is
+released before syft. At the syft tag syft-job already holds the next version,
+so check out the syft-job tag.
 
 Writes a SyftBox tree exactly as this release serializes jobs to disk, into
 
@@ -10,9 +16,6 @@ Writes a SyftBox tree exactly as this release serializes jobs to disk, into
 
 Future releases loop over these fixtures (test_older_protocol_compatibility.py)
 to prove they can still read and round-trip older on-disk data.
-
-Protocol 0 / release 0.1.38 predates this script; its fixture
-(syft_job-0.1.38-protocol0_syftbox) is hand-authored, like protocol-0.json.
 """
 
 import argparse
@@ -23,6 +26,7 @@ from pathlib import Path
 import yaml
 from syft_job.client import JobClient
 from syft_job.config import SyftJobConfig
+from syft_job.submission import SUBMISSION_HASH_HEADER, code_hash
 from syft_job.migrations.registry import JOB_PROTOCOL_VERSION
 from syft_job.version import __version__
 
@@ -43,15 +47,20 @@ def _seed_syftbox(syftbox: Path, code_path: Path) -> None:
         config=SyftJobConfig(syftbox_folder=syftbox, current_user_email=DO_EMAIL)
     )
 
-    ds.submit_python_job(
+    scanned = ds.submit_python_job(
         user=DO_EMAIL,
         code_path=str(code_path),
         job_name="scanned.job",
         dependencies=["pandas"],
     )
+    # Normalized before the DO receives it: the receipt records its hash.
+    _normalize_submission(Path(scanned))
     do.scan_inbox()  # writes scanned.job's review state.yaml
     # Submitted after the scan, so it has no review state yet.
-    ds.submit_bash_job(user=DO_EMAIL, script="echo hello", job_name="unscanned.job")
+    unscanned = ds.submit_bash_job(
+        user=DO_EMAIL, script="echo hello", job_name="unscanned.job"
+    )
+    _normalize_submission(Path(unscanned))
 
 
 class _PrettierDumper(yaml.SafeDumper):
@@ -61,19 +70,19 @@ class _PrettierDumper(yaml.SafeDumper):
         return super().increase_indent(flow, False)
 
 
-def _normalize(target: Path) -> None:
-    """Strip machine-specific values so the committed fixture is portable.
+def _normalize_submission(job_dir: Path) -> None:
+    """Strip machine-specific values from one submission, so the fixture is portable.
 
-    The submitter's absolute ``code_path`` and the local syft install
-    source (an absolute repo path that leaks into config.yaml dependencies and
-    run.sh when no DO advertises one) are not part of the release's on-disk
-    format; drop the executable bit since fixtures are data, not scripts.
+    The submitter's absolute ``code_path`` and the local syft install source
+    (an absolute repo path that leaks into config.yaml dependencies and run.sh
+    when no DO advertises one) are not part of the release's on-disk format.
+    The submission then declares the hash of what remains, as a submitter
+    would, so the receipt and the approval check the normalized files.
     """
     repo_root = str(Path(__file__).resolve().parents[3])
-    for path in target.rglob("*"):
+    for path in job_dir.rglob("*"):
         if not path.is_file():
             continue
-        path.chmod(0o644)
         try:
             text = path.read_text()
         except UnicodeDecodeError:
@@ -81,13 +90,19 @@ def _normalize(target: Path) -> None:
         if repo_root in text:
             path.write_text(text.replace(repo_root, "syft"))
 
-    for config in target.rglob("config.yaml"):
-        data = yaml.safe_load(config.read_text())
-        if data.get("code_path"):
-            data["code_path"] = f"/tmp/{Path(data['code_path']).name}"
-        config.write_text(
-            yaml.dump(data, Dumper=_PrettierDumper, default_flow_style=False)
-        )
+    config = job_dir / "config.yaml"
+    data = yaml.safe_load(config.read_text())
+    if data.get("code_path"):
+        data["code_path"] = f"/tmp/{Path(data['code_path']).name}"
+    data["headers"][SUBMISSION_HASH_HEADER] = code_hash(job_dir)
+    config.write_text(yaml.dump(data, Dumper=_PrettierDumper, default_flow_style=False))
+
+
+def _drop_executable_bits(target: Path) -> None:
+    """Fixtures are data, not scripts."""
+    for path in target.rglob("*"):
+        if path.is_file():
+            path.chmod(0o644)
 
 
 def _build_fixture(target: Path) -> None:
@@ -99,7 +114,7 @@ def _build_fixture(target: Path) -> None:
         code_path.write_text('print("hello from job")\n')
         _seed_syftbox(syftbox, code_path)
         shutil.copytree(syftbox, target)
-        _normalize(target)
+        _drop_executable_bits(target)
 
 
 def main() -> None:

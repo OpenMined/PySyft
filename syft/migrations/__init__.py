@@ -3,7 +3,7 @@ from .registry import (
     SYFT_CLIENT_PROTOCOL_VERSION,
     client_migration_service,
     client_registry,
-    load_as_latest,
+    load_current,
 )
 
 __all__ = [
@@ -11,5 +11,5 @@ __all__ = [
     "SYFT_CLIENT_PROTOCOL_VERSION",
     "client_migration_service",
     "client_registry",
-    "load_as_latest",
+    "load_current",
 ]

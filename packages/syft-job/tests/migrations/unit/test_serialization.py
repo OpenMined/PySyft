@@ -6,7 +6,7 @@ from pathlib import Path
 from syft_migration import MigrationService
 
 from syft_job.migrations import job_registry
-from syft_job.models import JobStateV1, JobStatus, JobSubmissionMetadataV1
+from syft_job.models import JobStateV0, JobStatus, JobSubmissionMetadataV0
 
 from .mocks import create_mock_submission, mock_submission_config_path
 
@@ -16,24 +16,24 @@ def test_submission_serialization(tmp_path: Path):
     submission = create_mock_submission()
     submission.save(path)
 
-    loaded = JobSubmissionMetadataV1.load(path)
+    loaded = JobSubmissionMetadataV0.load(path)
     assert loaded == submission
     assert loaded.canonical_name == "JobSubmissionMetadata"
-    assert loaded.version == "1"
+    assert loaded.version == "0"
 
 
 def test_state_serialization(tmp_path: Path):
-    state = JobStateV1(
+    state = JobStateV0(
         status=JobStatus.PENDING,
         received_at=datetime(2026, 7, 1, tzinfo=timezone.utc),
     )
     path = tmp_path / "state.yaml"
     state.save(path)
 
-    loaded = JobStateV1.load(path)
+    loaded = JobStateV0.load(path)
     assert loaded == state
     assert loaded.canonical_name == "JobState"
-    assert loaded.version == "1"
+    assert loaded.version == "0"
 
 
 def test_migration_service_loads_into_versioned_class():
@@ -41,9 +41,9 @@ def test_migration_service_loads_into_versioned_class():
 
     submission = create_mock_submission()
     loaded = service.load(submission.model_dump(mode="json"))
-    assert isinstance(loaded, JobSubmissionMetadataV1)
+    assert isinstance(loaded, JobSubmissionMetadataV0)
 
-    state = JobStateV1(status=JobStatus.DONE, return_code=0)
+    state = JobStateV0(status=JobStatus.DONE, return_code=0)
     loaded_state = service.load(state.model_dump(mode="json"))
-    assert isinstance(loaded_state, JobStateV1)
+    assert isinstance(loaded_state, JobStateV0)
     assert loaded_state.status == JobStatus.DONE

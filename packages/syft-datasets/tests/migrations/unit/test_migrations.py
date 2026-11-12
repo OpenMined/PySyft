@@ -3,7 +3,7 @@
 Every registered version of each object has a serialized fixture under
 ``fixtures/<canonical_name>/v<version>.yaml``; each fixture loads and upgrades
 in memory to the latest version, and the latest version downgrades to every
-registered version and round-trips through disk. With only V1 registered these
+registered version and round-trips through disk. With one version registered these
 are no-ops; when a newer version is registered, these tests fail until a fixture
 for it is added and then exercise the real migration paths automatically.
 """

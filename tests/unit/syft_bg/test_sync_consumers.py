@@ -7,6 +7,9 @@ from syft_bg.common.state import JsonStateManager
 from syft_bg.notify.monitors.job import JobMonitor
 from syft_bg.notify.monitors.peer import PeerMonitor
 from syft_bg.sync.snapshot import SyncSnapshot
+from syft_job.config import protocol_dir_name
+from syft_job.migrations import job_registry
+from syft_job.migrations.registry import JOB_PROTOCOL_VERSION
 
 
 def _write_snapshot(state: JsonStateManager, **kwargs) -> None:
@@ -68,6 +71,14 @@ class TestPeerMonitorWithSnapshot:
         handler.on_peer_granted.assert_not_called()
 
 
+# The job layout and object versions the current syft-job writes.
+PROTOCOL_DIR = protocol_dir_name(JOB_PROTOCOL_VERSION)
+JOB_VERSIONS = {
+    name: job_registry.latest_version(name)
+    for name in ("JobState", "JobSubmissionMetadata")
+}
+
+
 class TestJobMonitorLocalStatusChanges:
     """Tests for process_local_status_changes with inbox/review directory structure."""
 
@@ -75,10 +86,12 @@ class TestJobMonitorLocalStatusChanges:
         do_email = "do@test.com"
         job_dir = temp_dir / do_email / "app_data" / "job"
 
-        inbox_job = job_dir / "inbox" / ds_email / job_name
+        inbox_job = job_dir / "inbox" / ds_email / PROTOCOL_DIR / job_name
         inbox_job.mkdir(parents=True)
         config = inbox_job / "config.yaml"
         config.write_text(
+            "canonical_name: JobSubmissionMetadata\n"
+            f"version: '{JOB_VERSIONS['JobSubmissionMetadata']}'\n"
             f"name: {job_name}\ntype: python\nsubmitted_at: '2026-01-01T00:00:00'\n"
         )
 
@@ -110,10 +123,15 @@ class TestJobMonitorLocalStatusChanges:
             / "job"
             / "review"
             / ds_email
+            / PROTOCOL_DIR
             / job_name
         )
         review_dir.mkdir(parents=True, exist_ok=True)
-        (review_dir / "state.yaml").write_text(f"status: {status}\n")
+        (review_dir / "state.yaml").write_text(
+            "canonical_name: JobState\n"
+            f"version: '{JOB_VERSIONS['JobState']}'\n"
+            f"status: {status}\n"
+        )
 
     def test_detects_approved_status(self, temp_dir):
         self._setup_job(temp_dir)

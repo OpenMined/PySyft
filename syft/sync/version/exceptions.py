@@ -54,14 +54,42 @@ def peer_info_unavailable_reason(peer_email: str) -> str:
     )
 
 
+class UnreadablePeerInfoError(ValueError):
+    """A peer info file exists, but this release cannot read it.
+
+    The file was most likely written by a syft release whose formats this one
+    does not read. A ValueError, so callers that handle an unreadable file
+    already handle this one.
+    """
+
+
+def unsupported_peer_reason(peer_email: str, error: str) -> str:
+    """Why a peer whose info file cannot be read is refused.
+
+    Shared by VersionUnknownError and the sync skip log so both say the same.
+    """
+    from syft.version import SYFT_VERSION
+
+    return (
+        f"{peer_email} runs a syft version this release does not support: "
+        f"their version file could not be read ({error}). Ask them to install "
+        f"syft {SYFT_VERSION}, then call client.sync() and try again"
+    )
+
+
 class VersionUnknownError(VersionError):
     """Raised when a peer's info file (version and more) is not available."""
 
-    def __init__(self, peer_email: str, operation: Optional[str] = None):
+    def __init__(
+        self,
+        peer_email: str,
+        operation: Optional[str] = None,
+        reason: Optional[str] = None,
+    ):
         self.peer_email = peer_email
         self.operation = operation
 
-        reason = peer_info_unavailable_reason(peer_email)
+        reason = reason or peer_info_unavailable_reason(peer_email)
         if operation:
             message = f"Cannot {operation} for peer {peer_email}: {reason}."
         else:

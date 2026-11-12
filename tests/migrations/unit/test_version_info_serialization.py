@@ -1,21 +1,16 @@
-"""VersionInfo round-trips through JSON and legacy protocol-0 files still load."""
+"""VersionInfo round-trips through JSON, and a file of another version is refused."""
 
 import json
-from pathlib import Path
 
+import pytest
 from syft.migrations import client_registry
-from syft.sync.version.version_info import (
-    VersionInfo,
-    VersionInfoV2,
-)
-
-FIXTURES_DIR = Path(__file__).parent / "fixtures" / "version_info"
-LEGACY_FILE = FIXTURES_DIR / "SYFT_version-0.1.117.json"
+from syft.sync.version.version_info import VersionInfo, VersionInfoV0
+from syft_migration import MigrationError
 
 
 def test_version_info_registered_and_aliased():
     assert client_registry.versions("VersionInfo")
-    assert VersionInfo is VersionInfoV2
+    assert VersionInfo is VersionInfoV0
 
     schema = client_registry.compute_protocol_schema()
     assert "VersionInfo" in schema.supported_versions
@@ -25,7 +20,7 @@ def test_version_info_registered_and_aliased():
 def test_current_serializes_identity_fields():
     data = json.loads(VersionInfo.current().to_json())
     assert data["canonical_name"] == "VersionInfo"
-    assert data["version"] == "2"
+    assert data["version"] == "0"
 
 
 def test_json_round_trip():
@@ -34,29 +29,15 @@ def test_json_round_trip():
     assert restored == original
 
 
-def test_legacy_protocol0_file_loads_as_latest():
-    # Written by a <= 0.1.117 client: no canonical_name/version fields.
-    legacy_json = LEGACY_FILE.read_text()
-    assert "canonical_name" not in json.loads(legacy_json)
-
-    info = VersionInfo.from_json(legacy_json)
-    # type() not isinstance(): V2 subclasses V1, so isinstance is vacuous.
-    assert type(info) is VersionInfoV2
-    assert info.version == client_registry.latest_version("VersionInfo")
-    assert info.syft_client_version == "0.1.117"
-    assert info.syft_client_install_source == "pip"
-
-
-def test_legacy_reader_tolerates_identity_fields():
-    # A protocol-0 client parses with pydantic's default extra="ignore"; the
-    # closest stand-in we have is validating minus the identity defaults.
+def test_a_file_without_identity_fields_is_refused():
     data = json.loads(VersionInfo.current().to_json())
-    # Legacy clients see unknown keys and ignore them; simulate by checking
-    # the payload minus identity fields is exactly the legacy shape.
-    data.pop("canonical_name")
-    data.pop("version")
-    data.pop("protocol_schemas")
-    data.pop("extra")
-    # Additive-only invariant: current output minus the added fields is
-    # exactly the legacy shape a 0.1.117 reader expects.
-    assert set(data) == set(json.loads(LEGACY_FILE.read_text()))
+    del data["canonical_name"], data["version"]
+    with pytest.raises(MigrationError):
+        VersionInfo.from_json(json.dumps(data))
+
+
+def test_a_file_of_an_unknown_version_is_refused():
+    data = json.loads(VersionInfo.current().to_json())
+    data["version"] = "99"
+    with pytest.raises(MigrationError):
+        VersionInfo.from_json(json.dumps(data))
