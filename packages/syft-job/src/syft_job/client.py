@@ -15,6 +15,7 @@ from .config import SyftJobConfig
 from .read_permissions import (
     REQUESTED_READ_PERMISSIONS_HEADER,
     ReadPermissions,
+    normalize_file_names,
     validate_read_permissions,
     job_read_permissions_for,
     validate_read_permissions_as_do,
@@ -670,7 +671,7 @@ python {entrypoint_path}
             share_logs_with_submitter or share_outputs_with_submitter
         ):
             raise ValueError("Give share_files or the share flags, not both.")
-        validate_read_permissions(share_files)
+        validate_read_permissions(normalize_file_names(share_files))
 
     def _requested_read_permissions(
         self,
@@ -678,9 +679,12 @@ python {entrypoint_path}
         share_outputs_with_submitter: bool,
         share_files: object,
     ) -> ReadPermissions:
-        """The read permissions a submission asks for: share_files, or the flags."""
+        """The read permissions a submission asks for: share_files, or the flags.
+
+        The file names in share_files are made plain, e.g. "./stderr.txt" -> "stderr.txt".
+        """
         if share_files is not None:
-            return validate_read_permissions(share_files)
+            return validate_read_permissions(normalize_file_names(share_files))
         return job_read_permissions_for(
             [self.current_user_email],
             share_logs_with_submitter,

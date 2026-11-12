@@ -58,7 +58,8 @@ def validate_read_permissions(value: object) -> ReadPermissions:
 
     Raises:
         TypeError: If ``value`` is not a dict of file names to lists of emails.
-        ValueError: If a file has no reader.
+        ValueError: If a file is not a plain path inside the job's folder, or
+            has no reader.
     """
     if value is None:
         return {}
@@ -67,12 +68,45 @@ def validate_read_permissions(value: object) -> ReadPermissions:
             "Read permissions are a dict of file names to lists of emails, "
             f'e.g. {{"stdout.txt": ["ds@example.org"]}}, not {type(value).__name__}.'
         )
-    return {file: _check_readers(file, emails) for file, emails in value.items()}
+    return {file: _check_entry(file, emails) for file, emails in value.items()}
 
 
-def _check_readers(file: object, emails: object) -> list[str]:
-    if not isinstance(file, str) or not file:
-        raise TypeError(f"A read permission names a file as a string, not {file!r}.")
+def normalize_file_names(permissions: object) -> object:
+    """``permissions`` with each file as a plain path, e.g. "./stderr.txt" -> "stderr.txt".
+
+    For what a submitter types. The strict check after it still refuses ".",
+    "..", absolute paths and anything that is not {file: [emails]}.
+
+    Raises:
+        ValueError: If two files name the same path.
+    """
+    if not isinstance(permissions, Mapping):
+        return permissions
+    normalized: dict = {}
+    typed_as: dict = {}
+    for file, emails in permissions.items():
+        plain = _plain_file_name(file)
+        if plain in normalized:
+            raise ValueError(f"{typed_as[plain]!r} and {file!r} name the same file.")
+        normalized[plain] = emails
+        typed_as[plain] = file
+    return normalized
+
+
+def _plain_file_name(file: object) -> object:
+    """``file`` stripped, with "/" separators and no "./", "//" or trailing "/"."""
+    if not isinstance(file, str):
+        return file
+    stripped = file.strip()
+    # Left empty, so the strict check refuses it.
+    if not stripped:
+        return stripped
+    return str(PurePosixPath(stripped.replace("\\", "/")))
+
+
+def _check_entry(file: object, emails: object) -> list[str]:
+    """``emails`` as the sorted readers of ``file``, after checking both."""
+    _check_file(file)
     if not isinstance(emails, (list, tuple)) or not all(
         isinstance(e, str) and e for e in emails
     ):
@@ -94,13 +128,28 @@ def check_no_wildcard_readers(emails: Iterable[str]) -> None:
         raise ValueError(f"Name each reader by email, not {wildcards}.")
 
 
+def _check_file(file: object) -> None:
+    """Refuse a file that is not one plain path inside the job's folder.
+
+    "." would name the folder itself, and "./stderr.txt" or "stderr.txt/" a
+    second name for a file, which the checks on file names would miss.
+    """
+    if not isinstance(file, str) or not file:
+        raise TypeError(f"A read permission names a file as a string, not {file!r}.")
+    path = PurePosixPath(file)
+    if path.is_absolute() or ".." in path.parts:
+        raise ValueError(f"{file!r} is outside the job's folder.")
+    if file == "." or str(path) != file:
+        raise ValueError(f"Name {file!r} as a plain path, e.g. 'outputs/result.txt'.")
+
+
 def _is_wildcard(email: str) -> bool:
     """Matches the patterns of syft_permissions.engine.compiled_rule._user_in_list."""
     return email == USER_PLACEHOLDER or "*" in email or "?" in email
 
 
 def validate_read_permissions_as_do(value: object) -> ReadPermissions:
-    """The valid entries of ``value`` that stay in the job's folder.
+    """The valid entries of ``value``, each a plain path in the job's folder.
 
     For data the submitter wrote: a key is joined to the job's review folder.
     """
@@ -108,21 +157,11 @@ def validate_read_permissions_as_do(value: object) -> ReadPermissions:
         return {}
     valid = {}
     for file, emails in value.items():
-        if not _inside_job_folder(file):
-            continue
         try:
-            valid[file] = _check_readers(file, emails)
+            valid[file] = _check_entry(file, emails)
         except (TypeError, ValueError):
             continue
     return valid
-
-
-def _inside_job_folder(file: object) -> bool:
-    """Whether ``file`` is a relative path that stays in the job's folder."""
-    if not isinstance(file, str):
-        return False
-    path = PurePosixPath(file)
-    return not path.is_absolute() and ".." not in path.parts
 
 
 def restrict_to_request(
@@ -158,8 +197,13 @@ LOGS_WARNING = (
 
 def warn_on_logs_release(approved: ReadPermissions, stacklevel: int = 3) -> None:
     """Warn when an approval lets anyone read stdout or stderr."""
-    if any(file in approved for file in _PRINTED_FILES):
+    if any(_holds_a_log(file) for file in approved):
         warnings.warn(LOGS_WARNING, UserWarning, stacklevel=stacklevel)
+
+
+def _holds_a_log(file: str) -> bool:
+    """Whether ``file`` is stdout or stderr, or a folder that holds one."""
+    return any(PurePosixPath(log).is_relative_to(file) for log in _PRINTED_FILES)
 
 
 def format_read_permissions(permissions: ReadPermissions) -> str:

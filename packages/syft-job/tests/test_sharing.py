@@ -11,7 +11,7 @@ from syft_job.config import (
     SyftJobConfig,
     protocol_dir_name,
 )
-from syft_job.read_permissions import LOGS_WARNING, OUTPUTS
+from syft_job.read_permissions import LOGS_WARNING, OUTPUTS, warn_on_logs_release
 from syft_job.job import JobInfo
 from syft_job.job_runner import SyftJobRunner
 from syft_job.migrations.registry import JOB_PROTOCOL_VERSION
@@ -394,6 +394,49 @@ def test_receipt_drops_request_entry_with_wildcard_reader(tmp_path, reader):
     request = {"stdout.txt": [DS_EMAIL], "outputs": [DS_EMAIL, reader]}
     write_headers(inbox, requested_read_permissions=request)
     assert reload_job(tmp_path).requested_read_permissions == {"stdout.txt": [DS_EMAIL]}
+
+
+@pytest.mark.parametrize(
+    "key", [".", "./stderr.txt", "stderr.txt/", "outputs//result.txt"]
+)
+def test_receipt_drops_request_entry_not_named_plainly(tmp_path, key):
+    """ "." names the whole job folder; the others are second names for a file."""
+    inbox = submit_as_ds(tmp_path)
+    request = {"stdout.txt": [DS_EMAIL], key: [DS_EMAIL]}
+    write_headers(inbox, requested_read_permissions=request)
+    assert reload_job(tmp_path).requested_read_permissions == {"stdout.txt": [DS_EMAIL]}
+
+
+def test_submission_makes_file_names_plain(tmp_path):
+    requested = {"./stderr.txt": [DS_EMAIL], "outputs/": [DS_EMAIL]}
+    job = submit_only(tmp_path, {**requested, " stdout.txt ": [DS_EMAIL]})
+    assert job.requested_read_permissions == {
+        "stderr.txt": [DS_EMAIL],
+        "outputs": [DS_EMAIL],
+        "stdout.txt": [DS_EMAIL],
+    }
+
+
+@pytest.mark.parametrize("key", [".", "../x", "/etc/passwd"])
+def test_submission_refuses_file_outside_job(tmp_path, key):
+    with pytest.raises(ValueError):
+        submit_as_ds(tmp_path, {key: [DS_EMAIL]})
+
+
+def test_submission_refuses_two_names_for_one_file(tmp_path):
+    with pytest.raises(ValueError, match="same file"):
+        submit_as_ds(tmp_path, {"stderr.txt": [DS_EMAIL], "./stderr.txt": [DS_EMAIL]})
+
+
+def test_approve_refuses_job_folder_as_file(tmp_path):
+    job = submit_only(tmp_path, LOGS)
+    with pytest.raises(ValueError, match="plain path"):
+        job.approve(share_files={".": [DS_EMAIL]})
+
+
+def test_logs_warning_covers_folder_holding_logs():
+    with pytest.warns(UserWarning, match="stdout or stderr"):
+        warn_on_logs_release({".": [DS_EMAIL]})
 
 
 @pytest.mark.parametrize(
