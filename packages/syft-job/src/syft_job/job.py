@@ -13,7 +13,7 @@ from .read_permissions import (
     LOG_FILES,
     ReadPermissions,
     check_approval_reason,
-    check_read_permissions,
+    validate_read_permissions,
     format_read_permissions,
     restrict_to_request,
     warn_on_logs_release,
@@ -116,7 +116,7 @@ class JobInfo:
     ) -> ReadPermissions:
         """Keep the part of ``read_permissions`` that the submitter requested."""
         approved = restrict_to_request(
-            check_read_permissions(read_permissions), self.requested_read_permissions
+            validate_read_permissions(read_permissions), self.requested_read_permissions
         )
         # Up to the public caller, update_read_permissions() by default.
         warn_on_logs_release(approved, stacklevel)
@@ -266,6 +266,10 @@ class JobInfo:
         """Get a viewer for the stderr content."""
         return StderrViewer(self)
 
+    def _log_path(self, log_file: str) -> Path:
+        """Where the viewers read ``log_file`` ("stdout.txt" or "stderr.txt")."""
+        return self.job_review_path / log_file
+
     @property
     def files(self) -> List[Path]:
         """Get list of relevant files across both inbox and review."""
@@ -347,7 +351,7 @@ class JobInfo:
         self,
         reason: Optional[str] = None,
         approval_method: str = "manual",
-        read_permissions: Optional[ReadPermissions] = None,
+        share_files: Optional[ReadPermissions] = None,
         share_requested_files: bool = False,
     ) -> None:
         """
@@ -361,36 +365,34 @@ class JobInfo:
         Args:
             reason: Optional reason for approval (recorded as review_reason).
             approval_method: How the job was approved ("manual" or "auto")
-            read_permissions: Who may read which file once the job ran, as
+            share_files: Who may read which file once the job ran, as
                 {file: [emails]}, e.g. {"stdout.txt": [submitter]}. Only what the
                 submitter requested is kept.
-            share_requested_files: Instead of read_permissions, approve
+            share_requested_files: Instead of share_files, approve
                 everything the submitter requested. With neither, none is approved.
 
         Raises:
             ValueError: If job is not in pending status, was not fully
                 received, or changed after it was received, or if both
-                read_permissions and share_requested_files are given
+                share_files and share_requested_files are given
             PermissionError: If the current user is not authorized to approve
-            TypeError: If reason is not a string, or read_permissions not a dict
+            TypeError: If reason is not a string, or share_files not a dict
         """
         check_approval_reason(reason)
-        approved = self._read_permissions_to_approve(
-            read_permissions, share_requested_files
+        resolved_read_permissions = self._resolve_read_permissions(
+            share_files, share_requested_files
         )
-        self._approve(reason, approval_method, approved)
+        self._approve(reason, approval_method, resolved_read_permissions)
 
-    def _read_permissions_to_approve(
-        self, read_permissions: object, share_requested_files: bool
+    def _resolve_read_permissions(
+        self, share_files: object, share_requested_files: bool
     ) -> ReadPermissions:
-        """The approval's read permissions: the whole request, or the given dict."""
-        if read_permissions is not None and share_requested_files:
-            raise ValueError(
-                "Give read_permissions or share_requested_files, not both."
-            )
+        """The approval's read permissions: the whole request, or share_files."""
+        if share_files is not None and share_requested_files:
+            raise ValueError("Give share_files or share_requested_files, not both.")
         if share_requested_files:
             return dict(self.requested_read_permissions)
-        return check_read_permissions(read_permissions)
+        return validate_read_permissions(share_files)
 
     def _approve(
         self,

@@ -456,14 +456,15 @@ class SyftRDSClient(BaseModel):
         entrypoint: str | None = None,
         force_submission: bool = False,
         ignore_peer_version: bool = False,
-        share_logs: bool = False,
-        share_outputs: bool = False,
+        share_logs_with_submitter: bool = False,
+        share_outputs_with_submitter: bool | None = None,
         share_files: ReadPermissions | None = None,
     ):
         """Submit the code at ``code_path`` as a job to ``user``.
 
-        share_logs and share_outputs ask to read stdout/stderr and the outputs.
-        share_files asks instead as {file: [emails]}, e.g. {"stdout.txt": [me]}.
+        The two flags ask to read stdout/stderr and the outputs; outputs by
+        default unless share_files is given. share_files asks instead as
+        {file: [emails]}, e.g. {"stdout.txt": [me]}.
         """
         peer_emails = {p.email for p in self.sync_engine.peer_manager.syncable_peers}
         if user not in peer_emails:
@@ -497,8 +498,8 @@ class SyftRDSClient(BaseModel):
             job_name=job_name,
             dependencies=dependencies,
             entrypoint=entrypoint,
-            share_logs=share_logs,
-            share_outputs=share_outputs,
+            share_logs_with_submitter=share_logs_with_submitter,
+            share_outputs_with_submitter=share_outputs_with_submitter,
             share_files=share_files,
         )
         self.sync_engine.push_job_files(job_dir)
@@ -675,8 +676,8 @@ class SyftRDSClient(BaseModel):
         stream_output: bool = True,
         timeout: int | None = None,
         force_execution: bool = False,
-        share_outputs_with_submitter: bool = False,
         share_logs_with_submitter: bool = False,
+        share_outputs_with_submitter: bool = False,
         ignore_peer_version: bool = False,
     ) -> None:
         """Process approved jobs (DO only). Auto-syncs after unless PRE_SYNC=false."""
@@ -714,8 +715,8 @@ class SyftRDSClient(BaseModel):
             stream_output=stream_output,
             timeout=timeout,
             skip_jobs=[(name, peer) for name, peer, _ in skipped] or None,
-            share_outputs_with_submitter=share_outputs_with_submitter,
             share_logs_with_submitter=share_logs_with_submitter,
+            share_outputs_with_submitter=share_outputs_with_submitter,
             approved_peers=self._approved_peer_emails(),
         )
 
@@ -731,8 +732,8 @@ class SyftRDSClient(BaseModel):
         job: JobInfo,
         stream_output: bool = True,
         timeout: int | None = None,
-        share_outputs_with_submitter: bool = False,
         share_logs_with_submitter: bool = False,
+        share_outputs_with_submitter: bool = False,
         ignore_peer_version: bool = False,
         sync: bool = False,
     ) -> None:
@@ -754,9 +755,33 @@ class SyftRDSClient(BaseModel):
             job.submitted_by,
             stream_output=stream_output,
             timeout=timeout,
-            share_outputs_with_submitter=share_outputs_with_submitter,
             share_logs_with_submitter=share_logs_with_submitter,
+            share_outputs_with_submitter=share_outputs_with_submitter,
             approved_peers=self._approved_peer_emails(),
+        )
+        if sync:
+            self.sync_engine.sync()
+
+    def share_job_results(
+        self,
+        job: JobInfo,
+        share_logs_with_submitter: bool = False,
+        share_outputs_with_submitter: bool = False,
+        share_files: ReadPermissions | None = None,
+        sync: bool = False,
+    ) -> None:
+        """Approve more readers of a finished job's files, and share them (DO only).
+
+        Updates the job's approved read permissions and the file permissions
+        together. A read already given is not taken back. Syncs after only
+        with ``sync=True``.
+        """
+        self._job_runner_for_do().share_job_results(
+            job.name,
+            share_logs_with_submitter=share_logs_with_submitter,
+            share_outputs_with_submitter=share_outputs_with_submitter,
+            user=job.submitted_by,
+            share_files=share_files,
         )
         if sync:
             self.sync_engine.sync()

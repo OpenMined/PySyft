@@ -153,13 +153,13 @@ def test_submit_python_job_passes_share_args(tmp_path):
             do.email,
             str(code),
             force_submission=True,
-            share_logs=True,
+            share_logs_with_submitter=True,
             share_files={"stdout.txt": [ds.email]},
         )
 
     kwargs = ds.job_client.submit_python_job.call_args.kwargs
-    assert kwargs["share_logs"] is True
-    assert kwargs["share_outputs"] is False
+    assert kwargs["share_logs_with_submitter"] is True
+    assert kwargs["share_outputs_with_submitter"] is None
     assert kwargs["share_files"] == {"stdout.txt": [ds.email]}
 
 

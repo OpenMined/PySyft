@@ -10,8 +10,6 @@ import warnings
 from collections.abc import Mapping
 from pathlib import PurePosixPath
 
-from .traceback_capture import FRAMES_FILENAME
-
 ReadPermissions = dict[str, list[str]]
 
 # Where the submitter puts its request, in the headers of config.yaml.
@@ -25,10 +23,10 @@ _PRINTED_FILES = ("stdout.txt", "stderr.txt")
 # What the runner shares when it is told to share the logs.
 LOG_FILES = (*_PRINTED_FILES, RETURN_CODE_FILENAME)
 # The files a run writes into the job's review folder.
-RUN_FILES = (*LOG_FILES, FRAMES_FILENAME, OUTPUTS)
+RUN_FILES = (*LOG_FILES, OUTPUTS)
 
 
-def read_permissions_for(
+def job_read_permissions_for(
     readers: list[str], logs: bool, outputs: bool
 ) -> ReadPermissions:
     """Read for ``readers`` on stdout and stderr if ``logs``, on the outputs if ``outputs``."""
@@ -53,7 +51,7 @@ def merge_read_permissions(*permissions: ReadPermissions) -> ReadPermissions:
     return {file: sorted(emails) for file, emails in merged.items() if emails}
 
 
-def check_read_permissions(value: object) -> ReadPermissions:
+def validate_read_permissions(value: object) -> ReadPermissions:
     """Return ``value`` as read permissions, with each list sorted.
 
     Raises:
@@ -82,7 +80,7 @@ def _check_readers(file: object, emails: object) -> list[str]:
     return sorted(set(emails))
 
 
-def valid_read_permissions(value: object) -> ReadPermissions:
+def validate_read_permissions_as_do(value: object) -> ReadPermissions:
     """The valid entries of ``value`` that stay in the job's folder.
 
     For data the submitter wrote: a key is joined to the job's review folder.
@@ -128,7 +126,7 @@ def check_approval_reason(reason: object) -> None:
     if reason is not None and not isinstance(reason, str):
         raise TypeError(
             f"reason must be a string, not {type(reason).__name__}. "
-            f"Give the read permissions as read_permissions={{...}}."
+            f"Give the read permissions as share_files={{...}}."
         )
 
 

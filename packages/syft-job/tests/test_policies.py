@@ -298,9 +298,28 @@ def test_empty_read_permissions_hold_outputs_back(env):
     assert job.outputs_withheld and job.policy_error is None
     assert "Outputs not shared with you" in _ds_job(env)._repr_html_()
 
-    env.runner.share_job_results("call.job", True, False, user=DS_EMAIL)
+    env.runner.share_job_results(
+        "call.job", share_outputs_with_submitter=True, user=DS_EMAIL
+    )
     assert env.reads(DS_EMAIL, "call.job", "outputs/out.txt")
     assert not job.outputs_withheld
+    assert env.do_job("call.job").approved_read_permissions == {OUTPUTS: [DS_EMAIL]}
+
+
+def test_api_call_ignores_share_flags(env):
+    """The run's share flags never undo what the output policy removed."""
+    env.apis.output_code = _read_permissions_policy({})
+
+    job = env.call(
+        "echo hi; echo hi > code/outputs/out.txt",
+        share_logs_with_submitter=True,
+        share_requested_files=True,
+    )
+
+    assert job.approved_read_permissions == {}
+    assert not env.reads(DS_EMAIL, "call.job", "outputs/out.txt")
+    assert not env.reads(DS_EMAIL, "call.job", "stdout.txt")
+    assert job.outputs_withheld
 
 
 def test_request_becomes_approved_job_with_api_code(env):

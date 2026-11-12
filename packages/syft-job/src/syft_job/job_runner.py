@@ -31,14 +31,19 @@ from .policies import (
     PolicyState,
     policy_stderr_filename,
 )
-from .read_permissions import OUTPUTS, ReadPermissions
+from .read_permissions import (
+    LOG_FILES,
+    OUTPUTS,
+    ReadPermissions,
+    merge_read_permissions,
+    validate_read_permissions,
+)
 from .review_grants import replace_ds_folder_read
 from .submission import (
     InvalidSubmissionError,
     copy_submission,
     submission_hash,
 )
-from .traceback_capture import write_frames_record
 
 # Default timeout for job execution (10 minutes)
 DEFAULT_JOB_TIMEOUT_SECONDS = 600
@@ -128,6 +133,16 @@ def _remove_run_dir(run_dir: Path | None) -> None:
     """Remove a run copy and its temp folder; None is a no-op."""
     if run_dir is not None:
         shutil.rmtree(run_dir.parent, ignore_errors=True)
+
+
+def _submitter_read_permissions(
+    ds_email: str, share_logs: bool, share_outputs: bool
+) -> ReadPermissions:
+    """Read for the submitter on the logs and exit code, and on the outputs."""
+    permissions = {name: [ds_email] for name in LOG_FILES} if share_logs else {}
+    if share_outputs:
+        permissions[OUTPUTS] = [ds_email]
+    return permissions
 
 
 def _kill_process_tree(pid: int, timeout: float = 2.0) -> None:
@@ -471,12 +486,13 @@ class SyftJobRunner:
 
         return returncode
 
-    def _execute_job(
+    def _execute_job_and_policies(
         self,
         ref: JobRef,
         stream_output: bool = True,
         timeout: int | None = None,
         approved_peers: list[str] | None = None,
+        run_permissions: ReadPermissions | None = None,
     ) -> bool:
         """
         Execute run.sh of the submission the owner approved.
@@ -491,6 +507,8 @@ class SyftJobRunner:
             stream_output: If True (default), stream output in real-time.
             timeout: Timeout in seconds. Defaults to the configured value or 600.
             approved_peers: The peers an output policy may give read permissions.
+            run_permissions: Read permissions the run settings add to the
+                approved ones, once the copy is verified and before the run.
 
         Returns:
             bool: True if run.sh ran, whatever its exit code. False if the job
@@ -505,6 +523,7 @@ class SyftJobRunner:
         try:
             resolved, policies = self._load_policies(ref)
             if resolved:
+                self._add_approved(ref, run_permissions or {})
                 self._run_approved_job(
                     ref, run_dir, stream_output, timeout, policies, approved_peers
                 )
@@ -616,7 +635,6 @@ class SyftJobRunner:
             else:
                 returncode = self._execute_job_captured(ref, timeout, run_dir)
 
-            self._capture_traceback(ref, returncode, run_dir / "code")
             returncode = self._run_output_policy(
                 ref, run_dir, policies, returncode, approved_peers
             )
@@ -670,12 +688,15 @@ class SyftJobRunner:
         if returncode != 0:
             self._set_approved(ref, {f: e for f, e in approved.items() if f != OUTPUTS})
             return returncode
+        # The policy edits a temp copy of these (read_permissions.json), not state.yaml.
         result = self._run_policy(PolicyKind.OUTPUT, ref, run_dir, policies, approved)
         if not result.passed:
             self._set_approved(ref, {})
             self._deny(ref, PolicyKind.OUTPUT, result)
             return 1
+        # result.read_permissions is that copy as the policy left it.
         allowed = self._allowed_readers(ref, result.read_permissions, approved_peers)
+        # Only the submitter and approved peers remain; this writes state.yaml.
         self._set_approved(ref, allowed)
         return returncode
 
@@ -683,6 +704,14 @@ class SyftJobRunner:
         state = self.manager.read_state(ref)
         state.approved_read_permissions = approved
         self.manager.write_state(ref, state)
+
+    def _add_approved(self, ref: JobRef, added: ReadPermissions) -> None:
+        """Add ``added`` to the approved read permissions; no write if nothing is new."""
+        state = self.manager.read_state(ref)
+        merged = merge_read_permissions(state.approved_read_permissions, added)
+        if merged != state.approved_read_permissions:
+            state.approved_read_permissions = merged
+            self.manager.write_state(ref, state)
 
     def _allowed_readers(
         self,
@@ -754,16 +783,6 @@ class SyftJobRunner:
                 print(f" Error output written to {stderr_file}")
         except OSError:
             pass
-
-    def _capture_traceback(self, ref: JobRef, returncode: int, code_root: Path) -> None:
-        """Record where the job failed, from the traceback it printed.
-
-        A run that succeeds prints no traceback, so it leaves no record.
-        """
-        if returncode == 0:
-            return
-        review_dir = self.manager.review_dir(ref)
-        write_frames_record(review_dir / "stderr.txt", review_dir, code_root)
 
     def _finalize(self, ref: JobRef, returncode: int) -> None:
         """Write the exit code, and set the state to DONE or FAILED.
@@ -909,13 +928,18 @@ class SyftJobRunner:
         stream_output: bool = True,
         timeout: int | None = None,
         skip_jobs: list[tuple[str, str]] | None = None,
-        share_outputs_with_submitter: bool = False,
         share_logs_with_submitter: bool = False,
+        share_outputs_with_submitter: bool = False,
         skip_job_names: list[str] | None = None,
         approved_peers: list[str] | None = None,
         share_requested_files: bool = False,
     ) -> None:
         """Process all jobs in approved status.
+
+        The share flags add to each job's approved read permissions before it
+        runs, whatever the job requested; once it ran, the runner shares only
+        what its state approves. An api call ignores the flags: its api and
+        output policy decide.
 
         Args:
             stream_output: If True (default), stream output in real-time.
@@ -924,18 +948,16 @@ class SyftJobRunner:
                 does not identify a job — it is unique per datasite and
                 submitter — so skipping by name drops every other job that
                 shares it.
-            share_outputs_with_submitter: If True, share the outputs with the
-                submitter. An api call's outputs follow its read permissions
-                instead, after its output policy.
-            share_logs_with_submitter: If True, share the logs and the exit
-                code with the submitter, whatever the job requested. False
-                (default) shares only the items that the submitter requested
-                and the approval granted. Only the DO reads the rest.
+            share_logs_with_submitter: If True, approve the logs and the exit
+                code for the submitter. False (default) shares only what the
+                approval granted. Only the DO reads the rest.
+            share_outputs_with_submitter: If True, approve the outputs for the
+                submitter.
             skip_job_names: Deprecated. The name-only form of ``skip_jobs``.
             approved_peers: The peers an output policy may give read
                 permissions. None allows the submitter only.
             share_requested_files: If True, approve everything each job's
-                submitter requested, and share it once the job ran.
+                submitter requested.
         """
         self._replace_ds_folder_reads()
         approved_jobs = self._get_jobs_in_approved()
@@ -955,12 +977,12 @@ class SyftJobRunner:
         print(f" Found {len(approved_jobs)} job(s) in approved status")
 
         for ref in approved_jobs:
-            self._run_job(
+            self._run_full_job_lifecycle(
                 ref,
                 stream_output,
                 timeout,
-                share_outputs_with_submitter,
                 share_logs_with_submitter,
+                share_outputs_with_submitter,
                 approved_peers,
                 share_requested_files,
             )
@@ -974,12 +996,12 @@ class SyftJobRunner:
         ds_email: str,
         stream_output: bool = True,
         timeout: int | None = None,
-        share_outputs_with_submitter: bool = False,
         share_logs_with_submitter: bool = False,
+        share_outputs_with_submitter: bool = False,
         approved_peers: list[str] | None = None,
         share_requested_files: bool = False,
     ) -> None:
-        """Run one approved job, and share its results as asked.
+        """Run one approved job, and share what its state approves.
 
         Takes the same options as ``process_approved_jobs``. Raises if the job
         is not approved.
@@ -991,37 +1013,62 @@ class SyftJobRunner:
                 f"Job '{job_name}' from {ds_email} is {status.value}, not approved"
             )
         self._replace_ds_folder_reads()
-        self._run_job(
+        self._run_full_job_lifecycle(
             ref,
             stream_output,
             timeout,
-            share_outputs_with_submitter,
             share_logs_with_submitter,
+            share_outputs_with_submitter,
             approved_peers,
             share_requested_files,
         )
 
-    def _run_job(
+    def _run_full_job_lifecycle(
         self,
         ref: JobRef,
         stream_output: bool,
         timeout: int | None,
-        share_outputs: bool,
-        share_logs: bool,
+        share_logs_with_submitter: bool,
+        share_outputs_with_submitter: bool,
         approved_peers: list[str] | None,
         share_requested_files: bool,
     ) -> None:
-        """Execute an approved job, then share its results if it ran.
-
-        An api call's outputs follow its read permissions, not share_outputs.
-        """
+        """Add the share flags to the approved read permissions, execute the
+        job, then share what its state approves if it ran."""
         print(f"\n{'=' * 50}")
-        if self._execute_job(ref, stream_output, timeout, approved_peers):
-            share_outputs = share_outputs and not self._is_api_call(ref)
-            self._share_job_results(
-                ref, share_outputs, share_logs, share_requested_files
-            )
+        run_permissions = self._run_flag_permissions(
+            ref,
+            share_logs_with_submitter,
+            share_outputs_with_submitter,
+            share_requested_files,
+        )
+        if self._execute_job_and_policies(
+            ref, stream_output, timeout, approved_peers, run_permissions
+        ):
+            self._share_job_results(ref)
         print(f"{'=' * 50}")
+
+    def _run_flag_permissions(
+        self,
+        ref: JobRef,
+        share_logs_with_submitter: bool,
+        share_outputs_with_submitter: bool,
+        share_requested_files: bool,
+    ) -> ReadPermissions:
+        """The read permissions the share flags approve; none for an api call."""
+        if self._is_api_call(ref):
+            return {}
+        requested = (
+            self._get_job_state(ref).requested_read_permissions
+            if share_requested_files
+            else {}
+        )
+        return merge_read_permissions(
+            _submitter_read_permissions(
+                ref.ds_email, share_logs_with_submitter, share_outputs_with_submitter
+            ),
+            requested,
+        )
 
     def _is_api_call(self, ref: JobRef) -> bool:
         record = self.manager.read_owner_record(ref)
@@ -1030,50 +1077,51 @@ class SyftJobRunner:
     def share_job_results(
         self,
         job_name: str,
-        share_outputs: bool,
-        share_logs: bool,
+        share_logs_with_submitter: bool = False,
+        share_outputs_with_submitter: bool = False,
         user: str | None = None,
+        share_files: ReadPermissions | None = None,
     ) -> None:
-        """Share job outputs/logs with submitter if requested.
+        """Approve more readers of a finished job's files, and share them at once.
 
-        Shares with the submitter even when an output policy held the outputs
-        back.
+        The flags approve the logs and exit code, or the outputs, for the
+        submitter; ``share_files`` approves {file: [emails]}. Works on an api
+        call whose output policy held the outputs back. Adds to the approved
+        read permissions, since a read already given is not taken back.
+
+        Raises:
+            ValueError: If the job has not finished.
+            TypeError: If share_files is not {file: [emails]}.
         """
         ref = self._find_jobref_from_name(job_name, user)
-        if share_outputs:
-            # The outputs reach the submitter now, so drop the marker that
-            # said they were held back.
-            (self.manager.review_dir(ref) / OUTPUTS_WITHHELD_FILENAME).unlink(
-                missing_ok=True
-            )
-        self._share_job_results(ref, share_outputs, share_logs)
+        status = self._get_job_state(ref).status
+        if status not in (JobStatus.DONE, JobStatus.FAILED):
+            raise ValueError(f"Job '{job_name}' is {status.value}; run it first.")
+        added = merge_read_permissions(
+            _submitter_read_permissions(
+                ref.ds_email, share_logs_with_submitter, share_outputs_with_submitter
+            ),
+            validate_read_permissions(share_files),
+        )
+        self._add_approved(ref, added)
+        self._share_job_results(ref)
 
-    def _share_job_results(
-        self,
-        ref: JobRef,
-        share_outputs: bool,
-        share_logs: bool,
-        share_requested_files: bool = False,
-    ) -> None:
+    def _share_job_results(self, ref: JobRef) -> None:
+        """Grant each reader in the job's approved read permissions read on its file."""
         job_info = self._get_job_info(ref)
-        if share_requested_files:
-            # Approving a finished job also shares what it approves.
-            job_info.update_read_permissions(job_info.requested_read_permissions)
-        else:
-            job_info.share_read_permissions()
-        if share_outputs:
-            job_info.share_outputs([ref.ds_email])
-        elif job_info.api_name:
-            self._mark_outputs_withheld(ref, job_info)
-        if share_logs:
-            job_info.share_logs([ref.ds_email])
+        job_info.share_read_permissions()
+        if job_info.api_name:
+            self._update_outputs_withheld_marker(ref, job_info)
 
-    def _mark_outputs_withheld(self, ref: JobRef, job_info: JobInfo) -> None:
+    def _update_outputs_withheld_marker(self, ref: JobRef, job_info: JobInfo) -> None:
         """Tell the submitter, with an empty marker, that it can't read the outputs.
 
         Their job then shows "Outputs not shared with you" instead of no outputs.
+        The marker goes once the outputs are approved for them.
         """
+        marker = self.manager.review_dir(ref) / OUTPUTS_WITHHELD_FILENAME
         if ref.ds_email in job_info.approved_read_permissions.get(OUTPUTS, []):
+            marker.unlink(missing_ok=True)
             return
         self._write_artifact(ref, OUTPUTS_WITHHELD_FILENAME, "")
         job_info.share({OUTPUTS_WITHHELD_FILENAME: [ref.ds_email]})

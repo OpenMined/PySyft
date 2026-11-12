@@ -255,9 +255,11 @@ When the job itself fails, the output policy does not run and the outputs are no
 
 ### Read permissions
 
-The runner fills `read_permissions.json` with the api's approved read permissions for this call, e.g. `{"outputs": ["ds@example.org"], "stdout.txt": ["ds@example.org"]}`. The policy can read the dict, change it and write it back: drop or add a file (`outputs`, `stdout.txt`, `stderr.txt`, `returncode.txt`, `traceback_frames.json`) or an email. After the policy passes, the result is the job's approved read permissions, and the runner shares exactly that. Only the submitter and approved peers get read: the runner skips any other email and logs it for the DO, so a typo can't send results to a stranger.
+The runner fills `read_permissions.json` with the api's approved read permissions for this call, e.g. `{"outputs": ["ds@example.org"], "stdout.txt": ["ds@example.org"]}`. The policy can read the dict, change it and write it back: drop or add a file (`outputs`, `stdout.txt`, `stderr.txt`, `returncode.txt`) or an email. After the policy passes, the result is the job's approved read permissions, and the runner shares exactly that. Only the submitter and approved peers get read: the runner skips any other email and logs it for the DO, so a typo can't send results to a stranger.
 
-An empty dict shares nothing, but the job does not fail. The DO can share the outputs by hand later with `share_job_results`. A deny shares nothing and fails the job.
+An empty dict shares nothing, but the job does not fail. The DO can share the outputs by hand later with `do_client.share_job_results(job, share_outputs_with_submitter=True)`. A deny shares nothing and fails the job.
+
+The share flags of `process_approved_jobs` and `run_job` do nothing for an api call: the api and its output policy decide who reads what.
 
 ### What the DS sees
 

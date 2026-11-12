@@ -72,7 +72,7 @@ func_a()
                 approved_hash=digest,
             ),
         )
-        runner._execute_job(ref, stream_output=True, timeout=30)
+        runner._execute_job_and_policies(ref, stream_output=True, timeout=30)
 
         stdout_content = (review_dir / "stdout.txt").read_text()
         stderr_content = (review_dir / "stderr.txt").read_text()

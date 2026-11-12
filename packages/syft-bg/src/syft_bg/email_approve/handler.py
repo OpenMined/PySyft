@@ -126,7 +126,7 @@ class EmailApproveHandler:
         """Approve a job, execute it, and share results."""
         job.approve(
             approval_method=approval_method,
-            read_permissions=self._read_permissions_to_approve(job),
+            share_files=self._read_permissions_to_approve(job),
         )
         self.state.mark_notified(state_key, "processed")
 

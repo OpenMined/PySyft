@@ -20,7 +20,6 @@ from syft_job.read_permissions import (  # noqa: E402
     OUTPUTS,
     REQUESTED_READ_PERMISSIONS_HEADER,
 )
-from syft_job.traceback_capture import FRAMES_FILENAME  # noqa: E402
 from syft_perms import SyftPermContext  # noqa: E402
 
 from syft_enclaves import SyftEnclaveClient  # noqa: E402
@@ -30,9 +29,14 @@ from syft_enclaves.enclave_job_info import (  # noqa: E402
     enclave_approval_file_name,
     read_permissions_approved_by_all_parties,
 )
+from syft_enclaves.log_requests import (  # noqa: E402
+    LogRequest,
+    RequestedPermissionsUpdate,
+    log_request_file_name,
+    logs_requested_by_all_parties,
+)
 
 LOGS = ("stdout.txt", "stderr.txt")
-FRAMES = FRAMES_FILENAME
 RETURN_CODE = "returncode.txt"
 DS = "ds@x.com"
 
@@ -62,18 +66,18 @@ def test_file_needs_every_party(tmp_path):
 
 def test_one_party_withholding_blocks_file(tmp_path):
     write_approval(tmp_path, "do1@x.com", JobStatus.APPROVED, readable(LOGS, DS))
-    write_approval(tmp_path, "do2@x.com", JobStatus.APPROVED, readable(FRAMES, DS))
-    requested = readable([*LOGS, FRAMES], DS)
+    write_approval(tmp_path, "do2@x.com", JobStatus.APPROVED, readable(RETURN_CODE, DS))
+    requested = readable([*LOGS, RETURN_CODE], DS)
     assert read_permissions_approved_by_all_parties(tmp_path, requested) == {}
 
 
 def test_reader_needs_every_party(tmp_path):
     """Each email is agreed on its own: one party leaving it out keeps it out."""
-    both = readable(FRAMES, DS, "do1@x.com")
+    both = readable(RETURN_CODE, DS, "do1@x.com")
     write_approval(tmp_path, "do1@x.com", JobStatus.APPROVED, both)
-    write_approval(tmp_path, "do2@x.com", JobStatus.APPROVED, readable(FRAMES, DS))
+    write_approval(tmp_path, "do2@x.com", JobStatus.APPROVED, readable(RETURN_CODE, DS))
     approved = read_permissions_approved_by_all_parties(tmp_path, both)
-    assert approved == readable(FRAMES, DS)
+    assert approved == readable(RETURN_CODE, DS)
 
 
 def test_unapproved_party_blocks_everything(tmp_path):
@@ -91,18 +95,18 @@ def test_approval_file_without_read_permissions_grants_nothing(tmp_path):
 
 
 def test_request_narrows_result(tmp_path):
-    approved = readable([*LOGS, FRAMES], DS)
+    approved = readable([*LOGS, RETURN_CODE], DS)
     write_approval(tmp_path, "do1@x.com", JobStatus.APPROVED, approved)
-    requested = readable(FRAMES, DS)
+    requested = readable(RETURN_CODE, DS)
     assert read_permissions_approved_by_all_parties(tmp_path, requested) == requested
 
 
 def test_unrequested_reader_never_survives(tmp_path):
     """Every party approving an email the submitter did not name gives it nothing."""
-    wider = readable(FRAMES, DS, "other@x.com")
+    wider = readable(RETURN_CODE, DS, "other@x.com")
     write_approval(tmp_path, "do1@x.com", JobStatus.APPROVED, wider)
     write_approval(tmp_path, "do2@x.com", JobStatus.APPROVED, wider)
-    requested = readable(FRAMES, DS)
+    requested = readable(RETURN_CODE, DS)
     assert read_permissions_approved_by_all_parties(tmp_path, requested) == requested
 
 
@@ -221,7 +225,7 @@ ENTRY_POINTS = pytest.mark.parametrize("via_job", [False, True], ids=["client", 
 def approve(do, approved, via_job=False):
     """``{}`` approves nothing; None approves the whole request."""
     if via_job:
-        do.jobs["j"].approve(read_permissions=approved)
+        do.jobs["j"].approve(share_files=approved)
     else:
         do.approve_job(do.jobs["j"], approved)
 
@@ -306,63 +310,50 @@ def test_return_code_approval_sends_only_exit_code():
     assert not (review / "stderr.txt").exists()
 
 
-def test_approved_frames_carry_position_not_message():
-    enclave, do1, do2, ds = build_quad()
-    frames = readable(FRAMES, ds.email)
-    submit(ds, enclave, do1, do2, CRASH_CODE, frames)
-    run_to_completion(enclave, do1, do2, ds, frames)
-
-    record = json.loads((Path(ds.jobs["j"].job_review_path) / FRAMES).read_text())
-    entry = record["chain"][0]
-    assert entry["type"] == "ValueError"
-    assert {"file": "main.py", "line": 3} in entry["frames"]
-    assert "4120550" not in json.dumps(record)
-
-
-def test_frames_reach_named_data_owner():
+def test_return_code_reaches_named_data_owner():
     """A data owner that the request names, and every party approved, receives the file."""
     enclave, do1, do2, ds = build_quad()
-    frames = readable(FRAMES, ds.email, do1.email)
-    submit(ds, enclave, do1, do2, CRASH_CODE, frames)
-    run_to_completion(enclave, do1, do2, ds, frames)
+    return_code = readable(RETURN_CODE, ds.email, do1.email)
+    submit(ds, enclave, do1, do2, CRASH_CODE, return_code)
+    run_to_completion(enclave, do1, do2, ds, return_code)
     do1.sync()
 
-    assert has_file(do1, FRAMES)
+    assert has_file(do1, RETURN_CODE)
 
 
 def test_unnamed_data_owner_gets_no_file():
     """Every party approving the submitter's read gives no data owner a copy."""
     enclave, do1, do2, ds = build_quad()
-    frames = readable(FRAMES, ds.email)
-    submit(ds, enclave, do1, do2, CRASH_CODE, frames)
-    run_to_completion(enclave, do1, do2, ds, frames)
+    return_code = readable(RETURN_CODE, ds.email)
+    submit(ds, enclave, do1, do2, CRASH_CODE, return_code)
+    run_to_completion(enclave, do1, do2, ds, return_code)
     do1.sync()
     do2.sync()
 
-    assert has_file(ds, FRAMES)
-    assert not has_file(do1, FRAMES)
-    assert not has_file(do2, FRAMES)
+    assert has_file(ds, RETURN_CODE)
+    assert not has_file(do1, RETURN_CODE)
+    assert not has_file(do2, RETURN_CODE)
 
 
 def test_approved_file_grants_read_to_named_parties():
     enclave, do1, do2, ds = build_quad()
-    frames = readable(FRAMES, ds.email, do1.email)
-    submit(ds, enclave, do1, do2, CRASH_CODE, frames)
-    run_to_completion(enclave, do1, do2, ds, frames)
+    return_code = readable(RETURN_CODE, ds.email, do1.email)
+    submit(ds, enclave, do1, do2, CRASH_CODE, return_code)
+    run_to_completion(enclave, do1, do2, ds, return_code)
 
-    assert readers_of(enclave, FRAMES, (ds, do1, do2)) == [ds, do1]
+    assert readers_of(enclave, RETURN_CODE, (ds, do1, do2)) == [ds, do1]
 
 
-def test_one_owner_withholding_blocks_frames():
+def test_one_owner_withholding_blocks_return_code():
     enclave, do1, do2, ds = build_quad()
-    frames = readable(FRAMES, ds.email)
-    submit(ds, enclave, do1, do2, CRASH_CODE, frames)
+    return_code = readable(RETURN_CODE, ds.email)
+    submit(ds, enclave, do1, do2, CRASH_CODE, return_code)
     distribute(enclave, do1, do2)
-    do1.approve_job(do1.jobs["j"], frames)
+    do1.approve_job(do1.jobs["j"], return_code)
     do2.approve_job(do2.jobs["j"], {})
     run_and_share(enclave, ds)
 
-    assert not has_file(ds, FRAMES)
+    assert not has_file(ds, RETURN_CODE)
 
 
 def test_file_approved_by_some_parties_goes_to_no_one():
@@ -370,15 +361,22 @@ def test_file_approved_by_some_parties_goes_to_no_one():
     enclave, do1, do2, ds = build_quad()
     parties = (ds, do1, do2)
     emails = [p.email for p in parties]
-    submit(ds, enclave, do1, do2, CRASH_CODE, readable(["stderr.txt", FRAMES], *emails))
+    submit(
+        ds,
+        enclave,
+        do1,
+        do2,
+        CRASH_CODE,
+        readable(["stderr.txt", RETURN_CODE], *emails),
+    )
     distribute(enclave, do1, do2)
-    do1.approve_job(do1.jobs["j"], readable(FRAMES, *emails))
+    do1.approve_job(do1.jobs["j"], readable(RETURN_CODE, *emails))
     do2.approve_job(do2.jobs["j"], readable("stderr.txt", *emails))
     run_and_share(enclave, *parties)
 
-    assert readers_of(enclave, FRAMES, parties) == []
+    assert readers_of(enclave, RETURN_CODE, parties) == []
     assert readers_of(enclave, "stderr.txt", parties) == []
-    assert not any(has_file(p, FRAMES) for p in parties)
+    assert not any(has_file(p, RETURN_CODE) for p in parties)
 
 
 @ENTRY_POINTS
@@ -397,6 +395,22 @@ def test_later_approval_releases_withheld_file(via_job):
     run_and_share(enclave, ds)
 
     assert has_file(ds, "stdout.txt")
+
+
+def test_later_approval_releases_outputs():
+    """Outputs approved after the run reach the reader, as other files do."""
+    enclave, do1, do2, ds = build_quad()
+    outputs = readable(OUTPUTS, do1.email)
+    submit(ds, enclave, do1, do2, OK_CODE, outputs)
+    run_to_completion(enclave, do1, do2, ds, {})
+    assert readers_of(enclave, RESULT, (do1, do2)) == []
+
+    for do in (do1, do2):
+        do.update_read_permissions(do.jobs["j"], outputs)
+    run_and_share(enclave, do1)
+
+    assert readers_of(enclave, RESULT, (do1, do2)) == [do1]
+    assert has_file(do1, RESULT)
 
 
 def test_unapproved_file_unreadable_during_sync(monkeypatch):
@@ -447,19 +461,19 @@ def test_amendment_needs_approval_first():
 def test_late_approval_reaches_named_data_owners():
     """distribute_results runs once, so a later approval needs its own path."""
     enclave, do1, do2, ds = build_quad()
-    frames = readable(FRAMES, ds.email, do1.email, do2.email)
-    submit(ds, enclave, do1, do2, CRASH_CODE, frames)
+    return_code = readable(RETURN_CODE, ds.email, do1.email, do2.email)
+    submit(ds, enclave, do1, do2, CRASH_CODE, return_code)
     run_to_completion(enclave, do1, do2, ds, {})
     do1.sync()
-    assert not has_file(do1, FRAMES)
+    assert not has_file(do1, RETURN_CODE)
 
     for do in (do1, do2):
-        do.update_read_permissions(do.jobs["j"], frames)
+        do.update_read_permissions(do.jobs["j"], return_code)
     run_and_share(enclave, ds, do1, do2)
 
-    assert has_file(ds, FRAMES)
-    assert has_file(do1, FRAMES)
-    assert has_file(do2, FRAMES)
+    assert has_file(ds, RETURN_CODE)
+    assert has_file(do1, RETURN_CODE)
+    assert has_file(do2, RETURN_CODE)
 
 
 def test_approve_job_rejects_non_enclave_job():
@@ -489,8 +503,16 @@ def test_approve_job_rejects_non_enclave_job():
 @pytest.mark.parametrize(
     "flags, logs_to, outputs_to",
     [
-        ({"share_logs": True, "share_outputs_with_owners": True}, "ds", "owners"),
-        ({"share_outputs": True, "share_logs_with_owners": True}, "owners", "ds"),
+        (
+            {"share_logs_with_submitter": True, "share_outputs_with_owners": True},
+            "ds",
+            "owners",
+        ),
+        (
+            {"share_outputs_with_submitter": True, "share_logs_with_owners": True},
+            "owners",
+            "ds",
+        ),
     ],
 )
 def test_share_flags_build_request(flags, logs_to, outputs_to):
@@ -513,7 +535,13 @@ def test_share_files_with_flag_raises():
     )
     with pytest.raises(ValueError, match="share_files or the share flags"):
         submit(
-            ds, enclave, do1, do2, OK_CODE, readable(LOGS, ds.email), share_logs=True
+            ds,
+            enclave,
+            do1,
+            do2,
+            OK_CODE,
+            readable(LOGS, ds.email),
+            share_logs_with_submitter=True,
         )
 
 
@@ -556,7 +584,7 @@ def test_data_owner_cannot_read_combined_approval():
     logs = readable(LOGS, ds.email)
     submit(ds, enclave, do1, do2, OK_CODE, logs)
     distribute(enclave, do1)
-    do1.jobs["j"].approve(read_permissions=logs)
+    do1.jobs["j"].approve(share_files=logs)
 
     job = do1.jobs["j"]
     assert job.approved_read_permissions == logs
@@ -574,37 +602,39 @@ def test_owner_logs_approval_warns():
     distribute(enclave, do1)
 
     with pytest.warns(UserWarning, match="stdout or stderr"):
-        do1.jobs["j"].approve(read_permissions=logs)
+        do1.jobs["j"].approve(share_files=logs)
 
 
 def test_display_on_enclave_shows_every_party():
     enclave, do1, do2, ds = build_quad()
-    submit(ds, enclave, do1, do2, OK_CODE, readable(["stdout.txt", FRAMES], ds.email))
+    submit(
+        ds, enclave, do1, do2, OK_CODE, readable(["stdout.txt", RETURN_CODE], ds.email)
+    )
     distribute(enclave, do1)
-    do1.jobs["j"].approve(read_permissions=readable(FRAMES, ds.email))
+    do1.jobs["j"].approve(share_files=readable(RETURN_CODE, ds.email))
     enclave.sync()
 
     rows = dict(enclave.jobs["j"].read_permission_rows())
     # The request survives the distribution, which writes the approval files.
     assert rows["Requested"] == (
-        f"stdout.txt ({ds.email}), traceback_frames.json ({ds.email})"
+        f"returncode.txt ({ds.email}), stdout.txt ({ds.email})"
     )
-    assert rows[f"Approved by {do1.email}"] == f"traceback_frames.json ({ds.email})"
+    assert rows[f"Approved by {do1.email}"] == f"returncode.txt ({ds.email})"
     assert rows[f"Approved by {do2.email}"] == "(pending)"
     assert rows["Approved by all"] == "none"
 
 
 def test_display_on_data_owner_shows_own_approval():
     enclave, do1, do2, ds = build_quad()
-    frames = readable(FRAMES, ds.email)
-    submit(ds, enclave, do1, do2, OK_CODE, frames)
+    return_code = readable(RETURN_CODE, ds.email)
+    submit(ds, enclave, do1, do2, OK_CODE, return_code)
     distribute(enclave, do1)
-    do1.jobs["j"].approve(read_permissions=frames)
+    do1.jobs["j"].approve(share_files=return_code)
 
     job = do1.jobs["j"]
     assert job.read_permission_rows() == [
-        ("Requested", f"traceback_frames.json ({ds.email})"),
-        ("Approved by you", f"traceback_frames.json ({ds.email})"),
+        ("Requested", f"returncode.txt ({ds.email})"),
+        ("Approved by you", f"returncode.txt ({ds.email})"),
         ("Approved by all", "needs the approval of every party"),
     ]
     assert "Approved by you:" in job._repr_html_()
@@ -616,13 +646,13 @@ def test_display_on_data_owner_shows_own_approval():
 def test_request_edit_after_approval_adds_nothing():
     """A wider approval than the request must not share the extra files later."""
     enclave, do1, do2, ds = build_quad()
-    frames = readable(FRAMES, ds.email)
-    wider = readable([*LOGS, FRAMES], ds.email)
-    submit(ds, enclave, do1, do2, OK_CODE, frames)
+    return_code = readable(RETURN_CODE, ds.email)
+    wider = readable([*LOGS, RETURN_CODE], ds.email)
+    submit(ds, enclave, do1, do2, OK_CODE, return_code)
     distribute(enclave, do1, do2)
     for do in (do1, do2):
-        do.jobs["j"].approve(read_permissions=wider)
-        assert do.jobs["j"].approved_read_permissions == frames
+        do.jobs["j"].approve(share_files=wider)
+        assert do.jobs["j"].approved_read_permissions == return_code
     enclave.sync()
 
     # The DS widens its request on the enclave's copy after the approval.
@@ -635,7 +665,7 @@ def test_request_edit_after_approval_adds_nothing():
     enclave.distribute_results()
     ds.sync()
 
-    assert enclave.jobs["j"].read_permissions_to_share == frames
+    assert enclave.jobs["j"].read_permissions_to_share == return_code
     assert not has_file(ds, "stdout.txt")
 
 
@@ -646,10 +676,10 @@ def test_enclave_approve_refuses_misplaced_read_permissions():
     submit(ds, enclave, do1, do2, OK_CODE, logs)
     distribute(enclave, do1)
 
-    with pytest.raises(TypeError, match="read_permissions="):
+    with pytest.raises(TypeError, match="share_files="):
         do1.jobs["j"].approve(logs)
     with pytest.raises(TypeError, match="dict of file names"):
-        do1.jobs["j"].approve(read_permissions=["logs"])
+        do1.jobs["j"].approve(share_files=["logs"])
 
 
 # -- every required party, as the approval gate counts them ---------------------
@@ -692,7 +722,7 @@ def test_job_reject_reaches_enclave():
     logs = readable(LOGS, ds.email)
     submit(ds, enclave, do1, do2, OK_CODE, logs)
     distribute(enclave, do1, do2)
-    do1.jobs["j"].approve(read_permissions=logs)
+    do1.jobs["j"].approve(share_files=logs)
     with warnings.catch_warnings(record=True) as record:
         warnings.simplefilter("always")
         do2.jobs["j"].reject("too much data")
@@ -700,3 +730,96 @@ def test_job_reject_reaches_enclave():
 
     assert enclave.jobs["j"].status == "rejected"
     assert not [w for w in record if str(w.message) == LOGS_WARNING]
+
+
+# -- log requests after the run ---------------------------------------------------
+
+
+PARTIES = ["do1@x.com", "do2@x.com"]
+
+
+def write_log_request(review_dir, party, log_file="stderr.txt", **request):
+    logs = {log_file: LogRequest(**request)}
+    update = RequestedPermissionsUpdate(party=party, logs=logs)
+    update.save_json(review_dir / log_request_file_name(party))
+
+
+def test_log_shared_on_same_request_from_every_party(tmp_path):
+    for party in PARTIES:
+        write_log_request(tmp_path, party, readers=[DS], n_chars=10)
+    assert logs_requested_by_all_parties(tmp_path, PARTIES) == {
+        "stderr.txt": LogRequest(readers=[DS], n_chars=10)
+    }
+
+
+@pytest.mark.parametrize(
+    "do2_request",
+    [
+        None,
+        {"readers": [DS], "n_chars": 20},
+        {"readers": [DS, "x@x.com"], "n_chars": 10},
+    ],
+    ids=["missing", "other_length", "other_readers"],
+)
+def test_log_request_differing_between_parties_shares_nothing(tmp_path, do2_request):
+    write_log_request(tmp_path, "do1@x.com", readers=[DS], n_chars=10)
+    if do2_request is not None:
+        write_log_request(tmp_path, "do2@x.com", **do2_request)
+    assert logs_requested_by_all_parties(tmp_path, PARTIES) == {}
+
+
+def test_log_request_for_other_file_is_ignored(tmp_path):
+    write_log_request(tmp_path, "do1@x.com", log_file="outputs", readers=[DS])
+    assert logs_requested_by_all_parties(tmp_path, ["do1@x.com"]) == {}
+
+
+def run_crash_sharing_nothing():
+    enclave, do1, do2, ds = build_quad()
+    submit(ds, enclave, do1, do2, CRASH_CODE)
+    run_to_completion(enclave, do1, do2, ds, {})
+    return enclave, do1, do2, ds
+
+
+def request_stderr(do, **request):
+    with pytest.warns(UserWarning, match="stdout or stderr"):
+        do.request_stderr(do.jobs["j"], **request)
+
+
+def test_requested_stderr_head_reaches_submitter():
+    enclave, do1, do2, ds = run_crash_sharing_nothing()
+    assert not has_file(ds, "stderr.txt")
+
+    for do in (do1, do2):
+        request_stderr(do, readers=ds.email, n_chars=10)
+    run_and_share(enclave, ds)
+
+    enclave_review = Path(enclave._rds.job_client.jobs["j"].job_review_path)
+    full = (enclave_review / "stderr.txt").read_text()
+    assert has_file(ds, "stderr_10.txt")
+    assert not has_file(ds, "stderr.txt")
+    assert str(ds.jobs["j"].stderr) == full[:10]
+    assert ds.jobs["j"].approved_read_permissions == {"stderr_10.txt": [ds.email]}
+
+
+def test_one_owner_requesting_log_shares_nothing():
+    enclave, do1, do2, ds = run_crash_sharing_nothing()
+    request_stderr(do1, readers=ds.email)
+    run_and_share(enclave, ds)
+    assert not has_file(ds, "stderr.txt")
+
+
+def test_log_request_defaults_to_data_owners():
+    enclave, do1, do2, ds = run_crash_sharing_nothing()
+    for do in (do1, do2):
+        request_stderr(do)
+    run_and_share(enclave, ds, do1, do2)
+
+    assert readers_of(enclave, "stderr.txt", (ds, do1, do2)) == [do1, do2]
+    assert has_file(do1, "stderr.txt")
+    assert not has_file(ds, "stderr.txt")
+
+
+def test_submitter_cannot_request_logs():
+    enclave, do1, do2, ds = run_crash_sharing_nothing()
+    with pytest.raises(PermissionError, match="Only a data owner"):
+        ds.request_stderr(ds.jobs["j"])

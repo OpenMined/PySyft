@@ -178,7 +178,7 @@ class TestEmailApproveHandler:
         handler.handle_reply(thread_id="thread123", reply_text="approve")
 
         mock_job.approve.assert_called_once_with(
-            approval_method="manual", read_permissions=read_permissions
+            approval_method="manual", share_files=read_permissions
         )
         job_runner.run_job.assert_called_once_with(
             "test.job", "ds@example.com", share_outputs_with_submitter=True
@@ -300,10 +300,10 @@ def test_email_config_loads_default_approved_read_permissions(tmp_path):
     config_path.write_text(
         "do_email: do@example.com\n"
         "email_approve:\n"
-        "  default_approved_read_permissions: [stdout.txt, traceback_frames.json]\n"
+        "  default_approved_read_permissions: [stdout.txt, returncode.txt]\n"
     )
     config = EmailApproveConfig.load(config_path)
     assert config.default_approved_read_permissions == [
         "stdout.txt",
-        "traceback_frames.json",
+        "returncode.txt",
     ]

@@ -7,7 +7,7 @@ from syft_job.models import JobSubmissionMetadata
 from syft_job.read_permissions import (
     ReadPermissions,
     merge_read_permissions,
-    read_permissions_for,
+    job_read_permissions_for,
 )
 
 
@@ -60,8 +60,8 @@ class EnclaveJobClient(BaseJobClient):
         code_path: str,
         job_name: Optional[str] = "",
         datasets: Optional[dict[str, list[str]]] = None,
-        share_logs: bool = False,
-        share_outputs: bool = False,
+        share_logs_with_submitter: bool = False,
+        share_outputs_with_submitter: bool = False,
         share_logs_with_owners: bool = False,
         share_outputs_with_owners: bool = False,
         share_files: Optional[ReadPermissions] = None,
@@ -77,8 +77,8 @@ class EnclaveJobClient(BaseJobClient):
             ValueError: If share_files comes with a share flag.
         """
         any_flag = (
-            share_logs
-            or share_outputs
+            share_logs_with_submitter
+            or share_outputs_with_submitter
             or share_logs_with_owners
             or share_outputs_with_owners
         )
@@ -87,10 +87,12 @@ class EnclaveJobClient(BaseJobClient):
         if share_files is None:
             owners = list(datasets or {})
             share_files = merge_read_permissions(
-                read_permissions_for(
-                    [self.current_user_email], share_logs, share_outputs
+                job_read_permissions_for(
+                    [self.current_user_email],
+                    share_logs_with_submitter,
+                    share_outputs_with_submitter,
                 ),
-                read_permissions_for(
+                job_read_permissions_for(
                     owners, share_logs_with_owners, share_outputs_with_owners
                 ),
             )

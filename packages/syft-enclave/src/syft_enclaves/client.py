@@ -5,7 +5,11 @@ from typing import TYPE_CHECKING, Optional
 
 from syft_datasets import Dataset
 from syft_datasets.dataset_manager import SyftDatasetManager
-from syft_job.read_permissions import OUTPUTS, ReadPermissions
+from syft_job.read_permissions import (
+    OUTPUTS,
+    ReadPermissions,
+    merge_read_permissions,
+)
 from syft_job.job import JobInfo, JobsList
 from syft_job.job_storage import JobRef
 from syft_job.models import JobStatus
@@ -33,6 +37,11 @@ from syft_enclaves.enclave_job_info import (
 )
 from syft_enclaves.immutability import (
     make_private_dataset_immutability_filter,
+)
+from syft_enclaves.log_requests import (
+    log_request_file_name,
+    logs_requested_by_all_parties,
+    write_log_head,
 )
 from syft_enclaves.receipt.writer import (
     ReceiptSettings,
@@ -382,7 +391,7 @@ class SyftEnclaveClient:
         return EnclaveJobInfo.from_job_info(
             job,
             required_approvers=required,
-            on_approval_change=self._push_approval_file,
+            on_file_change=self._push_file,
         )
 
     def submit_python_job(
@@ -391,8 +400,8 @@ class SyftEnclaveClient:
         code_path: str,
         job_name: Optional[str] = "",
         datasets: Optional[dict[str, list[str]]] = None,
-        share_logs: bool = False,
-        share_outputs: bool = False,
+        share_logs_with_submitter: bool = False,
+        share_outputs_with_submitter: bool = False,
         share_logs_with_owners: bool = False,
         share_outputs_with_owners: bool = False,
         share_files: Optional[ReadPermissions] = None,
@@ -402,8 +411,8 @@ class SyftEnclaveClient:
     ):
         """Submit a Python job to an enclave, then push files via sync.
 
-        share_logs / share_outputs ask for stdout+stderr / the outputs for the
-        submitter, the ``*_with_owners`` flags for every data owner in
+        The ``*_with_submitter`` flags ask for stdout+stderr / the outputs for
+        the submitter, the ``*_with_owners`` flags for every data owner in
         ``datasets``. ``share_files`` gives the request as {file: [emails]}
         instead of the flags. Every party must approve a file for an email.
 
@@ -417,8 +426,8 @@ class SyftEnclaveClient:
             code_path,
             job_name,
             datasets=datasets,
-            share_logs=share_logs,
-            share_outputs=share_outputs,
+            share_logs_with_submitter=share_logs_with_submitter,
+            share_outputs_with_submitter=share_outputs_with_submitter,
             share_logs_with_owners=share_logs_with_owners,
             share_outputs_with_owners=share_outputs_with_owners,
             share_files=share_files,
@@ -452,7 +461,7 @@ class SyftEnclaveClient:
                 job.status == "approved"
                 and job.job_headers.get("job_type") == "enclave"
             ):
-                self._start_approved_job(job)
+                self._mark_approved_job_started(job)
 
         # share_logs_with_submitter=False shares the logs with nobody. Only an
         # approval from every party shares them. With receipts on, outputs
@@ -461,12 +470,11 @@ class SyftEnclaveClient:
         # of the receipt a sync later.
         self._rds.process_approved_jobs(
             force_execution=True,
-            share_outputs_with_submitter=self.receipts is None,
             share_logs_with_submitter=False,
+            share_outputs_with_submitter=self.receipts is None,
         )
-        self._apply_read_permission_policy()
 
-    def _start_approved_job(self, job: JobInfo) -> None:
+    def _mark_approved_job_started(self, job: JobInfo) -> None:
         """Record that every data owner approved ``job``, so the runner executes it."""
         try:
             job.record_approval(approval_method=ENCLAVE_APPROVAL_METHOD)
@@ -492,21 +500,20 @@ class SyftEnclaveClient:
         """
         return self._rds.job_client.jobs
 
-    def _apply_read_permission_policy(self) -> None:
-        """Share each file of a finished enclave job with the emails all approved.
+    def _share_requested_logs(self, job: JobInfo) -> ReadPermissions:
+        """Share each log that every data owner requested the same, after the run.
 
-        A file goes to an email only when the submitter requested it for that
-        email and every party approved the same. Nobody else reads it. The
-        outputs go out with the receipt, in ``distribute_results``.
+        Returns what it shared: the log, or a copy of its first chars.
         """
-        for job in self._local_jobs():
-            if job.job_headers.get("job_type") != "enclave":
-                continue
-            if job.status not in ("done", "failed"):
-                continue
-            approved = self.read_permissions_to_share(job)
-            job.share({f: e for f, e in approved.items() if f != OUTPUTS})
-            self._record_approved_read_permissions(job._ref, approved)
+        review = job.job_review_path
+        shared = {}
+        requests = logs_requested_by_all_parties(review, self.data_owners)
+        for log_file, request in requests.items():
+            name = write_log_head(review, log_file, request.n_chars)
+            if name is not None:
+                shared[name] = request.readers
+        job.share(shared)
+        return shared
 
     def _record_approved_read_permissions(
         self, ref: JobRef, approved: ReadPermissions
@@ -519,28 +526,40 @@ class SyftEnclaveClient:
             manager.write_state(ref, state)
 
     def distribute_results(self) -> None:
-        """Share the outputs with the DS, and with whoever every party approved."""
+        """Share each finished job's results and requested logs, then sync.
+
+        Runs on every tick, because an approval or a log request can come after
+        the job finished.
+        """
         for job in self.jobs:
             if job.status not in ("done", "failed"):
                 continue
-            self._share_results_once(job)
+            approved = self.read_permissions_to_share(job)
+            self._share_results(job, approved)
+            if job.job_headers.get("job_type") == "enclave":
+                shared_logs = self._share_requested_logs(job)
+                self._record_approved_read_permissions(
+                    job._ref, merge_read_permissions(approved, shared_logs)
+                )
 
         self._rds.sync()
 
-    def _share_results_once(self, job: JobInfo) -> None:
-        """Share the outputs, the first time the job finishes.
+    def _share_results(self, job: JobInfo, approved: ReadPermissions) -> None:
+        """Share each result that the submitter requested and every party approved.
 
-        The submitter always gets them; anyone else when every party approved it.
+        The submitter always gets the outputs.
         """
+        self._write_receipt_once(job)
+        output_readers = [job.submitted_by, *approved.get(OUTPUTS, [])]
+        job.share({**approved, OUTPUTS: list(dict.fromkeys(output_readers))})
+
+    def _write_receipt_once(self, job: JobInfo) -> None:
+        """Sign a receipt into the outputs, before they first go out."""
         marker = job.job_review_path / RESULTS_SHARED_MARKER
         if marker.exists():
             return
-
         if self.receipts is not None and job.status == "done":
             self._try_write_receipt(job)
-
-        approved = self.read_permissions_to_share(job).get(OUTPUTS, [])
-        job.share_outputs(list(dict.fromkeys([job.submitted_by, *approved])))
         marker.write_text("shared")
 
     def _try_write_receipt(self, job: JobInfo) -> None:
@@ -555,9 +574,9 @@ class SyftEnclaveClient:
             logger.exception("Could not write a receipt for job %s", job.name)
             write_receipt_error(job)
 
-    def _push_approval_file(self, approval_file: Path) -> None:
-        """Push a changed approval file to the enclave."""
-        relative_path = approval_file.relative_to(self._rds.syftbox_folder)
+    def _push_file(self, changed_file: Path) -> None:
+        """Push a changed file to the enclave."""
+        relative_path = changed_file.relative_to(self._rds.syftbox_folder)
         self._rds.sync_engine.datasite_watcher_syncer.on_file_change(
             relative_path, process_now=True
         )
@@ -574,19 +593,19 @@ class SyftEnclaveClient:
     def approve_job(
         self,
         job: JobInfo,
-        read_permissions: Optional[ReadPermissions] = None,
+        share_files: Optional[ReadPermissions] = None,
         share_requested_files: Optional[bool] = None,
     ) -> None:
         """Approve an enclave job and push the approval state file to the enclave.
 
         Same as ``job.approve(...)`` on a job from ``self.jobs``: with no
-        read_permissions, it approves everything the submitter requested.
+        share_files, it approves everything the submitter requested.
         """
         job = self._require_enclave_job(job)
         if pre_sync_enabled():
             self._rds.sync()
         job.approve(
-            read_permissions=read_permissions,
+            share_files=share_files,
             share_requested_files=share_requested_files,
         )
 
@@ -612,6 +631,40 @@ class SyftEnclaveClient:
         if pre_sync_enabled():
             self._rds.sync()
         return job.update_read_permissions(read_permissions)
+
+    def request_stderr(
+        self,
+        job: JobInfo,
+        readers: str | list[str] | None = None,
+        n_chars: Optional[int] = None,
+    ) -> None:
+        """Ask the enclave to share the job's stderr, or only its first ``n_chars`` chars.
+
+        Only a data owner can ask. The enclave shares it once every data owner
+        made the same request. ``readers`` defaults to the data owners of the job.
+        """
+        self._request_log(job, "stderr.txt", readers, n_chars)
+
+    def request_stdout(
+        self,
+        job: JobInfo,
+        readers: str | list[str] | None = None,
+        n_chars: Optional[int] = None,
+    ) -> None:
+        """Same as ``request_stderr``, for stdout."""
+        self._request_log(job, "stdout.txt", readers, n_chars)
+
+    def _request_log(
+        self,
+        job: JobInfo,
+        log_file: str,
+        readers: str | list[str] | None,
+        n_chars: Optional[int],
+    ) -> None:
+        job = self._require_enclave_job(job)
+        if pre_sync_enabled():
+            self._rds.sync()
+        job.request_log(log_file, readers, n_chars)
 
     def receive_jobs(self):
         """Receive and distribute enclave jobs to relevant DOs.
@@ -731,8 +784,8 @@ class SyftEnclaveClient:
         approval_dos: list[str],
     ):
         """Grant inbox read to everyone who needs to see the job (referenced +
-        approving DOs), state read to them and the submitter, and approval-file
-        write to the approving DOs."""
+        approving DOs), state read to them and the submitter, and write to each
+        approving DO on its own approval and log request files."""
         job_manager = self._rds.job_client.manager
         datasite = self._rds.syftbox_folder / self._rds.email
         ctx = SyftPermContext(datasite=datasite)
@@ -748,8 +801,11 @@ class SyftEnclaveClient:
             ctx.open(review_rel / "state.yaml").grant_read_access(email)
 
         for do_email in approval_dos:
-            approval_rel = review_rel / enclave_approval_file_name(do_email)
-            ctx.open(approval_rel).grant_write_access(do_email)
+            for name in (
+                enclave_approval_file_name(do_email),
+                log_request_file_name(do_email),
+            ):
+                ctx.open(review_rel / name).grant_write_access(do_email)
 
     @classmethod
     def from_config(

@@ -265,7 +265,7 @@ with open("outputs/result.json", "w") as f:
     job = do_manager.job_client.jobs[0]
     assert job.requested_read_permissions == stdout_for_ds
 
-    job.approve(read_permissions=stdout_for_ds)
+    job.approve(share_files=stdout_for_ds)
 
     do_manager.job_runner.process_approved_jobs()
 
@@ -279,9 +279,7 @@ with open("outputs/result.json", "w") as f:
     assert "hello from the job" in stdout.read_text()
 
     # Share outputs with DS
-    do_manager.job_runner.share_job_results(
-        "test.job", share_outputs=True, share_logs=False
-    )
+    do_manager.share_job_results(job, share_outputs_with_submitter=True)
 
     do_manager.sync()
     ds_manager.sync()

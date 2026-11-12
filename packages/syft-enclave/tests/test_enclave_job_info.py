@@ -106,7 +106,7 @@ def test_approve_without_read_permissions_approves_whole_request(tmp_path: Path)
 
 def test_approve_with_read_permissions_approves_requested_part(tmp_path: Path):
     job, approval_file = _approvable_job(tmp_path)
-    job.approve(read_permissions={"outputs": [DO_EMAIL, "other@test.org"]})
+    job.approve(share_files={"outputs": [DO_EMAIL, "other@test.org"]})
     approval = PartyApprovalStatus.load_json(approval_file)
     assert approval.approved_read_permissions == {"outputs": [DO_EMAIL]}
 
@@ -114,5 +114,5 @@ def test_approve_with_read_permissions_approves_requested_part(tmp_path: Path):
 def test_approve_refuses_read_permissions_with_share_requested_files(tmp_path):
     job, approval_file = _approvable_job(tmp_path)
     with pytest.raises(ValueError, match="share_requested_files"):
-        job.approve(read_permissions=REQUESTED, share_requested_files=True)
+        job.approve(share_files=REQUESTED, share_requested_files=True)
     assert PartyApprovalStatus.load_json(approval_file).status == JobStatus.PENDING

@@ -239,6 +239,11 @@ Run all approved jobs. **DO only.**
 - `timeout`: Timeout in seconds per job (default: 300).
 - `force_execution`: Skip version compatibility checks.
 - `ignore_peer_version`: Run jobs from peers whose version is incompatible.
+- `share_logs_with_submitter`, `share_outputs_with_submitter`: Approve the logs or
+  the outputs for the submitter, on top of the job's approval. They are written to
+  the job's approved read permissions before it runs; after the run, the runner
+  shares only what those approve. An api call ignores both: its api and output
+  policy decide.
 
 ```python
 do_client.process_approved_jobs()
@@ -263,6 +268,18 @@ Raises if the submitter runs an incompatible version. Pass `sync=True` to sync a
 ```python
 job = do_client.jobs["analysis"]
 do_client.run_job(job)
+```
+
+### `client.share_job_results(job, share_logs_with_submitter=False, share_outputs_with_submitter=False, share_files=None, sync=False)`
+
+Share more of a finished job's files. **DO only.** Adds the readers to the job's
+approved read permissions and grants them read at once. A read already given is
+not taken back. Also works on an api call whose output policy held the outputs back.
+
+- `share_files`: Who may read which file, as `{file: [emails]}`.
+
+```python
+do_client.share_job_results(job, share_outputs_with_submitter=True, sync=True)
 ```
 
 ---

@@ -1,6 +1,5 @@
 """Run files reach the submitter only when a share grants read on them."""
 
-import json
 import warnings
 from pathlib import Path
 
@@ -21,7 +20,6 @@ from syft_job.submission import (
     OWNER_RECORD_FILENAME,
     SUBMISSION_HASH_HEADER,
 )
-from syft_job.traceback_capture import FRAMES_FILENAME
 from syft_permissions.spec.ruleset import PERMISSION_FILE_NAME
 from syft_perms import SyftPermContext
 
@@ -33,7 +31,6 @@ DS_EMAIL = "ds@test.org"
 LOG_FILES = ("stdout.txt", "stderr.txt", "returncode.txt")
 # Read permissions of the DS on each kind of run file.
 LOGS = {"stdout.txt": [DS_EMAIL], "stderr.txt": [DS_EMAIL]}
-FRAMES = {FRAMES_FILENAME: [DS_EMAIL]}
 RETURN_CODE = {"returncode.txt": [DS_EMAIL]}
 
 OK_PY = """\
@@ -113,7 +110,7 @@ def run_job(
     ``requested`` is what the DS asks for, and ``grants`` is what the DO
     approves.
     """
-    submit_only(tmp_path, requested, code).approve(read_permissions=grants)
+    submit_only(tmp_path, requested, code).approve(share_files=grants)
     run_approved(tmp_path, share_logs)
     do_config = do_config_for(tmp_path)
     return (
@@ -165,9 +162,31 @@ def test_default_holds_logs_back(tmp_path):
 
 
 def test_share_logs_flag_shares_logs(tmp_path):
-    run_job(tmp_path, OK_PY, share_logs=True)
+    job, _ = run_job(tmp_path, OK_PY, share_logs=True)
+    assert job.approved_read_permissions == {name: [DS_EMAIL] for name in LOG_FILES}
     for name in LOG_FILES:
         assert ds_can_read(tmp_path, name)
+
+
+def test_share_job_results_adds_to_approval_and_shares(tmp_path):
+    outputs = {OUTPUTS: [DS_EMAIL]}
+    run_job(tmp_path, OK_PY, None, requested=outputs, grants=outputs)
+    assert not ds_can_read(tmp_path, "stdout.txt")
+
+    SyftJobRunner(config=do_config_for(tmp_path)).share_job_results(
+        "test.job", share_files={"stdout.txt": [DS_EMAIL]}
+    )
+
+    approved = reload_job(tmp_path).approved_read_permissions
+    assert approved == {**outputs, "stdout.txt": [DS_EMAIL]}
+    assert ds_can_read(tmp_path, "stdout.txt")
+
+
+def test_share_job_results_needs_finished_job(tmp_path):
+    submit_only(tmp_path).approve()
+    runner = SyftJobRunner(config=do_config_for(tmp_path))
+    with pytest.raises(ValueError, match="run it first"):
+        runner.share_job_results("test.job", share_outputs_with_submitter=True)
 
 
 def test_second_share_is_harmless(tmp_path):
@@ -182,20 +201,6 @@ def test_owner_reads_unshared_log_through_viewer(tmp_path):
     assert "hello from job" in str(job.stdout)
 
 
-def test_traceback_record_waits_for_share(tmp_path):
-    job, review = run_job(tmp_path, CRASH_PY, share_logs=False)
-    record_path = review / FRAMES_FILENAME
-    assert record_path.exists()
-    assert not ds_can_read(tmp_path, FRAMES_FILENAME)
-
-    record = json.loads(record_path.read_text())
-    assert record["chain"][0]["type"] == "ValueError"
-    assert "4120550" not in record_path.read_text()
-
-    job.share({FRAMES_FILENAME: [DS_EMAIL]})
-    assert ds_can_read(tmp_path, FRAMES_FILENAME)
-
-
 def test_share_with_nothing_to_share_skips_permissions(tmp_path, monkeypatch):
     """The permission context scans the whole datasite, so build it only to grant."""
     job, _ = run_job(tmp_path, OK_PY, share_logs=None)
@@ -205,7 +210,7 @@ def test_share_with_nothing_to_share_skips_permissions(tmp_path, monkeypatch):
 
     monkeypatch.setattr(JobInfo, "_get_perm_context", no_permission_work)
 
-    job.share({FRAMES_FILENAME: [DS_EMAIL]})
+    job.share({"stdout.txt": []})
 
 
 def test_rerun_clears_files_of_old_run(tmp_path):
@@ -221,29 +226,17 @@ def test_rerun_clears_files_of_old_run(tmp_path):
 
 
 def test_rerun_drops_log_grant_of_old_run(tmp_path):
-    """A log shared in the old run must not reach the DS from the rerun."""
+    """A log shared by hand in the old run must not reach the DS from the rerun."""
     JobClient(config=do_config_for(tmp_path)).setup_ds_job_folder_as_do(DS_EMAIL)
-    job, _ = run_job(tmp_path, OK_PY, share_logs=True)
+    job, _ = run_job(tmp_path, OK_PY, share_logs=False)
+    job.share_logs([DS_EMAIL])
+    assert ds_can_read(tmp_path, "stdout.txt")
 
     job.rerun()
     run_approved(tmp_path, share_logs=False)
 
     for name in LOG_FILES:
         assert not ds_can_read(tmp_path, name)
-
-
-def test_rerun_clears_crash_record(tmp_path):
-    """A crash record from the old run must not survive a later share.
-
-    A rerun that succeeds writes no record, so a leftover record would describe
-    a failure that the new run never had.
-    """
-    job, review = run_job(tmp_path, CRASH_PY, share_logs=False)
-    assert (review / FRAMES_FILENAME).exists()
-
-    job.rerun()
-
-    assert not (review / FRAMES_FILENAME).exists()
 
 
 def permission_file_code(name: str) -> str:
@@ -371,10 +364,10 @@ def write_headers(inbox: Path, **headers) -> None:
 
 
 def test_receipt_copies_request_into_state(tmp_path):
-    job = submit_only(tmp_path, {**LOGS, **FRAMES})
-    assert job.requested_read_permissions == {**LOGS, **FRAMES}
+    job = submit_only(tmp_path, {**LOGS, **RETURN_CODE})
+    assert job.requested_read_permissions == {**LOGS, **RETURN_CODE}
     state = yaml.safe_load((job.job_review_path / "state.yaml").read_text())
-    assert state["requested_read_permissions"] == {**LOGS, **FRAMES}
+    assert state["requested_read_permissions"] == {**LOGS, **RETURN_CODE}
     assert state["approved_read_permissions"] == {}
 
 
@@ -424,10 +417,13 @@ def submit_with(tmp_path: Path, **share) -> JobInfo:
 @pytest.mark.parametrize(
     "share, requested",
     [
-        ({"share_logs": True}, LOGS),
-        ({"share_outputs": True}, {OUTPUTS: [DS_EMAIL]}),
-        ({"share_logs": True, "share_outputs": True}, {**LOGS, OUTPUTS: [DS_EMAIL]}),
-        ({}, {}),
+        ({}, {OUTPUTS: [DS_EMAIL]}),
+        ({"share_logs_with_submitter": True}, {**LOGS, OUTPUTS: [DS_EMAIL]}),
+        (
+            {"share_logs_with_submitter": True, "share_outputs_with_submitter": False},
+            LOGS,
+        ),
+        ({"share_outputs_with_submitter": False}, {}),
     ],
 )
 def test_share_flags_build_request(tmp_path, share, requested):
@@ -435,20 +431,20 @@ def test_share_flags_build_request(tmp_path, share, requested):
 
 
 def test_share_files_with_flag_raises(tmp_path):
-    with pytest.raises(ValueError, match="share_files or share_logs"):
-        submit_with(tmp_path, share_logs=True, share_files=FRAMES)
+    with pytest.raises(ValueError, match="share_files or the share flags"):
+        submit_with(tmp_path, share_logs_with_submitter=True, share_files=RETURN_CODE)
 
 
 def test_approve_share_requested_files_approves_request(tmp_path):
-    job = submit_only(tmp_path, {**LOGS, **FRAMES})
+    job = submit_only(tmp_path, {**LOGS, **RETURN_CODE})
     job.approve(share_requested_files=True)
-    assert reload_job(tmp_path).approved_read_permissions == {**LOGS, **FRAMES}
+    assert reload_job(tmp_path).approved_read_permissions == {**LOGS, **RETURN_CODE}
 
 
 def test_approve_with_both_raises(tmp_path):
     job = submit_only(tmp_path, LOGS)
-    with pytest.raises(ValueError, match="read_permissions or share_requested_files"):
-        job.approve(read_permissions=LOGS, share_requested_files=True)
+    with pytest.raises(ValueError, match="share_files or share_requested_files"):
+        job.approve(share_files=LOGS, share_requested_files=True)
     assert reload_job(tmp_path).status == "pending"
 
 
@@ -484,7 +480,7 @@ def test_ds_header_cannot_approve(tmp_path):
 def test_ds_cannot_approve_or_update(tmp_path):
     submit_only(tmp_path, LOGS)
     with pytest.raises(PermissionError):
-        ds_job(tmp_path).approve(read_permissions=LOGS)
+        ds_job(tmp_path).approve(share_files=LOGS)
     reload_job(tmp_path).approve()
     with pytest.raises(PermissionError):
         ds_job(tmp_path).update_read_permissions(LOGS)
@@ -505,7 +501,7 @@ def test_ds_cannot_write_state(tmp_path):
 def test_approval_keeps_requested_files_and_emails_only(tmp_path):
     job = submit_only(tmp_path, {"stdout.txt": [DS_EMAIL, "other@test.org"]})
     job.approve(
-        read_permissions={
+        share_files={
             "stdout.txt": [DS_EMAIL, "outsider@test.org"],
             "stderr.txt": [DS_EMAIL],
         }
@@ -516,25 +512,22 @@ def test_approval_keeps_requested_files_and_emails_only(tmp_path):
 
 def test_approved_files_shared_after_run(tmp_path):
     """An approved file that the DS did not request gets no grant."""
-    run_job(tmp_path, CRASH_PY, None, requested=LOGS, grants={**LOGS, **FRAMES})
+    run_job(tmp_path, CRASH_PY, None, requested=LOGS, grants={**LOGS, **RETURN_CODE})
     for name in ("stdout.txt", "stderr.txt"):
         assert ds_can_read(tmp_path, name)
-    assert not ds_can_read(tmp_path, FRAMES_FILENAME)
     assert not ds_can_read(tmp_path, "returncode.txt")
 
 
 def test_request_without_approval_shares_nothing(tmp_path):
-    job, _ = run_job(
-        tmp_path, CRASH_PY, None, requested={**LOGS, **FRAMES, **RETURN_CODE}
-    )
+    job, _ = run_job(tmp_path, CRASH_PY, None, requested={**LOGS, **RETURN_CODE})
     assert job.approved_read_permissions == {}
-    for name in (*LOG_FILES, FRAMES_FILENAME):
+    for name in LOG_FILES:
         assert not ds_can_read(tmp_path, name)
 
 
-def test_approved_frames_shared_without_logs(tmp_path):
-    run_job(tmp_path, CRASH_PY, None, requested=FRAMES, grants=FRAMES)
-    assert ds_can_read(tmp_path, FRAMES_FILENAME)
+def test_approved_return_code_shared_without_logs(tmp_path):
+    run_job(tmp_path, CRASH_PY, None, requested=RETURN_CODE, grants=RETURN_CODE)
+    assert ds_can_read(tmp_path, "returncode.txt")
     assert not ds_can_read(tmp_path, "stderr.txt")
 
 
@@ -582,17 +575,17 @@ def logs_warnings(record) -> list:
 def test_approve_warns_when_logs_go_out(tmp_path):
     job = submit_only(tmp_path, LOGS)
     with pytest.warns(UserWarning, match="stdout or stderr") as record:
-        job.approve(read_permissions=LOGS)
+        job.approve(share_files=LOGS)
     # The warning points at the caller, not at the helper.
     assert logs_warnings(record)[0].filename == __file__
 
 
 def test_unrequested_logs_approval_does_not_warn(tmp_path):
     """Approving a file the DS did not request approves nothing."""
-    job = submit_only(tmp_path, FRAMES)
+    job = submit_only(tmp_path, RETURN_CODE)
     with warnings.catch_warnings(record=True) as record:
         warnings.simplefilter("always")
-        job.approve(read_permissions={**LOGS, **FRAMES})
+        job.approve(share_files={**LOGS, **RETURN_CODE})
     assert logs_warnings(record) == []
 
 
@@ -604,22 +597,22 @@ def test_update_read_permissions_warns_when_logs_go_out(tmp_path):
 
 
 def test_display_shows_read_permissions(tmp_path):
-    job = submit_only(tmp_path, {**LOGS, **FRAMES})
-    job.approve(read_permissions={**FRAMES, **RETURN_CODE})
+    job = submit_only(tmp_path, {**LOGS, **RETURN_CODE})
+    job.approve(share_files={**RETURN_CODE, OUTPUTS: [DS_EMAIL]})
 
-    # Only the requested file is kept, so returncode.txt is not approved.
-    frames = f"{FRAMES_FILENAME} ({DS_EMAIL})"
-    requested = f"stderr.txt ({DS_EMAIL}), stdout.txt ({DS_EMAIL}), {frames}"
+    # Only the requested file is kept, so outputs is not approved.
+    return_code = f"returncode.txt ({DS_EMAIL})"
+    requested = f"{return_code}, stderr.txt ({DS_EMAIL}), stdout.txt ({DS_EMAIL})"
     assert job.read_permission_rows() == [
         ("Requested", requested),
-        ("Approved", frames),
+        ("Approved", return_code),
     ]
-    assert f"Approved: {frames}" in str(job)
+    assert f"Approved: {return_code}" in str(job)
     assert "Approved:" in job._repr_html_()
 
 
 def test_display_without_read_permissions(tmp_path):
-    job = submit_only(tmp_path, None)
+    job = submit_only(tmp_path, {})
     assert "Requested: none; Approved: none" in str(job)
 
 
@@ -633,9 +626,9 @@ def edit_request(job: JobInfo, requested: dict) -> None:
 
 def test_request_edit_after_approval_adds_nothing(tmp_path):
     """A wider approval than the request must not share the extra files later."""
-    job = submit_only(tmp_path, FRAMES)
-    job.approve(read_permissions={**LOGS, **FRAMES})
-    edit_request(job, {**LOGS, **FRAMES})
+    job = submit_only(tmp_path, RETURN_CODE)
+    job.approve(share_files={**LOGS, **RETURN_CODE})
+    edit_request(job, {**LOGS, **RETURN_CODE})
 
     run_approved(tmp_path)
 
@@ -645,7 +638,7 @@ def test_request_edit_after_approval_adds_nothing(tmp_path):
 def test_approve_refuses_read_permissions_as_reason(tmp_path):
     """``approve({...})`` would approve nothing and record the dict as reason."""
     job = submit_only(tmp_path, LOGS)
-    with pytest.raises(TypeError, match="read_permissions="):
+    with pytest.raises(TypeError, match="share_files="):
         job.approve(LOGS)
     assert job.status == "pending"
 

@@ -343,9 +343,7 @@ class TestApprovedJobHandler:
 
         assert handler.run_approved_jobs() == [call]
         client.receive_jobs.assert_called_once()
-        client.run_job.assert_called_once_with(
-            call, stream_output=False, share_outputs_with_submitter=True
-        )
+        client.run_job.assert_called_once_with(call, stream_output=False)
         client.sync.assert_called_once()
 
     def test_runs_nothing_without_approved_api_calls(self, temp_dir):

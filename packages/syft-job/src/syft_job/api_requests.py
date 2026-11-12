@@ -75,20 +75,20 @@ def _is_settled(client: JobClient, ref: RequestRef) -> bool:
     return True
 
 
-def _checked_api(client: JobClient, ref: RequestRef) -> ResolvedApi:
+def _checked_api(job_client: JobClient, ref: RequestRef) -> ResolvedApi:
     """The api the request calls, once the request passed every check.
 
     Raises PolicyResolutionError with the reason it is rejected.
     """
-    request_dir = client.manager.request_dir(ref)
+    request_dir = job_client.manager.request_dir(ref)
     valid, reason = validate_request(request_dir)
     if not valid:
         raise PolicyResolutionError(reason)
-    if client.manager.submission_dir(ref.job_ref).exists():
+    if job_client.manager.submission_dir(ref.job_ref).exists():
         raise PolicyResolutionError("a job in inbox/ has the same name")
-    api_name = client.manager.read_request(ref).api
-    client.api_resolver.check_request(api_name, request_dir, ref.ds_email)
-    return client.api_resolver(api_name)
+    api_name = job_client.manager.read_request(ref).api
+    job_client.api_resolver.check_request(api_name, request_dir, ref.ds_email)
+    return job_client.api_resolver(api_name)
 
 
 def _reject(client: JobClient, ref: RequestRef, reason: str) -> None:
@@ -164,5 +164,5 @@ def _approve(client: JobClient, job_ref: JobRef, api: ResolvedApi) -> None:
     )
     job.approve(
         approval_method=API_APPROVAL_METHOD,
-        read_permissions=read_permissions,
+        share_files=read_permissions,
     )

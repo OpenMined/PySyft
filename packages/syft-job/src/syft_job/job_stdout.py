@@ -64,10 +64,10 @@ class StdoutViewer:
 
     def __str__(self) -> str:
         """Return the stdout content with ANSI codes stripped."""
-        if self.job_info.status != "done":
+        if self.job_info.status not in ("done", "failed"):
             return "No stdout available - job not completed yet"
 
-        stdout_file = self.job_info.job_review_path / "stdout.txt"
+        stdout_file = self.job_info._log_path("stdout.txt")
 
         if not stdout_file.exists():
             return "No stdout file found"
@@ -94,10 +94,10 @@ class StdoutViewer:
     def _repr_html_(self) -> str:
         """HTML representation for Jupyter notebooks with scrollable view."""
         # Get raw content first to check for errors
-        if self.job_info.status != "done":
+        if self.job_info.status not in ("done", "failed"):
             error_msg = "No stdout available - job not completed yet"
         else:
-            stdout_file = self.job_info.job_review_path / "stdout.txt"
+            stdout_file = self.job_info._log_path("stdout.txt")
 
             if not stdout_file.exists():
                 error_msg = "No stdout file found"

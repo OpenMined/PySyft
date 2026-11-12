@@ -9,15 +9,24 @@ from pydantic import BaseModel, Field, field_validator
 from syft_job.read_permissions import (
     ReadPermissions,
     check_approval_reason,
-    check_read_permissions,
+    validate_read_permissions,
     format_read_permissions,
     restrict_to_request,
-    valid_read_permissions,
+    validate_read_permissions_as_do,
     warn_on_logs_release,
 )
 from syft_job.job import JobInfo
 from syft_job.models import JobStatus
 from syft_job.submission import submission_hash  # noqa: F401 (re-exported)
+
+from syft_enclaves.log_requests import (
+    REQUESTABLE_LOGS,
+    LogRequest,
+    RequestedPermissionsUpdate,
+    load_log_request,
+    log_request_file_name,
+    longest_log_head,
+)
 
 
 class PartyApprovalStatus(BaseModel):
@@ -40,7 +49,7 @@ class PartyApprovalStatus(BaseModel):
     @classmethod
     def _drop_invalid_read_permissions(cls, value: object) -> ReadPermissions:
         """Keep only the valid entries, so an item-based older file approves nothing."""
-        return valid_read_permissions(value)
+        return validate_read_permissions_as_do(value)
 
     def save_json(self, path: Path) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -92,22 +101,22 @@ class EnclaveJobInfo(JobInfo):
 
     _required_approvers: Optional[list[str]] = None
 
-    # Called with the path of the approval file after each change, so the
-    # enclave client can push the file. None pushes nothing.
-    _on_approval_change: Optional[Callable[[Path], None]] = None
+    # Called with the path of a file this job wrote, so the enclave client can
+    # push it. None pushes nothing.
+    _on_file_change: Optional[Callable[[Path], None]] = None
 
     @classmethod
     def from_job_info(
         cls,
         job: JobInfo,
         required_approvers: Optional[list[str]] = None,
-        on_approval_change: Optional[Callable[[Path], None]] = None,
+        on_file_change: Optional[Callable[[Path], None]] = None,
     ) -> EnclaveJobInfo:
         instance = cls.__new__(cls)
         instance.__dict__.update(job.__dict__)
         instance._required_approvers = required_approvers
-        if on_approval_change is not None:
-            instance._on_approval_change = on_approval_change
+        if on_file_change is not None:
+            instance._on_file_change = on_file_change
         return instance
 
     @property
@@ -129,8 +138,11 @@ class EnclaveJobInfo(JobInfo):
 
     def _save_own_approval(self, approval: PartyApprovalStatus) -> None:
         approval.save_json(self._approval_file)
-        if self._on_approval_change is not None:
-            self._on_approval_change(self._approval_file)
+        self._push_file(self._approval_file)
+
+    def _push_file(self, path: Path) -> None:
+        if self._on_file_change is not None:
+            self._on_file_change(path)
 
     @property
     def approved_read_permissions(self) -> ReadPermissions:
@@ -234,34 +246,32 @@ class EnclaveJobInfo(JobInfo):
         Raises:
             TypeError, ValueError: If ``read_permissions`` is not {file: [emails]}.
         """
-        checked = check_read_permissions(read_permissions)
+        checked = validate_read_permissions(read_permissions)
         return restrict_to_request(checked, self.requested_read_permissions)
 
     def _read_permissions_to_approve(
-        self, read_permissions: object, share_requested_files: Optional[bool]
+        self, share_files: object, share_requested_files: Optional[bool]
     ) -> ReadPermissions:
-        """The whole request, or the requested part of ``read_permissions``."""
+        """The whole request, or the requested part of ``share_files``."""
         if share_requested_files is None:
-            share_requested_files = read_permissions is None
-        if read_permissions is not None and share_requested_files:
-            raise ValueError(
-                "Give read_permissions or share_requested_files, not both."
-            )
+            share_requested_files = share_files is None
+        if share_files is not None and share_requested_files:
+            raise ValueError("Give share_files or share_requested_files, not both.")
         if share_requested_files:
             return dict(self.requested_read_permissions)
-        return self._restrict_to_request(read_permissions)
+        return self._restrict_to_request(share_files)
 
     def approve(
         self,
         reason: Optional[str] = None,
         approval_method: str = "manual",
-        read_permissions: Optional[ReadPermissions] = None,
+        share_files: Optional[ReadPermissions] = None,
         share_requested_files: Optional[bool] = None,
     ) -> None:
         """Approve this submission in the DO's own approval file.
 
-        ``read_permissions`` says who may read which file, as {file: [emails]}.
-        ``share_requested_files`` None means True unless read_permissions is
+        ``share_files`` says who may read which file, as {file: [emails]}.
+        ``share_requested_files`` None means True unless share_files is
         given: with neither, the approval covers everything the submitter requested.
         The enclave shares a file with an email only when every party approved
         it, and only what the submitter requested is kept. The file records the
@@ -269,12 +279,10 @@ class EnclaveJobInfo(JobInfo):
         matches. ``reason`` and ``approval_method`` are not recorded.
 
         Raises:
-            ValueError: If read_permissions comes with share_requested_files=True.
+            ValueError: If share_files comes with share_requested_files=True.
         """
         check_approval_reason(reason)
-        approved = self._read_permissions_to_approve(
-            read_permissions, share_requested_files
-        )
+        approved = self._read_permissions_to_approve(share_files, share_requested_files)
         approval = self._load_own_approval()
         current = submission_hash(self.job_submission_path)
         if approval.status == JobStatus.REJECTED or _approves(approval, current):
@@ -304,6 +312,56 @@ class EnclaveJobInfo(JobInfo):
         warn_on_logs_release(approved)
         self._save_own_approval(approval)
         return approved
+
+    def request_log(
+        self,
+        log_file: str,
+        readers: str | list[str] | None = None,
+        n_chars: Optional[int] = None,
+    ) -> None:
+        """Ask the enclave to share ``log_file``, or only its first ``n_chars`` chars.
+
+        The enclave shares it once every data owner made the same request.
+        ``readers`` defaults to the data owners of the job.
+
+        Raises:
+            PermissionError: If the caller is not a data owner of this job.
+            ValueError: If ``log_file`` is not stdout.txt or stderr.txt.
+        """
+        if not self.can_approve:
+            raise PermissionError(
+                f"Only a data owner of job '{self.name}' can request its logs."
+            )
+        if log_file not in REQUESTABLE_LOGS:
+            raise ValueError(f"Request one of {REQUESTABLE_LOGS}, not {log_file!r}.")
+        request = LogRequest(readers=self._log_readers(readers), n_chars=n_chars)
+        warn_on_logs_release({log_file: request.readers})
+        self._save_own_log_request(log_file, request)
+        print(f"Requested {log_file} of job '{self.name}' for {request.readers}.")
+
+    def _log_readers(self, readers: str | list[str] | None) -> list[str]:
+        """``readers`` as a list; by default the data owners of the job."""
+        if readers is None:
+            owners = self.job_metadata.datasets or {}
+            return [e for e in owners if e != self.datasite_owner_email]
+        return [readers] if isinstance(readers, str) else list(readers)
+
+    def _save_own_log_request(self, log_file: str, request: LogRequest) -> None:
+        """Replace this party's request for ``log_file``, and push the file."""
+        me = self.current_user_email
+        path = self.job_review_path / log_request_file_name(me)
+        update = load_log_request(self.job_review_path, me)
+        update = update or RequestedPermissionsUpdate(party=me)
+        update.logs[log_file] = request
+        update.save_json(path)
+        self._push_file(path)
+
+    def _log_path(self, log_file: str) -> Path:
+        full = super()._log_path(log_file)
+        if full.exists():
+            return full
+        # The data owners may have shared only the first chars of the log.
+        return longest_log_head(self.job_review_path, log_file) or full
 
     def reject(self, reason: Optional[str] = None) -> None:
         """Reject this job in the DO's own approval file.

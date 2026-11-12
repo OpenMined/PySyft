@@ -15,9 +15,9 @@ from .config import SyftJobConfig
 from .read_permissions import (
     REQUESTED_READ_PERMISSIONS_HEADER,
     ReadPermissions,
-    check_read_permissions,
-    read_permissions_for,
-    valid_read_permissions,
+    validate_read_permissions,
+    job_read_permissions_for,
+    validate_read_permissions_as_do,
 )
 from .install_source import get_syft_install_source
 from .job import JobInfo, JobsList
@@ -488,8 +488,8 @@ python {entrypoint_path}
         job_name: Optional[str] = "",
         dependencies: Optional[List[str]] = None,
         entrypoint: Optional[str] = None,
-        share_logs: bool = False,
-        share_outputs: bool = False,
+        share_logs_with_submitter: bool = False,
+        share_outputs_with_submitter: Optional[bool] = None,
         share_files: Optional[ReadPermissions] = None,
     ) -> Path:
         """
@@ -501,8 +501,10 @@ python {entrypoint_path}
             job_name: Name of the job (directory name). If empty, auto-generated.
             dependencies: List of Python packages to install
             entrypoint: Entry point file name (auto-detected if not provided)
-            share_logs: Ask the data owner to let you read stdout and stderr.
-            share_outputs: Ask the data owner to let you read the outputs.
+            share_logs_with_submitter: Ask the data owner to let you read
+                stdout and stderr.
+            share_outputs_with_submitter: Ask the data owner to let you read
+                the outputs. None (default) means True unless share_files is given.
             share_files: Instead of the two flags, who should read which run
                 file, as {file: [emails]}, e.g. {"stdout.txt": [me]}. The data
                 owner approves none, some, or all of the request.
@@ -517,9 +519,13 @@ python {entrypoint_path}
             FileNotFoundError: If code_path doesn't exist
             TypeError: If share_files is not {file: [emails]}
         """
-        self._check_share_args(share_logs, share_outputs, share_files)
+        if share_outputs_with_submitter is None:
+            share_outputs_with_submitter = share_files is None
+        self._check_share_args(
+            share_logs_with_submitter, share_outputs_with_submitter, share_files
+        )
         requested_read_permissions = self._requested_read_permissions(
-            share_logs, share_outputs, share_files
+            share_logs_with_submitter, share_outputs_with_submitter, share_files
         )
         submitting_to_email = user
         # Generate default job name if not provided
@@ -655,27 +661,37 @@ python {entrypoint_path}
 
     @staticmethod
     def _check_share_args(
-        share_logs: bool, share_outputs: bool, share_files: object
+        share_logs_with_submitter: bool,
+        share_outputs_with_submitter: bool,
+        share_files: object,
     ) -> None:
         """Refuse share_files with a flag, or a share_files that isn't {file: [emails]}."""
-        if share_files is not None and (share_logs or share_outputs):
-            raise ValueError("Give share_files or share_logs/share_outputs, not both.")
-        check_read_permissions(share_files)
+        if share_files is not None and (
+            share_logs_with_submitter or share_outputs_with_submitter
+        ):
+            raise ValueError("Give share_files or the share flags, not both.")
+        validate_read_permissions(share_files)
 
     def _requested_read_permissions(
-        self, share_logs: bool, share_outputs: bool, share_files: object
+        self,
+        share_logs_with_submitter: bool,
+        share_outputs_with_submitter: bool,
+        share_files: object,
     ) -> ReadPermissions:
         """The read permissions a submission asks for: share_files, or the flags."""
         if share_files is not None:
-            return check_read_permissions(share_files)
-        return read_permissions_for(
-            [self.current_user_email], share_logs, share_outputs
+            return validate_read_permissions(share_files)
+        return job_read_permissions_for(
+            [self.current_user_email],
+            share_logs_with_submitter,
+            share_outputs_with_submitter,
         )
 
     def _request_from_submission(self, ref: JobRef) -> ReadPermissions:
         """The valid part of the submitter's request. Nothing it wrote is approved."""
         headers = self.manager.read_submission(ref).headers
-        return valid_read_permissions(headers.get(REQUESTED_READ_PERMISSIONS_HEADER))
+        requested_read_permissions = headers.get(REQUESTED_READ_PERMISSIONS_HEADER)
+        return validate_read_permissions_as_do(requested_read_permissions)
 
     def _claim_receipt(self, ref: JobRef) -> Optional[OwnerJobRecord]:
         """Record the received hash once every file arrived, and return the record.

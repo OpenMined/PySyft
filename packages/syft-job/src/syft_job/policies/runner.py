@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
-from ..read_permissions import ReadPermissions, check_read_permissions
+from ..read_permissions import ReadPermissions, validate_read_permissions
 from . import env
 from .models import PolicyResult, PolicyScript
 from .state import PolicyState
@@ -134,7 +134,9 @@ def _result(returncode: int, stderr: str, timeout: int) -> PolicyResult:
 def _read_read_permissions(path: Path, result: PolicyResult) -> None:
     """Load read_permissions.json into the result; a malformed file is a deny."""
     try:
-        result.read_permissions = check_read_permissions(json.loads(path.read_text()))
+        result.read_permissions = validate_read_permissions(
+            json.loads(path.read_text())
+        )
     except (OSError, TypeError, ValueError) as e:
         result.passed = False
         result.error = f"read_permissions.json must be {{file: [emails]}}: {e}"
