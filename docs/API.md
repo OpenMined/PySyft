@@ -204,13 +204,18 @@ do_client.share_dataset("my dataset", users=["new_user@example.com"])
 
 ## Jobs
 
-### `client.submit_python_job(user, code_path, job_name=None, entrypoint=None)`
+### `client.submit_python_job(user, code_path, job_name=None, entrypoint=None, share_logs_with_submitter=False, share_outputs_with_submitter=None, share_files=None)`
 
 Submit a Python job to a Data Owner. **DS only.**
 
 - `user`: DO email to submit the job to.
 - `code_path`: Path to a Python script or folder.
 - `entrypoint`: Entry script (auto-detected if `main.py` exists in folder).
+- `share_logs_with_submitter`: Ask to read stdout and stderr.
+- `share_outputs_with_submitter`: Ask to read the outputs. `None` asks for them
+  unless `share_files` is given.
+- `share_files`: Instead of the two flags, who should read which file, as
+  `{file: [emails]}`. The DO approves all of the request, part of it, or none.
 
 ```python
 ds_client.submit_python_job(
@@ -231,7 +236,7 @@ ds_client.submit_bash_job(
 )
 ```
 
-### `client.process_approved_jobs(stream_output=True, timeout=None, force_execution=False)`
+### `client.process_approved_jobs(stream_output=True, timeout=None, force_execution=False, share_logs_with_submitter=False, share_outputs_with_submitter=False, ignore_peer_version=False)`
 
 Run all approved jobs. **DO only.**
 

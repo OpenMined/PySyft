@@ -30,7 +30,7 @@ my.job/
     config.yaml # the job's name, type and submitter
 ```
 
-The job writes its results to `outputs/`, inside `code/`. Only `outputs/` is shared with the DS. Anything the job writes elsewhere stays with the DO.
+The job writes its results to `outputs/`, inside `code/`. Anything the job writes elsewhere stays with the DO. The runner also writes `stdout.txt`, `stderr.txt` and `returncode.txt`. The DS reads one of these files only when the DO approved it, see [Who reads the results](#who-reads-the-results).
 
 ### Job lifecycle
 
@@ -55,6 +55,20 @@ do_client.process_approved_jobs(
 ds_client.sync()
 ds_client.jobs[-1].output_paths
 ```
+
+### Who reads the results
+
+The DS says which files it wants to read when it submits. By default it asks for `outputs`. `share_logs_with_submitter=True` also asks for `stdout.txt` and `stderr.txt`. `share_files={file: [emails]}` names the files and readers directly.
+
+The DO approves all of that request, part of it, or none:
+
+```python
+job.approve(share_requested_files=True)                   # the whole request
+job.approve(share_files={"outputs": ["ds@example.com"]})  # only the outputs
+job.approve()                                             # no files
+```
+
+The share flags of `process_approved_jobs` approve the logs or the outputs for the submitter on top of that. That is why the example above passes `share_outputs_with_submitter=True`. After the run, the runner shares exactly what was approved. `do_client.share_job_results(job, ...)` shares more of a finished job later.
 
 ## APIs
 
@@ -101,9 +115,6 @@ request = ds_client.api.word_count("privacy", block=False)  # returns the reques
 request.status                                # received, rejected or accepted
 request.job                                   # the job, once the DO accepted it
 ds_client.requests                            # your calls that aren't jobs yet
-
-# An API without arguments that takes code/words.txt and code/stopwords.txt by name:
-ds_client.api.word_list(files={"code/words.txt": "words.txt", "code/stopwords.txt": b"the\n"})
 ```
 
 A call is not a job until the DO's client accepts it, so `client.jobs` lists it only from then on. If the DO rejects the call, a blocking call returns the request, with the reason in `request.review_reason`.
