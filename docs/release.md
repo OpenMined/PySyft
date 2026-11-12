@@ -33,7 +33,6 @@ Each package uploads with its own PyPI token, stored as a repository secret: `PY
    - Merge the release branch into `dev` in a PR. Run `uv lock` on that PR and commit `uv.lock`; the bump commits change only `pyproject.toml` files.
    - Create the GitHub Release: `gh release create vX.Y.Z --verify-tag --generate-notes --notes-start-tag v<previous>`.
    - Rebuild the enclave image from the release tag, not from the branch, which already holds the next version. A verifier expects the enclave to run its own syft version, so clients of the new release reject an older image. From `packages/syft-enclave`, on a checkout of `vX.Y.Z`: `just build-push "X.Y.Z latest"` (needs `OM_DOCKER_LOGIN` and `OM_DOCKER_PW`), then update the image digest where the enclave is deployed (`just tinfoil-release X.Y.Z` for Tinfoil, `image_digest` in the Terraform variables for Confidential Space).
-   - Generate the release fixtures, each at its own tag, and commit them to `dev` in a PR: `scripts/generate_release_fixture.py` at `vX.Y.Z`, `packages/syft-job/scripts/generate_release_fixture.py` at `syft-job/vX.Y.Z`, `packages/syft-datasets/scripts/generate_release_fixture.py` at `syft-dataset/vX.Y.Z`. Later releases test that they still read these files. Do not run all three at `vX.Y.Z`: syft-job and syft-dataset were bumped earlier in the same run, so at that tag they name the next version.
    - Add the release to `CHANGELOG.md`.
 
 ## Release artifacts
@@ -57,6 +56,12 @@ An artifact is permanent. If an artifact for a version exists, a second export w
 An export stops with an error if the protocol changed but the protocol version constant did not change. The error message gives the name of the constant to bump.
 
 The drift check has one known limit. A new protocol generation adds object versions, and no artifact freezes those versions until the release of that generation. The drift check therefore cannot see a change to them. Frequent releases keep this period short.
+
+## Release fixtures
+
+A release fixture is a small sample of data exactly as one release wrote it: the version file and two sync messages for `syft`, a SyftBox with jobs for `syft-job`, and a SyftBox with a dataset for `syft-dataset`. The tests of every later release load each fixture (`test_older_protocol_compatibility.py`) and check that the code still reads it.
+
+The release job writes the fixtures on every release, in the same commit as the artifacts, so each one is inside its release tag and reaches `dev` with the merge of the release branch. A second run writes nothing and reports success.
 
 ## Hotfixes
 

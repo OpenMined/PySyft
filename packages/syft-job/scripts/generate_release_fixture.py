@@ -1,6 +1,7 @@
 """Generate a p2p backward-compatibility fixture for the current syft-job release.
 
-Run on EVERY release, at the released commit:
+The release job runs this on every release, at the released commit, and
+commits the fixture with the release artifacts. To run it by hand:
 
     git checkout syft-job/v<released version>
     uv run python packages/syft-job/scripts/generate_release_fixture.py
@@ -129,7 +130,9 @@ def main() -> None:
     )
     if target.exists():
         if not args.force:
-            raise SystemExit(f"{target} already exists; pass --force to regenerate.")
+            # Writing nothing then succeeds, so a release job can run this again.
+            print(f"Release fixture already present: {target}")
+            return
         shutil.rmtree(target)
 
     _build_fixture(target)

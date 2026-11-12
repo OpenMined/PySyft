@@ -5,13 +5,12 @@ into a data owner's inbox, the data owner reviews, approves, and runs them.
 
 ## Releasing
 
-On **every** release, the release job runs `export_release_artifact.py` before
-the build. After the release, check out the `syft-job/v<version>` tag and run
-the fixture script:
+On **every** release, the release job runs both scripts before the build and
+commits what they write:
 
 ```bash
-uv run python scripts/export_release_artifact.py   # run by the release job
-uv run python scripts/generate_release_fixture.py  # at the syft-job release tag
+uv run python scripts/export_release_artifact.py
+uv run python scripts/generate_release_fixture.py
 ```
 
 `export_release_artifact.py` always writes
@@ -23,9 +22,9 @@ version. It refuses to run if the job protocol changed without bumping
 
 `generate_release_fixture.py` writes a full SyftBox tree —
 `tests/migrations/p2p/fixtures/syft_job-<version>-protocol<p>_syftbox/` — exactly
-as this release serializes jobs to disk. Commit it: future releases loop over
-these fixtures (`test_older_protocol_compatibility.py`) to prove they can still
-read and round-trip older on-disk data.
+as this release serializes jobs to disk. Future releases loop over these
+fixtures (`test_older_protocol_compatibility.py`) to prove they can still read
+and round-trip older on-disk data.
 
 Tests check the code against these artifacts: released object versions are
 frozen forever — changing one requires a new version plus migrations.
