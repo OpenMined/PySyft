@@ -13,6 +13,7 @@ import pytest
 import syft as sy
 import syft_rds as rds
 from syft.sync.syftbox_manager import SyftboxManager
+from tests.integration.utils import remove_syftboxes_from_drive
 
 
 SYFT_DIR = Path(__file__).parent.parent.parent.parent
@@ -43,8 +44,21 @@ def check_credentials():
     yield
 
 
+@pytest.fixture(scope="module")
+def clean_syftboxes():
+    """Start the module from no SyftBox on Drive.
+
+    Both accounts are shared with every other run, including runs of other
+    releases. A SyftBox that a release this one does not support wrote stops
+    the login with an offer to start fresh, so the tests begin with none.
+    """
+    if EMAIL_DO and EMAIL_DS and token_path_do.exists() and token_path_ds.exists():
+        remove_syftboxes_from_drive()
+    yield
+
+
 @pytest.mark.flaky(reruns=3, reruns_delay=2)
-@pytest.mark.usefixtures("check_credentials")
+@pytest.mark.usefixtures("check_credentials", "clean_syftboxes")
 def test_login_ds():
     """Test that login_ds works with Jupyter environment and token credentials.
 
@@ -63,7 +77,7 @@ def test_login_ds():
 
 
 @pytest.mark.flaky(reruns=3, reruns_delay=2)
-@pytest.mark.usefixtures("check_credentials")
+@pytest.mark.usefixtures("check_credentials", "clean_syftboxes")
 def test_login_do():
     """Test that login_do works with Jupyter environment and token credentials.
 
@@ -82,7 +96,7 @@ def test_login_do():
 
 
 @pytest.mark.flaky(reruns=3, reruns_delay=2)
-@pytest.mark.usefixtures("check_credentials")
+@pytest.mark.usefixtures("check_credentials", "clean_syftboxes")
 def test_login_ds_with_sync_and_load_peers():
     """Test that login_ds works with sync and load_peers enabled."""
     client = sy.login_ds(
@@ -102,7 +116,7 @@ def test_login_ds_with_sync_and_load_peers():
 
 
 @pytest.mark.flaky(reruns=3, reruns_delay=2)
-@pytest.mark.usefixtures("check_credentials")
+@pytest.mark.usefixtures("check_credentials", "clean_syftboxes")
 def test_login_do_with_sync_and_load_peers():
     """Test that login_do works with sync and load_peers enabled."""
     client = sy.login_do(
@@ -122,7 +136,7 @@ def test_login_do_with_sync_and_load_peers():
 
 
 @pytest.mark.flaky(reruns=3, reruns_delay=2)
-@pytest.mark.usefixtures("check_credentials")
+@pytest.mark.usefixtures("check_credentials", "clean_syftboxes")
 def test_rds_login_ds_returns_product_client():
     """syft_rds.login_ds returns an RDS client carrying the dataset/job surface."""
     client = rds.login_ds(
@@ -139,7 +153,7 @@ def test_rds_login_ds_returns_product_client():
 
 
 @pytest.mark.flaky(reruns=3, reruns_delay=2)
-@pytest.mark.usefixtures("check_credentials")
+@pytest.mark.usefixtures("check_credentials", "clean_syftboxes")
 def test_rds_login_do_returns_product_client():
     """syft_rds.login_do returns an RDS client carrying the dataset/job surface."""
     client = rds.login_do(
@@ -157,7 +171,7 @@ def test_rds_login_do_returns_product_client():
 
 
 @pytest.mark.flaky(reruns=3, reruns_delay=2)
-@pytest.mark.usefixtures("check_credentials")
+@pytest.mark.usefixtures("check_credentials", "clean_syftboxes")
 def test_login_ds_email_mismatch_raises():
     """Login must fail fast when the email doesn't match the token's account."""
     with pytest.raises(ValueError, match="Token/email mismatch") as exc_info:
