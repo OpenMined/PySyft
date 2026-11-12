@@ -322,7 +322,7 @@ class EnclaveJobInfo(JobInfo):
         """Ask the enclave to share ``log_file``, or only its first ``n_chars`` chars.
 
         The enclave shares it once every data owner made the same request.
-        ``readers`` defaults to the data owners of the job.
+        ``readers`` None means the data owners the enclave is configured with.
 
         Raises:
             PermissionError: If the caller is not a data owner of this job.
@@ -334,17 +334,11 @@ class EnclaveJobInfo(JobInfo):
             )
         if log_file not in REQUESTABLE_LOGS:
             raise ValueError(f"Request one of {REQUESTABLE_LOGS}, not {log_file!r}.")
-        request = LogRequest(readers=self._log_readers(readers), n_chars=n_chars)
-        warn_on_logs_release({log_file: request.readers})
+        request = LogRequest(readers=readers, n_chars=n_chars)
+        warn_on_logs_release({log_file: request.readers or []})
         self._save_own_log_request(log_file, request)
-        print(f"Requested {log_file} of job '{self.name}' for {request.readers}.")
-
-    def _log_readers(self, readers: str | list[str] | None) -> list[str]:
-        """``readers`` as a list; by default the data owners of the job."""
-        if readers is None:
-            owners = self.job_metadata.datasets or {}
-            return [e for e in owners if e != self.datasite_owner_email]
-        return [readers] if isinstance(readers, str) else list(readers)
+        who = request.readers or "the enclave's data owners"
+        print(f"Requested {log_file} of job '{self.name}' for {who}.")
 
     def _save_own_log_request(self, log_file: str, request: LogRequest) -> None:
         """Replace this party's request for ``log_file``, and push the file."""

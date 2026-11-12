@@ -19,13 +19,22 @@ REQUESTABLE_LOGS = ("stdout.txt", "stderr.txt")
 class LogRequest(BaseModel):
     """Who should read one log, and how many of its first chars."""
 
-    readers: list[str]
+    # None means the data owners the enclave is configured with. The DS names
+    # the job's datasets, so a default from those could include the DS.
+    readers: Optional[list[str]] = None
     # None shares the whole log.
     n_chars: Optional[int] = Field(default=None, gt=0)
 
+    @field_validator("readers", mode="before")
+    @classmethod
+    def _one_reader_as_list(cls, readers: object) -> object:
+        return [readers] if isinstance(readers, str) else readers
+
     @field_validator("readers")
     @classmethod
-    def _sorted_unique(cls, readers: list[str]) -> list[str]:
+    def _sorted_unique(cls, readers: Optional[list[str]]) -> Optional[list[str]]:
+        if readers is None:
+            return None
         if not readers:
             raise ValueError("A log request needs at least one reader.")
         return sorted(set(readers))

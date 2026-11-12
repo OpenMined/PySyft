@@ -511,7 +511,7 @@ class SyftEnclaveClient:
         for log_file, request in requests.items():
             name = write_log_head(review, log_file, request.n_chars)
             if name is not None:
-                shared[name] = request.readers
+                shared[name] = request.readers or list(self.data_owners)
         job.share(shared)
         return shared
 
@@ -641,7 +641,8 @@ class SyftEnclaveClient:
         """Ask the enclave to share the job's stderr, or only its first ``n_chars`` chars.
 
         Only a data owner can ask. The enclave shares it once every data owner
-        made the same request. ``readers`` defaults to the data owners of the job.
+        made the same request. ``readers`` None means the data owners this
+        enclave is configured with.
         """
         self._request_log(job, "stderr.txt", readers, n_chars)
 

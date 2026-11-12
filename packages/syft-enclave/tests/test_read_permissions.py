@@ -192,14 +192,14 @@ def build_quad():
     return enclave, do1, do2, ds
 
 
-def submit(ds, enclave, do1, do2, code, requested=None, **share_flags):
+def submit(ds, enclave, do1, do2, code, requested=None, datasets=None, **share_flags):
     path = Path(tempfile.mkdtemp()) / "main.py"
     path.write_text(code)
     ds.submit_python_job(
         enclave.email,
         str(path),
         "j",
-        datasets={do1.email: ["dataset1"], do2.email: ["dataset2"]},
+        datasets=datasets or {do1.email: ["dataset1"], do2.email: ["dataset2"]},
         share_files=requested,
         **share_flags,
     )
@@ -816,6 +816,20 @@ def test_log_request_defaults_to_data_owners():
 
     assert readers_of(enclave, "stderr.txt", (ds, do1, do2)) == [do1, do2]
     assert has_file(do1, "stderr.txt")
+    assert not has_file(ds, "stderr.txt")
+
+
+def test_default_log_readers_ignore_owners_named_by_submitter():
+    """The DS names the datasets, so naming itself there must not make it a reader."""
+    enclave, do1, do2, ds = build_quad()
+    datasets = {do1.email: ["dataset1"], do2.email: ["dataset2"], ds.email: ["x"]}
+    submit(ds, enclave, do1, do2, CRASH_CODE, datasets=datasets)
+    run_to_completion(enclave, do1, do2, ds, {})
+    for do in (do1, do2):
+        request_stderr(do)
+    run_and_share(enclave, ds)
+
+    assert readers_of(enclave, "stderr.txt", (ds, do1, do2)) == [do1, do2]
     assert not has_file(ds, "stderr.txt")
 
 
