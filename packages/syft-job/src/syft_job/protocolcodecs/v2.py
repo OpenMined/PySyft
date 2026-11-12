@@ -7,10 +7,13 @@ from .v1 import ProtocolCodecV1
 
 
 class ProtocolCodecV2(ProtocolCodecV1):
-    """The v1 layout under <ds_email>/v2/, plus api calls in requests/."""
+    """The v1 layout under <ds_email>/v<n>/, plus api calls in requests/.
+
+    Protocol 3 only adds fields to JobState, so it keeps this layout.
+    """
 
     version = "2"
-    protocol_versions = ["2"]
+    protocol_versions = ["2", "3"]
 
     def request_dir(self, ref: RequestRef) -> Path:
         return self.config.get_request_job_dir(

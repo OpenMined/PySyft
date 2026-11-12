@@ -271,28 +271,47 @@ class TestCreateApi:
             assert list(store.apis_dir.iterdir()) == []
 
 
-class TestApiDisclosures:
-    """A call's approval releases what its api says, set when it was made."""
+class TestApiReadPermissions:
+    """A caller reads the run files its api names, set when it was made."""
 
-    def test_api_releases_nothing_by_default(self, temp_dir):
+    def test_api_shares_outputs_by_default(self, temp_dir):
         with _patched_paths(temp_dir) as store:
             _create(_write_project(temp_dir), allow_any_peer=True)
-            assert store.get("main").disclosures == []
+            assert store.get("main").approved_read_permissions == ["outputs"]
 
-    def test_config_sets_released_items(self, temp_dir):
+    def test_config_sets_readable_files(self, temp_dir):
         with _patched_paths(temp_dir) as store:
             SyftBgConfig(
                 do_email=DO_EMAIL,
                 syftbox_root=temp_dir / "syftbox",
-                approve=AutoApproveConfig(default_disclosures=["logs", "return_code"]),
+                approve=AutoApproveConfig(
+                    default_approved_read_permissions=["stdout.txt", "returncode.txt"]
+                ),
             ).save()
             _create(_write_project(temp_dir), allow_any_peer=True)
-            assert store.get("main").disclosures == ["logs", "return_code"]
+            assert store.get("main").approved_read_permissions == [
+                "outputs",
+                "stdout.txt",
+                "returncode.txt",
+            ]
 
     def test_argument_overrides_config(self, temp_dir):
         with _patched_paths(temp_dir) as store:
-            _create(_write_project(temp_dir), allow_any_peer=True, disclosures=["logs"])
-            assert store.get("main").disclosures == ["logs"]
+            _create(
+                _write_project(temp_dir),
+                allow_any_peer=True,
+                read_permissions=["stdout.txt"],
+            )
+            assert store.get("main").approved_read_permissions == ["stdout.txt"]
+
+    def test_dict_refused(self, temp_dir):
+        with _patched_paths(temp_dir):
+            with pytest.raises(TypeError, match="as a list"):
+                _create(
+                    _write_project(temp_dir),
+                    allow_any_peer=True,
+                    read_permissions={"stdout.txt": ["ds@test.com"]},
+                )
 
 
 def _approved_job(
@@ -324,9 +343,7 @@ class TestApprovedJobHandler:
 
         assert handler.run_approved_jobs() == [call]
         client.receive_jobs.assert_called_once()
-        client.run_job.assert_called_once_with(
-            call, stream_output=False, share_outputs_with_submitter=True
-        )
+        client.run_job.assert_called_once_with(call, stream_output=False)
         client.sync.assert_called_once()
 
     def test_runs_nothing_without_approved_api_calls(self, temp_dir):

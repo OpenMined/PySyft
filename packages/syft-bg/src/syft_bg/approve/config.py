@@ -52,9 +52,8 @@ class AutoApproveConfig(BaseModel):
         None  # None: value is determined by the role
     )
     force_ignore_peer_version: bool = False
-    # The items in ``DisclosureItem`` that an approval releases. The submitter
-    # gets only the items it requested.
-    default_disclosures: list[str] = Field(default_factory=list)
+    # The run files a new api lets its callers read, e.g. ["stdout.txt"].
+    default_approved_read_permissions: list[str] = Field(default_factory=list)
 
 
 # --- Backwards-compatible aliases (deprecated, will be removed) ---

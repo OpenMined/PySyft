@@ -15,6 +15,16 @@ from syft_permissions.engine.tree import _relative_path
 if TYPE_CHECKING:
     from syft_perms.syftperm_context import SyftPermContext
 
+# The characters that a rule pattern reads as syntax: the glob characters, the
+# glob escape character, and the start of a template such as {{.UserEmail}}.
+# Each one in a class of its own matches only that character.
+_PATTERN_ESCAPES = {"\\": "[\\\\]", "*": "[*]", "?": "[?]", "[": "[[]", "{": "[{]"}
+
+
+def _literal_pattern(path: str) -> str:
+    """Return a rule pattern that matches ``path`` and no other path."""
+    return "".join(_PATTERN_ESCAPES.get(char, char) for char in path)
+
 
 class PermissionModifier:
     def __init__(self, perm_context: SyftPermContext):
@@ -35,10 +45,8 @@ class PermissionModifier:
     ) -> None:
         """Remove a user from a specific access level, resolving the correct yaml."""
         target_yaml_path = self._find_governing_yaml(path_in_datasite, is_folder)
-        target_pattern = self._compute_pattern(
-            target_yaml_path, path_in_datasite, is_folder
-        )
-        self._remove_user_from_yaml(target_yaml_path, target_pattern, level, user)
+        target = self._compute_target(target_yaml_path, path_in_datasite, is_folder)
+        self._remove_user_from_yaml(target_yaml_path, target, level, user)
 
     def remove_all_rules(self, path_in_datasite: str, is_folder: bool = False) -> None:
         """Remove all permission rules for a path, resolving the correct yaml."""
@@ -47,6 +55,17 @@ class PermissionModifier:
             target_yaml_path, path_in_datasite, is_folder
         )
         self._remove_all_rules_from_yaml(target_yaml_path, target_pattern)
+
+    def add_permission_for_pattern(
+        self, folder_in_datasite: str, pattern: str, level: str, user: str
+    ) -> None:
+        """Add a user to the rule for glob ``pattern`` in the permission file of a folder.
+
+        Unlike add_permission_for_user, the pattern is not escaped, so it can match many paths.
+        """
+        datasite = self._perm_context.datasite
+        yaml_path = datasite / folder_in_datasite / PERMISSION_FILE_NAME
+        self._write_user_to_yaml(yaml_path, pattern, level, user)
 
     def copy_permissions(self, path_in_datasite: str, new_abs: Path) -> None:
         """Copy permission entries from old path to new location."""
@@ -62,7 +81,9 @@ class PermissionModifier:
         new_yaml = new_abs.parent / PERMISSION_FILE_NAME
         for level in ("read", "write", "admin"):
             for user in getattr(rule.access, level):
-                self._write_user_to_yaml(new_yaml, new_abs.name, level, user)
+                self._write_user_to_yaml(
+                    new_yaml, _literal_pattern(new_abs.name), level, user
+                )
 
     def _find_governing_yaml(self, path_in_datasite: str, is_folder: bool) -> Path:
         """Find the yaml file that governs this path (nearest node in the ACL tree)."""
@@ -89,7 +110,16 @@ class PermissionModifier:
     def _compute_pattern(
         self, yaml_path: Path, path_in_datasite: str, is_folder: bool
     ) -> str:
-        """Compute the rule pattern relative to the governing yaml's directory."""
+        """Compute the rule pattern that matches the target and nothing else."""
+        target = self._compute_target(yaml_path, path_in_datasite, is_folder)
+        if is_folder:
+            return _literal_pattern(target.removesuffix("**")) + "**"
+        return _literal_pattern(target)
+
+    def _compute_target(
+        self, yaml_path: Path, path_in_datasite: str, is_folder: bool
+    ) -> str:
+        """Compute the target path relative to the governing yaml's directory."""
         datasite = self._perm_context.datasite
         # Path of the yaml's directory relative to the datasite
         yaml_dir = yaml_path.parent.relative_to(datasite)
@@ -119,7 +149,7 @@ class PermissionModifier:
             access_list.append(user)
 
         ruleset.save(yaml_path)
-        self._perm_context._reload()
+        self._update_tree(ruleset, yaml_path)
 
     def _remove_user_from_yaml(
         self, yaml_path: Path, pattern: str, level: str, user: str
@@ -136,7 +166,7 @@ class PermissionModifier:
             _remove_user_entry(access_list, user, yaml_path, rule.pattern, level)
 
         ruleset.save(yaml_path)
-        self._perm_context._reload()
+        self._update_tree(ruleset, yaml_path)
 
     def _remove_all_rules_from_yaml(self, yaml_path: Path, pattern: str) -> None:
         """Low-level: remove all rules with a pattern from a yaml file."""
@@ -145,6 +175,13 @@ class PermissionModifier:
         ruleset = RuleSet.load(yaml_path)
         ruleset.rules = [r for r in ruleset.rules if r.pattern != pattern]
         ruleset.save(yaml_path)
+        self._update_tree(ruleset, yaml_path)
+
+    def _update_tree(self, ruleset: RuleSet, yaml_path: Path) -> None:
+        """Replace the node of the saved file in the context's tree, instead of a full rescan."""
+        rel = str(yaml_path.parent.relative_to(self._perm_context.datasite))
+        ruleset.path = "" if rel == "." else rel
+        self._perm_context.service.add_ruleset(ruleset)
 
 
 def _find_or_create_rule(ruleset: RuleSet, pattern: str) -> Rule:

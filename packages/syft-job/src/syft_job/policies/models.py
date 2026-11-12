@@ -7,12 +7,11 @@ from typing import Any, Optional, Protocol
 
 from .bash_wrapper import PYTHON_POLICY_NAME, RUN_SCRIPT_NAME
 
-# Job artifacts. policy_error.txt and outputs_withheld.txt are released to the
-# submitter; the rest stays in staging, with the data owner.
+# Job artifacts in the review folder. The runner shares policy_error.txt and
+# outputs_withheld.txt with the submitter; only the data owner reads the rest.
 POLICY_ERROR_FILENAME = "policy_error.txt"
 # An empty marker file; see SyftJobRunner._share_job_results().
 OUTPUTS_WITHHELD_FILENAME = "outputs_withheld.txt"
-OUTPUT_RECIPIENTS_FILENAME = "output_recipients.json"
 
 
 def policy_stderr_filename(kind: "PolicyKind") -> str:
@@ -74,8 +73,8 @@ class PolicyResult:
     stderr: str = ""
     # Contents of state.json after the run.
     state: Any = None
-    # Who receives the outputs (output policy only).
-    recipients: list[str] = field(default_factory=list)
+    # Who may read which file after the run (output policy only).
+    read_permissions: dict[str, list[str]] = field(default_factory=dict)
     # The outputs after the run, for sbg.run_policy (output policy only).
     outputs_dir: Optional[Path] = None
 
@@ -88,8 +87,8 @@ class ResolvedApi:
     # The api's pinned files, laid out as in a job: run.sh, code/...
     files_dir: Path
     policies: JobPolicies
-    # The items a call's approval releases to the caller, e.g. "logs".
-    disclosures: list[str] = field(default_factory=list)
+    # The run files the caller may read once its call ran, e.g. "stdout.txt".
+    approved_read_permissions: list[str] = field(default_factory=list)
 
 
 class ApiResolver(Protocol):

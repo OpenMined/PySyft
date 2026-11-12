@@ -10,7 +10,8 @@ PROTOCOL_NAME = "syft-job"
 # without versioning (<= 0.1.38, no v<n> path segment); protocol >= 1 stores
 # jobs under a v<n> segment after the peer email (see config.protocol_dir_name).
 # Protocol 2 adds api calls: requests/ and RequestMetadata.
-JOB_PROTOCOL_VERSION = "2"
+# Protocol 3 adds read permissions to JobState (JobStateV2).
+JOB_PROTOCOL_VERSION = "3"
 
 # The first job protocol with api calls. A DS can call an api of a DO only
 # when the two negotiate at least this protocol.

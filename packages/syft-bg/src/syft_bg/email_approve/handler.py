@@ -11,7 +11,9 @@ from syft_bg.common.state import JsonStateManager
 
 if TYPE_CHECKING:
     from syft_job.client import JobClient
+    from syft_job.job import JobInfo
     from syft_job.job_runner import SyftJobRunner
+    from syft_job.read_permissions import ReadPermissions
 
 
 class EmailAction(Enum):
@@ -74,10 +76,10 @@ class EmailApproveHandler:
         state: JsonStateManager,
         notify_state: JsonStateManager,
         do_email: str,
-        default_disclosures: Optional[list[str]] = None,
+        default_approved_read_permissions: Optional[list[str]] = None,
     ):
         self.job_client = job_client
-        self.default_disclosures = default_disclosures or []
+        self.default_approved_read_permissions = default_approved_read_permissions or []
         self.job_runner = job_runner
         self.state = state
         self.notify_state = notify_state
@@ -123,7 +125,8 @@ class EmailApproveHandler:
     ) -> None:
         """Approve a job, execute it, and share results."""
         job.approve(
-            approval_method=approval_method, disclosures=self.default_disclosures
+            approval_method=approval_method,
+            share_files=self._read_permissions_to_approve(job),
         )
         self.state.mark_notified(state_key, "processed")
 
@@ -131,6 +134,14 @@ class EmailApproveHandler:
             job.name, job.submitted_by, share_outputs_with_submitter=True
         )
         print(f"[EmailApproveHandler] Approved job: {job_name}")
+
+    def _read_permissions_to_approve(self, job: JobInfo) -> ReadPermissions:
+        """The submitter's request, on the files in default_approved_read_permissions."""
+        return {
+            file: emails
+            for file, emails in job.requested_read_permissions.items()
+            if file in self.default_approved_read_permissions
+        }
 
     def _approve_and_create_api(self, job, job_name: str, state_key: str) -> None:
         """Approve a job, and create an api from it that the submitter calls.

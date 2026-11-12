@@ -23,7 +23,9 @@ DO_EMAIL = "do@test.org"
 DS_EMAIL = "ds@test.org"
 
 
-def _make_enclave_job(tmp_path: Path, job_name: str = "test_job") -> EnclaveJobInfo:
+def _make_enclave_job(
+    tmp_path: Path, job_name: str = "test_job", requested: dict | None = None
+) -> EnclaveJobInfo:
     """An enclave job on the DO's datasite, with no approval file written yet."""
     syftbox = tmp_path / "SyftBox"
     syftbox.mkdir()
@@ -44,7 +46,9 @@ def _make_enclave_job(tmp_path: Path, job_name: str = "test_job") -> EnclaveJobI
             datasite_email=DO_EMAIL,
             submitted_at=datetime.now(timezone.utc),
         ),
-        state=JobState(status=JobStatus.PENDING),
+        state=JobState(
+            status=JobStatus.PENDING, requested_read_permissions=requested or {}
+        ),
         client=client,
         current_user_email=DO_EMAIL,
         ref=ref,
@@ -80,3 +84,35 @@ def test_approve_refuses_when_already_approved(tmp_path: Path):
 
     with pytest.raises(ValueError, match="Already in status: approved"):
         job.approve()
+
+
+REQUESTED = {"outputs": [DO_EMAIL, DS_EMAIL], "returncode.txt": [DS_EMAIL]}
+
+
+def _approvable_job(tmp_path: Path) -> tuple[EnclaveJobInfo, Path]:
+    """A job with REQUESTED as its request, and a pending approval file."""
+    job = _make_enclave_job(tmp_path, requested=REQUESTED)
+    approval_file = job.job_review_path / enclave_approval_file_name(DO_EMAIL)
+    PartyApprovalStatus(party=DO_EMAIL).save_json(approval_file)
+    return job, approval_file
+
+
+def test_approve_without_read_permissions_approves_whole_request(tmp_path: Path):
+    job, approval_file = _approvable_job(tmp_path)
+    job.approve()
+    approval = PartyApprovalStatus.load_json(approval_file)
+    assert approval.approved_read_permissions == REQUESTED
+
+
+def test_approve_with_read_permissions_approves_requested_part(tmp_path: Path):
+    job, approval_file = _approvable_job(tmp_path)
+    job.approve(share_files={"outputs": [DO_EMAIL, "other@test.org"]})
+    approval = PartyApprovalStatus.load_json(approval_file)
+    assert approval.approved_read_permissions == {"outputs": [DO_EMAIL]}
+
+
+def test_approve_refuses_read_permissions_with_share_requested_files(tmp_path):
+    job, approval_file = _approvable_job(tmp_path)
+    with pytest.raises(ValueError, match="share_requested_files"):
+        job.approve(share_files=REQUESTED, share_requested_files=True)
+    assert PartyApprovalStatus.load_json(approval_file).status == JobStatus.PENDING
