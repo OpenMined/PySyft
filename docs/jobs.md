@@ -262,7 +262,7 @@ An output policy runs after each call's job. It checks the outputs before they a
 | `SYFT_POLICY_OUTPUTS_DIR`           | The job's `outputs/`. Whatever is here when the policy ends can be shared |
 | `SYFT_POLICY_READ_PERMISSIONS_PATH` | `read_permissions.json`, `{file: [emails]}`: who may read which run file  |
 
-When the job itself fails, the output policy does not run and the outputs are not shared.
+When the job itself fails, by an error or a timeout, the output policy does not run and nothing is shared.
 
 ### Read permissions
 

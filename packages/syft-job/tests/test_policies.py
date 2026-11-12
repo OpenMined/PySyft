@@ -266,6 +266,30 @@ def test_output_policy_can_add_a_file(env):
     assert env.reads(DS_EMAIL, "call.job", "stdout.txt")
 
 
+def test_failed_api_call_shares_nothing(env):
+    """The output policy never ran, so what the api approves stays with the DO."""
+    approved = {OUTPUTS: [DS_EMAIL], "stdout.txt": [DS_EMAIL]}
+    env.apis.readable = list(approved)
+    env.apis.output_code = _read_permissions_policy({OUTPUTS: [DS_EMAIL]})
+
+    job = env.call("echo private; echo hi > code/outputs/out.txt; exit 3")
+
+    assert job.status == "failed"
+    assert not env.reads(DS_EMAIL, "call.job", "stdout.txt")
+    assert not env.reads(DS_EMAIL, "call.job", "outputs/out.txt")
+    assert job.approved_read_permissions == approved
+
+
+def test_timed_out_api_call_shares_nothing(env):
+    env.apis.readable = ["returncode.txt"]
+
+    job = env.call("sleep 5", timeout=1)
+
+    assert job.status == "failed"
+    assert (job.job_review_path / "returncode.txt").exists()
+    assert not env.reads(DS_EMAIL, "call.job", "returncode.txt")
+
+
 def test_output_policy_with_bad_read_permissions_denies(env):
     env.apis.output_code = _read_permissions_policy(["not", "a", "dict"])
 

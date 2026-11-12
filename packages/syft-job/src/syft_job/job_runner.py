@@ -680,14 +680,12 @@ class SyftJobRunner:
         """Run the output policy on the approved read permissions; return the exit code.
 
         The policy starts from the api's approved read permissions and may change
-        them. A deny approves none and fails the job; a failed job shares no outputs.
+        them. A deny approves none and fails the job. A failed job skips the
+        policy, and the runner then shares nothing.
         """
-        if policies is None or policies.output is None:
+        if policies is None or policies.output is None or returncode != 0:
             return returncode
         approved = self.manager.read_state(ref).approved_read_permissions
-        if returncode != 0:
-            self._set_approved(ref, {f: e for f, e in approved.items() if f != OUTPUTS})
-            return returncode
         # The policy edits a temp copy of these (read_permissions.json), not state.yaml.
         result = self._run_policy(PolicyKind.OUTPUT, ref, run_dir, policies, approved)
         if not result.passed:
@@ -1042,11 +1040,19 @@ class SyftJobRunner:
             share_outputs_with_submitter,
             share_requested_files,
         )
-        if self._execute_job_and_policies(
+        ran = self._execute_job_and_policies(
             ref, stream_output, timeout, approved_peers, run_permissions
-        ):
+        )
+        if ran and not self._is_failed_api_call(ref):
             self._share_job_results(ref)
         print(f"{'=' * 50}")
+
+    def _is_failed_api_call(self, ref: JobRef) -> bool:
+        """An api call that failed shares nothing: its output policy never ran."""
+        if self._get_job_state(ref).status != JobStatus.FAILED:
+            return False
+        record = self.manager.read_owner_record(ref)
+        return record is not None and record.api_name is not None
 
     def _run_flag_permissions(
         self,
