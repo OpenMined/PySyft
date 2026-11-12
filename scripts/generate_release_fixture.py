@@ -1,6 +1,7 @@
 """Generate a p2p backward-compatibility fixture for the current syft release.
 
-Run on EVERY release, at the released commit:
+The release job runs this on every release, at the released commit, and
+commits the fixture with the release artifacts. To run it by hand:
 
     git checkout v<released version>
     uv run python scripts/generate_release_fixture.py
@@ -22,7 +23,6 @@ releases loop over them (test_older_protocol_compatibility.py) to prove they
 can still read and round-trip older serialized data.
 """
 
-import sys
 from pathlib import Path
 
 from syft.migrations.registry import SYFT_CLIENT_PROTOCOL_VERSION
@@ -96,12 +96,11 @@ def build_events_message(
 def main() -> None:
     # Any fixture for this version (any protocol) means the version was
     # already released; a released version's serialized form is frozen.
+    # Writing nothing then succeeds, so a release job can run this again.
     existing = sorted(FIXTURES_DIR.glob(f"syft-{SYFT_VERSION}-protocol*"))
     if existing:
-        sys.exit(
-            f"{existing[0]} already exists — fixtures are frozen once written. "
-            "Bump SYFT_VERSION before generating."
-        )
+        print(f"Release fixture already present: {existing[0]}")
+        return
     target = FIXTURES_DIR / (
         f"syft-{SYFT_VERSION}-protocol{SYFT_CLIENT_PROTOCOL_VERSION}"
     )

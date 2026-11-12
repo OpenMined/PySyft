@@ -245,13 +245,16 @@ jobs:
           echo "Releasing syft $VERSION"
 
       # Artifacts live inside the package, so they must be committed before the
-      # build. Re-running the export writes nothing when they already exist.
-      - name: Freeze release artifacts
+      # build. The release fixture lets later releases test that they still read
+      # what this release writes, so it goes into the same commit and the tag.
+      # Re-running either script writes nothing when its files already exist.
+      - name: Freeze release artifacts and fixture
         run: |
           just export-release-artifacts
-          git add syft/migrations/history
+          uv run python scripts/generate_release_fixture.py
+          git add syft/migrations/history tests/migrations/p2p/fixtures
           git diff --cached --quiet || \
-            git commit -m "Freeze syft v${{ env.VERSION }} release artifacts"
+            git commit -m "Freeze syft v${{ env.VERSION }} release artifacts and fixture"
 
       - name: Build
         run: just build
