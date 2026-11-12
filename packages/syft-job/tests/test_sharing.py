@@ -387,6 +387,15 @@ def test_receipt_drops_request_entries_outside_job(tmp_path):
     }
 
 
+@pytest.mark.parametrize("reader", ["*", "*@x.org", "USER"])
+def test_receipt_drops_request_entry_with_wildcard_reader(tmp_path, reader):
+    """syft-permissions reads these as more than one user, e.g. everyone."""
+    inbox = submit_as_ds(tmp_path)
+    request = {"stdout.txt": [DS_EMAIL], "outputs": [DS_EMAIL, reader]}
+    write_headers(inbox, requested_read_permissions=request)
+    assert reload_job(tmp_path).requested_read_permissions == {"stdout.txt": [DS_EMAIL]}
+
+
 @pytest.mark.parametrize(
     "request_value, error",
     [
@@ -640,6 +649,13 @@ def test_approve_refuses_read_permissions_as_reason(tmp_path):
     job = submit_only(tmp_path, LOGS)
     with pytest.raises(TypeError, match="share_files="):
         job.approve(LOGS)
+    assert job.status == "pending"
+
+
+def test_approve_refuses_wildcard_reader(tmp_path):
+    job = submit_only(tmp_path, LOGS)
+    with pytest.raises(ValueError, match="Name each reader by email"):
+        job.approve(share_files={"stdout.txt": ["*"]})
     assert job.status == "pending"
 
 

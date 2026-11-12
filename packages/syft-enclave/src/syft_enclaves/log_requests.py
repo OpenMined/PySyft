@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Iterable, Optional
 
 from pydantic import BaseModel, Field, field_validator
+from syft_job.read_permissions import check_no_wildcard_readers
 
 # The logs a data owner can request.
 REQUESTABLE_LOGS = ("stdout.txt", "stderr.txt")
@@ -37,6 +38,7 @@ class LogRequest(BaseModel):
             return None
         if not readers:
             raise ValueError("A log request needs at least one reader.")
+        check_no_wildcard_readers(readers)
         return sorted(set(readers))
 
 

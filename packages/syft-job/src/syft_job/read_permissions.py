@@ -7,8 +7,10 @@ and only within the request.
 from __future__ import annotations
 
 import warnings
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from pathlib import PurePosixPath
+
+from syft_permissions.engine.compiled_rule import USER_PLACEHOLDER
 
 ReadPermissions = dict[str, list[str]]
 
@@ -77,7 +79,24 @@ def _check_readers(file: object, emails: object) -> list[str]:
         raise TypeError(f"The readers of {file!r} must be a list of emails.")
     if not emails:
         raise ValueError(f"{file!r} has no reader.")
+    check_no_wildcard_readers(emails)
     return sorted(set(emails))
+
+
+def check_no_wildcard_readers(emails: Iterable[str]) -> None:
+    """Refuse a reader that syft-permissions reads as more than one user.
+
+    Raises:
+        ValueError: If a reader is "*", a pattern such as "*@x.org", or "USER".
+    """
+    wildcards = [e for e in emails if _is_wildcard(e)]
+    if wildcards:
+        raise ValueError(f"Name each reader by email, not {wildcards}.")
+
+
+def _is_wildcard(email: str) -> bool:
+    """Matches the patterns of syft_permissions.engine.compiled_rule._user_in_list."""
+    return email == USER_PLACEHOLDER or "*" in email or "?" in email
 
 
 def validate_read_permissions_as_do(value: object) -> ReadPermissions:

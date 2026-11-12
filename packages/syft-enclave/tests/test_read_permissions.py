@@ -768,6 +768,11 @@ def test_log_request_differing_between_parties_shares_nothing(tmp_path, do2_requ
     assert logs_requested_by_all_parties(tmp_path, PARTIES) == {}
 
 
+def test_log_request_refuses_wildcard_reader():
+    with pytest.raises(ValueError, match="Name each reader by email"):
+        LogRequest(readers=["*"])
+
+
 def test_log_request_for_other_file_is_ignored(tmp_path):
     write_log_request(tmp_path, "do1@x.com", log_file="outputs", readers=[DS])
     assert logs_requested_by_all_parties(tmp_path, ["do1@x.com"]) == {}
