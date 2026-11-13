@@ -140,6 +140,11 @@ def test_api_policies_allow_block_and_show(capsys):
         blocked = _ds_job(ds_manager, large.name)
         assert blocked.status == "failed"
         assert blocked.policy_error == "ValueError: Sum too large to share"
+        # A refused call shares no log; the DS is sent to the policy's reason.
+        assert str(blocked.stderr) == (
+            "stderr.txt is not shared with you: the data owner's policy "
+            "refused the call. The reason is in job.policy_error."
+        )
         capsys.readouterr()
         assert blocked.output_paths == []
         # The DS is sent to the policy's reason, not to a stderr they don't get.

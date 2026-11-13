@@ -291,6 +291,30 @@ def test_timed_out_api_call_shares_nothing(env):
     assert not env.reads(DS_EMAIL, "call.job", "returncode.txt")
 
 
+def test_unshared_log_says_so(env, capsys):
+    """A reader without a log is told it is not shared, not that none exists."""
+    job = env.call("echo private; exit 3")
+    assert not env.reads(DS_EMAIL, "call.job", "stderr.txt")
+    # The DS and the DO share one SyftBox here: the DS would not have the logs.
+    for log_file in ("stdout.txt", "stderr.txt"):
+        (job.job_review_path / log_file).unlink()
+
+    not_shared = (
+        "stderr.txt is not shared with you. "
+        "The data owner can share it with share_job_results."
+    )
+    ds_job = _ds_job(env)
+    assert str(ds_job.stderr) == not_shared
+    assert not_shared in ds_job.stderr._repr_html_()
+    assert str(ds_job.stdout).startswith("stdout.txt is not shared with you.")
+    capsys.readouterr()
+    ds_job.output_paths
+    out = capsys.readouterr().out
+    assert not_shared in out and "Check stderr" not in out
+    # The data owner keeps every log, so a missing one was never written.
+    assert str(job.stderr) == "No stderr file found"
+
+
 def test_output_policy_with_bad_read_permissions_denies(env):
     env.apis.output_code = _read_permissions_policy(["not", "a", "dict"])
 

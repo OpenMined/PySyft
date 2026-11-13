@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from html import escape
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -70,7 +71,7 @@ class StdoutViewer:
         stdout_file = self.job_info._log_path("stdout.txt")
 
         if not stdout_file.exists():
-            return "No stdout file found"
+            return self.job_info._missing_log_message("stdout.txt")
 
         try:
             with open(stdout_file, "r") as f:
@@ -100,7 +101,7 @@ class StdoutViewer:
             stdout_file = self.job_info._log_path("stdout.txt")
 
             if not stdout_file.exists():
-                error_msg = "No stdout file found"
+                error_msg = escape(self.job_info._missing_log_message("stdout.txt"))
             else:
                 try:
                     with open(stdout_file, "r") as f:

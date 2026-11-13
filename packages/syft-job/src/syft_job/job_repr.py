@@ -65,7 +65,7 @@ class StderrViewer:
         stderr_file = self.job_info._log_path("stderr.txt")
 
         if not stderr_file.exists():
-            return "No stderr file found"
+            return self.job_info._missing_log_message("stderr.txt")
 
         try:
             with open(stderr_file, "r") as f:
@@ -94,7 +94,7 @@ class StderrViewer:
             stderr_file = self.job_info._log_path("stderr.txt")
 
             if not stderr_file.exists():
-                error_msg = "No stderr file found"
+                error_msg = escape(self.job_info._missing_log_message("stderr.txt"))
             else:
                 try:
                     with open(stderr_file, "r") as f:
