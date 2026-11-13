@@ -6,7 +6,14 @@ import shutil
 from pathlib import Path
 
 import pytest
-from syft_restrict import MarkerError, PolicyViolation, SourceEncodingError, run
+from syft_restrict import (
+    MarkerError,
+    ObfuscationError,
+    PolicyViolation,
+    SourceEncodingError,
+    obfuscate,
+    run,
+)
 from syft_restrict.runner import _run
 from verify.helpers import normalize_source
 
@@ -193,6 +200,26 @@ def test__run_uses_explicit_ranges_and_ignores_markers(tmp_path):
         allow_operators=ALLOW_OPERATORS,
     )
     assert result.ok
+
+
+def test_run_refuses_copy_with_different_row_count(tmp_path, monkeypatch):
+    # No known input makes obfuscate() change the row count, so the test drops a row itself.
+    src = tmp_path / "model.py"
+    shutil.copy(FIXTURES / "marked_model.py", src)
+    monkeypatch.setattr(
+        "syft_restrict.runner._obfuscate",
+        lambda *args: obfuscate(*args).split("\n", 1)[1],
+    )
+
+    # A broken copy is an obfuscator fault, not a verification result, so strict=False raises too.
+    with pytest.raises(ObfuscationError):
+        run(
+            src,
+            allow_functions=ALLOW_FUNCTIONS,
+            allow_operators=ALLOW_OPERATORS,
+            strict=False,
+        )
+    assert not (tmp_path / "model.obfuscated.py").exists()
 
 
 def test_run_refuses_coding_cookie_that_changes_program(tmp_path):

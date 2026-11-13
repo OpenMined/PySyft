@@ -30,3 +30,7 @@ class MarkerError(RestrictError):
 
 class SourceEncodingError(RestrictError):
     """Raised when a source file is not plain UTF-8."""
+
+
+class ObfuscationError(RestrictError):
+    """Raised when the display copy does not keep the rows of the source."""
