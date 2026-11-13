@@ -204,13 +204,18 @@ do_client.share_dataset("my dataset", users=["new_user@example.com"])
 
 ## Jobs
 
-### `client.submit_python_job(user, code_path, job_name=None, entrypoint=None)`
+### `client.submit_python_job(user, code_path, job_name=None, entrypoint=None, share_logs_with_submitter=False, share_outputs_with_submitter=None, share_files=None)`
 
 Submit a Python job to a Data Owner. **DS only.**
 
 - `user`: DO email to submit the job to.
 - `code_path`: Path to a Python script or folder.
 - `entrypoint`: Entry script (auto-detected if `main.py` exists in folder).
+- `share_logs_with_submitter`: Ask to read stdout and stderr.
+- `share_outputs_with_submitter`: Ask to read the outputs. `None` asks for them
+  unless `share_files` is given.
+- `share_files`: Instead of the two flags, who should read which file, as
+  `{file: [emails]}`. The DO approves all of the request, part of it, or none.
 
 ```python
 ds_client.submit_python_job(
@@ -231,7 +236,7 @@ ds_client.submit_bash_job(
 )
 ```
 
-### `client.process_approved_jobs(stream_output=True, timeout=None, force_execution=False)`
+### `client.process_approved_jobs(stream_output=True, timeout=None, force_execution=False, share_logs_with_submitter=False, share_outputs_with_submitter=False, ignore_peer_version=False)`
 
 Run all approved jobs. **DO only.**
 
@@ -239,6 +244,11 @@ Run all approved jobs. **DO only.**
 - `timeout`: Timeout in seconds per job (default: 300).
 - `force_execution`: Skip version compatibility checks.
 - `ignore_peer_version`: Run jobs from peers whose version is incompatible.
+- `share_logs_with_submitter`, `share_outputs_with_submitter`: Approve the logs or
+  the outputs for the submitter, on top of the job's approval. They are written to
+  the job's approved read permissions before it runs; after the run, the runner
+  shares only what those approve. An api call ignores both: its api and output
+  policy decide.
 
 ```python
 do_client.process_approved_jobs()
@@ -254,6 +264,28 @@ reported by name, with the submitter and the reason:
 ```
 
 The job stays at `approved`, so it runs on the next call once the versions match.
+
+### `client.run_job(job, share_outputs_with_submitter=False, sync=False)`
+
+Run one approved job. **DO only.** Takes the same options as `process_approved_jobs`.
+Raises if the submitter runs an incompatible version. Pass `sync=True` to sync after.
+
+```python
+job = do_client.jobs["analysis"]
+do_client.run_job(job)
+```
+
+### `client.share_job_results(job, share_logs_with_submitter=False, share_outputs_with_submitter=False, share_files=None, sync=False)`
+
+Share more of a finished job's files. **DO only.** Adds the readers to the job's
+approved read permissions and grants them read at once. A read already given is
+not taken back. Also works on an api call whose output policy held the outputs back.
+
+- `share_files`: Who may read which file, as `{file: [emails]}`.
+
+```python
+do_client.share_job_results(job, share_outputs_with_submitter=True, sync=True)
+```
 
 ---
 

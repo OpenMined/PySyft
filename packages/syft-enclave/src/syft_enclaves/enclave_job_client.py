@@ -4,13 +4,19 @@ from typing import Optional
 from syft_job.client import BaseJobClient, JobClient
 from syft_job.job import JobsList
 from syft_job.models import JobSubmissionMetadata
+from syft_job.read_permissions import (
+    ReadPermissions,
+    merge_read_permissions,
+    job_read_permissions_for,
+)
 
 
 class EnclaveJobClient(BaseJobClient):
     """Wraps a JobClient to add enclave-specific job submission behavior.
 
     All methods delegate to the inner JobClient except submit_python_job,
-    which patches config.yaml with enclave metadata after submission.
+    which builds the read permission request and patches config.yaml with
+    enclave metadata after submission.
     """
 
     def __init__(self, job_client: JobClient):
@@ -38,6 +44,9 @@ class EnclaveJobClient(BaseJobClient):
     def setup_ds_job_folder_as_do(self, ds_email: str) -> Path:
         return self._job_client.setup_ds_job_folder_as_do(ds_email)
 
+    def setup_ds_request_folder_as_do(self, ds_email: str) -> Path:
+        return self._job_client.setup_ds_request_folder_as_do(ds_email)
+
     def scan_inbox(self) -> None:
         return self._job_client.scan_inbox()
 
@@ -51,31 +60,53 @@ class EnclaveJobClient(BaseJobClient):
         code_path: str,
         job_name: Optional[str] = "",
         datasets: Optional[dict[str, list[str]]] = None,
-        share_results_with_do: bool = False,
-        request_disclosures: Optional[list[str]] = None,
+        share_logs_with_submitter: bool = False,
+        share_outputs_with_submitter: bool = False,
+        share_logs_with_owners: bool = False,
+        share_outputs_with_owners: bool = False,
+        share_files: Optional[ReadPermissions] = None,
         **kwargs,
     ) -> Path:
         """Submit a Python job with enclave metadata.
 
-        Calls the inner job_client's submit_python_job, then patches config.yaml
-        to set job_type="enclave" and store the datasets mapping.
+        The flags request the logs or outputs for the submitter, or for every
+        data owner in ``datasets``. ``share_files`` gives the request as
+        {file: [emails]} instead. Every party must approve a file for an email.
+
+        Raises:
+            ValueError: If share_files comes with a share flag.
         """
-        job_dir = self._job_client.submit_python_job(
-            user,
-            code_path,
-            job_name,
-            request_disclosures=request_disclosures,
-            **kwargs,
+        any_flag = (
+            share_logs_with_submitter
+            or share_outputs_with_submitter
+            or share_logs_with_owners
+            or share_outputs_with_owners
         )
-
-        config = JobSubmissionMetadata.load(job_dir / "config.yaml")
-        config.job_type = "enclave"
-        config.datasets = datasets
-        config.headers = {
-            **config.headers,
-            "job_type": "enclave",
-            "share_results_with_do": share_results_with_do,
-        }
-        config.save(job_dir / "config.yaml")
-
+        if share_files is not None and any_flag:
+            raise ValueError("Give share_files or the share flags, not both.")
+        if share_files is None:
+            owners = list(datasets or {})
+            share_files = merge_read_permissions(
+                job_read_permissions_for(
+                    [self.current_user_email],
+                    share_logs_with_submitter,
+                    share_outputs_with_submitter,
+                ),
+                job_read_permissions_for(
+                    owners, share_logs_with_owners, share_outputs_with_owners
+                ),
+            )
+        job_dir = self._job_client.submit_python_job(
+            user, code_path, job_name, share_files=share_files, **kwargs
+        )
+        _mark_as_enclave_job(job_dir, datasets)
         return job_dir
+
+
+def _mark_as_enclave_job(job_dir: Path, datasets: Optional[dict[str, list[str]]]):
+    """Set job_type="enclave" and the datasets mapping in config.yaml."""
+    config = JobSubmissionMetadata.load(job_dir / "config.yaml")
+    config.job_type = "enclave"
+    config.datasets = datasets
+    config.headers = {**config.headers, "job_type": "enclave"}
+    config.save(job_dir / "config.yaml")

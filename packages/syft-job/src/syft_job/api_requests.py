@@ -75,20 +75,20 @@ def _is_settled(client: JobClient, ref: RequestRef) -> bool:
     return True
 
 
-def _checked_api(client: JobClient, ref: RequestRef) -> ResolvedApi:
+def _checked_api(job_client: JobClient, ref: RequestRef) -> ResolvedApi:
     """The api the request calls, once the request passed every check.
 
     Raises PolicyResolutionError with the reason it is rejected.
     """
-    request_dir = client.manager.request_dir(ref)
+    request_dir = job_client.manager.request_dir(ref)
     valid, reason = validate_request(request_dir)
     if not valid:
         raise PolicyResolutionError(reason)
-    if client.manager.submission_dir(ref.job_ref).exists():
+    if job_client.manager.submission_dir(ref.job_ref).exists():
         raise PolicyResolutionError("a job in inbox/ has the same name")
-    api_name = client.manager.read_request(ref).api
-    client.api_resolver.check_request(api_name, request_dir, ref.ds_email)
-    return client.api_resolver(api_name)
+    api_name = job_client.manager.read_request(ref).api
+    job_client.api_resolver.check_request(api_name, request_dir, ref.ds_email)
+    return job_client.api_resolver(api_name)
 
 
 def _reject(client: JobClient, ref: RequestRef, reason: str) -> None:
@@ -102,12 +102,12 @@ def _reject(client: JobClient, ref: RequestRef, reason: str) -> None:
 def _create_job(client: JobClient, ref: RequestRef, api: ResolvedApi) -> bool:
     """Write the job to inbox/: the call's files, the api's code, config.yaml.
 
-    The job is built in staging/, which only the DO reads, locked, and then
-    moved into place in one step, so the DS never sees half a job or writes
-    into it. Returns False when another process created it first.
+    The job is built in a hidden folder in review/, which only the DO reads,
+    locked, and then moved into place in one step, so the DS never sees half a
+    job or writes into it. Returns False when another process created it first.
     """
     job_ref = ref.job_ref
-    building = client.manager.staging_dir(job_ref).parent / f".{ref.job_name}.building"
+    building = client.manager.review_dir(job_ref).parent / f".{ref.job_name}.building"
     _build_job(client, ref, api, building)
     job_dir = client.manager.submission_dir(job_ref)
     job_dir.parent.mkdir(parents=True, exist_ok=True)
@@ -136,8 +136,10 @@ def _build_job(
 
 
 def _approve(client: JobClient, job_ref: JobRef, api: ResolvedApi) -> None:
-    """Record the job as received from the api, and approve it with the
-    api's disclosures."""
+    """Record the job as received from the api, and approve it.
+
+    The call asks for, and gets, read on the api's files for the caller.
+    """
     now = datetime.now(timezone.utc)
     record = OwnerJobRecord(
         received_hash=submission_hash(client.manager.submission_dir(job_ref)),
@@ -146,7 +148,12 @@ def _approve(client: JobClient, job_ref: JobRef, api: ResolvedApi) -> None:
     )
     if not client.manager.claim_owner_record(job_ref, record):
         return
-    state = JobState(status=JobStatus.PENDING, received_at=now)
+    read_permissions = {f: [job_ref.ds_email] for f in api.approved_read_permissions}
+    state = JobState(
+        status=JobStatus.PENDING,
+        received_at=now,
+        requested_read_permissions=read_permissions,
+    )
     client.manager.write_state(job_ref, state)
     job = JobInfo(
         job_metadata=client.manager.read_submission(job_ref),
@@ -155,4 +162,7 @@ def _approve(client: JobClient, job_ref: JobRef, api: ResolvedApi) -> None:
         client=client,
         ref=job_ref,
     )
-    job.approve(approval_method=API_APPROVAL_METHOD, disclosures=api.disclosures)
+    job.approve(
+        approval_method=API_APPROVAL_METHOD,
+        share_files=read_permissions,
+    )

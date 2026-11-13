@@ -11,7 +11,6 @@ from syft_bg.notify.handlers.job import (
     _friendly_reason,
     _read_job_stderr,
 )
-from syft_job.job import JobInfo
 
 
 class TestJobHandler:
@@ -173,28 +172,24 @@ class TestFriendlyReason:
         assert "some other reason" in msg
 
 
-def _client_for_staged_job(tmp_path):
-    """A job client with one job. Returns (job_client, staging_dir)."""
+def _client_for_job(tmp_path):
+    """A job client with one job. Returns (job_client, review_dir)."""
     review = tmp_path / "review"
-    staging = tmp_path / "staging"
     review.mkdir()
-    staging.mkdir()
 
     job = MagicMock()
     job.name = "job1"
     job.job_review_path = review
-    job.job_staging_path = staging
-    job.artifact_path = lambda name: JobInfo.artifact_path(job, name)
     job_client = MagicMock()
     job_client.jobs = [job]
-    return job_client, staging
+    return job_client, review
 
 
-def test_read_job_stderr_finds_staged_artifacts(tmp_path):
-    """A failed job keeps stderr and returncode.txt in staging until a release."""
-    job_client, staging = _client_for_staged_job(tmp_path)
-    (staging / "stderr.txt").write_text("boom")
-    (staging / "returncode.txt").write_text("3")
+def test_read_job_stderr_reads_review_folder(tmp_path):
+    """A failed job keeps stderr and returncode.txt in its review folder."""
+    job_client, review = _client_for_job(tmp_path)
+    (review / "stderr.txt").write_text("boom")
+    (review / "returncode.txt").write_text("3")
 
     assert _read_job_stderr(job_client, "job1") == ("boom", 3)
 
@@ -209,17 +204,17 @@ def test_read_job_stderr_finds_staged_artifacts(tmp_path):
     ids=["missing", "empty", "unreadable"],
 )
 def test_read_job_stderr_without_usable_output(tmp_path, make_stderr):
-    job_client, staging = _client_for_staged_job(tmp_path)
-    make_stderr(staging / "stderr.txt")
+    job_client, review = _client_for_job(tmp_path)
+    make_stderr(review / "stderr.txt")
 
     assert _read_job_stderr(job_client, "job1") == (None, None)
 
 
 def test_read_job_stderr_truncates_to_tail(tmp_path):
-    job_client, staging = _client_for_staged_job(tmp_path)
+    job_client, review = _client_for_job(tmp_path)
     head = "h" * _MAX_STDERR_SIZE
     tail = "t" * (_MAX_STDERR_SIZE - 3) + "END"
-    (staging / "stderr.txt").write_text(head + tail)
+    (review / "stderr.txt").write_text(head + tail)
 
     stderr_text, _ = _read_job_stderr(job_client, "job1")
 

@@ -25,9 +25,9 @@ class EmailApproveConfig(BaseModel):
     notify_state_path: Path = Field(
         default_factory=lambda: get_default_paths().notify_state
     )
-    # The items in ``DisclosureItem`` that an approval releases. The submitter
-    # gets only the items it requested.
-    default_disclosures: list[str] = Field(default_factory=list)
+    # The run files an approval by reply approves, for whom the submitter asked,
+    # e.g. ["stdout.txt"]. A file the submitter didn't request is skipped.
+    default_approved_read_permissions: list[str] = Field(default_factory=list)
 
     @classmethod
     def load(cls, config_path: Optional[Path] = None) -> "EmailApproveConfig":
@@ -48,7 +48,9 @@ class EmailApproveConfig(BaseModel):
         gcp_project_id = email_approve_cfg.get("gcp_project_id")
         pubsub_topic = email_approve_cfg.get("pubsub_topic")
         pubsub_subscription = email_approve_cfg.get("pubsub_subscription")
-        default_disclosures = email_approve_cfg.get("default_disclosures") or []
+        default_approved_read_permissions = (
+            email_approve_cfg.get("default_approved_read_permissions") or []
+        )
 
         return cls(
             do_email=do_email,
@@ -56,7 +58,7 @@ class EmailApproveConfig(BaseModel):
             gcp_project_id=gcp_project_id,
             pubsub_topic=pubsub_topic,
             pubsub_subscription=pubsub_subscription,
-            default_disclosures=default_disclosures,
+            default_approved_read_permissions=default_approved_read_permissions,
         )
 
     def save_pubsub_config(self, config_path: Optional[Path] = None) -> None:

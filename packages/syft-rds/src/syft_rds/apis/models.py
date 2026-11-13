@@ -31,6 +31,18 @@ POLICIES_DIR_NAME = "policies"
 POLICY_STATE_DIR_NAME = "policy_state"
 
 
+def check_file_list(files: object) -> list[str]:
+    """Return ``files`` as a list of file names; raise TypeError if it isn't one."""
+    if not isinstance(files, (list, tuple)) or not all(
+        isinstance(f, str) for f in files
+    ):
+        raise TypeError(
+            'Give the readable files as a list, e.g. ["outputs", "stdout.txt"], '
+            f"not {type(files).__name__}."
+        )
+    return list(files)
+
+
 class FileEntry(BaseModel):
     """A pinned file of an api, with its hash."""
 
@@ -59,8 +71,8 @@ class ApiDefinition(BaseModel):
     # Every file of each policy folder, e.g. "policies/input/run.sh", hashed.
     input_policy: list[FileEntry] = Field(default_factory=list)
     output_policy: list[FileEntry] = Field(default_factory=list)
-    # The items in DisclosureItem that a call's approval releases, e.g. "logs".
-    disclosures: list[str] = Field(default_factory=list)
+    # The run files a caller may read once its call ran, e.g. ["stdout.txt"].
+    approved_read_permissions: list[str] = Field(default_factory=list)
 
     @property
     def call_files(self) -> list[str]:

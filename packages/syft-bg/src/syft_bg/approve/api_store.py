@@ -34,7 +34,7 @@ from syft_rds.apis.models import (
     policy_dir,
 )
 
-from syft_rds.apis.models import ApiDefinition, FileEntry
+from syft_rds.apis.models import ApiDefinition, FileEntry, check_file_list
 from syft_bg.common.config import get_syftbg_dir
 
 EVERYONE = "*"
@@ -67,7 +67,11 @@ class NewApi:
     args: list[ApiArg] = field(default_factory=list)
     input_policy: Optional[Path] = None
     output_policy: Optional[Path] = None
-    disclosures: list[str] = field(default_factory=list)
+    # The run files a caller may read once its call ran, e.g. ["stdout.txt"].
+    approved_read_permissions: list[str] = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        check_file_list(self.approved_read_permissions)
 
 
 class ApiStore:
@@ -238,7 +242,7 @@ def _build_definition(staging: Path, new_api: NewApi) -> ApiDefinition:
         args=new_api.args,
         input_policy=store_policy(staging, PolicyKind.INPUT, new_api.input_policy),
         output_policy=store_policy(staging, PolicyKind.OUTPUT, new_api.output_policy),
-        disclosures=new_api.disclosures,
+        approved_read_permissions=new_api.approved_read_permissions,
     )
     error = definition_error(definition)
     if error:

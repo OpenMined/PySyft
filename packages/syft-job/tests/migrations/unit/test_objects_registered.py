@@ -4,7 +4,7 @@ import syft_job
 from syft_job.migrations import job_registry
 from syft_job.models import (
     JobState,
-    JobStateV1,
+    JobStateV2,
     JobSubmissionMetadata,
     JobSubmissionMetadataV1,
 )
@@ -16,9 +16,9 @@ def test_versioned_objects_registered_and_aliased():
     assert job_registry.versions("JobSubmissionMetadata")
     assert job_registry.versions("JobState")
 
-    # The current-version aliases resolve to the V1 classes.
+    # The current-version aliases resolve to the latest classes.
     assert JobSubmissionMetadata is JobSubmissionMetadataV1
-    assert JobState is JobStateV1
+    assert JobState is JobStateV2
 
     # The protocol schema covers both objects and resolves a current version.
     schema = job_registry.compute_protocol_schema()

@@ -1,4 +1,5 @@
 import logging
+import shutil
 from pathlib import Path
 from typing import Callable, Iterator, Optional
 
@@ -9,15 +10,17 @@ from syft_migration import (
     MigrationService,
     ProtocolSchema,
 )
+from syft_perms import SyftPermContext
 
 from .config import SyftJobConfig, is_protocol_dir_name
+from .read_permissions import OUTPUTS, RUN_FILES
 from .job_ref import JobRef, JobStateNotFoundError, RequestRef
 from .migrations.registry import JOB_PROTOCOL_VERSION, job_registry
 from .models import JobState, JobSubmissionMetadata, RequestMetadata
 from .protocolcodecs import CODECS, ProtocolCodec
 from .submission import (
-    REQUEST_FILE_NAME,
     OWNER_RECORD_FILENAME,
+    REQUEST_FILE_NAME,
     OwnerJobRecord,
     claim_owner_record,
     read_owner_record,
@@ -27,6 +30,10 @@ from .submission import (
 logger = logging.getLogger(__name__)
 
 __all__ = ["JobRef", "JobStateNotFoundError", "JobStorage"]
+
+# The files of a run that a new run deletes, with their grants. Only the
+# outputs are a folder.
+RUN_ARTIFACTS = RUN_FILES
 
 
 def _no_peer_schema(peer_email: str) -> Optional[ProtocolSchema]:
@@ -129,12 +136,33 @@ class JobStorage:
     def review_dir(self, ref: JobRef) -> Path:
         return self._codec_for(ref.protocol_version).review_dir(ref)
 
-    def staging_dir(self, ref: JobRef) -> Path:
-        return self._codec_for(ref.protocol_version).staging_dir(ref)
+    def reset_run(self, ref: JobRef) -> list[str]:
+        """Delete the files of the last run of ``ref``, and every grant on them.
 
-    # -- owner record (owner side, in staging/) ------------------------------------
+        Returns the names it deleted. A grant can sit in a permission file above
+        the job folder and outlive the file, so each grant goes on its own. A
+        file of the next run then starts with no recipient.
+        """
+        datasite = self.config.syftbox_folder / ref.datasite_email
+        modifier = SyftPermContext(datasite=datasite).modifier
+        deleted = []
+        for name in RUN_ARTIFACTS:
+            path = self.review_dir(ref) / name
+            modifier.remove_all_rules(
+                str(path.relative_to(datasite)), is_folder=name == OUTPUTS
+            )
+            if path.is_dir():
+                shutil.rmtree(path)
+            elif path.exists():
+                path.unlink()
+            else:
+                continue
+            deleted.append(name)
+        return deleted
+
+    # -- owner record (owner side, in review/ with no grant) ------------------------
     def owner_record_path(self, ref: JobRef) -> Path:
-        return self.staging_dir(ref) / OWNER_RECORD_FILENAME
+        return self.review_dir(ref) / OWNER_RECORD_FILENAME
 
     def read_owner_record(self, ref: JobRef) -> Optional[OwnerJobRecord]:
         return read_owner_record(self.owner_record_path(ref))
