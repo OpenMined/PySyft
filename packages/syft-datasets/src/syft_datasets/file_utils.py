@@ -1,6 +1,6 @@
 import shutil
 from pathlib import Path
-from typing import Iterator
+from typing import Iterable
 
 
 def copy_dir_contents(
@@ -15,7 +15,7 @@ def copy_dir_contents(
     return copy_paths(files, dst, exists_ok)
 
 
-def copy_paths(files: Iterator[Path], dst: Path, exists_ok: bool = False) -> list[Path]:
+def copy_paths(files: Iterable[Path], dst: Path, exists_ok: bool = False) -> list[Path]:
     """
     Copy a list of files to a destination directory.
     If `dst` does not exist, it will be created.
