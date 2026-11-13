@@ -29,4 +29,4 @@ class MarkerError(RestrictError):
 
 
 class SourceEncodingError(RestrictError):
-    """Raised when a source file declares an encoding other than UTF-8."""
+    """Raised when a source file is not plain UTF-8."""

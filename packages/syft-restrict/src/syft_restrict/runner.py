@@ -173,7 +173,16 @@ def _read_source(path: Path) -> str:
     """
     raw = path.read_bytes()
     try:
-        declared, _ = tokenize.detect_encoding(io.BytesIO(raw).readline)
+        text = raw.decode("utf-8")
+    except UnicodeDecodeError as e:
+        raise SourceEncodingError(
+            f"{path}: not valid UTF-8 ({e.reason} at byte {e.start})"
+        ) from e
+
+    # CPython turns every line break into \n before it looks for a coding cookie.
+    text = text.replace("\r\n", "\n").replace("\r", "\n")
+    try:
+        declared, _ = tokenize.detect_encoding(io.BytesIO(text.encode()).readline)
     except SyntaxError as e:
         raise SourceEncodingError(f"{path}: {e.msg}") from e
 
@@ -181,16 +190,7 @@ def _read_source(path: Path) -> str:
         raise SourceEncodingError(
             f"{path}: declares encoding {declared!r}; only UTF-8 source is accepted"
         )
-
-    try:
-        text = raw.decode("utf-8")
-    except UnicodeDecodeError as e:
-        raise SourceEncodingError(
-            f"{path}: not valid UTF-8 ({e.reason} at byte {e.start})"
-        ) from e
-
-    # convert all line breaks to \n
-    return text.replace("\r\n", "\n").replace("\r", "\n")
+    return text
 
 
 def _version() -> str:
