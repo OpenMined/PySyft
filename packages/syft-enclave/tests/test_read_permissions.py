@@ -804,6 +804,24 @@ def test_requested_stderr_head_reaches_submitter():
     assert not has_file(ds, "stderr.txt")
     assert str(ds.jobs["j"].stderr) == full[:10]
     assert ds.jobs["j"].approved_read_permissions == {"stderr_10.txt": [ds.email]}
+    # The viewer says it shows only the first chars.
+    note = "first 10 characters, released by the data owners"
+    assert repr(ds.jobs["j"].stderr) == f"{full[:10]}\n({note})"
+    assert f"stderr.txt ({note})" in ds.jobs["j"].stderr._repr_html_()
+
+
+def test_log_head_longer_than_log_says_it_is_whole():
+    enclave, do1, do2, ds = run_crash_sharing_nothing()
+    for do in (do1, do2):
+        request_stderr(do, readers=ds.email, n_chars=100_000)
+    run_and_share(enclave, ds)
+
+    enclave_review = Path(enclave._rds.job_client.jobs["j"].job_review_path)
+    length = len((enclave_review / "stderr.txt").read_text())
+    assert repr(ds.jobs["j"].stderr).endswith(
+        "(first 100,000 characters, released by the data owners; "
+        f"the whole log is {length:,} characters)"
+    )
 
 
 def test_one_owner_requesting_log_shares_nothing():
@@ -822,6 +840,8 @@ def test_log_request_defaults_to_data_owners():
     assert readers_of(enclave, "stderr.txt", (ds, do1, do2)) == [do1, do2]
     assert has_file(do1, "stderr.txt")
     assert not has_file(ds, "stderr.txt")
+    # The whole log carries no note.
+    assert "released by" not in repr(do1.jobs["j"].stderr)
 
 
 def test_default_log_readers_ignore_owners_named_by_submitter():
