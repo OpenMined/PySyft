@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field
 
 from .astutil import normalize_ranges, scan_file, source_rows
 from .auditor import AuditReport, audit_allow_functions
-from .errors import PolicyViolation, SourceEncodingError
+from .errors import ObfuscationError, PolicyViolation, SourceEncodingError
 from .markers import parse_markers
 from .obfuscator import obfuscate as _obfuscate
 from .policy import Policy
@@ -143,18 +143,7 @@ def _run(
 
     scan = scan_file(ast.parse(source), normalize_ranges(private))
     obfuscated = _obfuscate(source, obfuscate_ranges, hide_ranges, scan)
-    # The certificate's ranges count rows of the source. A copy with a different row count would
-    # put the hiding on the wrong rows, so refuse to write it or certify it.
-    n_src, n_out = len(source_rows(source)), len(source_rows(obfuscated))
-    if n_out != n_src:
-        mismatch = Violation(
-            line=min((lo for lo, _ in normalize_ranges(private)), default=1),
-            code="row-count-mismatch",
-            message=f"the obfuscated copy has {n_out} rows and the source has {n_src}",
-        )
-        if strict:
-            raise PolicyViolation([mismatch])
-        return RunResult(ok=False, violations=[mismatch], audit=audit)
+    _require_same_row_count(source, obfuscated)
 
     out_path = Path(out) if out is not None else path.with_suffix(".obfuscated.py")
     out_path.write_text(obfuscated, encoding="utf-8")
@@ -175,6 +164,17 @@ def _run(
         certificate=certificate,
         audit=audit,
     )
+
+
+def _require_same_row_count(source: str, obfuscated: str) -> None:
+    """Raise ``ObfuscationError`` if ``obfuscated`` and ``source`` have different row counts."""
+    # The hide ranges and the certificate's ranges count rows of the source. A copy with a
+    # different row count puts the hiding on the wrong rows.
+    n_src, n_out = len(source_rows(source)), len(source_rows(obfuscated))
+    if n_out != n_src:
+        raise ObfuscationError(
+            f"the obfuscated copy has {n_out} rows and the source has {n_src}"
+        )
 
 
 def _read_source(path: Path) -> str:

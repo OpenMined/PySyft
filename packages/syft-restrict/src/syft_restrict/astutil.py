@@ -24,15 +24,11 @@ def normalize_ranges(private) -> list[tuple[int, int]]:
 
 
 def source_rows(text: str) -> list[str]:
-    """Split ``text`` into rows on newline characters, ``\\n``, similar to
-    ``tokenize``.
+    """Split ``text`` into rows on ``\\n`` only, as ``tokenize`` counts them.
 
-    This function replaces ``str.splitlines`` which splits on form feeds,
-    file separators, and other separator characters.
-
-    See: https://docs.python.org/3/builtins/stdtypes.html#str.splitlines
+    Each row keeps its ``\\n``. Unlike ``str.splitlines()``, a form feed or another separator
+    character does not end a row.
     """
-
     return io.StringIO(text).readlines()
 
 
