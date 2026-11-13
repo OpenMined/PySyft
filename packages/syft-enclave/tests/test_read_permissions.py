@@ -813,6 +813,28 @@ def test_one_owner_requesting_log_shares_nothing():
     assert not has_file(ds, "stderr.txt")
 
 
+def test_unshared_log_points_to_log_requests(capsys):
+    enclave, do1, do2, ds = run_crash_sharing_nothing()
+
+    job = ds.jobs["j"]
+    not_shared = (
+        "stderr.txt is not shared with you. "
+        "The data owners can release it with request_stderr."
+    )
+    assert str(job.stderr) == not_shared
+    assert not_shared in job.stderr._repr_html_()
+    assert str(job.stdout) == (
+        "stdout.txt is not shared with you. "
+        "The data owners can release it with request_stdout."
+    )
+    capsys.readouterr()
+    assert job.output_paths == []
+    out = capsys.readouterr().out
+    assert not_shared in out and "Check stderr" not in out
+    # The enclave ran the job, so it has the log.
+    assert "ValueError" in str(enclave.jobs["j"].stderr)
+
+
 def test_log_request_defaults_to_data_owners():
     enclave, do1, do2, ds = run_crash_sharing_nothing()
     for do in (do1, do2):

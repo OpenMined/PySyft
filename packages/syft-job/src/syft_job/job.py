@@ -237,10 +237,16 @@ class JobInfo:
         if status == JobStatus.FAILED:
             partial = _list_output_files()
             print(f"❌ Job '{self.name}' failed (status: {self.status}).")
-            print(
-                f"   Returning {len(partial)} partial output file(s). "
-                "Check stderr for details: job.stderr"
-            )
+            policy_error = self.policy_error
+            if policy_error:
+                print(f"   The data owner's policy refused the call: {policy_error}")
+                hint = "The reason is in job.policy_error."
+            elif self._log_path("stderr.txt").exists():
+                hint = "Check stderr for details: job.stderr"
+            else:
+                hint = self._missing_log_message("stderr.txt")
+            print(f"   Returning {len(partial)} partial output file(s).")
+            print(f"   {hint}")
             return partial
 
         if status != JobStatus.DONE:
@@ -251,7 +257,11 @@ class JobInfo:
         output_files = _list_output_files()
         if not output_files:
             print(f"⚠️  Job '{self.name}' is done but no output files were found.")
-            print("   The job script may not have written to the outputs/ folder.")
+            if self.outputs_withheld:
+                print("   The data owner's output policy held the outputs back.")
+                print("   The data owner can still share them with you later.")
+            else:
+                print("   The job script may not have written to the outputs/ folder.")
             return []
 
         return output_files
@@ -269,6 +279,27 @@ class JobInfo:
     def _log_path(self, log_file: str) -> Path:
         """Where the viewers read ``log_file`` ("stdout.txt" or "stderr.txt")."""
         return self.job_review_path / log_file
+
+    def _missing_log_message(self, log_file: str) -> str:
+        """What to tell a reader who has no ``log_file`` of this finished job.
+
+        The datasite owner keeps every log the job wrote. Anyone else reads a
+        log only once it is shared with them.
+        """
+        if self.current_user_email == self.datasite_owner_email:
+            return f"No {Path(log_file).stem} file found"
+        if self.policy_error:
+            # The policy may have refused the call before it ran, so the log
+            # may not exist.
+            return (
+                f"{log_file} is not shared with you: the data owner's policy "
+                "refused the call. The reason is in job.policy_error."
+            )
+        return f"{log_file} is not shared with you. {self._log_release_hint(log_file)}"
+
+    def _log_release_hint(self, log_file: str) -> str:
+        """Who can share ``log_file`` with a reader who does not have it."""
+        return "The data owner can share it with share_job_results."
 
     @property
     def files(self) -> List[Path]:

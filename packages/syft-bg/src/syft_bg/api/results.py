@@ -294,6 +294,8 @@ class ApiResult(BaseModel):
     file_paths: list[str] = Field(default_factory=list)
     peers: list[str] = Field(default_factory=list)
     policies: list[str] = Field(default_factory=list)  # e.g. ["input", "output"]
+    args: list[str] = Field(default_factory=list)  # e.g. ["a: int = 1"]
+    state_cleared: bool = False  # set_policies() cleared the api's state
     error: str | None = None
 
     @classmethod
@@ -306,6 +308,7 @@ class ApiResult(BaseModel):
             file_paths=obj.file_paths,
             peers=obj.peers,
             policies=policies,
+            args=[a.describe() for a in obj.args],
         )
 
     def __repr__(self) -> str:
@@ -318,14 +321,23 @@ class ApiResult(BaseModel):
                     lines.append(f"    - {s}")
             if self.file_paths:
                 lines.append(f"  file_paths: {', '.join(self.file_paths)}")
+            if self.args:
+                lines.append("  args:")
+                for a in self.args:
+                    lines.append(f"    - {a}")
             if self.peers:
                 lines.append(f"  peers: {', '.join(self.peers)}")
             else:
                 lines.append("  peers: (any)")
             if self.policies:
                 lines.append(f"  policies: {', '.join(self.policies)}")
+            if self.state_cleared:
+                lines.append("  state: cleared (pass reset_state=False to keep it)")
         else:
             lines.append("ApiResult: FAILED")
             if self.error:
                 lines.append(f"  error: {self.error}")
         return "\n".join(lines)
+
+    def __str__(self) -> str:
+        return self.__repr__()

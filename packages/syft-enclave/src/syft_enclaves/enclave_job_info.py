@@ -313,6 +313,11 @@ class EnclaveJobInfo(JobInfo):
         self._save_own_approval(approval)
         return approved
 
+    def _log_release_hint(self, log_file: str) -> str:
+        """The data owners release a log by requesting it, see ``request_log``."""
+        method = "request_stderr" if log_file == "stderr.txt" else "request_stdout"
+        return f"The data owners can release it with {method}."
+
     def request_log(
         self,
         log_file: str,

@@ -1,6 +1,7 @@
 """Api calls (requests), and the input and output policies run around them."""
 
 import json
+from html import escape
 from pathlib import Path
 
 import pytest
@@ -290,6 +291,30 @@ def test_timed_out_api_call_shares_nothing(env):
     assert not env.reads(DS_EMAIL, "call.job", "returncode.txt")
 
 
+def test_unshared_log_says_so(env, capsys):
+    """A reader without a log is told it is not shared, not that none exists."""
+    job = env.call("echo private; exit 3")
+    assert not env.reads(DS_EMAIL, "call.job", "stderr.txt")
+    # The DS and the DO share one SyftBox here: the DS would not have the logs.
+    for log_file in ("stdout.txt", "stderr.txt"):
+        (job.job_review_path / log_file).unlink()
+
+    not_shared = (
+        "stderr.txt is not shared with you. "
+        "The data owner can share it with share_job_results."
+    )
+    ds_job = _ds_job(env)
+    assert str(ds_job.stderr) == not_shared
+    assert not_shared in ds_job.stderr._repr_html_()
+    assert str(ds_job.stdout).startswith("stdout.txt is not shared with you.")
+    capsys.readouterr()
+    ds_job.output_paths
+    out = capsys.readouterr().out
+    assert not_shared in out and "Check stderr" not in out
+    # The data owner keeps every log, so a missing one was never written.
+    assert str(job.stderr) == "No stderr file found"
+
+
 def test_output_policy_with_bad_read_permissions_denies(env):
     env.apis.output_code = _read_permissions_policy(["not", "a", "dict"])
 
@@ -344,6 +369,21 @@ def test_api_call_ignores_share_flags(env):
     assert not env.reads(DS_EMAIL, "call.job", "outputs/out.txt")
     assert not env.reads(DS_EMAIL, "call.job", "stdout.txt")
     assert job.outputs_withheld
+
+
+def test_job_view_shows_params_escaped(env):
+    (env.apis.files_dir / "run.sh").write_text("echo hi\n")
+    params = {"code/params.json": b'{"word": "<b>privacy</b>", "n": 3}'}
+    env.ds_client.submit_api_request(DO_EMAIL, "call.job", API_NAME, params)
+    env.ds_client.submit_bash_job(DO_EMAIL, "echo hi", "plain.job")
+
+    html = env.do_job("call.job")._repr_html_()
+
+    assert "<h4>Parameters</h4>" in html
+    pretty = '{\n  "word": "<b>privacy</b>",\n  "n": 3\n}'
+    assert escape(pretty) in html and "<b>privacy</b>" not in html
+    # A job without code/params.json has no such section.
+    assert "<h4>Parameters</h4>" not in env.do_job("plain.job")._repr_html_()
 
 
 def test_request_becomes_approved_job_with_api_code(env):
