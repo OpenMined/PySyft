@@ -567,6 +567,24 @@ def test_outputs_reach_owner_only_after_every_party_approved():
     assert not has_file(do1, RESULT)
 
 
+def test_output_file_shared_with_owner_and_submitter_reaches_both():
+    """A file under outputs/ named in share_files goes only to its listed readers.
+
+    The submitter names itself too, as documented, to keep the file.
+    """
+    enclave, do1, do2, ds = build_quad()
+    submit(ds, enclave, do1, do2, OK_CODE, {RESULT: [ds.email, do1.email]})
+    distribute(enclave, do1, do2)
+    approve(do1, None)
+    approve(do2, None)
+    run_and_share(enclave, ds, do1, do2)
+
+    assert readers_of(enclave, RESULT, (ds, do1, do2)) == [ds, do1]
+    assert has_file(ds, RESULT)
+    assert has_file(do1, RESULT)
+    assert not has_file(do2, RESULT)
+
+
 # -- the job-level calls, same as on a datasite ---------------------------------
 
 
