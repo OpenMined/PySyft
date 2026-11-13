@@ -10,7 +10,7 @@ from __future__ import annotations
 __version__ = "0.1.0"
 
 from .auditor import AuditReport, PathAudit, audit_allow_functions
-from .errors import MarkerError, PolicyViolation, RestrictError
+from .errors import MarkerError, PolicyViolation, RestrictError, SourceEncodingError
 from .markers import parse_markers
 from .obfuscator import obfuscate
 from .policy import Policy
@@ -31,6 +31,7 @@ __all__ = [
     "Violation",
     "PolicyViolation",
     "MarkerError",
+    "SourceEncodingError",
     "RestrictError",
     "__version__",
 ]

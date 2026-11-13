@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import pytest
 
-from syft.sync.version.exceptions import VersionUnknownError
+from syft.sync.version.exceptions import VersionMismatchError, VersionUnknownError
 from syft.sync.encryption_policy import EncryptionPolicy
 from syft.sync.version.peer_info import PeerInfo
 from syft.sync.version.peer_manager import PeerCompatibilityResult, PeerManager
@@ -176,3 +176,31 @@ class TestSkippedJobsAreReported:
         assert "incompatible version" in out
         assert "ignore_peer_version=True" in out
         assert do.jobs["skipped.job"].status == "approved"
+
+
+def test_run_job_raises_on_incompatible_submitter(tmp_path):
+    """A single run raises instead of skipping; the job stays approved."""
+    ds, do = SyftRDSClient.pair_with_mock_drive_service_connection(
+        use_in_memory_cache=False,
+        sync_automatically=False,
+    )
+    code_path = tmp_path / "blocked.py"
+    code_path.write_text('print("hello")')
+    ds.submit_python_job(
+        user=do.email, code_path=str(code_path), job_name="blocked.job"
+    )
+    do.sync()
+    do.jobs["blocked.job"].approve()
+
+    incompatible = PeerCompatibilityResult(
+        peer_email=ds.email,
+        status=CompatibilityStatus.INCOMPATIBLE,
+        should_skip=True,
+        explanation_skip="incompatible version",
+    )
+    with patch.object(
+        PeerManager, "get_peer_compatibility_status", return_value=incompatible
+    ):
+        with pytest.raises(VersionMismatchError):
+            do.run_job(do.jobs["blocked.job"])
+    assert do.jobs["blocked.job"].status == "approved"

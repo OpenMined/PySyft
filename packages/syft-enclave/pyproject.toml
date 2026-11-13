@@ -1,6 +1,6 @@
 [project]
 name = "syft-enclave"
-version = "0.1.2"
+version = "0.1.3"
 description = "TEE attestation server for syft"
 readme = "README.md"
 authors = [{ name = "OpenMined", email = "info@openmined.org" }]
@@ -9,7 +9,7 @@ requires-python = ">=3.11"
 
 dependencies = [
     "syft>=0.10.0",  # floor: the `syft` PyPI project also hosts legacy PySyft <=0.9
-    "syft-rds>=0.6.1",
+    "syft-rds>=0.6.2",
     "syft-job>=0.1.41",  # imported directly for logging_config
     "pydantic-settings>=2.11.0",
     "requests>=2.32.0",

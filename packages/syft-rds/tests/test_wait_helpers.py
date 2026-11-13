@@ -162,9 +162,10 @@ def _submit_job(ds, do, tmp_path, name="wait.job"):
 
 def _run_job(do, name="wait.job"):
     do.sync()
-    next(j for j in do.job_client.jobs if j.name == name).approve()
+    job = next(j for j in do.job_client.jobs if j.name == name)
+    job.approve()
     do.job_runner.process_approved_jobs()
-    do.job_runner.share_job_results(name, share_outputs=True, share_logs=False)
+    do.share_job_results(job, share_outputs_with_submitter=True)
     do.sync()
 
 

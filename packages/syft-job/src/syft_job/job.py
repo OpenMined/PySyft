@@ -1,23 +1,20 @@
 from __future__ import annotations
 
-import json
 import shutil
 import warnings
+from collections.abc import Mapping
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import TYPE_CHECKING, Iterable, List, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 from syft_permissions.spec.ruleset import PERMISSION_FILE_NAME
 
-from .disclosures import (
-    DISCLOSURE_ITEMS,
-    DISCLOSURES_FILENAME,
-    DisclosureItem,
-    DisclosuresArg,
+from .read_permissions import (
+    LOG_FILES,
+    ReadPermissions,
     check_approval_reason,
-    format_items,
-    gated_names,
-    normalize_disclosures,
+    validate_read_permissions,
+    format_read_permissions,
     restrict_to_request,
     warn_on_logs_release,
 )
@@ -37,11 +34,6 @@ from .policies import (
     PolicyResolutionError,
 )
 from .submission import API_HEADER, OwnerJobRecord, submission_hash
-
-# The files that ``share_logs_with_submitter`` releases.
-STAGED_LOG_FILES = tuple(
-    gated_names([DisclosureItem.LOGS.value, DisclosureItem.RETURN_CODE.value])
-)
 
 if TYPE_CHECKING:
     from .client import JobClient
@@ -79,108 +71,72 @@ class JobInfo:
     def job_review_path(self) -> Path:
         return self._client.manager.review_dir(self._ref)
 
-    @property
-    def job_staging_path(self) -> Path:
-        """Where an artifact waits until a party releases it."""
-        return self._client.manager.staging_dir(self._ref)
+    def share_outputs(self, recipients: list[str]) -> None:
+        """Share the outputs with ``recipients``."""
+        self.share({"outputs": recipients})
 
-    def artifact_path(self, filename: str) -> Path:
-        """Return where ``filename`` is now: released, or still staged.
+    def share_logs(self, recipients: list[str]) -> None:
+        """Share the logs and the exit code with ``recipients``.
 
-        A released artifact sits in the review directory. Every other artifact
-        sits in the staging directory. The datasite owner reads both, so a
-        viewer on the owner side finds the file either way.
+        This call cannot take back a copy that another party already has.
         """
-        released = self.job_review_path / filename
-        if released.exists():
-            return released
-        return self.job_staging_path / filename
+        self.share({name: recipients for name in LOG_FILES})
 
-    def release_logs(self) -> list[str]:
-        """Release the logs and the exit code to the submitter.
+    def share(self, files: Mapping[str, list[str]]) -> None:
+        """Grant each recipient read access to its named file in review/.
 
-        Returns the names moved. A copy that already reached another party does
-        not come back.
+        ``files`` maps each file name to its recipients. A name with no
+        recipients, or with no file, is skipped. A user with read access on the
+        whole review folder reads every file, shared or not.
         """
-        return self._release_to_submitter(STAGED_LOG_FILES)
-
-    def _release_to_submitter(self, filenames: Iterable[str]) -> list[str]:
-        """Move the named staged files into review/, and grant the submitter read.
-
-        The move discloses a file to a reader with the review folder grant. The
-        file grant covers a reader that holds no folder grant.
-        """
-        moved = self.release_artifacts(filenames)
-        self._grant_read(moved, [self.submitted_by])
-        return moved
-
-    def release_artifacts(self, filenames: Iterable[str]) -> list[str]:
-        """Move the named staged artifacts into the review directory.
-
-        Returns the names it moved. A name that is absent from staging, or that
-        a release already moved, is skipped.
-        """
-        moved = []
-        for filename in filenames:
-            staged = self.job_staging_path / filename
-            if not staged.exists():
-                continue
-            target = self.job_review_path / filename
-            target.parent.mkdir(parents=True, exist_ok=True)
-            shutil.move(str(staged), str(target))
-            moved.append(filename)
-        return moved
+        present = {
+            name: recipients
+            for name, recipients in files.items()
+            if recipients and (self.job_review_path / name).exists()
+        }
+        if present:
+            self._grant_read(present)
 
     # ──────────────────────────────────────────────
-    # Disclosures
+    # Read permissions
     # ──────────────────────────────────────────────
 
     @property
-    def requested_disclosures(self) -> list[str]:
-        """The items the submitter asked for, as recorded at submission."""
-        requested = self.job_headers.get("requested_disclosures")
-        if not isinstance(requested, list):
-            return []
-        return sorted(normalize_disclosures(requested))
+    def requested_read_permissions(self) -> ReadPermissions:
+        """Who the submitter asked to read which file, as recorded at receipt."""
+        return self._state.requested_read_permissions
 
     @property
-    def disclosures(self) -> dict[str, bool]:
-        """The items the data owner released, as recorded at approval."""
-        try:
-            text = (self.job_review_path / DISCLOSURES_FILENAME).read_text()
-        except FileNotFoundError:
-            return {}
-        return normalize_disclosures(json.loads(text))
+    def approved_read_permissions(self) -> ReadPermissions:
+        """Who the data owner lets read which file, as recorded at approval."""
+        return self._state.approved_read_permissions
 
-    @property
-    def granted_disclosures(self) -> set[str]:
-        """The items that go to the submitter: requested and released."""
-        return set(self.disclosures) & set(self.requested_disclosures)
+    def _set_approved_read_permissions(
+        self, read_permissions: Optional[ReadPermissions], stacklevel: int = 4
+    ) -> ReadPermissions:
+        """Keep the part of ``read_permissions`` that the submitter requested."""
+        approved = restrict_to_request(
+            validate_read_permissions(read_permissions), self.requested_read_permissions
+        )
+        # Up to the public caller, update_read_permissions() by default.
+        warn_on_logs_release(approved, stacklevel)
+        self._state.approved_read_permissions = approved
+        return approved
 
-    def _write_disclosures(
-        self, disclosures: DisclosuresArg, stacklevel: int = 4
-    ) -> dict[str, bool]:
-        granted = restrict_to_request(disclosures, self.requested_disclosures)
-        # Up to the public caller, update_disclosures() by default.
-        warn_on_logs_release(granted, self.requested_disclosures, stacklevel)
-        path = self.job_review_path / DISCLOSURES_FILENAME
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(granted))
-        return granted
-
-    def disclosure_rows(self) -> list[tuple[str, str]]:
-        """The disclosure state as (label, value) rows, for display."""
+    def read_permission_rows(self) -> list[tuple[str, str]]:
+        """The read permission state as (label, value) rows, for display."""
         return [
-            ("Requested", format_items(self.requested_disclosures)),
-            ("Granted", format_items(self.disclosures)),
-            ("To submitter", format_items(self.granted_disclosures)),
+            ("Requested", format_read_permissions(self.requested_read_permissions)),
+            ("Approved", format_read_permissions(self.approved_read_permissions)),
         ]
 
-    def update_disclosures(self, disclosures: DisclosuresArg) -> dict[str, bool]:
-        """Replace the items the data owner releases, and return the new map.
+    def update_read_permissions(
+        self, read_permissions: Optional[ReadPermissions]
+    ) -> ReadPermissions:
+        """Replace who may read which file, and return what was approved.
 
-        Only the items that the submitter requested are stored. A job that
-        finished releases the newly granted items at once.
+        Only what the submitter requested is kept. A job that finished shares
+        the new files at once. A read already given is not taken back.
 
         Raises:
             ValueError: If the job was not approved
@@ -189,7 +145,7 @@ class JobInfo:
         if self.datasite_owner_email != self.current_user_email:
             raise PermissionError(
                 f"Only the admin user ({self.datasite_owner_email}) can change "
-                f"the disclosures of a job."
+                f"the read permissions of a job."
             )
         self._state = self._client.manager.read_state(self._ref)
         if self._state.status in (
@@ -198,14 +154,15 @@ class JobInfo:
             JobStatus.REJECTED,
         ):
             raise ValueError(f"Approve the job first (current: {self.status}).")
-        granted = self._write_disclosures(disclosures)
+        approved = self._set_approved_read_permissions(read_permissions)
+        self._client.manager.write_state(self._ref, self._state)
         if self._state.status in (JobStatus.DONE, JobStatus.FAILED):
-            self.release_disclosures()
-        return granted
+            self.share_read_permissions()
+        return approved
 
-    def release_disclosures(self) -> list[str]:
-        """Release the granted items to the submitter, and return the names moved."""
-        return self._release_to_submitter(gated_names(self.granted_disclosures))
+    def share_read_permissions(self) -> None:
+        """Give each approved reader read access to its file."""
+        self.share(self.approved_read_permissions)
 
     # ──────────────────────────────────────────────
     # Properties from config (inbox/)
@@ -309,6 +266,10 @@ class JobInfo:
         """Get a viewer for the stderr content."""
         return StderrViewer(self)
 
+    def _log_path(self, log_file: str) -> Path:
+        """Where the viewers read ``log_file`` ("stdout.txt" or "stderr.txt")."""
+        return self.job_review_path / log_file
+
     @property
     def files(self) -> List[Path]:
         """Get list of relevant files across both inbox and review."""
@@ -371,7 +332,7 @@ class JobInfo:
     @property
     def policy_error(self) -> Optional[str]:
         """Why a policy denied the job, as the submitter sees it."""
-        path = self.artifact_path(POLICY_ERROR_FILENAME)
+        path = self.job_review_path / POLICY_ERROR_FILENAME
         try:
             return path.read_text().strip() or None
         except OSError:
@@ -381,16 +342,17 @@ class JobInfo:
     def outputs_withheld(self) -> bool:
         """True when the output policy kept the outputs from the submitter.
 
-        The runner releases an empty marker file to the submitter for this;
+        The runner shares an empty marker file with the submitter for this;
         only whether it exists matters.
         """
-        return self.artifact_path(OUTPUTS_WITHHELD_FILENAME).exists()
+        return (self.job_review_path / OUTPUTS_WITHHELD_FILENAME).exists()
 
     def approve(
         self,
         reason: Optional[str] = None,
         approval_method: str = "manual",
-        disclosures: DisclosuresArg = None,
+        share_files: Optional[ReadPermissions] = None,
+        share_requested_files: bool = False,
     ) -> None:
         """
         Approve a job by updating state.yaml in review/.
@@ -403,31 +365,49 @@ class JobInfo:
         Args:
             reason: Optional reason for approval (recorded as review_reason).
             approval_method: How the job was approved ("manual" or "auto")
-            disclosures: The items in ``DisclosureItem`` that the data owner
-                releases. Only the items that the submitter requested are
-                stored, so a later edit of the request cannot add items.
-                Omit the argument to release nothing.
+            share_files: Who may read which file once the job ran, as
+                {file: [emails]}, e.g. {"stdout.txt": [submitter]}. Only what the
+                submitter requested is kept.
+            share_requested_files: Instead of share_files, approve
+                everything the submitter requested. With neither, none is approved.
 
         Raises:
             ValueError: If job is not in pending status, was not fully
-                received, or changed after it was received
+                received, or changed after it was received, or if both
+                share_files and share_requested_files are given
             PermissionError: If the current user is not authorized to approve
-            TypeError: If reason is not a string
+            TypeError: If reason is not a string, or share_files not a dict
         """
         check_approval_reason(reason)
-        self._approve(reason, approval_method, disclosures)
+        resolved_read_permissions = self._resolve_read_permissions(
+            share_files, share_requested_files
+        )
+        self._approve(reason, approval_method, resolved_read_permissions)
+
+    def _resolve_read_permissions(
+        self, share_files: object, share_requested_files: bool
+    ) -> ReadPermissions:
+        """The approval's read permissions: the whole request, or share_files."""
+        if share_files is not None and share_requested_files:
+            raise ValueError("Give share_files or share_requested_files, not both.")
+        if share_requested_files:
+            return dict(self.requested_read_permissions)
+        return validate_read_permissions(share_files)
 
     def _approve(
-        self, reason: Optional[str], approval_method: str, disclosures: DisclosuresArg
+        self,
+        reason: Optional[str],
+        approval_method: str,
+        read_permissions: Optional[ReadPermissions],
     ) -> None:
         self._check_can_approve()
-        # The check runs before any write. The record and the grant go before
-        # the state, so the runner never sees an approved state without them.
+        # The check runs before any write. The record goes before the state, so
+        # the runner never sees an approved state without it.
         record = self._read_owner_record()
         self._check_unchanged(record)
         self._record_approval(record, approval_method)
         # Up to the caller of approve(), through _approve().
-        self._write_disclosures(disclosures, stacklevel=5)
+        self._set_approved_read_permissions(read_permissions, stacklevel=5)
         self._state.status = JobStatus.APPROVED
         self._state.approved_by = self.current_user_email
         self._state.approved_at = record.approved_at
@@ -548,7 +528,6 @@ class JobInfo:
         if not result_path.exists():
             raise FileNotFoundError(f"Result path not found: {path}")
 
-        # Create outputs directory in review/
         outputs_dir = self.job_review_path / "outputs"
         outputs_dir.mkdir(parents=True, exist_ok=True)
 
@@ -595,23 +574,7 @@ class JobInfo:
                 f"Only completed or failed jobs can be rerun."
             )
 
-        changes_made = []
-
-        # Clean up the artifacts of the previous run. A staged copy must go
-        # too, or a later release sends a log that belongs to the old run.
-        for filename in gated_names(DISCLOSURE_ITEMS):
-            for f in (
-                self.job_review_path / filename,
-                self.job_staging_path / filename,
-            ):
-                if f.exists():
-                    f.unlink()
-                    changes_made.append(filename)
-
-        outputs_dir = self.job_review_path / "outputs"
-        if outputs_dir.exists() and outputs_dir.is_dir():
-            shutil.rmtree(outputs_dir)
-            changes_made.append("outputs directory")
+        removed = self._client.manager.reset_run(self._ref)
 
         # Reset state to approved
         self._state.status = JobStatus.APPROVED
@@ -619,9 +582,9 @@ class JobInfo:
         self._state.return_code = None
         self._client.manager.write_state(self._ref, self._state)
 
-        if changes_made:
+        if removed:
             print(
-                f"Job '{self.name}' prepared for rerun! Removed: {', '.join(changes_made)}"
+                f"Job '{self.name}' prepared for rerun! Removed: {', '.join(removed)}"
             )
         else:
             print(f"Job '{self.name}' prepared for rerun! (No cleanup needed)")
@@ -643,25 +606,13 @@ class JobInfo:
         )
         return rel / subpath
 
-    def share_outputs(self, users: list[str]) -> None:
-        """Grant read access to the outputs directory for given users."""
+    def _grant_read(self, files: Mapping[str, list[str]]) -> None:
+        """Grant each recipient read access to its named review/ file."""
         ctx = self._get_perm_context()
-        outputs_rel = self._relative_review_path("outputs")
-        folder = ctx.open(outputs_rel)
-        for user in users:
-            folder.grant_read_access(user)
-
-    def share_logs(self, users: list[str]) -> None:
-        """Grant read access to log files (stdout, stderr, returncode) for given users."""
-        self._grant_read(STAGED_LOG_FILES, users)
-
-    def _grant_read(self, filenames: Iterable[str], users: list[str]) -> None:
-        """Grant read access to the named review/ files for the given users."""
-        ctx = self._get_perm_context()
-        for filename in filenames:
+        for filename, recipients in files.items():
             f = ctx.open(self._relative_review_path(filename))
-            for user in users:
-                f.grant_read_access(user)
+            for recipient in recipients:
+                f.grant_read_access(recipient)
 
     # ──────────────────────────────────────────────
     # Display
@@ -684,8 +635,10 @@ class JobInfo:
         base = f"{emoji} {self.name} ({self.status}{approval_info}) -> {self.datasite_owner_email}"
         if self.review_reason:
             base += f" | Review reason: {self.review_reason}"
-        rows = "; ".join(f"{label}: {value}" for label, value in self.disclosure_rows())
-        return f"{base} | Disclosures: {rows}"
+        rows = "; ".join(
+            f"{label}: {value}" for label, value in self.read_permission_rows()
+        )
+        return f"{base} | Read permissions: {rows}"
 
     def __repr__(self) -> str:
         parts = [

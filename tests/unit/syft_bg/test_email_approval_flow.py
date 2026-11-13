@@ -6,6 +6,7 @@ import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock
 
+from syft_bg.approve.handlers.job import ApprovedJobHandler
 from syft_bg.common.state import JsonStateManager
 from syft_bg.email_approve.config import EmailApproveConfig
 from syft_bg.email_approve.gmail_message import GmailMessage
@@ -221,3 +222,45 @@ def test_email_approval_e2e():
     assert email_approve_state.was_notified(
         f"email_reply_{FAKE_THREAD_ID}", "processed"
     )
+
+
+def test_services_leave_hand_approved_job_alone(tmp_path):
+    """An email reply runs only its job; the approve service runs no hand-approved job."""
+    ds_manager, do_manager = SyftRDSClient.pair_with_mock_drive_service_connection(
+        use_in_memory_cache=False,
+        sync_automatically=False,
+    )
+    code_path = tmp_path / "main.py"
+    code_path.write_text(
+        "import os\n"
+        "os.makedirs('outputs', exist_ok=True)\n"
+        "open('outputs/result.txt', 'w').write('done')\n"
+    )
+    for name in ("by_hand.job", "emailed.job"):
+        ds_manager.submit_python_job(
+            user=do_manager.email, code_path=str(code_path), job_name=name
+        )
+    do_manager.sync()
+    do_manager.jobs["by_hand.job"].approve()
+
+    notify_state = JsonStateManager(state_file=tmp_path / "notify_state.json")
+    notify_state.store_thread_id("emailed.job", FAKE_THREAD_ID)
+    EmailApproveHandler(
+        job_client=do_manager.job_client,
+        job_runner=do_manager.job_runner,
+        state=JsonStateManager(state_file=tmp_path / "email_approve_state.json"),
+        notify_state=notify_state,
+        do_email=do_manager.email,
+    ).handle_reply(thread_id=FAKE_THREAD_ID, reply_text="approve")
+
+    statuses = {job.name: job.status for job in do_manager.jobs}
+    assert statuses == {"by_hand.job": "approved", "emailed.job": "done"}
+    do_manager.sync()
+    ds_manager.sync()
+    assert ds_manager.jobs["emailed.job"].output_paths
+
+    approve_service = ApprovedJobHandler(
+        client=do_manager, config_path=tmp_path / "config.yaml", verbose=False
+    )
+    assert approve_service.run_approved_jobs() == []
+    assert do_manager.jobs["by_hand.job"].status == "approved"

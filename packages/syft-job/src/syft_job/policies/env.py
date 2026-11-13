@@ -25,10 +25,12 @@ Environment variables (both policies):
 Environment variables (output policy only):
 
     SYFT_POLICY_OUTPUTS_DIR         The job's outputs/. Whatever is here after
-                                    the policy finishes is shared.
-    SYFT_POLICY_RECIPIENTS_PATH     recipients.json, a JSON list of the emails
-                                    that receive the outputs, pre-filled with
-                                    the submitter.
+                                    the policy finishes is what can be shared.
+    SYFT_POLICY_READ_PERMISSIONS_PATH
+                                    read_permissions.json, {file: [emails]}:
+                                    who may read which run file, pre-filled
+                                    with the api's approved read permissions,
+                                    e.g. {"outputs": [submitter]}.
 
 Conventions:
 
@@ -53,10 +55,11 @@ Conventions:
                 shared, so a job and its output policy can agree on a staging
                 folder next to outputs/ (e.g. output_candidates/) and the
                 policy builds outputs/ from it.
-    Recipients  Edit recipients.json to change who receives the outputs. An
-                empty list holds them back without failing the job; the data
-                owner can still share them by hand. Only approved peers receive
-                outputs: any other email is skipped and logged for the owner.
+    Readers     Edit read_permissions.json to change who may read which file,
+                e.g. add or drop "outputs" or "stdout.txt", or add a peer. {}
+                shares nothing without failing the job; the data owner can
+                still share by hand. Only the submitter and approved peers get
+                read: any other email is skipped and logged for the owner.
 """
 
 PARAMS_PATH = "SYFT_POLICY_PARAMS_PATH"
@@ -66,4 +69,4 @@ API_NAME = "SYFT_POLICY_API_NAME"
 STATE_DIR = "SYFT_POLICY_STATE_DIR"
 DEFAULT_STATE_PATH = "SYFT_POLICY_DEFAULT_STATE_PATH"
 OUTPUTS_DIR = "SYFT_POLICY_OUTPUTS_DIR"
-RECIPIENTS_PATH = "SYFT_POLICY_RECIPIENTS_PATH"
+READ_PERMISSIONS_PATH = "SYFT_POLICY_READ_PERMISSIONS_PATH"
