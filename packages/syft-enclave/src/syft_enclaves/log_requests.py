@@ -101,6 +101,19 @@ def log_head_name(log_file: str, n_chars: int) -> str:
     return f"{path.stem}_{n_chars}{path.suffix}"
 
 
+def log_head_length(path: Path, log_file: str) -> Optional[int]:
+    """The ``n_chars`` of ``path`` when it is a copy of the first chars of ``log_file``.
+
+    None for any other file, such as the log itself.
+    """
+    log = Path(log_file)
+    prefix = f"{log.stem}_"
+    if path.suffix != log.suffix or not path.stem.startswith(prefix):
+        return None
+    n_chars = path.stem[len(prefix) :]
+    return int(n_chars) if n_chars.isdigit() else None
+
+
 def write_log_head(
     review_dir: Path, log_file: str, n_chars: Optional[int]
 ) -> Optional[str]:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from html import escape
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -87,9 +88,11 @@ class StdoutViewer:
 
         lines = content.split("\n")
         if len(lines) <= 3:
-            return content
+            text = content
         else:
-            return f"StdoutViewer({len(lines)} lines, {len(content)} chars)"
+            text = f"StdoutViewer({len(lines)} lines, {len(content)} chars)"
+        note = self.job_info._log_note("stdout.txt")
+        return f"{text}\n({note})" if note else text
 
     def _repr_html_(self) -> str:
         """HTML representation for Jupyter notebooks with scrollable view."""
@@ -146,6 +149,8 @@ class StdoutViewer:
         lines = clean_content.split("\n")
         char_count = len(clean_content)
         line_count = len(lines)
+        note = self.job_info._log_note("stdout.txt")
+        title = f"stdout.txt ({escape(note)})" if note else "stdout.txt"
 
         return f"""
         <style>
@@ -271,7 +276,7 @@ class StdoutViewer:
         <div class="syftjob-stdout-container">
             <div class="syftjob-stdout-header">
                 <div class="syftjob-stdout-title">
-                    📄 stdout.txt
+                    📄 {title}
                 </div>
                 <div class="syftjob-stdout-stats">
                     <span>{line_count} lines</span>

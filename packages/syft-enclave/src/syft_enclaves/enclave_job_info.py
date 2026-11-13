@@ -24,6 +24,7 @@ from syft_enclaves.log_requests import (
     LogRequest,
     RequestedPermissionsUpdate,
     load_log_request,
+    log_head_length,
     log_request_file_name,
     longest_log_head,
 )
@@ -356,6 +357,25 @@ class EnclaveJobInfo(JobInfo):
             return full
         # The data owners may have shared only the first chars of the log.
         return longest_log_head(self.job_review_path, log_file) or full
+
+    def _log_note(self, log_file: str) -> Optional[str]:
+        """Say when the viewers show only the first chars of ``log_file``.
+
+        The reader knows the log's full length only when the copy is shorter
+        than asked for: then it holds the whole log.
+        """
+        path = self._log_path(log_file)
+        n_chars = log_head_length(path, log_file)
+        if n_chars is None:
+            return None
+        note = f"first {n_chars:,} characters, released by the data owners"
+        try:
+            length = len(path.read_text(errors="replace"))
+        except OSError:
+            return note
+        if length < n_chars:
+            note += f"; the whole log is {length:,} characters"
+        return note
 
     def reject(self, reason: Optional[str] = None) -> None:
         """Reject this job in the DO's own approval file.

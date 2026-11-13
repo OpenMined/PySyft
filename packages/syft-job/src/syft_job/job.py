@@ -256,6 +256,10 @@ class JobInfo:
 
         return output_files
 
+    def _log_note(self, log_file: str) -> Optional[str]:
+        """What the viewers add about the ``log_file`` they show, or None."""
+        return None
+
     @property
     def stdout(self) -> StdoutViewer:
         """Get a viewer for the stdout content."""

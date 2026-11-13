@@ -81,9 +81,11 @@ class StderrViewer:
 
         lines = content.split("\n")
         if len(lines) <= 3:
-            return content
+            text = content
         else:
-            return f"StderrViewer({len(lines)} lines, {len(content)} chars)"
+            text = f"StderrViewer({len(lines)} lines, {len(content)} chars)"
+        note = self.job_info._log_note("stderr.txt")
+        return f"{text}\n({note})" if note else text
 
     def _repr_html_(self) -> str:
         """HTML representation for Jupyter notebooks with scrollable view."""
@@ -132,6 +134,8 @@ class StderrViewer:
         lines = clean_content.split("\n")
         char_count = len(clean_content)
         line_count = len(lines)
+        note = self.job_info._log_note("stderr.txt")
+        title = f"stderr.txt ({escape(note)})" if note else "stderr.txt"
 
         return f"""
         <style>
@@ -257,7 +261,7 @@ class StderrViewer:
         <div class="syftjob-stderr-container">
             <div class="syftjob-stderr-header">
                 <div class="syftjob-stderr-title">
-                    🚨 stderr.txt
+                    🚨 {title}
                 </div>
                 <div class="syftjob-stderr-stats">
                     <span>{line_count} lines</span>
