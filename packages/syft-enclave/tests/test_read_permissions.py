@@ -585,6 +585,34 @@ def test_output_file_shared_with_owner_and_submitter_reaches_both():
     assert not has_file(do2, RESULT)
 
 
+SUBMITTER_NOT_NAMED = "share_files doesn't name you"
+
+
+def test_share_files_without_submitter_warns():
+    enclave, do1, do2, ds = build_quad()
+    with pytest.warns(UserWarning, match=SUBMITTER_NOT_NAMED):
+        submit(ds, enclave, do1, do2, OK_CODE, {RESULT: [do1.email]})
+
+
+@pytest.mark.parametrize(
+    "share_args",
+    [
+        lambda ds, do1: {"requested": {RESULT: [ds.email, do1.email]}},
+        lambda ds, do1: {},
+        # The flags build a share_files that names only the data owners.
+        lambda ds, do1: {"share_outputs_with_owners": True},
+    ],
+    ids=["submitter_named", "no_share_files", "owner_flag_only"],
+)
+def test_submission_naming_submitter_or_using_flags_does_not_warn(share_args):
+    enclave, do1, do2, ds = build_quad()
+    with warnings.catch_warnings(record=True) as record:
+        warnings.simplefilter("always")
+        submit(ds, enclave, do1, do2, OK_CODE, **share_args(ds, do1))
+
+    assert not [w for w in record if SUBMITTER_NOT_NAMED in str(w.message)]
+
+
 # -- the job-level calls, same as on a datasite ---------------------------------
 
 

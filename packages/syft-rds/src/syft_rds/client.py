@@ -26,7 +26,7 @@ from syft.sync.version.peer_manager import CompatAction
 from syft_job.client import JobClient
 from syft_job.job import JobInfo
 from syft_job.job_runner import SyftJobRunner
-from syft_job.read_permissions import ReadPermissions
+from syft_job.read_permissions import ReadPermissions, warn_if_submitter_not_named
 from syft_datasets.dataset_manager import SHARE_WITH_ANY, SyftDatasetManager
 from syft_datasets.dataset_ref import DatasetNotFoundError
 from syft_datasets.migrations.registry import DATASET_PROTOCOL_VERSION
@@ -502,6 +502,7 @@ class SyftRDSClient(BaseModel):
             share_outputs_with_submitter=share_outputs_with_submitter,
             share_files=share_files,
         )
+        warn_if_submitter_not_named(share_files, self.email)
         self.sync_engine.push_job_files(job_dir)
 
         print("\n✅ Job submitted successfully!")
