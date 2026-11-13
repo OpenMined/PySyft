@@ -19,6 +19,7 @@ from syft_job.models import JobState, JobStatus
 from syft_job.submission import (
     OWNER_RECORD_FILENAME,
     SUBMISSION_HASH_HEADER,
+    code_hash,
 )
 from syft_permissions.spec.ruleset import PERMISSION_FILE_NAME
 from syft_perms import SyftPermContext
@@ -707,11 +708,14 @@ def test_approve_refuses_wildcard_reader(tmp_path):
 ATTACK_RUN_SH = "echo attacker ran\n"
 
 
-def drop_declared_hash(inbox: Path) -> None:
-    """Remove the submission hash from config.yaml, as a DS client before it did."""
+def set_declared_hash(inbox: Path, value: str | None) -> None:
+    """Rewrite the submission hash in config.yaml; None removes it."""
     config = inbox / "config.yaml"
     data = yaml.safe_load(config.read_text())
-    del data["headers"][SUBMISSION_HASH_HEADER]
+    if value is None:
+        del data["headers"][SUBMISSION_HASH_HEADER]
+    else:
+        data["headers"][SUBMISSION_HASH_HEADER] = value
     config.write_text(yaml.safe_dump(data))
 
 
@@ -736,17 +740,13 @@ def test_approve_refuses_changed_submission(tmp_path):
     assert reload_job(tmp_path).status == "pending"
 
 
-@pytest.mark.parametrize("origin", ["deposit_then_rerun", "approved_before_hashes"])
-def test_job_without_approved_hash_goes_back_to_pending(tmp_path, origin):
+def test_job_without_approved_hash_goes_back_to_pending(tmp_path):
+    # A deposited result has no approved submission, so its rerun is not run.
     job = submit_only(tmp_path)
-    if origin == "deposit_then_rerun":
-        result = tmp_path / "result.txt"
-        result.write_text("result")
-        job.accept_by_depositing_result(str(result))
-        reload_job(tmp_path).rerun()
-    else:
-        job.approve()
-        (job.job_review_path / OWNER_RECORD_FILENAME).unlink()
+    result = tmp_path / "result.txt"
+    result.write_text("result")
+    job.accept_by_depositing_result(str(result))
+    reload_job(tmp_path).rerun()
 
     run_approved(tmp_path)
 
@@ -755,12 +755,9 @@ def test_job_without_approved_hash_goes_back_to_pending(tmp_path, origin):
     assert not (job.job_review_path / "stdout.txt").exists()
 
 
-@pytest.mark.parametrize("client", ["declares_hash", "declares_no_hash"])
-def test_job_is_received_only_when_complete(tmp_path, client):
+def test_job_is_received_only_when_complete(tmp_path):
     """Sync delivers a job in batches: a job missing a file is not received yet."""
     inbox = submit_as_ds(tmp_path)
-    if client == "declares_no_hash":
-        drop_declared_hash(inbox)
     main_py = inbox / "code" / "main.py"
     main_py.unlink()
 
@@ -770,12 +767,21 @@ def test_job_is_received_only_when_complete(tmp_path, client):
     assert reload_job(tmp_path).status == "pending"
 
 
+def test_job_without_a_declared_hash_is_not_received(tmp_path):
+    # The job an api call becomes declares no hash; its request receives it.
+    inbox = submit_as_ds(tmp_path)
+    set_declared_hash(inbox, None)
+
+    assert reload_job(tmp_path).status == "received"
+
+
 def test_symlink_is_rejected_at_receipt(tmp_path):
     inbox = submit_as_ds(tmp_path)
-    drop_declared_hash(inbox)
     secret = tmp_path / "secret.txt"
     secret.write_text("private")
     (inbox / "code" / "link.txt").symlink_to(secret)
+    # The submitter declares the hash of what it sent, symlink included.
+    set_declared_hash(inbox, code_hash(inbox))
 
     job = reload_job(tmp_path)
     assert job.status == "rejected"
@@ -809,14 +815,3 @@ def test_local_copy_error_leaves_job_approved(tmp_path, monkeypatch, caplog):
     assert job.status == "approved"
     assert not (job.job_review_path / "stdout.txt").exists()
     assert "disk full" in caplog.text
-
-
-def test_pending_job_from_before_hashes_gets_record_and_lock(tmp_path):
-    job = submit_only(tmp_path)
-    (job.job_review_path / OWNER_RECORD_FILENAME).unlink()
-    (job.job_submission_path / PERMISSION_FILE_NAME).unlink()
-
-    job = reload_job(tmp_path)
-
-    assert (job.job_review_path / OWNER_RECORD_FILENAME).exists()
-    assert (job.job_submission_path / PERMISSION_FILE_NAME).exists()

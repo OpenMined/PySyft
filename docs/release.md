@@ -33,6 +33,7 @@ Each package uploads with its own PyPI token, stored as a repository secret: `PY
    - Merge the release branch into `dev` in a PR. Run `uv lock` on that PR and commit `uv.lock`; the bump commits change only `pyproject.toml` files.
    - Create the GitHub Release: `gh release create vX.Y.Z --verify-tag --generate-notes --notes-start-tag v<previous>`.
    - Rebuild the enclave image from the release tag, not from the branch, which already holds the next version. A verifier expects the enclave to run its own syft version, so clients of the new release reject an older image. From `packages/syft-enclave`, on a checkout of `vX.Y.Z`: `just build-push "X.Y.Z latest"` (needs `OM_DOCKER_LOGIN` and `OM_DOCKER_PW`), then update the image digest where the enclave is deployed (`just tinfoil-release X.Y.Z` for Tinfoil, `image_digest` in the Terraform variables for Confidential Space).
+   - Generate the release fixtures, each at its own tag, and commit them to `dev` in a PR: `scripts/generate_release_fixture.py` at `vX.Y.Z`, `packages/syft-job/scripts/generate_release_fixture.py` at `syft-job/vX.Y.Z`, `packages/syft-datasets/scripts/generate_release_fixture.py` at `syft-dataset/vX.Y.Z`. Later releases test that they still read these files. Do not run all three at `vX.Y.Z`: syft-job and syft-dataset were bumped earlier in the same run, so at that tag they name the next version.
    - Add the release to `CHANGELOG.md`.
 
 ## Release artifacts

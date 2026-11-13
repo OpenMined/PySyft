@@ -4,9 +4,9 @@ import syft_datasets
 from syft_datasets.migrations import dataset_registry
 from syft_datasets.models import (
     Dataset,
-    DatasetV1,
+    DatasetV0,
     PrivateDatasetConfig,
-    PrivateDatasetConfigV1,
+    PrivateDatasetConfigV0,
 )
 from syft_migration import unregistered_objects, versioned_objects
 
@@ -16,9 +16,9 @@ def test_versioned_objects_registered_and_aliased():
     assert dataset_registry.versions("Dataset")
     assert dataset_registry.versions("PrivateDatasetConfig")
 
-    # The current-version aliases resolve to the V1 classes.
-    assert Dataset is DatasetV1
-    assert PrivateDatasetConfig is PrivateDatasetConfigV1
+    # The current-version aliases resolve to the V0 classes.
+    assert Dataset is DatasetV0
+    assert PrivateDatasetConfig is PrivateDatasetConfigV0
 
     # The protocol schema covers both objects and resolves a current version.
     schema = dataset_registry.compute_protocol_schema()

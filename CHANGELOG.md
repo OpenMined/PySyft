@@ -1,5 +1,29 @@
 # Changelog
 
+## Unreleased
+
+- **Migration versions reset.** Every protocol (`syft`, `syft-job`,
+  `syft-dataset`) and every versioned object is back at version `0`, and the
+  code for older protocols is gone: the old object versions and migrations, the
+  flat and `v1`–`v3` job layouts, the flat dataset layout and its `""`
+  collection variant, and the frozen release artifacts and fixtures of earlier
+  releases. Jobs now live under `v0/` and dataset collections use the `v0`
+  variant.
+- **No compatibility with earlier releases.** This release reads no file and
+  no peer that a release up to 0.10.1 wrote. Such a peer is refused with a
+  clear reason. At login, a SyftBox written by an earlier release offers a
+  fresh start (delete and recreate); without a terminal the login stops with
+  instructions. Jobs and datasets of earlier releases are not listed.
+  `MIN_SUPPORTED_SYFT_VERSION` is `0.10.2`.
+- Removed compatibility code that was not tied to a protocol: the receipt of
+  jobs that declare no submission hash (a job an api call becomes is received
+  by its request), the back-fill of hashes and locks for jobs received before
+  hashes existed, the replacement of the old read grant on a whole review
+  folder, the back-fill of `requests/` folders for peers approved before api
+  calls existed, job names holding an '@', `skip_job_names`,
+  `SyftJobConfig.from_file`, the deprecated `VersionInfo.attestation_token`
+  field, and cache files written before the cache version field existed.
+
 ## v0.10.0
 
 - **Package renamed `syft-client` → `syft`.** Install with `pip install syft` and

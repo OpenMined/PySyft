@@ -1,9 +1,9 @@
-from .v1 import DatasetV1
+from .v0 import DatasetV0
 
 # The current version of the dataset object.
-Dataset = DatasetV1
+Dataset = DatasetV0
 
 __all__ = [
     "Dataset",
-    "DatasetV1",
+    "DatasetV0",
 ]

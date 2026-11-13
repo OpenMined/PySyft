@@ -13,7 +13,7 @@ import os
 import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import Iterable, Optional
+from typing import Optional
 from uuid import uuid4
 
 from pydantic import BaseModel
@@ -169,20 +169,6 @@ def _no_symlinks(folder: Path) -> tuple[bool, str]:
         if path.is_symlink():
             return False, f"'{path.relative_to(folder).as_posix()}' is a symlink"
     return True, ""
-
-
-def has_listed_files(submission_dir: Path, files: Iterable[str]) -> bool:
-    """Whether run.sh and every code/ file in the manifest are present.
-
-    The completeness check for a submitter that declares no hash.
-    """
-    if not (submission_dir / "run.sh").is_file():
-        return False
-    return all(
-        (submission_dir / "code" / name).is_file()
-        for name in files
-        if not _is_skipped(Path(name))
-    )
 
 
 def copy_submission(source: Path, target: Path) -> None:

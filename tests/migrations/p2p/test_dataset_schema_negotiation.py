@@ -5,21 +5,24 @@ from pathlib import Path
 from syft_datasets.config import SyftBoxConfig
 from syft_datasets.dataset_manager import SyftDatasetManager
 from syft_datasets.dataset_storage import DatasetStorage
+import pytest
 from syft_datasets.migrations.registry import DATASET_PROTOCOL_VERSION
-from syft_migration import ProtocolSchema
+from syft_migration import MigrationError, ProtocolSchema
 
 OWNER_EMAIL = "do@test.org"
-OLD_PEER = "old@test.org"
 NEW_PEER = "new@test.org"
 UNKNOWN_PEER = "unknown@test.org"
 
 
-def _dataset_schema(protocol_version: str) -> ProtocolSchema:
+def _dataset_schema(
+    protocol_version: str, min_supported_version: str = "0"
+) -> ProtocolSchema:
     # The slim form a peer advertises in its VersionInfo.
     return ProtocolSchema(
         protocol_name="syft-dataset",
         version=protocol_version,
-        supported_versions={"Dataset": ["1"], "PrivateDatasetConfig": ["1"]},
+        min_supported_version=min_supported_version,
+        supported_versions={"Dataset": ["0"], "PrivateDatasetConfig": ["0"]},
     )
 
 
@@ -29,19 +32,7 @@ def _storage(tmp_path: Path, peer_schemas: dict) -> DatasetStorage:
     return DatasetStorage(config=config, peer_schema=peer_schemas.get)
 
 
-def test_mixed_audience_writes_both_versions(tmp_path):
-    storage = _storage(
-        tmp_path,
-        {
-            OLD_PEER: _dataset_schema("0"),
-            NEW_PEER: _dataset_schema(DATASET_PROTOCOL_VERSION),
-        },
-    )
-    versions = storage.target_protocol_versions_for_peers([OLD_PEER, NEW_PEER])
-    assert versions == {"0", DATASET_PROTOCOL_VERSION}
-
-
-def test_all_current_audience_drops_legacy_layout(tmp_path):
+def test_all_current_audience_gets_the_current_layout(tmp_path):
     storage = _storage(tmp_path, {NEW_PEER: _dataset_schema(DATASET_PROTOCOL_VERSION)})
     assert storage.target_protocol_versions_for_peers([NEW_PEER]) == {
         DATASET_PROTOCOL_VERSION
@@ -66,19 +57,19 @@ def test_no_audience_needs_no_older_layout(tmp_path):
 def test_schema_learned_later_is_seen_by_storage(tmp_path):
     live: dict = {}
     storage = _storage(tmp_path, live)
-    assert storage.target_protocol_versions_for_peers([NEW_PEER]) == {
-        storage._floor_protocol_version
-    }
+    # A peer whose schema is not known yet is refused.
+    with pytest.raises(MigrationError):
+        storage.negotiated_protocol_version_for_peer(NEW_PEER)
     live[NEW_PEER] = _dataset_schema(DATASET_PROTOCOL_VERSION)
-    assert storage.target_protocol_versions_for_peers([NEW_PEER]) == {
+    assert storage.negotiated_protocol_version_for_peer(NEW_PEER) == (
         DATASET_PROTOCOL_VERSION
-    }
+    )
 
 
 def test_manager_from_config_passes_schema_lookup_through(tmp_path):
     config = SyftBoxConfig(syftbox_folder=tmp_path / "SyftBox", email=OWNER_EMAIL)
     (tmp_path / "SyftBox" / OWNER_EMAIL).mkdir(parents=True, exist_ok=True)
-    lookup = {OLD_PEER: _dataset_schema("0")}.get
+    lookup = {NEW_PEER: _dataset_schema(DATASET_PROTOCOL_VERSION)}.get
     manager = SyftDatasetManager.from_config(config, peer_schema=lookup)
     assert manager.storage.peer_schema is lookup
 

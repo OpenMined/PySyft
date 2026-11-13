@@ -69,7 +69,7 @@ def test_a_known_peer_reports_nothing(tmp_path, caplog):
         DO_EMAIL: ProtocolSchema(
             protocol_name="syft-job",
             version=JOB_PROTOCOL_VERSION,
-            supported_versions={"JobState": ["1"]},
+            supported_versions={"JobState": ["0"]},
         )
     }.get
     with caplog.at_level(logging.WARNING):

@@ -19,11 +19,20 @@ from enclave_model_api.paths import (
 )
 from enclave_model_api.server import create_app
 from enclave_model_api.service import InferenceService
-from syft_datasets.config import SyftBoxConfig
+from syft_datasets.config import SyftBoxConfig, protocol_dir_name
 from syft_datasets.dataset_storage import DatasetStorage
+from syft_datasets.migrations import dataset_registry
 from syft_datasets.migrations.registry import DATASET_PROTOCOL_VERSION
 
 from inference_stub import STUB_COMPLETION_PREFIX, StubBackend, make_stub_weights
+
+SEGMENT = protocol_dir_name(DATASET_PROTOCOL_VERSION)
+
+
+def _dataset_yaml(name: str) -> str:
+    """The head of a dataset.yaml the current protocol writes."""
+    version = dataset_registry.latest_version("Dataset")
+    return f"canonical_name: Dataset\nversion: '{version}'\nname: {name}\n"
 
 
 def test_log_writer_appends_jsonl(tmp_path):
@@ -56,42 +65,44 @@ def test_weights_ready(tmp_path):
 def test_private_dataset_dir_layout(tmp_path):
     # A dataset not yet on disk falls back to the current protocol, which is the
     # layout this client writes for a dataset of its own (the enclave's logs).
-    # A dataset another datasite writes may arrive in an older layout, and
-    # candidate_private_dataset_dirs covers that case.
+    # A dataset another datasite writes may arrive in another layout this client
+    # reads, and candidate_private_dataset_dirs covers that case.
     path = private_dataset_dir(tmp_path, "enclave@openmined.org", "inference_logs")
     assert path == (
         tmp_path
         / "enclave@openmined.org"
         / "private"
         / "syft_datasets"
-        / f"v{DATASET_PROTOCOL_VERSION}"
+        / SEGMENT
         / "inference_logs"
     )
 
 
 def test_private_dataset_dir_follows_the_layout_on_disk(tmp_path):
     # A dataset already on disk decides its own layout, whatever the fallback is.
-    flat = (
+    private = (
         tmp_path
         / "enclave@openmined.org"
         / "private"
         / "syft_datasets"
+        / SEGMENT
         / "inference_logs"
     )
-    flat.mkdir(parents=True)
-    (flat / "private_metadata.yaml").write_text("uid: x\n")
+    private.mkdir(parents=True)
+    (private / "private_metadata.yaml").write_text("uid: x\n")
     public = (
         tmp_path
         / "enclave@openmined.org"
         / "public"
         / "syft_datasets"
+        / SEGMENT
         / "inference_logs"
     )
     public.mkdir(parents=True)
-    (public / "dataset.yaml").write_text("name: inference_logs\n")
+    (public / "dataset.yaml").write_text(_dataset_yaml("inference_logs"))
 
     path = private_dataset_dir(tmp_path, "enclave@openmined.org", "inference_logs")
-    assert path == flat
+    assert path == private
 
 
 def test_inference_server_full_lifecycle(tmp_path):
@@ -155,45 +166,35 @@ def test_candidate_dirs_cover_every_layout_while_the_dataset_is_absent(tmp_path)
     assert [c.name for c in candidates] == ["weights"] * len(candidates)
     segments = [c.parent.name for c in candidates]
     # Newest layout first, down to the floor.
-    assert segments[0] == f"v{DATASET_PROTOCOL_VERSION}"
-    assert "syft_datasets" in segments
+    assert segments[0] == SEGMENT
+    assert all(segment.startswith("v") for segment in segments)
 
 
 def test_candidate_dirs_follow_the_layout_on_disk(tmp_path):
     storage = _storage(tmp_path, "owner@test.org")
-    flat_private = tmp_path / "owner@test.org" / "private" / "syft_datasets" / "weights"
-    flat_private.mkdir(parents=True)
-    (flat_private / "private_metadata.yaml").write_text("uid: x\n")
-    flat_public = tmp_path / "owner@test.org" / "public" / "syft_datasets" / "weights"
-    flat_public.mkdir(parents=True)
-    (flat_public / "dataset.yaml").write_text("name: weights\n")
+    owner_dir = tmp_path / "owner@test.org"
+    private = owner_dir / "private" / "syft_datasets" / SEGMENT / "weights"
+    private.mkdir(parents=True)
+    (private / "private_metadata.yaml").write_text("uid: x\n")
+    public = owner_dir / "public" / "syft_datasets" / SEGMENT / "weights"
+    public.mkdir(parents=True)
+    (public / "dataset.yaml").write_text(_dataset_yaml("weights"))
 
     assert candidate_private_dataset_dirs(storage, "owner@test.org", "weights") == [
-        flat_private
+        private
     ]
-
-
-def test_resolve_weights_dir_finds_the_flat_layout_of_an_earlier_release(tmp_path):
-    # Every data owner in the fleet today writes protocol 0, so the weights land
-    # flat. A guess fixed at the current layout never sees them.
-    owner = "owner@test.org"
-    flat = tmp_path / owner / "private" / "syft_datasets" / "weights"
-    _write_weights(flat)
-
-    assert resolve_weights_dir(tmp_path, owner, "weights") == flat
-    assert weights_ready(resolve_weights_dir(tmp_path, owner, "weights"))
 
 
 def test_resolve_weights_dir_returns_the_newest_candidate_while_absent(tmp_path):
     owner = "owner@test.org"
     resolved = resolve_weights_dir(tmp_path, owner, "weights")
-    assert resolved.parent.name == f"v{DATASET_PROTOCOL_VERSION}"
+    assert resolved.parent.name == SEGMENT
     assert not weights_ready(resolved)
 
 
-def test_the_service_sees_weights_that_land_in_an_older_layout(tmp_path):
+def test_the_service_sees_weights_that_land_after_startup(tmp_path):
     # The poll exists so the enclave need not restart. It re-resolves the
-    # layout, so weights arriving flat after startup are picked up.
+    # layout, so weights arriving after startup are picked up.
     owner = "owner@test.org"
     service = InferenceService(
         backend=StubBackend(),
@@ -203,7 +204,7 @@ def test_the_service_sees_weights_that_land_in_an_older_layout(tmp_path):
     )
     assert not service.weights_present
 
-    _write_weights(tmp_path / owner / "private" / "syft_datasets" / "weights")
+    _write_weights(tmp_path / owner / "private" / "syft_datasets" / SEGMENT / "weights")
 
     assert service.weights_present
     assert service.try_load()
@@ -248,7 +249,7 @@ def test_every_entrypoint_re_resolves_the_weights_layout():
         checked.append(path.name)
         assert isinstance(argument, ast.Lambda), (
             f"{path.name} fixes the weights path at startup; the owner may write "
-            "an older layout, and the poll would never see it"
+            "another layout, and the poll would never see it"
         )
         called = {
             n.func.id

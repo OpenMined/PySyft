@@ -31,13 +31,11 @@ def test_a_saved_file_loads_back(tmp_path):
     assert PersistedDict(path=_path(tmp_path)).get("a") == "1"
 
 
-def test_a_file_without_a_version_still_loads(tmp_path):
-    # Written before the version field existed: a bare map of entries. Reading it
-    # saves the user a full re-scan on the first run after an upgrade.
+def test_a_file_without_a_version_starts_empty(tmp_path):
+    # A bare map of entries has no version, so it is not read: the cache
+    # costs a re-scan instead.
     _path(tmp_path).write_text(json.dumps({"a": "1", "b": "2"}))
-    d = PersistedDict(path=_path(tmp_path))
-    assert d.get("a") == "1"
-    assert d.get("b") == "2"
+    assert len(PersistedDict(path=_path(tmp_path))) == 0
 
 
 def test_a_file_from_a_newer_client_starts_empty(tmp_path):

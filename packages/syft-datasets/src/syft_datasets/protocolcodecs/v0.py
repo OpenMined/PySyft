@@ -9,14 +9,20 @@ from ..config import (
     PRIVATE_METADATA_FILENAME,
     SYFT_DATASETS_FOLDER_NAME,
     SyftBoxConfig,
-    is_protocol_dir_name,
+    protocol_dir_name,
 )
 from ..dataset_ref import DatasetRef
 from .base import ProtocolCodec
 
 
 class DatasetConfigV0:
-    """Pre-versioning layout (<= 0.1.20): datasets flat under syft_datasets/, no segment."""
+    """Datasets under syft_datasets/v<n>/, identity fields on disk.
+
+    Serves every protocol version in ``protocol_versions``. The v<n> segment is
+    derived from the protocol version (of the ref, or of each version when
+    scanning), never hardcoded, so a protocol bump that doesn't change the layout
+    is just appending the new version to ``protocol_versions``.
+    """
 
     version = "0"
     protocol_versions = ["0"]
@@ -27,22 +33,28 @@ class DatasetConfigV0:
     def __init__(self, syftbox_config: SyftBoxConfig) -> None:
         self.syftbox_config = syftbox_config
 
-    def public_all_datasets_folder(self, datasite: str) -> Path:
+    def public_all_dataset_folder(self, datasite: str) -> Path:
         return (
             self.syftbox_config.datasite_public_root(datasite)
             / self.datasets_folder_name
         )
 
-    def private_all_datasets_folder(self, owner: str) -> Path:
+    def private_all_datatset_folder(self, owner: str) -> Path:
         return (
             self.syftbox_config.datasite_private_root(owner) / self.datasets_folder_name
         )
 
+    def _segment(self, ref: DatasetRef) -> str:
+        # Derived from the ref, never hardcoded.
+        return protocol_dir_name(ref.protocol_version)
+
     def public_dataset_dir(self, ref: DatasetRef) -> Path:
-        return self.public_all_datasets_folder(ref.owner) / ref.name
+        return self.public_all_dataset_folder(ref.owner) / self._segment(ref) / ref.name
 
     def private_dataset_dir(self, ref: DatasetRef) -> Path:
-        return self.private_all_datasets_folder(ref.owner) / ref.name
+        return (
+            self.private_all_datatset_folder(ref.owner) / self._segment(ref) / ref.name
+        )
 
     def metadata_path(self, ref: DatasetRef) -> Path:
         return self.public_dataset_dir(ref) / self.metadata_filename
@@ -50,33 +62,34 @@ class DatasetConfigV0:
     def private_metadata_path(self, ref: DatasetRef) -> Path:
         return self.private_dataset_dir(ref) / self.private_metadata_filename
 
-    def iter_dataset_refs(self, datasite_email: str) -> Iterator[DatasetRef]:
-        root = self.public_all_datasets_folder(datasite_email)
-        if not root.is_dir():
-            return
-        for entry in sorted(p for p in root.iterdir() if p.is_dir()):
-            # v<n>/ segments belong to a versioned layout, not the flat one.
-            if is_protocol_dir_name(entry.name):
+    def iter_dataset_refs_all_supported_protocols(
+        self, datasite_email: str
+    ) -> Iterator[DatasetRef]:
+        """Yield refs for datasets stored under any supported protocol's segment."""
+        root = self.public_all_dataset_folder(datasite_email)
+        for protocol_version in self.protocol_versions:
+            version_dir = root / protocol_dir_name(protocol_version)
+            if not version_dir.is_dir():
                 continue
-            if (entry / self.metadata_filename).exists():
-                yield DatasetRef(datasite_email, entry.name, "0")
+            for entry in sorted(p for p in version_dir.iterdir() if p.is_dir()):
+                if (entry / self.metadata_filename).exists():
+                    yield DatasetRef(datasite_email, entry.name, protocol_version)
 
 
 class ProtocolCodecV0(ProtocolCodec):
-    """Reads/writes the flat layout, stripping the identity fields off disk."""
+    """Reads/writes the versioned layout with identity fields intact."""
 
     dataset_config_cls = DatasetConfigV0
 
+    def iter_dataset_refs(self, datasite_email: str) -> Iterator[DatasetRef]:
+        return self.dataset_config.iter_dataset_refs_all_supported_protocols(
+            datasite_email
+        )
+
     def read(self, path: Path, canonical_name: str) -> dict:
-        data = yaml.safe_load(path.read_text()) or {}
-        # Protocol-0 files predate the identity fields; they are all version 1.
-        data.setdefault("canonical_name", canonical_name)
-        data.setdefault("version", "1")
-        return data
+        # Files already carry canonical_name/version on disk.
+        return yaml.safe_load(path.read_text()) or {}
 
     def _data_for_disk(self, obj: MigratableObject) -> dict:
-        data = obj.disk_dict()
-        # Byte-match the pre-versioning (<= 0.1.20) on-disk format.
-        data.pop("canonical_name", None)
-        data.pop("version", None)
-        return data
+        # This layout keeps the identity fields on disk.
+        return obj.disk_dict()

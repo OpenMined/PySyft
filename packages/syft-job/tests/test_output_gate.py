@@ -42,12 +42,6 @@ def _ds_reads(env, rel_path: str) -> bool:
     return ctx.open(rel_path).has_read_access(DS_EMAIL)
 
 
-def _grant_old_folder_read(env) -> None:
-    """Write the grant that earlier versions gave the DS on review/<ds>/."""
-    ctx = SyftPermContext(datasite=env["syftbox"] / DO_EMAIL)
-    ctx.open(f"{REVIEW_REL}/").grant_read_access(DS_EMAIL)
-
-
 def _submit_and_approve(env, script: str) -> None:
     env["ds_client"].submit_bash_job(DO_EMAIL, script, JOB_NAME)
     job = env["do_client"].jobs[0]
@@ -121,29 +115,3 @@ def test_setup_twice_keeps_one_rule_per_pattern(env):
     assert len(patterns) == len(set(patterns))
     for rule in rules:
         assert rule.access.read.count(DS_EMAIL) <= 1
-
-
-def test_runner_removes_old_folder_grant_before_the_job_runs(env):
-    _grant_old_folder_read(env)
-    _submit_and_approve(env, _exfil_script(env))
-
-    env["runner"].process_approved_jobs(stream_output=False)
-
-    assert not _ds_reads(env, f"{JOB_REVIEW_REL}/exfil.txt")
-    assert _ds_reads(env, f"{JOB_REVIEW_REL}/state.yaml")
-
-
-def test_old_grant_removal_keeps_released_files_readable(env):
-    """A release under the old grant wrote per-file rules, which stay."""
-    _grant_old_folder_read(env)
-    _submit_and_approve(env, "echo hi\n")
-    env["runner"].process_approved_jobs(
-        stream_output=False,
-        share_outputs_with_submitter=True,
-        share_logs_with_submitter=True,
-    )
-
-    env["do_client"].setup_ds_job_folder_as_do(DS_EMAIL)
-
-    assert _ds_reads(env, f"{JOB_REVIEW_REL}/outputs/")
-    assert _ds_reads(env, f"{JOB_REVIEW_REL}/stdout.txt")

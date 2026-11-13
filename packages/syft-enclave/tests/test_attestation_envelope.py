@@ -2,7 +2,7 @@
 
 import pytest
 
-from syft.sync.version.version_info import VersionInfoV2
+from syft.sync.version.version_info import VersionInfoV0
 
 from syft_enclaves.attestation.envelope import (
     CONFIDENTIAL_SPACE_FORMAT,
@@ -17,8 +17,8 @@ TINFOIL_FORMAT = "https://tinfoil.sh/predicate/sev-snp-guest/v2"
 TINFOIL_DOC = {"format": TINFOIL_FORMAT, "body": "H4sIAAAAAAAA/2JmgAEEixBgZGBg4A"}
 
 
-def _version_info() -> VersionInfoV2:
-    return VersionInfoV2(
+def _version_info() -> VersionInfoV0:
+    return VersionInfoV0(
         syft_client_version="0.1.117",
         min_supported_syft_client_version="0.1.93",
         protocol_version="1.0.0",
@@ -66,7 +66,7 @@ class TestRoundTrip:
         info = _version_info()
         evidence.publish_to(info)
 
-        reloaded = VersionInfoV2.model_validate_json(info.model_dump_json())
+        reloaded = VersionInfoV0.model_validate_json(info.model_dump_json())
         assert AttestationEvidence.read_from(reloaded) == evidence
 
     def test_lives_under_this_package_s_own_key(self):

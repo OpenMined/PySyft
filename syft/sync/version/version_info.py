@@ -13,7 +13,7 @@ from typing import Any, Optional
 from pydantic import Field
 from syft_migration import MigratableObject, ProtocolSchema
 
-from syft.migrations import client_registry, load_as_latest
+from syft.migrations import client_registry, load_current
 from syft.version import (
     MIN_SUPPORTED_PROTOCOL_VERSION,
     MIN_SUPPORTED_SYFT_VERSION,
@@ -39,7 +39,7 @@ def _parse_semver(version_str: str) -> tuple[int, int, int]:
     return (int(parts[0]), int(parts[1]), int(parts[2]))
 
 
-class VersionInfoV1(MigratableObject, registry=client_registry):
+class VersionInfoV0(MigratableObject, registry=client_registry):
     """Model representing version information for a syft client.
 
     Stored as SYFT_version.json in the peer-visible SyftBox folder. This file
@@ -49,7 +49,7 @@ class VersionInfoV1(MigratableObject, registry=client_registry):
     """
 
     canonical_name: str = "VersionInfo"
-    version: str = "1"
+    version: str = "0"
 
     syft_client_version: str
     min_supported_syft_client_version: str
@@ -57,10 +57,18 @@ class VersionInfoV1(MigratableObject, registry=client_registry):
     min_supported_protocol_version: str
     syft_client_install_source: Optional[str] = None
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    # Deprecated, never written: superseded by VersionInfoV2.extra. The field
-    # stays declared because protocol-0 froze this class's JSON schema, so
-    # removing it would be schema drift on a released protocol.
-    attestation_token: Optional[str] = None
+
+    # protocol name -> slim ProtocolSchema (no embedded object JSON schemas).
+    protocol_schemas: dict[str, ProtocolSchema] = Field(default_factory=dict)
+
+    # Arbitrary JSON that other syft packages need to put on the bootstrap
+    # channel. Carried, never interpreted: syft neither defines nor reads any
+    # key in here, so a package can add one without touching this class.
+    #
+    # Each package owns one top-level key and namespaces everything under it
+    # (``syft_enclaves`` owns "attestation", for instance). Unrelated to
+    # pydantic's own ``extra`` config, which governs unknown *fields*.
+    extra: dict[str, Any] = Field(default_factory=dict)
 
     def compatibility_status_with(
         self, other: "VersionInfo" | None
@@ -133,6 +141,7 @@ class VersionInfoV1(MigratableObject, registry=client_registry):
             protocol_version=PROTOCOL_VERSION,
             min_supported_protocol_version=MIN_SUPPORTED_PROTOCOL_VERSION,
             syft_client_install_source=install_source,
+            protocol_schemas=_gather_protocol_schemas(),
         )
 
     def to_json(self) -> str:
@@ -141,12 +150,13 @@ class VersionInfoV1(MigratableObject, registry=client_registry):
 
     @classmethod
     def from_json(cls, json_str: str) -> "VersionInfo":
-        """Deserialize from JSON string, upgraded to the latest version.
+        """Deserialize from JSON string.
 
-        Files written by protocol-0 clients (<= 0.1.117) predate the identity
-        fields; they are all version 1.
+        Raises:
+            MigrationError: when the file was written by a syft release whose
+                VersionInfo this one does not read.
         """
-        return load_as_latest(json.loads(json_str), "VersionInfo")
+        return load_current(json.loads(json_str), "VersionInfo")
 
 
 def _slim_schema_of(registry) -> ProtocolSchema:
@@ -193,51 +203,5 @@ def _gather_protocol_schemas() -> dict[str, ProtocolSchema]:
     return schemas
 
 
-class VersionInfoV2(VersionInfoV1):
-    """V2 adds the protocol schemas this client speaks (client, job, dataset).
-
-    Purely additive over V1 (see the bootstrap-channel rule in the V1
-    docstring): protocol-0/1 readers ignore the extra key.
-    """
-
-    version: str = "2"
-
-    # protocol name -> slim ProtocolSchema (no embedded object JSON schemas).
-    protocol_schemas: dict[str, ProtocolSchema] = Field(default_factory=dict)
-
-    # Arbitrary JSON that other syft packages need to put on the bootstrap
-    # channel. Carried, never interpreted: syft neither defines nor reads any
-    # key in here, so a package can add one without touching this class.
-    #
-    # Each package owns one top-level key and namespaces everything under it
-    # (``syft_enclaves`` owns "attestation", for instance). Unrelated to
-    # pydantic's own ``extra`` config, which governs unknown *fields*.
-    extra: dict[str, Any] = Field(default_factory=dict)
-
-    @classmethod
-    def current(cls) -> "VersionInfo":
-        info = super().current()
-        info.protocol_schemas = _gather_protocol_schemas()
-        return info
-
-
-@client_registry.migration("VersionInfo", "1", "2")
-def _version_info_v1_to_v2(obj: VersionInfoV1) -> VersionInfoV2:
-    # A v1 file says nothing about package protocols: empty schemas, meaning
-    # "unknown speaker" to consumers.
-    return VersionInfoV2.model_validate(
-        obj.model_dump(exclude={"canonical_name", "version"})
-    )
-
-
-@client_registry.migration("VersionInfo", "2", "1")
-def _version_info_v2_to_v1(obj: VersionInfoV2) -> VersionInfoV1:
-    return VersionInfoV1.model_validate(
-        obj.model_dump(
-            exclude={"canonical_name", "version", "protocol_schemas", "extra"}
-        )
-    )
-
-
 # Current-version alias: callers always work with the latest VersionInfo.
-VersionInfo = VersionInfoV2
+VersionInfo = VersionInfoV0

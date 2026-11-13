@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from uuid import UUID
 
-from syft_datasets.models import DatasetV1, PrivateDatasetConfigV1
+from syft_datasets.models import DatasetV0, PrivateDatasetConfigV0
 from syft_datasets.url import SyftBoxURL
 
 DO_EMAIL = "do@test.org"
@@ -13,9 +13,9 @@ DATASET_NAME = "demo"
 DATASET_UID = UUID("00000000-0000-0000-0000-000000000001")
 
 
-def create_mock_dataset() -> DatasetV1:
+def create_mock_dataset() -> DatasetV0:
     base = f"syft://{DO_EMAIL}/public/syft_datasets/{DATASET_NAME}"
-    return DatasetV1(
+    return DatasetV0(
         uid=DATASET_UID,
         created_at=datetime(2026, 7, 1, tzinfo=timezone.utc),
         updated_at=datetime(2026, 7, 1, tzinfo=timezone.utc),
@@ -31,5 +31,5 @@ def create_mock_dataset() -> DatasetV1:
     )
 
 
-def create_mock_private_config() -> PrivateDatasetConfigV1:
-    return PrivateDatasetConfigV1(uid=DATASET_UID, data_dir=Path(""))
+def create_mock_private_config() -> PrivateDatasetConfigV0:
+    return PrivateDatasetConfigV0(uid=DATASET_UID, data_dir=Path(""))

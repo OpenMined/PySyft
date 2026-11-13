@@ -1,6 +1,6 @@
-from .job_state import JobState, JobStateV1, JobStateV2, JobStatus
-from .job_submission_metadata import JobSubmissionMetadata, JobSubmissionMetadataV1
-from .request_metadata import RequestMetadata, RequestMetadataV1
+from .job_state import JobState, JobStateV0, JobStatus
+from .job_submission_metadata import JobSubmissionMetadata, JobSubmissionMetadataV0
+from .request_metadata import RequestMetadata, RequestMetadataV0
 
 __all__ = [
     # Current-version aliases
@@ -9,8 +9,7 @@ __all__ = [
     "JobStatus",
     "RequestMetadata",
     # Versioned objects
-    "JobSubmissionMetadataV1",
-    "JobStateV1",
-    "JobStateV2",
-    "RequestMetadataV1",
+    "JobSubmissionMetadataV0",
+    "JobStateV0",
+    "RequestMetadataV0",
 ]

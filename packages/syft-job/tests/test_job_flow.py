@@ -379,38 +379,6 @@ def test_runner_ignores_approved_jobs_on_another_datasite(tmp_path: Path):
     assert after["theirs.job"] == "approved", "a peer's job is not this runner's to run"
 
 
-def test_deprecated_skip_job_names_still_skips_by_name(tmp_path: Path):
-    """The old name-only argument keeps its old behaviour, and says it is old.
-
-    It drops every submitter's job of that name — which is the bug — so it warns
-    rather than silently changing what an existing caller gets.
-    """
-    syftbox = tmp_path / "SyftBox"
-    syftbox.mkdir()
-    code_file = tmp_path / "main.py"
-    code_file.write_text(MAIN_PY)
-
-    do_config = SyftJobConfig(syftbox_folder=syftbox, current_user_email=DO_EMAIL)
-    do_client = JobClient(config=do_config)
-    do_runner = SyftJobRunner(config=do_config)
-
-    for ds_email in (DS_EMAIL, DS2_EMAIL):
-        JobClient(
-            config=SyftJobConfig(syftbox_folder=syftbox, current_user_email=ds_email)
-        ).submit_python_job(
-            user=DO_EMAIL, code_path=str(code_file), job_name="shared.job"
-        )
-    for job in do_client.jobs:
-        job.approve()
-
-    with pytest.warns(DeprecationWarning, match="Skipping jobs by name alone"):
-        do_runner.process_approved_jobs(
-            stream_output=False, timeout=60, skip_job_names=["shared.job"]
-        )
-
-    assert [job.status for job in do_client.jobs] == ["approved", "approved"]
-
-
 def test_approval_error_names_both_parties(tmp_path: Path):
     """The old message called the peer "the admin user" and never named you."""
     syftbox = tmp_path / "SyftBox"

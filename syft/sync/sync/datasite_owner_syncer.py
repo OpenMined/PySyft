@@ -509,14 +509,18 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
 
         Iterates every registered spec (public, private, or any future kind). For
         each it lists the owner's collections, refreshes the _any_shared_collections
-        cache, filters by the spec's download policy, and restores to disk.
+        cache, filters by the spec's download policy, and restores to disk. A
+        collection in a layout this client does not read was written by an
+        unsupported release; it is not restored.
         """
         for spec in self.collection_specs:
-            collections = (
-                self.connection_router.owner_list_all_collections_with_permissions(
+            collections = [
+                collection
+                for collection in self.connection_router.owner_list_all_collections_with_permissions(
                     spec.prefix
                 )
-            )
+                if spec.rank_of(collection.variant) >= 0
+            ]
             if not collections:
                 continue
 

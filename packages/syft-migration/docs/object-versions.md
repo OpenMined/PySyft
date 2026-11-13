@@ -16,7 +16,7 @@ Three packages hold versioned objects. Each package has its own registry.
 | `syft-job`     | `job_registry`     | `syft_job.migrations`      |
 | `syft-dataset` | `dataset_registry` | `syft_datasets.migrations` |
 
-An object version is an incrementing integer held as a string: `"1"`, `"2"`, `"3"`. It is not a semver. It has no relation to the package version.
+An object version is an incrementing integer held as a string: `"0"`, `"1"`, `"2"`. It is not a semver. It has no relation to the package version.
 
 ## When to add a new version
 
@@ -40,9 +40,9 @@ These changes do not need a new version:
 > The docstring rule is easy to miss. Pydantic copies the docstring of the class
 > into `model_json_schema()` as `description`. It copies the `description` and
 > the `title` of each field there too. Therefore all of that prose is part of
-> the frozen schema. `protocol-0.json` holds the frozen docstrings of
-> `VersionInfoV1`, `ProposedFileChangesMessageV1`, and
-> `FileChangeEventsMessageV1`. A correction to one of those docstrings fails
+> the frozen schema. Once released, `protocol-0.json` holds the frozen
+> docstrings of `VersionInfoV0`, `ProposedFileChangesMessageV0`, and
+> `FileChangeEventsMessageV0`. A correction to one of those docstrings fails
 > `tests/migrations/unit/test_history_artifacts.py`. Put new prose in a comment,
 > or in the new version.
 
@@ -53,11 +53,11 @@ These changes do not need a new version:
 ```
 models/dataset/
 ├── __init__.py     # Dataset = DatasetV1
-├── v1.py           # class DatasetV1
-└── v2.py           # class DatasetV2, and the migrations between v1 and v2
+├── v0.py           # class DatasetV0
+└── v1.py           # class DatasetV1, and the migrations between v0 and v1
 ```
 
-The `syft` package keeps `VersionInfo` in one file, `syft/sync/version/version_info.py`. That file holds every version, both migrations, and the alias. Either layout is correct. Keep both migrations next to the new class, because the two edges change together.
+The `syft` package keeps `VersionInfo` in one file, `syft/sync/version/version_info.py`. That file holds every version, the migrations between them, and the alias. Either layout is correct. Keep both migrations next to the new class, because the two edges change together.
 
 ## Steps
 
@@ -70,42 +70,41 @@ The `syft` package keeps `VersionInfo` in one file, `syft/sync/version/version_i
 
 ## Worked example
 
-`VersionInfo` is the only object in the repository with two versions. V2 adds a field. Therefore the upgrade migration sets a default value for the field, and the downgrade migration removes it.
+Every object in the repository has one version, `"0"`. Take a next version of `VersionInfo` as the example. V1 adds a field. Therefore the upgrade migration sets a default value for the field, and the downgrade migration removes it.
 
 `VersionInfo` is also a special case. A peer reads `SYFT_version.json` to learn the protocol that this client speaks. Every supported client must parse every newer version of that file. A new version of `VersionInfo` can therefore add an optional field only.
 
-Other objects have no such limit. `DatasetV2` can add a required field, because the upgrade migration builds the object and gives the field a value.
+Other objects have no such limit. `DatasetV1` can add a required field, because the upgrade migration builds the object and gives the field a value.
 
 ```python
-class VersionInfoV2(VersionInfoV1):
-    """V2 adds the protocol schemas this client speaks (client, job, dataset)."""
+class VersionInfoV1(VersionInfoV0):
+    """V1 adds the region the client runs in."""
 
-    version: str = "2"
+    version: str = "1"
 
-    protocol_schemas: dict[str, ProtocolSchema] = Field(default_factory=dict)
+    region: Optional[str] = None
 
 
-@client_registry.migration("VersionInfo", "1", "2")
-def _version_info_v1_to_v2(obj: VersionInfoV1) -> VersionInfoV2:
-    # A v1 file says nothing about package protocols: empty schemas, meaning
-    # "unknown speaker" to consumers.
-    return VersionInfoV2.model_validate(
+@client_registry.migration("VersionInfo", "0", "1")
+def _version_info_v0_to_v1(obj: VersionInfoV0) -> VersionInfoV1:
+    # A v0 file says nothing about the region: None.
+    return VersionInfoV1.model_validate(
         obj.model_dump(exclude={"canonical_name", "version"})
     )
 
 
-@client_registry.migration("VersionInfo", "2", "1")
-def _version_info_v2_to_v1(obj: VersionInfoV2) -> VersionInfoV1:
-    return VersionInfoV1.model_validate(
-        obj.model_dump(exclude={"canonical_name", "version", "protocol_schemas"})
+@client_registry.migration("VersionInfo", "1", "0")
+def _version_info_v1_to_v0(obj: VersionInfoV1) -> VersionInfoV0:
+    return VersionInfoV0.model_validate(
+        obj.model_dump(exclude={"canonical_name", "version", "region"})
     )
 
 
 # Current-version alias: callers always work with the latest VersionInfo.
-VersionInfo = VersionInfoV2
+VersionInfo = VersionInfoV1
 ```
 
-Both migrations exclude `canonical_name` and `version` from the dump. Each class pins its own identity as a field default. If a migration passes the old pair, the new object gets the wrong version. The downgrade migration also excludes the field that V1 does not have.
+Both migrations exclude `canonical_name` and `version` from the dump. Each class pins its own identity as a field default. If a migration passes the old pair, the new object gets the wrong version. The downgrade migration also excludes the field that V0 does not have.
 
 ## Register both directions
 

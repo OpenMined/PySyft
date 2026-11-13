@@ -24,6 +24,7 @@ from syft.sync.connections.drive.gdrive_retry import (
 )
 from syft.sync.connections.naming import PEERS_META_KEY, SYFT_PEERS_VERSION
 from syft.sync.connections.protocols import PeeringConnection
+from syft.sync.version.exceptions import UnreadablePeerInfoError
 
 if TYPE_CHECKING:
     from syft.sync.version.peer_info import PeerInfo
@@ -296,7 +297,8 @@ class DrivePeeringConnection(PeeringConnection):
 
         Raises:
             ConnectionUnavailableError: when Drive cannot be reached.
-            ValueError: when the file is not a peer info file this client reads.
+            UnreadablePeerInfoError: when the file is not a peer info file
+                this client reads, such as one written by an unsupported release.
         """
         return self._read_peer_info_file(
             self._get_own_peer_info_file_id, "the own peer info file"
@@ -309,7 +311,8 @@ class DrivePeeringConnection(PeeringConnection):
 
         Raises:
             ConnectionUnavailableError: when Drive cannot be reached.
-            ValueError: when the file is not a peer info file this client reads.
+            UnreadablePeerInfoError: when the file is not a peer info file
+                this client reads, such as one written by an unsupported release.
         """
         return self._read_peer_info_file(
             lambda: self._get_peer_info_file_id_of(peer),
@@ -334,7 +337,7 @@ class DrivePeeringConnection(PeeringConnection):
         try:
             return PeerInfo.from_json(file_data.decode("utf-8"))
         except (ValueError, MigrationError) as e:
-            raise ValueError(f"Could not read {file_label}: {e}") from e
+            raise UnreadablePeerInfoError(f"Could not read {file_label}: {e}") from e
 
     def grant_peer_info_read(self, peer: str, peer_info: "PeerInfo") -> None:
         """Share the peer info file with a peer so they can read it.

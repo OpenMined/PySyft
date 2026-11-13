@@ -9,16 +9,22 @@ from syft.sync.utils.syftbox_utils import (
     delete_local_syftbox,
 )
 from syft.gdrive_utils import delete_remote_syftbox
+from syft.sync.version.exceptions import UnreadablePeerInfoError
 from syft.sync.version.local_version import read_local_version
 from syft.sync.version.version_info import VersionInfo
-from syft.version import SYFT_VERSION
+from syft.version import SYFT_VERSION, VERSION_FILE_NAME
 
 
 def _read_remote_version(
     email: str,
     token_path: Optional[Path],
 ) -> Optional[VersionInfo]:
-    """Read version file from GDrive without a full SyftboxManager."""
+    """Read version file from GDrive without a full SyftboxManager.
+
+    Raises:
+        UnreadablePeerInfoError: when the file was written by a syft release
+            this one does not support.
+    """
     from syft.sync.connections.drive.drive_cached_client import DriveCachedClient
     from syft.sync.connections.drive.drive_peering import DrivePeeringConnection
 
@@ -73,6 +79,51 @@ def _handle_version_incompatible(
     sys.exit(0)
 
 
+def _handle_unsupported_state(
+    email: str,
+    token_path: Optional[Path],
+    local_syftbox_path: Path,
+    location: str,
+) -> None:
+    """Offer a fresh start when a SyftBox was written by an unsupported release.
+
+    This release cannot read that data, so it cannot be kept. Without a
+    terminal no answer can arrive, and continuing would fail later on the old
+    data, so the login stops with instructions.
+
+    Raises:
+        UnreadablePeerInfoError: when no terminal is attached.
+    """
+    message = (
+        f"The SyftBox of {email} {location} was written by a syft release "
+        f"that v{SYFT_VERSION} does not support."
+    )
+    if not sys.stdin.isatty():
+        raise UnreadablePeerInfoError(
+            f"{message} To start fresh, call delete_local_syftbox and "
+            "delete_remote_syftbox, then log in again."
+        )
+    print(
+        f"""
+⚠️  {message}
+
+[1] Delete all state and start fresh with v{SYFT_VERSION}
+[2] Quit
+
+"""
+    )
+    choice = input("Choice [1/2]: ").strip()
+    if choice != "1":
+        print("Exiting.")
+        sys.exit(0)
+    print(f"Deleting all state and starting fresh with v{SYFT_VERSION}...")
+    delete_local_syftbox(
+        email=email, local_syftbox_path=local_syftbox_path, verbose=True
+    )
+    delete_remote_syftbox(email=email, token_path=token_path, verbose=True)
+    print("Done. Continuing login.\n")
+
+
 def handle_potential_version_mismatches_on_login(
     email: str,
     token_path: Optional[str | Path] = None,
@@ -93,7 +144,26 @@ def handle_potential_version_mismatches_on_login(
     local_syftbox_path = _get_default_syftbox_path(resolved_email)
 
     local_version = read_local_version(local_syftbox_path)
-    remote_version = _read_remote_version(resolved_email, resolved_token_path)
+    try:
+        remote_version = _read_remote_version(resolved_email, resolved_token_path)
+    except UnreadablePeerInfoError:
+        # Written by a syft release this one does not support. Its data cannot
+        # be kept, so the only choices are a fresh start or quitting.
+        _handle_unsupported_state(
+            resolved_email,
+            resolved_token_path,
+            local_syftbox_path,
+            "on Google Drive",
+        )
+        return False
+    if local_version is None and (local_syftbox_path / VERSION_FILE_NAME).exists():
+        _handle_unsupported_state(
+            resolved_email,
+            resolved_token_path,
+            local_syftbox_path,
+            f"at {local_syftbox_path}",
+        )
+        return False
 
     current_version = VersionInfo.current()
     local_compatible = current_version.is_compatible_with(

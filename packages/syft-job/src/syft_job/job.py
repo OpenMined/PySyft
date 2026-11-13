@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import shutil
-import warnings
 from collections.abc import Mapping
 from datetime import datetime, timezone
 from pathlib import Path
@@ -683,9 +682,7 @@ def _keep(jobs: List[JobInfo], key: str, first_email: str | None) -> List[JobInf
 
     ``first_email`` is the email an earlier key in the chain gave, or None.
     The '@' tells the two kinds of key apart, so the usage hint can measure a
-    chain before offering it. A deprecated job name holding an '@' reads here
-    as an email and keeps nothing, where ``__getitem__`` falls back to the
-    name; the hint then offers a position, which is the safe direction to err.
+    chain before offering it.
     """
     if "@" not in key:
         return _with_name(jobs, key)
@@ -742,10 +739,6 @@ class JobsList:
         owner names the submitter. A second email has to fix the roles, because
         two people with both roles can each hold a job of one name that the
         other submitted, and each email is a party to both.
-
-        A job submitted before names could not hold an '@' answers to no party,
-        and reading it is the one thing this key must not take away, so a key
-        that names no party falls back to the name.
         """
         matches = _keep(self._jobs, email, self._first_email)
         if matches:
@@ -755,16 +748,6 @@ class JobsList:
                 self._has_do_role,
                 first_email=self._first_email or email,
             )
-
-        if any(job.name == email for job in self._jobs):
-            warnings.warn(
-                f"Job name {email!r} holds an '@', which now marks a datasite or "
-                "submitter email. Such names are deprecated and the next version "
-                "will not resolve them. Rename the job.",
-                DeprecationWarning,
-                stacklevel=3,
-            )
-            return self._by_name(email)
 
         datasites = ", ".join(sorted({job.datasite_owner_email for job in self._jobs}))
         submitters = ", ".join(sorted({job.submitted_by for job in self._jobs}))

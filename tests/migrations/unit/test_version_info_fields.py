@@ -13,11 +13,12 @@ Adding a field is safe on its own: pydantic ignores a field it does not know.
 """
 
 import syft  # noqa: F401 -- imports models and registers history
-from syft.sync.version.version_info import VersionInfoV1, VersionInfoV2
+from syft.migrations import client_registry
+from syft.sync.version.version_info import VersionInfo, VersionInfoV0
 
 # Frozen on purpose. A change here means a change to the bootstrap file, so read
 # the two rules above before editing this set.
-V1_FIELDS = {
+V0_FIELDS = {
     "canonical_name",
     "version",
     "syft_client_version",
@@ -26,53 +27,17 @@ V1_FIELDS = {
     "min_supported_protocol_version",
     "syft_client_install_source",
     "updated_at",
-    "attestation_token",
+    "protocol_schemas",
+    "extra",
 }
 
-V2_ADDS = {"protocol_schemas", "extra"}
 
-
-def test_v1_fields_are_frozen():
-    assert set(VersionInfoV1.model_fields) == V1_FIELDS, (
-        "VersionInfoV1 changed. A client that speaks protocol 0 reads this "
-        "object, so a removed or renamed field stops that client from parsing "
-        "the version file of this one."
+def test_v0_fields_are_frozen():
+    assert set(VersionInfoV0.model_fields) == V0_FIELDS, (
+        "VersionInfoV0 changed. Every client reads this object first, so a "
+        "removed or renamed field stops a client from parsing the version file "
+        "of this one. Add a field with a default in a new version instead."
     )
-
-
-def test_v2_keeps_every_v1_field():
-    missing = V1_FIELDS - set(VersionInfoV2.model_fields)
-    assert not missing, (
-        f"VersionInfoV2 dropped {sorted(missing)}. A reader of V1 requires these "
-        "fields, so V2 must keep them."
-    )
-
-
-def test_v2_adds_only_the_expected_fields():
-    assert set(VersionInfoV2.model_fields) - V1_FIELDS == V2_ADDS
-
-
-def test_fields_added_after_v1_have_a_default():
-    # A file written by an older client carries none of these, so a reader of the
-    # newer version must supply a value.
-    for name in set(VersionInfoV2.model_fields) - V1_FIELDS:
-        assert not VersionInfoV2.model_fields[name].is_required(), (
-            f"VersionInfoV2.{name} is required. A version file written before "
-            "this field existed would then fail to parse."
-        )
-
-
-def test_a_file_without_the_v2_fields_still_parses():
-    written_by_an_older_client = VersionInfoV1(
-        syft_client_version="0.1.117",
-        min_supported_syft_client_version="0.1.93",
-        protocol_version="1.0.0",
-        min_supported_protocol_version="1.0.0",
-    ).model_dump(exclude={"canonical_name", "version"})
-
-    loaded = VersionInfoV2.model_validate(written_by_an_older_client)
-    assert loaded.protocol_schemas == {}
-    assert loaded.extra == {}
 
 
 def test_extra_is_opaque_to_syft():
@@ -82,24 +47,29 @@ def test_extra_is_opaque_to_syft():
         "attestation": {"kind": "made-up", "body": "anything"},
         "some-other-package": {"nested": [1, 2]},
     }
-    info = VersionInfoV2(
-        syft_client_version="0.1.117",
-        min_supported_syft_client_version="0.1.93",
+    info = VersionInfoV0(
+        syft_client_version="0.10.2",
+        min_supported_syft_client_version="0.10.2",
         protocol_version="1.0.0",
         min_supported_protocol_version="1.0.0",
         extra=payload,
     )
-    reloaded = VersionInfoV2.model_validate_json(info.model_dump_json())
+    reloaded = VersionInfoV0.model_validate_json(info.model_dump_json())
     assert reloaded.extra == payload
 
 
-def test_syft_defines_no_feature_specific_payload_field():
-    """The point of the generic bag.
-
-    Another package adding a payload to the bootstrap channel — a new TEE
-    provider, say — must not need a field here. ``attestation_token`` is the
-    one exception: protocol-0 froze it into V1, so it cannot be removed, and
-    it is deprecated and never written.
-    """
-    generic = set(V1_FIELDS - {"attestation_token"}) | V2_ADDS
-    assert set(VersionInfoV2.model_fields) - {"attestation_token"} == generic
+def test_current_advertises_slim_schemas():
+    schemas = VersionInfo.current().protocol_schemas
+    # The client's own schema is always present; job/dataset only when the
+    # optional packages are importable (both are in the workspace env, but
+    # the code must degrade on client-only installs).
+    assert "syft" in schemas
+    assert set(schemas) <= {"syft", "syft-job", "syft-dataset"}
+    client_schema = schemas["syft"]
+    assert client_schema.version == client_registry.protocol_version
+    assert client_schema.supported_versions == (
+        client_registry.compute_protocol_schema().supported_versions
+    )
+    # Slim on the wire: no embedded per-object JSON schemas.
+    for schema in schemas.values():
+        assert schema.current_object_schemas == {}

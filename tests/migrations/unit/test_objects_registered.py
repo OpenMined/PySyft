@@ -4,13 +4,13 @@ import syft
 from syft.migrations.registry import client_registry
 from syft.sync.events.file_change_event import (
     FileChangeEventsMessage,
-    FileChangeEventsMessageV1,
+    FileChangeEventsMessageV0,
 )
 from syft.sync.messages.proposed_filechange import (
     ProposedFileChangesMessage,
-    ProposedFileChangesMessageV1,
+    ProposedFileChangesMessageV0,
 )
-from syft.sync.version.version_info import VersionInfo, VersionInfoV2
+from syft.sync.version.version_info import VersionInfo, VersionInfoV0
 from syft_migration import unregistered_objects, versioned_objects
 
 OBJECTS = {
@@ -27,10 +27,9 @@ def test_versioned_objects_registered_and_aliased():
         assert client_registry.versions(canonical_name)
 
     # The current-version aliases resolve to the latest class of each object.
-    # VersionInfo is the one that has moved past V1.
-    assert VersionInfo is VersionInfoV2
-    assert FileChangeEventsMessage is FileChangeEventsMessageV1
-    assert ProposedFileChangesMessage is ProposedFileChangesMessageV1
+    assert VersionInfo is VersionInfoV0
+    assert FileChangeEventsMessage is FileChangeEventsMessageV0
+    assert ProposedFileChangesMessage is ProposedFileChangesMessageV0
 
     # The protocol schema covers every object and resolves a current version.
     schema = client_registry.compute_protocol_schema()
