@@ -159,6 +159,7 @@ class SyftboxManagerConfig(BaseModel):
         encryption: bool | None = None,
         persist_owner_state: bool = True,
         persist_watcher_state: bool = True,
+        freeze_private_datasets: bool = False,
         skip_peer_on_patch_version_diff: Optional[
             bool
         ] = None,  # None: value is determined by the role
@@ -202,6 +203,7 @@ class SyftboxManagerConfig(BaseModel):
             datasite_watcher_cache_config=DataSiteWatcherCacheConfig(
                 email=email,
                 persist_watcher_state=persist_watcher_state,
+                freeze_private_datasets=freeze_private_datasets,
                 use_in_memory_cache=use_in_memory_cache,
                 syftbox_folder=syftbox_folder,
                 collection_specs=collection_specs,
@@ -239,6 +241,7 @@ class SyftboxManagerConfig(BaseModel):
         encryption: bool | None = None,
         persist_owner_state: bool = True,
         persist_watcher_state: bool = True,
+        freeze_private_datasets: bool = False,
         skip_peer_on_patch_version_diff: Optional[
             bool
         ] = None,  # None: value is determined by the role
@@ -283,6 +286,7 @@ class SyftboxManagerConfig(BaseModel):
             datasite_watcher_cache_config=DataSiteWatcherCacheConfig(
                 email=email,
                 persist_watcher_state=persist_watcher_state,
+                freeze_private_datasets=freeze_private_datasets,
                 use_in_memory_cache=False,
                 syftbox_folder=syftbox_folder,
                 collection_specs=collection_specs,
@@ -321,6 +325,7 @@ class SyftboxManagerConfig(BaseModel):
         use_in_memory_cache: bool = True,
         persist_owner_state: bool = True,
         persist_watcher_state: bool = True,
+        freeze_private_datasets: bool = False,
         check_versions: bool = False,
         collection_specs: list["CollectionSyncSpec"] | None = None,
         encryption_policy: EncryptionPolicy = EncryptionPolicy.OPTIONAL,
@@ -359,6 +364,7 @@ class SyftboxManagerConfig(BaseModel):
             datasite_watcher_cache_config=DataSiteWatcherCacheConfig(
                 email=email,
                 persist_watcher_state=persist_watcher_state,
+                freeze_private_datasets=freeze_private_datasets,
                 use_in_memory_cache=use_in_memory_cache,
                 syftbox_folder=syftbox_folder,
                 collection_specs=collection_specs,

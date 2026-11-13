@@ -33,9 +33,6 @@ from syft_enclaves.enclave_job_info import (
     PartyApprovalStatus,
     enclave_approval_file_name,
 )
-from syft_enclaves.immutability import (
-    make_private_dataset_immutability_filter,
-)
 from syft_enclaves.receipt.writer import (
     ReceiptSettings,
     mark_started,
@@ -794,13 +791,6 @@ class SyftEnclaveClient:
         """
         rds = SyftRDSClient.from_config(config, connections)
         rds.job_client = EnclaveJobClient(rds.job_client)
-
-        sync_engine = rds.sync_engine
-        if sync_engine.datasite_watcher_syncer:
-            sync_engine.datasite_watcher_syncer.datasite_watcher_cache.pre_write_filter = make_private_dataset_immutability_filter(
-                sync_engine.syftbox_folder
-            )
-
         return cls(rds, data_owners=data_owners)
 
     @classmethod
@@ -833,6 +823,7 @@ class SyftEnclaveClient:
             encryption=True,
             persist_owner_state=persist_owner_state,
             persist_watcher_state=persist_owner_state,
+            freeze_private_datasets=True,
         )
 
         # Note: We do not currently provide the ability to load encryption keys passed during creation of enclave.

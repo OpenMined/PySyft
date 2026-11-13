@@ -81,6 +81,10 @@ class DataSiteWatcherCacheConfig(BaseModel):
     syftbox_folder: Path | None = None
     # Collections to sync down (prefix + local subpath per collection type)
     collection_specs: list[CollectionSyncSpec] = []
+    # Refuse a change or a delete of a file that the DS already has in an
+    # immutable collection, so a DO cannot replace data it shared, such as a
+    # private dataset in an enclave.
+    freeze_private_datasets: bool = False
 
 
 class DataSiteWatcherCache(BaseModel):
@@ -117,9 +121,8 @@ class DataSiteWatcherCache(BaseModel):
     collection_specs: list[CollectionSyncSpec] = []
     # Cache of collection hashes: path -> content_hash
     collection_hashes: Dict[Path, str] = {}
-    # Optional pre-write filter: (path_in_syftbox, is_delete) -> allow?
-    # Return True to allow the write, False to deny it.
-    pre_write_filter: Callable[[str, bool], bool] | None = None
+    # Whether a file in an immutable collection keeps the first copy received.
+    freeze_private_datasets: bool
 
     @classmethod
     def from_config(
@@ -137,6 +140,7 @@ class DataSiteWatcherCache(BaseModel):
                 syftbox_folder=config.syftbox_folder,
                 collection_specs=config.collection_specs,
                 persist_watcher_state=config.persist_watcher_state,
+                freeze_private_datasets=config.freeze_private_datasets,
             )
         else:
             if config.syftbox_folder is None:
@@ -148,6 +152,7 @@ class DataSiteWatcherCache(BaseModel):
                 syftbox_folder=config.syftbox_folder,
                 collection_specs=config.collection_specs,
                 persist_watcher_state=config.persist_watcher_state,
+                freeze_private_datasets=config.freeze_private_datasets,
             )
             cache._load_collection_hashes_from_disk()
         if cache.persist_watcher_state:
@@ -279,10 +284,23 @@ class DataSiteWatcherCache(BaseModel):
                 self._rolling_state_local(peer_email).add_event(event)
 
     def _write_denied(self, event: FileChangeEvent) -> bool:
-        """Whether ``pre_write_filter`` refuses ``event``."""
-        if self.pre_write_filter is None:
-            return False
-        return not self.pre_write_filter(str(event.path_in_syftbox), event.is_deleted)
+        """Whether ``event`` changes or deletes a file that this cache already
+        has in an immutable collection, with ``freeze_private_datasets`` on."""
+        denied = (
+            self.freeze_private_datasets
+            and Path(event.path_in_syftbox) in self.file_hashes
+            and any(
+                spec.immutable
+                and event.path_in_datasite.is_relative_to(spec.local_subpath)
+                for spec in self.collection_specs
+            )
+        )
+        if denied:
+            logger.warning(
+                f"Refused a change to {event.path_in_syftbox}: the file is in an "
+                "immutable collection, and the DS has it already"
+            )
+        return denied
 
     def _apply_event(self, event: FileChangeEvent) -> None:
         path = str(event.path_in_syftbox)

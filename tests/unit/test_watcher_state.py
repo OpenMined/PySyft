@@ -96,19 +96,6 @@ def test_restart_after_checkpoint_keeps_deleted_file_deleted(tmp_path, monkeypat
     assert not (restarted.syftbox_folder / deleted.path_in_syftbox).exists()
 
 
-def test_file_refused_by_write_filter_not_restored(tmp_path):
-    ds_manager, do_manager = _pair_on_disk()
-    refused = get_mock_event(f"{do_manager.email}/refused.txt")
-    cache = _watcher_cache(ds_manager)
-    cache.pre_write_filter = lambda path, is_delete: not path.endswith("refused.txt")
-    _send_to_ds(do_manager, ds_manager, [refused])
-    ds_manager.sync()
-
-    restarted = _restart_on_empty_folder(ds_manager, tmp_path)
-
-    assert not (restarted.syftbox_folder / refused.path_in_syftbox).exists()
-
-
 def _encrypted_pair() -> tuple[SyftboxManager, SyftboxManager]:
     """A DS and a DO on disk that require encryption."""
     ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
