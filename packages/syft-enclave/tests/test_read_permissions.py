@@ -567,6 +567,52 @@ def test_outputs_reach_owner_only_after_every_party_approved():
     assert not has_file(do1, RESULT)
 
 
+def test_output_file_shared_with_owner_and_submitter_reaches_both():
+    """A file under outputs/ named in share_files goes only to its listed readers.
+
+    The submitter names itself too, as documented, to keep the file.
+    """
+    enclave, do1, do2, ds = build_quad()
+    submit(ds, enclave, do1, do2, OK_CODE, {RESULT: [ds.email, do1.email]})
+    distribute(enclave, do1, do2)
+    approve(do1, None)
+    approve(do2, None)
+    run_and_share(enclave, ds, do1, do2)
+
+    assert readers_of(enclave, RESULT, (ds, do1, do2)) == [ds, do1]
+    assert has_file(ds, RESULT)
+    assert has_file(do1, RESULT)
+    assert not has_file(do2, RESULT)
+
+
+SUBMITTER_NOT_NAMED = "share_files doesn't name you"
+
+
+def test_share_files_without_submitter_warns():
+    enclave, do1, do2, ds = build_quad()
+    with pytest.warns(UserWarning, match=SUBMITTER_NOT_NAMED):
+        submit(ds, enclave, do1, do2, OK_CODE, {RESULT: [do1.email]})
+
+
+@pytest.mark.parametrize(
+    "share_args",
+    [
+        lambda ds, do1: {"requested": {RESULT: [ds.email, do1.email]}},
+        lambda ds, do1: {},
+        # The flags build a share_files that names only the data owners.
+        lambda ds, do1: {"share_outputs_with_owners": True},
+    ],
+    ids=["submitter_named", "no_share_files", "owner_flag_only"],
+)
+def test_submission_naming_submitter_or_using_flags_does_not_warn(share_args):
+    enclave, do1, do2, ds = build_quad()
+    with warnings.catch_warnings(record=True) as record:
+        warnings.simplefilter("always")
+        submit(ds, enclave, do1, do2, OK_CODE, **share_args(ds, do1))
+
+    assert not [w for w in record if SUBMITTER_NOT_NAMED in str(w.message)]
+
+
 # -- the job-level calls, same as on a datasite ---------------------------------
 
 

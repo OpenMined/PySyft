@@ -47,7 +47,7 @@ This stores settings (including `data_owners`) in `~/.syft-enclaves/settings.jso
 
 The data owners configured at `init` are fixed for the enclave: a job runs only after **all** of them approve it, regardless of which datasets the submission references. The emails are passed to the VM as `SYFT_ENCLAVE_DATA_OWNERS` at deploy time and held in memory by the running enclave. To change the approving data owners, re-run `just init` and redeploy.
 
-Each data owner also approves which of the files the DS asked to read go to whom: `approve_job(job, share_files=...)`, or the whole request when `share_files` is left out. The enclave shares a file with a reader only when every data owner approved it for that reader. The outputs are the exception: they always reach the DS.
+Each data owner also approves which of the files the DS asked to read go to whom: `approve_job(job, share_files=...)`, or the whole request when `share_files` is left out. The enclave shares a file with a reader only when every data owner approved it for that reader. The outputs are the exception: they always reach the DS. But a file that the DS names in `share_files` at submission, even one under `outputs/`, goes only to the readers listed for it, so the DS names itself there too, e.g. `share_files={"outputs/count.json": [data_owner, ds]}`.
 
 After a run, the data owners can share a log that nobody approved yet. Each of them calls `request_stderr(job, readers=..., n_chars=...)` or `request_stdout(...)`. When every data owner made the same call, the enclave shares the log, or only its first `n_chars` characters.
 

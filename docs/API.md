@@ -216,6 +216,8 @@ Submit a Python job to a Data Owner. **DS only.**
   unless `share_files` is given.
 - `share_files`: Instead of the two flags, who should read which file, as
   `{file: [emails]}`. The DO approves all of the request, part of it, or none.
+  Each file goes only to the readers listed for it, so name yourself too for
+  each file you want to read.
 
 ```python
 ds_client.submit_python_job(
