@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from html import escape
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -20,7 +21,14 @@ class StdoutViewer:
         return ansi_escape.sub("", text)
 
     def _convert_ansi_to_html(self, text: str) -> str:
-        """Convert ANSI color codes to HTML spans."""
+        """Convert ANSI color codes to HTML spans.
+
+        The *text* argument must already be HTML-escaped (``<``, ``>``, ``&``
+        and ``'`` replaced with entity references, ``"`` kept as-is via
+        ``quote=False``) so that only the ANSI escape sequences remain
+        unprocessed.  The ``<span>`` tags emitted here use plain double-quoted
+        ``style`` attributes that must never be entity-escaped afterwards.
+        """
         # Basic ANSI color code mapping
         ansi_colors = {
             "30": "color: #000000;",  # black
@@ -129,17 +137,17 @@ class StdoutViewer:
             </div>
             """
 
-        # Convert ANSI codes to HTML for display
-        html_content = self._convert_ansi_to_html(raw_content)
+        # Fix 1: HTML-escape the raw text *first* so that characters like
+        # `<`, `>`, `&` and `'` in the job's own output cannot be
+        # interpreted as HTML markup.  `quote=False` keeps `\""` as `\""`
+        # rather than `&quot;` -- the ANSI->HTML step that follows will insert
+        # double-quoted `style` attributes that must remain unescaped.
+        escaped_content = escape(raw_content, quote=False)
 
-        # Escape any remaining HTML characters that aren't our color spans
-        # We need to be careful not to escape our intentional HTML
-        html_content = (
-            html_content.replace("&", "&amp;")
-            .replace('"', "&quot;")
-            .replace("'", "&#x27;")
-        )
-        # Don't escape < and > since we want our HTML spans to work
+        # Fix 2: Convert ANSI codes to HTML spans *after* escaping, so the
+        # span tags we emit are real markup.  The style attributes use plain
+        # double-quotes that were preserved by `quote=False` above.
+        html_content = self._convert_ansi_to_html(escaped_content)
 
         # Count lines and characters (use clean content for stats)
         clean_content = self._strip_ansi_codes(raw_content)

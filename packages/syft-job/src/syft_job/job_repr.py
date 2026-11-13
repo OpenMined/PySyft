@@ -121,12 +121,17 @@ class StderrViewer:
             </div>
             """
 
-        html_content = self._convert_ansi_to_html(raw_content)
-        html_content = (
-            html_content.replace("&", "&amp;")
-            .replace('"', "&quot;")
-            .replace("'", "&#x27;")
-        )
+        # Fix 1: HTML-escape the raw text *first* so that characters like
+        # `<`, `>`, `&` and `'` in the job's own output cannot be
+        # interpreted as HTML markup.  `quote=False` keeps `\""` as `\""`
+        # rather than `&quot;` -- the ANSI->HTML step that follows will insert
+        # double-quoted `style` attributes that must remain unescaped.
+        escaped_content = escape(raw_content, quote=False)
+
+        # Fix 2: Convert ANSI codes to HTML spans *after* escaping, so the
+        # span tags we emit are real markup.  The style attributes use plain
+        # double-quotes that were preserved by `quote=False` above.
+        html_content = self._convert_ansi_to_html(escaped_content)
 
         clean_content = self._strip_ansi_codes(raw_content)
         lines = clean_content.split("\n")
