@@ -321,8 +321,9 @@ class EnclaveJobInfo(JobInfo):
     ) -> None:
         """Ask the enclave to share ``log_file``, or only its first ``n_chars`` chars.
 
-        The enclave shares it once every data owner made the same request.
-        ``readers`` None means the data owners the enclave is configured with.
+        The enclave shares it once every data owner made the same request: the
+        same readers and the same ``n_chars``. ``readers`` None means the data
+        owners the enclave is configured with.
 
         Raises:
             PermissionError: If the caller is not a data owner of this job.
@@ -337,8 +338,19 @@ class EnclaveJobInfo(JobInfo):
         request = LogRequest(readers=readers, n_chars=n_chars)
         warn_on_logs_release({log_file: request.readers or []})
         self._save_own_log_request(log_file, request)
-        who = request.readers or "the enclave's data owners"
-        print(f"Requested {log_file} of job '{self.name}' for {who}.")
+        if request.n_chars is None:
+            what = f"all of {log_file} (n_chars=None)"
+        else:
+            what = (
+                f"the first {request.n_chars:,} characters of {log_file} "
+                f"(n_chars={request.n_chars})"
+            )
+        who = ", ".join(request.readers or []) or "the enclave's data owners"
+        print(f"Requested {what} of job '{self.name}' for {who}.")
+        print(
+            "   The enclave shares it once every data owner makes the same "
+            "request: the same readers and the same n_chars."
+        )
 
     def _save_own_log_request(self, log_file: str, request: LogRequest) -> None:
         """Replace this party's request for ``log_file``, and push the file."""
