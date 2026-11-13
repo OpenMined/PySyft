@@ -228,8 +228,40 @@ class EnclaveJobInfo(JobInfo):
         if self._approval_file.exists():
             own = format_read_permissions(self.approved_read_permissions)
             rows.append(("Approved by you", own))
-            rows.append(("Approved by all", "needs the approval of every party"))
+            rows.append(("Approved by all", self._approved_by_all_for_party()))
         return rows
+
+    def _approved_by_all_for_party(self) -> str:
+        """What a data owner, who holds only its own approval file, can say of all.
+
+        The enclave's state tells it once every data owner approved.
+        """
+        if self._every_party_approved and not self.requested_read_permissions:
+            return "every data owner approved; nothing was requested"
+        return "needs the approval of every party"
+
+    @property
+    def _every_party_approved(self) -> bool:
+        """Whether the enclave recorded that every data owner approved this job.
+
+        The enclave sets its state to approved only then, and runs the job after.
+        """
+        return self._state.status in (
+            JobStatus.APPROVED,
+            JobStatus.RUNNING,
+            JobStatus.DONE,
+            JobStatus.FAILED,
+        )
+
+    def _approval_label(self) -> Optional[str]:
+        """How the job was approved, for display.
+
+        The enclave records its approval outside the state, which the display
+        reads, so the state's approval method stays empty.
+        """
+        if self._every_party_approved:
+            return "every data owner"
+        return super()._approval_label()
 
     def _party_rows(self) -> list[tuple[str, str]]:
         """Each party's approval, then what every party approved."""

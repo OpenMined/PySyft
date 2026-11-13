@@ -640,6 +640,34 @@ def test_display_on_data_owner_shows_own_approval():
     assert "Approved by you:" in job._repr_html_()
 
 
+def test_data_owner_sees_every_owner_approved_nothing_requested():
+    enclave, do1, do2, ds = build_quad()
+    submit(ds, enclave, do1, do2, OK_CODE)
+    distribute(enclave, do1, do2)
+    approve(do1, {})
+
+    job = do1.jobs["j"]
+    assert job.requested_read_permissions == {}
+    assert dict(job.read_permission_rows())["Approved by all"] == (
+        "needs the approval of every party"
+    )
+    assert job._approval_label() is None
+
+    approve(do2, {})
+    run_and_share(enclave, ds, do1)
+
+    job = do1.jobs["j"]
+    assert dict(job.read_permission_rows())["Approved by all"] == (
+        "every data owner approved; nothing was requested"
+    )
+    # The enclave records its approval outside the state, which showed "—".
+    for client in (enclave, do1, ds):
+        shown = client.jobs["j"]
+        assert shown._approval_label() == "every data owner"
+        assert "[approved: every data owner]" in str(shown)
+        assert ">every data owner</div>" in shown._repr_html_()
+
+
 # -- the request is DS-writable after the approval ------------------------------
 
 
