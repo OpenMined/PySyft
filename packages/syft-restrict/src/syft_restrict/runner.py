@@ -3,14 +3,17 @@
 from __future__ import annotations
 
 import ast
+import codecs
 import hashlib
+import io
+import tokenize
 from pathlib import Path
 
 from pydantic import BaseModel, Field
 
 from .astutil import normalize_ranges, scan_file
 from .auditor import AuditReport, audit_allow_functions
-from .errors import PolicyViolation
+from .errors import PolicyViolation, SourceEncodingError
 from .markers import parse_markers
 from .obfuscator import obfuscate as _obfuscate
 from .policy import Policy
@@ -70,7 +73,7 @@ def run(
     path = Path(path)
     # Read the source exactly once and hand it to _run, so marker resolution, verification, and
     # obfuscation all operate on identical bytes (no second read that could race / TOCTOU).
-    source = path.read_text()
+    source = _read_source(path)
     obfuscate_ranges, hide_ranges = parse_markers(source)
     return _run(
         path,
@@ -117,7 +120,7 @@ def _run(
     """
     path = Path(path)
     if source is None:
-        source = path.read_text()
+        source = _read_source(path)
     policy = Policy.parse(
         allow_functions,
         allow_operators,
@@ -142,7 +145,7 @@ def _run(
     obfuscated = _obfuscate(source, obfuscate_ranges, hide_ranges, scan)
 
     out_path = Path(out) if out is not None else path.with_suffix(".obfuscated.py")
-    out_path.write_text(obfuscated)
+    out_path.write_text(obfuscated, encoding="utf-8")
 
     certificate = {
         "source_sha256": hashlib.sha256(source.encode()).hexdigest(),
@@ -160,6 +163,34 @@ def _run(
         certificate=certificate,
         audit=audit,
     )
+
+
+def _read_source(path: Path) -> str:
+    """Read the file at ``path`` and return its text, with every line ending turned into ``\\n``.
+
+    Raises ``SourceEncodingError`` if the file is not plain UTF-8.
+    See docs/verify.md#source-encoding.
+    """
+    raw = path.read_bytes()
+    try:
+        text = raw.decode("utf-8")
+    except UnicodeDecodeError as e:
+        raise SourceEncodingError(
+            f"{path}: not valid UTF-8 ({e.reason} at byte {e.start})"
+        ) from e
+
+    # CPython turns every line break into \n before it looks for a coding cookie.
+    text = text.replace("\r\n", "\n").replace("\r", "\n")
+    try:
+        declared, _ = tokenize.detect_encoding(io.BytesIO(text.encode()).readline)
+    except SyntaxError as e:
+        raise SourceEncodingError(f"{path}: {e.msg}") from e
+
+    if codecs.lookup(declared).name != "utf-8":
+        raise SourceEncodingError(
+            f"{path}: declares encoding {declared!r}; only UTF-8 source is accepted"
+        )
+    return text
 
 
 def _version() -> str:
