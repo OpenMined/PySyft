@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import warnings
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable, Iterable, Optional
@@ -25,6 +26,7 @@ from syft_enclaves.log_requests import (
     RequestedPermissionsUpdate,
     load_log_request,
     log_request_file_name,
+    log_request_warning,
     longest_log_head,
 )
 
@@ -335,7 +337,9 @@ class EnclaveJobInfo(JobInfo):
         if log_file not in REQUESTABLE_LOGS:
             raise ValueError(f"Request one of {REQUESTABLE_LOGS}, not {log_file!r}.")
         request = LogRequest(readers=readers, n_chars=n_chars)
-        warn_on_logs_release({log_file: request.readers or []})
+        warnings.warn(
+            log_request_warning(log_file, request.readers), UserWarning, stacklevel=2
+        )
         self._save_own_log_request(log_file, request)
         who = request.readers or "the enclave's data owners"
         print(f"Requested {log_file} of job '{self.name}' for {who}.")

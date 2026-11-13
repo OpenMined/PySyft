@@ -95,6 +95,24 @@ def logs_requested_by_all_parties(
     }
 
 
+def log_request_warning(log_file: str, readers: Optional[list[str]]) -> str:
+    """The warning for a request of ``log_file``: who will read it, and the risk.
+
+    ``readers`` None means the data owners the enclave is configured with.
+    """
+    if readers is None:
+        return (
+            f"This request lets the enclave's data owners read {log_file}, as "
+            "the job wrote it. The job code can print private data into it."
+        )
+    return (
+        f"This request lets {', '.join(readers)} read {log_file}, as the job "
+        "wrote it. The job code can print private data into it. To read it "
+        "first, request it with no readers: the enclave then releases it to "
+        "the data owners only."
+    )
+
+
 def log_head_name(log_file: str, n_chars: int) -> str:
     """The copy of the first ``n_chars`` chars of a log, e.g. stderr_100.txt."""
     path = Path(log_file)
