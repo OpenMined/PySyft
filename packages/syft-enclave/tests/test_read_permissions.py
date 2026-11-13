@@ -842,3 +842,24 @@ def test_submitter_cannot_request_logs():
     enclave, do1, do2, ds = run_crash_sharing_nothing()
     with pytest.raises(PermissionError, match="Only a data owner"):
         ds.request_stderr(ds.jobs["j"])
+
+
+def test_log_request_says_length_and_rule(capsys):
+    enclave, do1, do2, ds = run_crash_sharing_nothing()
+    capsys.readouterr()
+
+    with pytest.warns(UserWarning):
+        do1.request_stderr(do1.jobs["j"], readers=ds.email, n_chars=1000)
+    assert (
+        "Requested the first 1,000 characters of stderr.txt (n_chars=1000) "
+        f"of job 'j' for {ds.email}.\n"
+        "   The enclave shares it once every data owner makes the same "
+        "request: the same readers and the same n_chars.\n"
+    ) in capsys.readouterr().out
+
+    with pytest.warns(UserWarning):
+        do1.request_stdout(do1.jobs["j"])
+    assert (
+        "Requested all of stdout.txt (n_chars=None) of job 'j' for the "
+        "enclave's data owners."
+    ) in capsys.readouterr().out

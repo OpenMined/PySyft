@@ -641,8 +641,8 @@ class SyftEnclaveClient:
         """Ask the enclave to share the job's stderr, or only its first ``n_chars`` chars.
 
         Only a data owner can ask. The enclave shares it once every data owner
-        made the same request. ``readers`` None means the data owners this
-        enclave is configured with.
+        made the same request: the same readers and the same ``n_chars``.
+        ``readers`` None means the data owners this enclave is configured with.
         """
         self._request_log(job, "stderr.txt", readers, n_chars)
 
