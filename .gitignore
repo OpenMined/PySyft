@@ -185,7 +185,14 @@ SyftBox/
 !.claude/skills/syft-pr-review/
 !.claude/skills/syft-pr-quickfix/
 !.claude/skills/syft-pr-quickfix-iterate/
+!.claude/skills/syft-pr-feedback/
+# Rules are private by default as well. Only the shared invariants, which
+# Claude Code loads when it reads a file in their paths, are checked in.
+!.claude/rules/
+.claude/rules/*
+!.claude/rules/invariants/
 CLAUDE.md
+CLAUDE.local.md
 !packages/syft-enclave/tinfoil/CLAUDE.md
 
 # CI test outputs

@@ -1,0 +1,1856 @@
+[
+  {
+    "pr": 9434,
+    "title": "feat: versioned JobManager for reading/writing jobs across protocol versions",
+    "author": "koenvanderveen",
+    "commit": "84c40caedc3568d1ed1baa2f85baf6b54ebb3a1c",
+    "reviewers": ["P"],
+    "items": [
+      {
+        "reviewer": "P",
+        "path": "packages/syft-job/src/syft_job/job_storage.py",
+        "line": 49,
+        "body": "While `peer_schemas` is being assigned here and the versioning machinery treats it correctly, it's apparently not being sent by the syft-client, since `JobClient` is initialized using `.from_config` and there's no `peer_schemas` being passed anywhere.\n\nThe test cases are correct and pass `peer_schemas`, but the actual code doesn't.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9434#discussion_r3547828424",
+        "id": "9434@84c40ca#1"
+      },
+      {
+        "reviewer": "P",
+        "path": "packages/syft-job/src/syft_job/manager.py",
+        "line": 179,
+        "body": "Shouldn't `ref.job_name` be added to `extra` here too, since it comes from the path like `submitted_by` and `datasite_email`?",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9434#discussion_r3547844736",
+        "id": "9434@84c40ca#2"
+      },
+      {
+        "reviewer": "P",
+        "path": "packages/syft-job/src/syft_job/job_storage.py",
+        "line": 170,
+        "body": "This will raise an error with jobs with the same name across protocol versions. Is that intended?",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9434#discussion_r3547861958",
+        "id": "9434@84c40ca#3"
+      },
+      {
+        "reviewer": "P",
+        "path": "packages/syft-job/src/syft_job/client.py",
+        "line": 594,
+        "body": "Blanket exception catches on a long block like this are an anti-pattern. It should catch specific exceptions, or at least log the error with the job name and path.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9434#discussion_r3547867928",
+        "id": "9434@84c40ca#4"
+      },
+      {
+        "reviewer": "P",
+        "path": "packages/syft-job/src/syft_job/client.py",
+        "line": 510,
+        "body": "Since `receive_job` is only called by `scan_inbox`, which already determines the correct `protocol_version` on load, it should be required parameter, not default to the constant.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9434#discussion_r3547887791",
+        "id": "9434@84c40ca#5"
+      },
+      {
+        "reviewer": "P",
+        "path": "packages/syft-job/src/syft_job/job_runner.py",
+        "line": 161,
+        "body": "Won't a job have both `config.yaml` and `state.yaml` files after `scan_inbox` and `receive_job` are called, therefore `total_jobs` here is counting those jobs twice?\n\nIt doesn't affect deletion, since it uses `shutil.rmtree` but the warning message below will be misleading.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9434#discussion_r3547921235",
+        "id": "9434@84c40ca#6"
+      },
+      {
+        "reviewer": "P",
+        "path": "packages/syft-job/src/syft_job/job_runner.py",
+        "line": 398,
+        "body": "`JobManager.read_state` can return `None` if the `state.yaml` no longer exists. There should be a check here to prevent an exception on the `state.status` on the next line.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9434#discussion_r3547927068",
+        "id": "9434@84c40ca#7"
+      },
+      {
+        "reviewer": "P",
+        "path": "packages/syft-job/src/syft_job/job_storage.py",
+        "line": 205,
+        "body": "Both `_load_upgraded` and `_write_in_target_version` work for only two versions, but are somewhat fragile when it comes to handling more future versions, and specially once we need to upgrade or downgrade jobs throughout multiple versions.\n\nInstead of conditionals I would introduce a `ProtocolCodec` class that handles the serialization and loading for each version, and `JobManager` delegates to the appropriate class, keeping all migration specific code in the codec class. Once v2 is introduced, it's just a new class, instead of more conditionals.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9434#discussion_r3547955593",
+        "id": "9434@84c40ca#8"
+      },
+      {
+        "reviewer": "P",
+        "path": "packages/syft-job/src/syft_job/manager.py",
+        "line": 29,
+        "body": "`JobManager` is a somewhat vague name that blurs the line with `JobClient`. Although the two have clearly distinct responsibilities, the suffix is not as clear. Maybe `JobRepository` or `JobStorage`.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9434#discussion_r3547961819",
+        "id": "9434@84c40ca#9"
+      },
+      {
+        "reviewer": "P",
+        "path": "packages/syft-job/src/syft_job/job_storage.py",
+        "line": 190,
+        "body": "Both `write_submission` and `write_state` could be renamed to make the asymmetry more explicit, like in the docstring. Like `write_submission_for_do` and `write_state_for_ds`.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9434#discussion_r3547968270",
+        "id": "9434@84c40ca#10"
+      },
+      {
+        "reviewer": "P",
+        "path": "packages/syft-bg/src/syft_bg/notify/monitors/job.py",
+        "line": 86,
+        "body": "`metadata.name` was replaced with `ref.job_name` in most places, but still remains in others like here.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9434#discussion_r3547974364",
+        "id": "9434@84c40ca#11"
+      },
+      {
+        "reviewer": "P",
+        "path": null,
+        "line": null,
+        "body": "The comments mark some minor issues found in the code.\n\nThe main high-level design issue would be having a separate `ProtocolCodec` class, to avoid bundling all protocol rules in the `_load_upgraded` and `_write_in_target_version` methods, as suggested in the comments.",
+        "addressed": null,
+        "url": "https://github.com/OpenMined/PySyft/pull/9434#pullrequestreview-4658577842",
+        "id": "9434@84c40ca#12"
+      }
+    ]
+  },
+  {
+    "pr": 9436,
+    "title": "fix: harden syft-restrict against verifier and obfuscator bypasses",
+    "author": "pjwerneck",
+    "commit": "5975157e6dca6af9d0f1b998daa29d34ebd3b0b5",
+    "reviewers": ["K"],
+    "items": [
+      {
+        "reviewer": "K",
+        "path": "packages/syft-restrict/README.md",
+        "line": 87,
+        "body": "I love the readability of this readme! I think mark up should be the only UX documented in the readme, having two UX's described here complicates the story somewhat, but perhaps we can move it to verify.md",
+        "addressed": false,
+        "url": "https://github.com/OpenMined/PySyft/pull/9436#discussion_r3586422933",
+        "id": "9436@5975157#1"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-restrict/docs/verify.md",
+        "line": 30,
+        "body": "the imports are checked I suppose?",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9436#discussion_r3586478637",
+        "id": "9436@5975157#2"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-restrict/docs/verify.md",
+        "line": 28,
+        "body": "perhaps more clear to say \"checked by syft-restrict\" (compared to checked by user)",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9436#discussion_r3586481955",
+        "id": "9436@5975157#3"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-restrict/docs/verify.md",
+        "line": 129,
+        "body": "is this always allowed? also reassigning self for instance?",
+        "addressed": false,
+        "url": "https://github.com/OpenMined/PySyft/pull/9436#discussion_r3586501426",
+        "id": "9436@5975157#4"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-restrict/docs/verify.md",
+        "line": 130,
+        "body": "I guess the note here is that they can only nest allowed syntax?",
+        "addressed": false,
+        "url": "https://github.com/OpenMined/PySyft/pull/9436#discussion_r3586504578",
+        "id": "9436@5975157#5"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-restrict/docs/verify.md",
+        "line": 143,
+        "body": "maybe its me, but I am not familiar with the term \"knob\"",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9436#discussion_r3586514187",
+        "id": "9436@5975157#6"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-restrict/docs/verify.md",
+        "line": 251,
+        "body": "how about the result of x =transpose(y), are we allowed to reassign x?",
+        "addressed": false,
+        "url": "https://github.com/OpenMined/PySyft/pull/9436#discussion_r3586538777",
+        "id": "9436@5975157#7"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-restrict/docs/verify.md",
+        "line": 263,
+        "body": "Now that I read this, perhaps this is the weakest part of our setup. We assume that setup acts like a init function, something a variable is assigned here and never reassigned. But that is very jax specific, and how do we even know that setup is always called (if it wouldnt be jax)",
+        "addressed": false,
+        "url": "https://github.com/OpenMined/PySyft/pull/9436#discussion_r3586607492",
+        "id": "9436@5975157#8"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-restrict/docs/verify.md",
+        "line": 295,
+        "body": "do we need __post_init__?",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9436#discussion_r3586644361",
+        "id": "9436@5975157#9"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-restrict/docs/verify.md",
+        "line": 294,
+        "body": "I think in the end we are not using any of these anymore. perhaps we should just disallow them?",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9436#discussion_r3586647450",
+        "id": "9436@5975157#10"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-restrict/docs/verify.md",
+        "line": 323,
+        "body": "only if allowlisted",
+        "addressed": false,
+        "url": "https://github.com/OpenMined/PySyft/pull/9436#discussion_r3586656426",
+        "id": "9436@5975157#11"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-restrict/docs/verify.md",
+        "line": 1,
+        "body": "this is high quality now! It helps me reason over the logic and find edge cases we may not have covered. Great job!",
+        "addressed": false,
+        "url": "https://github.com/OpenMined/PySyft/pull/9436#discussion_r3586660461",
+        "id": "9436@5975157#12"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-restrict/tests/fixtures/marked_model.py",
+        "line": 28,
+        "body": "I didnt think about this yet, is this allowed? is it secure?",
+        "addressed": false,
+        "url": "https://github.com/OpenMined/PySyft/pull/9436#discussion_r3587234267",
+        "id": "9436@5975157#13"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-restrict/src/syft_restrict/markers.py",
+        "line": 38,
+        "body": "some comments here would help me or otherwise split it up in functions",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9436#discussion_r3587297548",
+        "id": "9436@5975157#14"
+      }
+    ]
+  },
+  {
+    "pr": 9436,
+    "title": "fix: harden syft-restrict against verifier and obfuscator bypasses",
+    "author": "pjwerneck",
+    "commit": "8c99d39a341f1e50c2f5a43b8cbfe73d26644834",
+    "reviewers": ["K"],
+    "items": [
+      {
+        "reviewer": "K",
+        "path": "packages/syft-restrict/docs/blacklist.md",
+        "line": 54,
+        "body": "I dont get it, do we have a specific jax denylist?",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9436#discussion_r3544528365",
+        "id": "9436@8c99d39#1"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-restrict/docs/blacklist.md",
+        "line": 102,
+        "body": "what does it mean to trust",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9436#discussion_r3544538677",
+        "id": "9436@8c99d39#2"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-restrict/docs/blacklist.md",
+        "line": 107,
+        "body": "what doe \"defeats the wrappers type guard\" mean? Can we. simplify this or just say that its not possible even though we dont know how it can be used exactly",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9436#discussion_r3544552710",
+        "id": "9436@8c99d39#3"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-restrict/docs/blacklist.md",
+        "line": 108,
+        "body": "again, I am not completely following this sentence",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9436#discussion_r3544559028",
+        "id": "9436@8c99d39#4"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-restrict/docs/blacklist.md",
+        "line": 115,
+        "body": "nice, is this just builtin references or would there be other attack vectors here I am wondering",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9436#discussion_r3544566061",
+        "id": "9436@8c99d39#5"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-restrict/README.md",
+        "line": 3,
+        "body": "not specific for Jax/Flax",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9436#discussion_r3544591849",
+        "id": "9436@8c99d39#6"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-restrict/README.md",
+        "line": 4,
+        "body": "tbh, I think this opening section/summary is worse than the original. I think we should revert or end up somewhere in the middle",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9436#discussion_r3545208386",
+        "id": "9436@8c99d39#7"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-restrict/README.md",
+        "line": 34,
+        "body": "can you make sure this aligns with the example, I think currently this is out of sync (it already was)",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9436#discussion_r3545211505",
+        "id": "9436@8c99d39#8"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-restrict/README.md",
+        "line": 57,
+        "body": "this describes it in terms that are not introduced yet",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9436#discussion_r3545222288",
+        "id": "9436@8c99d39#9"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-restrict/README.md",
+        "line": 56,
+        "body": "concept of binding table not introduced yet, describe without it, more generic",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9436#discussion_r3545225904",
+        "id": "9436@8c99d39#10"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-restrict/README.md",
+        "line": 64,
+        "body": "checker, not introduced yet",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9436#discussion_r3545231841",
+        "id": "9436@8c99d39#11"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-restrict/docs/verify.md",
+        "line": 5,
+        "body": "I dont thing using \"You\" is the tone of voice we want",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9436#discussion_r3545248283",
+        "id": "9436@8c99d39#12"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-restrict/docs/verify.md",
+        "line": 19,
+        "body": "it assume inference code too much now, that needs more of a nuance",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9436#discussion_r3545253714",
+        "id": "9436@8c99d39#13"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-restrict/docs/verify.md",
+        "line": 22,
+        "body": "I would seperate this out as one of the use cases we want to support but not make it part of the package internals explanation",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9436#discussion_r3545277762",
+        "id": "9436@8c99d39#14"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-restrict/docs/verify.md",
+        "line": 198,
+        "body": "I feel like this section does not make clear these are not allowed, also, if they are not why are they not on the blacklist?",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9436#discussion_r3545308846",
+        "id": "9436@8c99d39#15"
+      }
+    ]
+  },
+  {
+    "pr": 9436,
+    "title": "fix: harden syft-restrict against verifier and obfuscator bypasses",
+    "author": "pjwerneck",
+    "commit": "ab1ce2ea62f050015229f3c57f9dcef4a9f1e408",
+    "reviewers": ["K"],
+    "items": [
+      {
+        "reviewer": "K",
+        "path": "packages/syft-restrict/src/syft_restrict/verifier.py",
+        "line": 256,
+        "body": "perhaps nitpick and not dangerous, but it looks like you might be able to define method x on class y twice because we are not checking that",
+        "addressed": false,
+        "url": "https://github.com/OpenMined/PySyft/pull/9436#discussion_r3588347131",
+        "id": "9436@ab1ce2e#1"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-restrict/src/syft_restrict/policy.py",
+        "line": 102,
+        "body": "I think we can remove post init",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9436#discussion_r3588399771",
+        "id": "9436@ab1ce2e#2"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-restrict/src/syft_restrict/policy.py",
+        "line": 97,
+        "body": "we are not using these, remove",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9436#discussion_r3588404944",
+        "id": "9436@ab1ce2e#3"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-restrict/src/syft_restrict/verifier.py",
+        "line": 660,
+        "body": "I think we may want to consider making this more strict. I think its only fine to call that if  we defined it ourselves, so we know the getattr doesnt create side effects",
+        "addressed": false,
+        "url": "https://github.com/OpenMined/PySyft/pull/9436#discussion_r3595422746",
+        "id": "9436@ab1ce2e#4"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-restrict/src/syft_restrict/verifier.py",
+        "line": 796,
+        "body": "I dont have an answer to this question yet, but do we need any asignment that not an attribute?",
+        "addressed": false,
+        "url": "https://github.com/OpenMined/PySyft/pull/9436#discussion_r3595752774",
+        "id": "9436@ab1ce2e#5"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-restrict/src/syft_restrict/verifier.py",
+        "line": 789,
+        "body": "we are calling this function from _track_safe_local after we already **skipped anything that is not an ast.Name, like ast.Attribute**, so in that context value here can only be an ast.Name. However, we are calling functions that sound like they should be applied to an attribute. (self_attr_name), this is confusing me a bit",
+        "addressed": false,
+        "url": "https://github.com/OpenMined/PySyft/pull/9436#discussion_r3595798644",
+        "id": "9436@ab1ce2e#6"
+      }
+    ]
+  },
+  {
+    "pr": 9438,
+    "title": "feat: Init RDS package",
+    "author": "rasswanth-s",
+    "commit": "40bf1269fe3048f2d4ab26e148fd1a862706317a",
+    "reviewers": ["P"],
+    "items": [
+      {
+        "reviewer": "P",
+        "path": "packages/syft-rds/src/syft_rds/config.py",
+        "line": 34,
+        "body": "The subpaths are defined below, but the prefixes are being imported from syft_datasets.dataset_manager. This comment seems contradictory.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9438#discussion_r3603174178",
+        "id": "9438@40bf126#1"
+      },
+      {
+        "reviewer": "P",
+        "path": "packages/syft-rds/src/syft_rds/config.py",
+        "line": 72,
+        "body": "The alignment is documented, but there's no validator enforcing it. Like a `@model_validator(mode=\"after\")` asserting that `sync.email` and `dataset.email` match.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9438#discussion_r3603229205",
+        "id": "9438@40bf126#2"
+      },
+      {
+        "reviewer": "P",
+        "path": "packages/syft-rds/src/syft_rds/config.py",
+        "line": 79,
+        "body": "Why are we taking `folder` and `email` as parameters here, instead of using attributes from sync? It looks  like a potential source of drift or inconsistencies.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9438#discussion_r3603313676",
+        "id": "9438@40bf126#3"
+      },
+      {
+        "reviewer": "P",
+        "path": "packages/syft-rds/src/syft_rds/client.py",
+        "line": 236,
+        "body": "This is one example of the encapsulation violations.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9438#discussion_r3603443125",
+        "id": "9438@40bf126#4"
+      },
+      {
+        "reviewer": "P",
+        "path": "packages/syft-rds/src/syft_rds/client.py",
+        "line": 241,
+        "body": "This doesn't look like an acceptable \"ignore all errors\" case as the comment suggests, since `owner_share_collection` is not a trivial method. If a network request fails, it's going to behave as if it's already shared. This could also potentially silently real bugs in `owner_share_collection`.\n\nAlso, using a bare `except:` or a blanket `except Exception:` to silently suppress all errors is a python anti-pattern. In legitimate cases, `contextlib.suppress` is the more idiomatic way of doing that.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9438#discussion_r3603539859",
+        "id": "9438@40bf126#5"
+      },
+      {
+        "reviewer": "P",
+        "path": "packages/syft-rds/src/syft_rds/client.py",
+        "line": 1,
+        "body": "There's a lot of lines that violate encapsulation of the sync_engine's private attributes, most of them reaching into `self._sync._connection_router`.  If the goal of the refactoring is a \"domain-free core\", it should not reach into private internals. The sync_engine should have public methods exposing the functionality.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9438#discussion_r3603551940",
+        "id": "9438@40bf126#6"
+      },
+      {
+        "reviewer": "P",
+        "path": "packages/syft-rds/src/syft_rds/client.py",
+        "line": 253,
+        "body": "This method isn't honoring the `sync` parameter, like others do.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9438#discussion_r3603598074",
+        "id": "9438@40bf126#7"
+      },
+      {
+        "reviewer": "P",
+        "path": "packages/syft-rds/src/syft_rds/client.py",
+        "line": 276,
+        "body": "Also not honoring `sync`.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9438#discussion_r3603599925",
+        "id": "9438@40bf126#8"
+      },
+      {
+        "reviewer": "P",
+        "path": "packages/syft-rds/src/syft_rds/client.py",
+        "line": 204,
+        "body": "Redundant import. It's already imported at the top of the file.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9438#discussion_r3603610194",
+        "id": "9438@40bf126#9"
+      },
+      {
+        "reviewer": "P",
+        "path": "packages/syft-rds/src/syft_rds/client.py",
+        "line": 209,
+        "body": "Should be at the top too.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9438#discussion_r3603615012",
+        "id": "9438@40bf126#10"
+      },
+      {
+        "reviewer": "P",
+        "path": "packages/syft-rds/src/syft_rds/client.py",
+        "line": 212,
+        "body": "This checks if the file exists, but if it's empty, `yaml.safe_load` below returns `None`, causing an `AttributeError` on the `data.get` call next, that will  not interrupt flow, only be logged as a callback failure by the _emit handler . Since `read_text()` is  going to be called anyway, this guard should check the content length too.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9438#discussion_r3603657820",
+        "id": "9438@40bf126#11"
+      },
+      {
+        "reviewer": "P",
+        "path": "packages/syft-rds/src/syft_rds/client.py",
+        "line": 70,
+        "body": "This is duplicating the construction logic that `SyftRDSClientConfig._compose` already does.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9438#discussion_r3603719599",
+        "id": "9438@40bf126#12"
+      },
+      {
+        "reviewer": "P",
+        "path": "packages/syft-rds/src/syft_rds/client.py",
+        "line": 281,
+        "body": "The `submit_bash_job` method above does not check peer-membership the same way this does. Was that intentional?",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9438#discussion_r3603734001",
+        "id": "9438@40bf126#13"
+      },
+      {
+        "reviewer": "P",
+        "path": "packages/syft-rds/src/syft_rds/client.py",
+        "line": 223,
+        "body": "This should use `peer_manager.syncable_peers` instead of reaching inside `peer_store`, since the `syncable_peers` property exists for that.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9438#discussion_r3603746478",
+        "id": "9438@40bf126#14"
+      },
+      {
+        "reviewer": "P",
+        "path": "packages/syft-rds/src/syft_rds/client.py",
+        "line": 624,
+        "body": "This section is copy-paste from the `_upload_dataset_to_collection`. It should be extracted to a method to avoid code duplication.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9438#discussion_r3603763804",
+        "id": "9438@40bf126#15"
+      },
+      {
+        "reviewer": "P",
+        "path": "packages/syft-rds/src/syft_rds/client.py",
+        "line": 637,
+        "body": "This is also copy-paste from `upload_dataset_to_collection`.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9438#discussion_r3603779022",
+        "id": "9438@40bf126#16"
+      },
+      {
+        "reviewer": "P",
+        "path": "packages/syft-rds/src/syft_rds/client.py",
+        "line": 323,
+        "body": "This `PRE_SYNC` guard checking the env var is repeated three times. It should be extracted to a property, or maybe checked once and saved.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9438#discussion_r3603791694",
+        "id": "9438@40bf126#17"
+      },
+      {
+        "reviewer": "P",
+        "path": "packages/syft-rds/src/syft_rds/client.py",
+        "line": 424,
+        "body": "The word \"sync\" is carrying four different meanings in the file. That's a real readability issue. In most cases it refers to the `SyftboxManager` instance, but it's also used as a boolean flag meaning to run a full sync after the method, the `sync()` method itself, that delegates to `self._sync.sync()` , and `config.sync` referring to the sub-config.\n\nI'd rename the boolean to something more explicit, like `sync_after`, and the private attribute to `_sync_engine` so it matches the public property `sync_engine`.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9438#discussion_r3603845690",
+        "id": "9438@40bf126#18"
+      },
+      {
+        "reviewer": "P",
+        "path": "syft_client/sync/syftbox_manager.py",
+        "line": 116,
+        "body": "This interpolation is repeated four times in the file. It should be extracted to a common function/method.\n\nAlso, it's not clear why it assumes `collection_specs[0] ` is special.  Is it because it's the public spec? What happens if they are reordered? It should have a clarifying comment here.\n\nIf it must always be the public, it should refer to it by an unambiguous value.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9438#discussion_r3603961512",
+        "id": "9438@40bf126#19"
+      },
+      {
+        "reviewer": "P",
+        "path": "syft_client/sync/syftbox_manager.py",
+        "line": 906,
+        "body": "The `sync` method calls `load_peers` on every invocation, so every `sync` emits `peers_loaded`. Is that intentional? Is there any idempotency handling?",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9438#discussion_r3604001389",
+        "id": "9438@40bf126#20"
+      },
+      {
+        "reviewer": "P",
+        "path": "syft_client/sync/syftbox_manager.py",
+        "line": 806,
+        "body": "Does this mean a peer added by the DO is approved automatically? If that's the case, there should be a comment clarifying it.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9438#discussion_r3604016330",
+        "id": "9438@40bf126#21"
+      },
+      {
+        "reviewer": "P",
+        "path": "syft_client/sync/syftbox_manager.py",
+        "line": 808,
+        "body": "This is the same issue with the word \"sync\" mentioned in client.py. For clarity, the boolean could be renamed to `sync_after`.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9438#discussion_r3604041972",
+        "id": "9438@40bf126#22"
+      },
+      {
+        "reviewer": "P",
+        "path": null,
+        "line": null,
+        "body": "The intent to create a domain-free core and define a public API is clear, but there are still violations of that boundary. It's mostly clear for the happy path, but there's still coupling and private-reaching when handling others cases.\n \nThere are still broken tests and conflicts, so this review is not final.",
+        "addressed": null,
+        "url": "https://github.com/OpenMined/PySyft/pull/9438#pullrequestreview-4722709093",
+        "id": "9438@40bf126#23"
+      }
+    ]
+  },
+  {
+    "pr": 9443,
+    "title": "feat: versioned DatasetStorage for reading/writing datasets across protocol versions",
+    "author": "koenvanderveen",
+    "commit": "066d617b11928057321eb372a8a06f899f215fff",
+    "reviewers": ["K"],
+    "items": [
+      {
+        "reviewer": "K",
+        "path": "packages/syft-datasets/pyproject.toml",
+        "line": 3,
+        "body": "is this necessary?",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9443#discussion_r3613121403",
+        "id": "9443@066d617#1"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-datasets/scripts/generate_release_fixture.py",
+        "line": 38,
+        "body": "double check this script",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9443#discussion_r3613151770",
+        "id": "9443@066d617#2"
+      }
+    ]
+  },
+  {
+    "pr": 9443,
+    "title": "feat: versioned DatasetStorage for reading/writing datasets across protocol versions",
+    "author": "koenvanderveen",
+    "commit": "53eb6e6e6cac8635f4bd7ea54e52e97155068808",
+    "reviewers": ["K", "P"],
+    "items": [
+      {
+        "reviewer": "K",
+        "path": "packages/syft-datasets/tests/migrations/unit/test_history_artifacts.py",
+        "line": 14,
+        "body": "this should be more generic, it should just load every package artifact that was released",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9443#discussion_r3614158828",
+        "id": "9443@53eb6e6#1"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-datasets/tests/migrations/unit/test_history_artifacts.py",
+        "line": 43,
+        "body": "we can remove this, we already have the one that loads all of them",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9443#discussion_r3614161114",
+        "id": "9443@53eb6e6#2"
+      },
+      {
+        "reviewer": "P",
+        "path": "packages/syft-datasets/src/syft_datasets/dataset_manager.py",
+        "line": 358,
+        "body": "Blanket `Exception` catch with no logging. This will silently ignore errors due to unreadable datasets in `read_dataset`. Not minor issue, since migration failures or schema inconsistencies can make the dataset vanish with no logs.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9443#discussion_r3615309927",
+        "id": "9443@53eb6e6#3"
+      },
+      {
+        "reviewer": "P",
+        "path": "packages/syft-datasets/src/syft_datasets/dataset_manager.py",
+        "line": 168,
+        "body": "This can create a dataset in several protocol versions at once, but `delete()`  uses `get()` which uses `store.find_dataset_ref()`, which returns only a single dataset, with the newest protocol. It's going to leave older copies. Is that intended? If not, `delete()` should iterate all versions too.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9443#discussion_r3615399072",
+        "id": "9443@53eb6e6#4"
+      },
+      {
+        "reviewer": "P",
+        "path": "packages/syft-datasets/src/syft_datasets/models/dataset/v1.py",
+        "line": 71,
+        "body": "Shouldn't the canonical `owner` come from the path?",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9443#discussion_r3615435809",
+        "id": "9443@53eb6e6#5"
+      },
+      {
+        "reviewer": "P",
+        "path": "packages/syft-datasets/src/syft_datasets/dataset_manager.py",
+        "line": 156,
+        "body": "In that case, `SyftDatasetManager._validate_dataset_name` is dead code and should be removed.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9443#discussion_r3615456837",
+        "id": "9443@53eb6e6#6"
+      },
+      {
+        "reviewer": "P",
+        "path": "packages/syft-datasets/src/syft_datasets/protocolcodecs/v0.py",
+        "line": 24,
+        "body": "Both codecs (v0 and v1) are deferring the public and private paths to config. Wasn't the point of the refactoring to have the codec own disk layout?",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9443#discussion_r3615709786",
+        "id": "9443@53eb6e6#7"
+      },
+      {
+        "reviewer": "P",
+        "path": "packages/syft-datasets/src/syft_datasets/dataset_manager.py",
+        "line": 466,
+        "body": "This should be handled by the codec, not by the manager. The manager should never make internal decisions based on protocol version.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9443#discussion_r3615733130",
+        "id": "9443@53eb6e6#8"
+      },
+      {
+        "reviewer": "P",
+        "path": "packages/syft-datasets/src/syft_datasets/dataset_storage.py",
+        "line": 168,
+        "body": "This is the counterpart to the comment on `owner` property in models/dataset/v1.py:69. If we assign the name from `ref.name` here, why not the owner too?",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9443#discussion_r3615771399",
+        "id": "9443@53eb6e6#9"
+      },
+      {
+        "reviewer": "P",
+        "path": "packages/syft-datasets/src/syft_datasets/config.py",
+        "line": 7,
+        "body": "The config.py now has a `protocol_version` parameter everywhere, which defaults to this imported `DATASET_PROTOCOL_VERSION`,the *current* protocol, but the storage defaults to the widest. Is that intended?",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9443#discussion_r3615787506",
+        "id": "9443@53eb6e6#10"
+      },
+      {
+        "reviewer": "P",
+        "path": null,
+        "line": null,
+        "body": "A few issues found and commented on.\n\nOverall, the high-level design is in line with #9434, but the fact `peer_schemas` is still not properly wired is a bit concerning. In production, everything still resolves to v0. I'd be more comfortable if v1 and the whole protocol mechanics was fully integrated and tested end-to-end before wiring it to the rest of syft-client.",
+        "addressed": null,
+        "url": "https://github.com/OpenMined/PySyft/pull/9443#pullrequestreview-4736197931",
+        "id": "9443@53eb6e6#11"
+      }
+    ]
+  },
+  {
+    "pr": 9443,
+    "title": "feat: versioned DatasetStorage for reading/writing datasets across protocol versions",
+    "author": "koenvanderveen",
+    "commit": "5adfc2d96c586e165805e9ffe42c5aa4593e1e1f",
+    "reviewers": ["K"],
+    "items": [
+      {
+        "reviewer": "K",
+        "path": "packages/syft-datasets/src/syft_datasets/config.py",
+        "line": 41,
+        "body": "it feels like this should be part of the codec",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9443#discussion_r3613686115",
+        "id": "9443@5adfc2d#1"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-datasets/src/syft_datasets/dataset.py",
+        "line": 1,
+        "body": "Do we still need this file at all? Where do we use these \"historical import paths\"",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9443#discussion_r3613692802",
+        "id": "9443@5adfc2d#2"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-datasets/src/syft_datasets/dataset_manager.py",
+        "line": 164,
+        "body": "we should probably by default always write in the current version",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9443#discussion_r3613712956",
+        "id": "9443@5adfc2d#3"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-datasets/src/syft_datasets/dataset_manager.py",
+        "line": 87,
+        "body": "private_dir should be called private_target_dir",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9443#discussion_r3613722328",
+        "id": "9443@5adfc2d#4"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-datasets/src/syft_datasets/dataset_manager.py",
+        "line": 112,
+        "body": "target_mock_dir should be called target_dir here",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9443#discussion_r3613725983",
+        "id": "9443@5adfc2d#5"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-datasets/src/syft_datasets/dataset_manager.py",
+        "line": 50,
+        "body": "all these `_prepare_<x>` methods should have a ref as input, compute the target path and do the copying",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9443#discussion_r3613732671",
+        "id": "9443@5adfc2d#6"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-datasets/src/syft_datasets/dataset_manager.py",
+        "line": 325,
+        "body": "this method has a weird name. Perhaps it should have no args and we should do something like datasites = datasite if datasite is not None else self._all_syftbox_datasites() when we call it",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9443#discussion_r3613751098",
+        "id": "9443@5adfc2d#7"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-datasets/tests/migrations/p2p/fixtures/syft_dataset-0.1.21-protocol1_syftbox/do@test.org/private/syft_datasets/v1/demo/private.csv",
+        "line": 1,
+        "body": "this whole folder should probably not exist because this version has not been released yet",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9443#discussion_r3613845832",
+        "id": "9443@5adfc2d#8"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-datasets/src/syft_datasets/dataset_manager.py",
+        "line": 137,
+        "body": "perhaps we should also have the posibility to pass in protocol verisons here in case we want to override something",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9443#discussion_r3613958981",
+        "id": "9443@5adfc2d#9"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-datasets/src/syft_datasets/dataset_storage.py",
+        "line": 188,
+        "body": "probably for all the writes of datasets, we first want to see which versions are already on disk. If we have multiple versions on disk already we need to make sure that they are in sync. So we first need a step that checks the existing protocols on disk, then finds the codecs for those protocols (and add the ref protocol) and then write for all codecs",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9443#discussion_r3613981377",
+        "id": "9443@5adfc2d#10"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-datasets/src/syft_datasets/dataset_manager.py",
+        "line": 191,
+        "body": "I think the responsibility of this should probably lie with the storage layer",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9443#discussion_r3613993881",
+        "id": "9443@5adfc2d#11"
+      }
+    ]
+  },
+  {
+    "pr": 9487,
+    "title": "feat: address migration gaps",
+    "author": "pjwerneck",
+    "commit": "8520dfca7a72c7c70e4e8b9fcd4306189473cf5b",
+    "reviewers": ["K"],
+    "items": [
+      {
+        "reviewer": "K",
+        "path": "syft/sync/version/peer_manager.py",
+        "line": 430,
+        "body": "for A3 I think we should refuse by default, but it should be possible for the user to override this. I think in general this should often be the case",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9487#discussion_r3934756291",
+        "id": "9487@8520dfc#1"
+      },
+      {
+        "reviewer": "K",
+        "path": "syft/sync/connections/drive/gdrive_transport.py",
+        "line": 249,
+        "body": "I wonder if this is the way we should do it. We should be able to know a peers version from their version.json, we dont need multiple sources of truth, we should probably be able to decide based on that instead of this information. For instance, what happens if a peer downgrades?",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9487#discussion_r3934756498",
+        "id": "9487@8520dfc#2"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-migration/src/syft_migration/registry.py",
+        "line": 232,
+        "body": "This sounds like we are actively communicating with the peer, which is not what's happening. Something like `infer_protocol_version_to_use` makes more sense to me.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9487#discussion_r3934756682",
+        "id": "9487@8520dfc#3"
+      },
+      {
+        "reviewer": "K",
+        "path": "syft/sync/peers/peer_store.py",
+        "line": 26,
+        "body": "wrt crypto keys version and persisted dict, I think the assumption is that they are backwards compatible. Until we have migrations for them we should probably have a test that we can read old versions?",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9487#discussion_r3934756860",
+        "id": "9487@8520dfc#4"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-datasets/src/syft_datasets/dataset_manager.py",
+        "line": 99,
+        "body": "W.r.t. datasets I would like to balance writing multiple versions (heavy) against missing a version. It's quite easy to write an additional version later on version mismatch, and it should be possible for the user to modify this easily from the top-level API.",
+        "addressed": false,
+        "url": "https://github.com/OpenMined/PySyft/pull/9487#discussion_r3934757105",
+        "id": "9487@8520dfc#5"
+      },
+      {
+        "reviewer": "K",
+        "path": "syft/sync/connections/drive/gdrive_transport.py",
+        "line": 1462,
+        "body": "how do we know this data is compatible?",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9487#discussion_r3934757312",
+        "id": "9487@8520dfc#6"
+      },
+      {
+        "reviewer": "K",
+        "path": "syft/sync/login_utils.py",
+        "line": 38,
+        "body": "**Re: Flow 2.7 \u2014 login with a version mismatch**\r\nIf the answer is \"keep everything and repair on the next sync\", we should probably just call `sync()` right there, and print that we are doing it.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9487#discussion_r3934757559",
+        "id": "9487@8520dfc#7"
+      },
+      {
+        "reviewer": "K",
+        "path": "scripts/bump_version.py",
+        "line": 113,
+        "body": "**Re: Flow 2.8 \u2014 `scripts/bump_version.py --dependents published`**\r\nI wonder if we need the old version (bumped), we can probably remove that",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9487#discussion_r3934757781",
+        "id": "9487@8520dfc#8"
+      },
+      {
+        "reviewer": "K",
+        "path": "syft/sync/connections/drive/gdrive_transport.py",
+        "line": 1499,
+        "body": "if we do _find_or_adopt_versioned_folder and we upgrade, how do we know that the renamed folder is in the right format?",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9487#discussion_r3934758038",
+        "id": "9487@8520dfc#9"
+      },
+      {
+        "reviewer": "K",
+        "path": "tests/migrations/p2p/test_message_protocol_downgrade.py",
+        "line": 117,
+        "body": "we probably need a migration test with encryption on as well",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9487#discussion_r3934758348",
+        "id": "9487@8520dfc#10"
+      }
+    ]
+  },
+  {
+    "pr": 9497,
+    "title": "fix: make silent job and peer failures visible and actionable",
+    "author": "pjwerneck",
+    "commit": "f316facda0a876610acc823e28b32b1a9c498b5b",
+    "reviewers": ["K"],
+    "items": [
+      {
+        "reviewer": "K",
+        "path": ".claude/skills/syft-pr-review/SKILL.md",
+        "line": 139,
+        "body": "test2",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9497#discussion_r3915677028",
+        "id": "9497@f316fac#1"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-job/src/syft_job/client.py",
+        "line": 629,
+        "body": "`JobClient.jobs` is now the single authority for order \u2014 own datasite first, then owner email, then newest \u2014 and both the printed `[N]` and `jobs[N]` read that one list, so they agree.\n\nI think in general we need 1) a deterministic way to get job X from user Y, ideally `client.jobs[\"a@b.org\"][\"<jobname>\"]`, and 2) to use that in the hints.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9497#discussion_r3924451377",
+        "id": "9497@f316fac#2"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-enclave/src/syft_enclaves/client.py",
+        "line": 272,
+        "body": "`SyftEnclaveClient.approve_job()` now checks the per-party approval file first and raises `FileNotFoundError` naming the data owner and the job, before `job.approve()` runs.\n\nDoes this pre-check really solve anything?",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9497#discussion_r3924453131",
+        "id": "9497@f316fac#3"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-job/src/syft_job/job.py",
+        "line": 218,
+        "body": "The error raised when `JobInfo.approve()` is called on a job that sits on a peer's datasite now suggests indexing by name instead.\n\nI don't get it \u2014 why would indexing by name always give your own job?",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9497#discussion_r3924453267",
+        "id": "9497@f316fac#4"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-job/tests/test_job_flow.py",
+        "line": 262,
+        "body": "This file adds ten tests built from `JobClient` and `SyftJobRunner` over a `tmp_path` SyftBox folder; four of them are about the hint under the jobs table.\n\nPerhaps we should isolate the hint tests in their own file.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9497#discussion_r3924453456",
+        "id": "9497@f316fac#5"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-enclave/tests/test_enclave_jobs.py",
+        "line": 485,
+        "body": "This deletes the per-party approval file the enclave writes, and asserts `SyftEnclaveClient.approve_job()` raises `FileNotFoundError` naming the data owner, the job and `client.sync()`.\r\n\r\nA missing approval file shouldn't crash the enclave, and we should double check if thats the case",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9497#discussion_r3924458150",
+        "id": "9497@f316fac#6"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-job/tests/test_job_flow.py",
+        "line": 463,
+        "body": "Rename to `test_no_hint_when_do_owns_no_jobs()`.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9497#discussion_r3924458280",
+        "id": "9497@f316fac#7"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-enclave/tests/test_enclave_jobs.py",
+        "line": 441,
+        "body": "Rename to `test_approve_job_refuses_when_approval_file_missing()`.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9497#discussion_r3924458409",
+        "id": "9497@f316fac#8"
+      }
+    ]
+  },
+  {
+    "pr": 9520,
+    "title": "feat: Validate and pin peer encryption bundles",
+    "author": "rasswanth-s",
+    "commit": "5c12d868b4b9410d1faf3f73709fb9c8516f873a",
+    "reviewers": ["P"],
+    "items": [
+      {
+        "reviewer": "P",
+        "path": "syft/sync/peers/peer_store.py",
+        "line": 166,
+        "body": "[blocker]\n\nThe pin comes only from `_peers`, and `set_peers()` replaces that list on every sync. If SYFT_peers.json marks Bob rejected for one sync, `load_peers()` and `get_peer_requests()` both drop him, and his in-memory pin is lost. On the next sync this line gives `pinned = None`, the first-use branch at 175 runs, and 182 writes the attacker's bundle over the pin in `crypto_keys.json`.\n\nThe same happens when Bob is in memory without a bundle while another process pinned him in the key file. When pinned is `None`, it fall back to the validated pin from the key file.\n\nSomething like this:\n\n```\npinned = cached.public_encryption_bundle if cached else None\nif pinned is None:\n    pinned = self._valid_stored_pin(incoming.email)\n```\n\nI'd also add a test: pin Bob, sync with Bob rejected, sync with Bob accepted and a new key, then assert that the old pin stays and the warning appears.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9520#discussion_r4084838642",
+        "id": "9520@5c12d86#1"
+      },
+      {
+        "reviewer": "P",
+        "path": "syft/sync/peers/peer_store.py",
+        "line": 421,
+        "body": "[blocker]\n\n`write_text()` is not safe for this. If the write crashes for any reason or the key file is corrupted, the next `load_keys()` fails, and the private keys can't be read back. It can also trigger the other issue, forcing `_stored_pin()` to treat the peer as a first use.\n\nThe repo already has `portalocker` as a dependency and solves this problem safely in `syft/sync/sync/caches/persisted_dict.py`. We should do the same atomic write here:\n\n1. hold an exclusive lock over the read, change, and write.\n2. write to a temp file, `fsync`, then `os.replace()` for an atomic modification.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9520#discussion_r4084975640",
+        "id": "9520@5c12d86#2"
+      },
+      {
+        "reviewer": "P",
+        "path": "syft/sync/syftbox_manager.py",
+        "line": 1042,
+        "body": "[should fix]\n\nThe docstring says to run this once you have confirm the new fingerprint with the peer, but the call never sees that fingerprint. It adopts whatever bundle the storage servers. Since the storage provider is not fully trusted, this method should accept a fingerprint and raise an error when the published bundle does not match.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9520#discussion_r4085023131",
+        "id": "9520@5c12d86#3"
+      },
+      {
+        "reviewer": "P",
+        "path": "syft/sync/peers/key_bundle.py",
+        "line": 73,
+        "body": "[should fix]\n\n`from_did_document()` only ever raises `ValueError` for bad input. An error unrelated to the bundle that raises another error turns that into `InvalidPeerBundleError`, `load_keys()` drops every peer and the next sync trusts whatever Drive serves and falls back to first-use trust.\n\nThis bare `Exception` is bad, not just as a matter of style. A bug should fail loudly here for security reasons. It's part of the ticket.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9520#discussion_r4085111219",
+        "id": "9520@5c12d86#4"
+      },
+      {
+        "reviewer": "P",
+        "path": "syft/sync/version/peer_manager.py",
+        "line": 693,
+        "body": "[should fix]\n\nThis is similar to the blanket `Exception` in key_bundle.py:73. This turns every error into `no bundle`. This should catch the specific error possible here. HttpError, retriable network error, ValueError for most bad JSON errors.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9520#discussion_r4085139657",
+        "id": "9520@5c12d86#5"
+      },
+      {
+        "reviewer": "P",
+        "path": null,
+        "line": null,
+        "body": "@rasswanth-s The design is solid and the tests are good, but there are 2 blockers and 3 should-fix items.",
+        "addressed": null,
+        "url": "https://github.com/OpenMined/PySyft/pull/9520#pullrequestreview-5293812529",
+        "id": "9520@5c12d86#6"
+      }
+    ]
+  },
+  {
+    "pr": 9522,
+    "title": "refactor: Drop Watcher events outside peer's datasite",
+    "author": "rasswanth-s",
+    "commit": "11bd32b42322b0b160f49f88379526308bb202f5",
+    "reviewers": ["P"],
+    "items": [
+      {
+        "reviewer": "P",
+        "path": "syft/sync/sync/caches/datasite_watcher_cache.py",
+        "line": 270,
+        "body": "[blocker]\n\nThe loop below is correct, but this line still saves the full message before the loop check, so the saved message still holds the dropped events.\n\nWhen the client starts again, `_load_file_hashes_from_events()` reads every saved message back, and nothing checks the events there. This should filter the events first, and save a message with only the accepted events.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9522#discussion_r4085421113",
+        "id": "9522@11bd32b#1"
+      }
+    ]
+  },
+  {
+    "pr": 9523,
+    "title": "feat(enclave): bind the enclave's encryption key into its attestation token",
+    "author": "rasswanth-s",
+    "commit": "8b3d89c2c070a805256df662e225ec982258f312",
+    "reviewers": ["P"],
+    "items": [
+      {
+        "reviewer": "P",
+        "path": "packages/syft-enclave/src/syft_enclaves/tee_token.py",
+        "line": 51,
+        "body": "[blocker]\n\nWith no `key_fingerprint`, this `caller_nonce` takes the fingerprint's slot at index 1, and the verifier later cannot tell which one built the token. A caller who sends their own fingerprint as the nonce gets a token signed by the provider, from the real image.\n\nThis should have a fixed placeholder at index 1 when `key_fingerprint` is `None`.\n\nSomething like this:\n\n```python\nNO_KEY_FINGERPRINT_NONCE = \"syft-no-key\"\n\ndef build_eat_nonce(\n    caller_nonce: str | None = None, key_fingerprint: str | None = None\n) -> list[str]:\n    nonces = [f\"syft-{syft.__version__}\", key_fingerprint or NO_KEY_FINGERPRINT_NONCE]\n    if caller_nonce:\n        nonces.append(caller_nonce)\n    return nonces\n```",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9523#discussion_r4085881401",
+        "id": "9523@8b3d89c#1"
+      }
+    ]
+  },
+  {
+    "pr": 9536,
+    "title": "fix: run only the exact job the data owner approved",
+    "author": "rasswanth-s",
+    "commit": "a383bffa0f49b3e3896a2d7ef685814053ab3691",
+    "reviewers": ["P"],
+    "items": [
+      {
+        "reviewer": "P",
+        "path": "packages/syft-job/src/syft_job/job_runner.py",
+        "line": 427,
+        "body": "Minor, but `OSError` can be a local error, and in this branch it gets reported as invalid submission, or something changed after it was approved. Treating both exceptions separately (maybe a warning for OSError) could help avoid confusion.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9536#discussion_r4146783647",
+        "id": "9536@a383bff#1"
+      },
+      {
+        "reviewer": "P",
+        "path": "packages/syft-job/src/syft_job/client.py",
+        "line": 640,
+        "body": "The PR description says approved jobs from before this fix need to be approved again. I think this method could call `_lock_submission()` for them, so those jobs get the same protection as new ones.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9536#discussion_r4146829702",
+        "id": "9536@a383bff#2"
+      },
+      {
+        "reviewer": "P",
+        "path": null,
+        "line": null,
+        "body": "Great PR. Left two comments with suggestions, not blockers.",
+        "addressed": null,
+        "url": "https://github.com/OpenMined/PySyft/pull/9536#pullrequestreview-5368943203",
+        "id": "9536@a383bff#3"
+      }
+    ]
+  },
+  {
+    "pr": 9561,
+    "title": "refactor: Added initial stub contracts",
+    "author": "rasswanth-s",
+    "commit": "9045fe5acd4d12cc6ff4173087363c2a142a7c98",
+    "reviewers": ["P"],
+    "items": [
+      {
+        "reviewer": "P",
+        "path": "syft/sync/transport/protocols.py",
+        "line": 28,
+        "body": "Mailbox here uses list->fetch->ack, but the v2 ticket replaces this with send->receive->ack->delivered. Maybe we can define the v2 shape now and move the callers only once, doing the list and fetch inside received.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9561#discussion_r4270843014",
+        "id": "9561@9045fe5#1"
+      },
+      {
+        "reviewer": "P",
+        "path": "syft/sync/transport/protocols.py",
+        "line": 39,
+        "body": "Why do we have different behavior for PROPOSALS and EVENTS, in the same method? Can't both use the same rules from the start?",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9561#discussion_r4270872889",
+        "id": "9561@9045fe5#2"
+      },
+      {
+        "reviewer": "P",
+        "path": "syft/sync/transport/protocols.py",
+        "line": 63,
+        "body": "Why are we combining both peer registry, owner, and watcher in a single PrivateStore class, while OwnerStorage and WatcherStorage only forward each call here? It feels like there's an unnecessary layer here. With two OwnerStore and WatcherStore classes instead of a single PrivateStore, there's no need for the intermediary layer.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9561#discussion_r4270932488",
+        "id": "9561@9045fe5#3"
+      },
+      {
+        "reviewer": "P",
+        "path": "syft/sync/transport/protocols.py",
+        "line": 84,
+        "body": "There's some redundancy in these event log methods. Three primitive methods are enough: `append_event`, `list_event_handles(since)` and `fetch(handle)`. The others can be concrete implementations on the base class instead of abstracts to be implemented by the concrete class.\n\n- `fetch_all_events()` is `fetch_events_since(None)`\n- `fetch_events_since(t)` is `fetch` for each handle from `list_event_handles(t)`.\n- `count_events_since(t)` is `len(list_event_handles(t))`.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9561#discussion_r4270963202",
+        "id": "9561@9045fe5#4"
+      },
+      {
+        "reviewer": "P",
+        "path": "syft/sync/transport/protocols.py",
+        "line": 133,
+        "body": "The v1 ticket has the peer registry methods in `PeeringConnection`. It's fine to be in `PrivateStore`, but the ticket should be updated to avoid confusion.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9561#discussion_r4270992975",
+        "id": "9561@9045fe5#5"
+      },
+      {
+        "reviewer": "P",
+        "path": "syft/sync/transport/protocols.py",
+        "line": 194,
+        "body": "`list_mine` is `list_mine_with_permissions` without the flags. Keep one abstract, make the other a concrete helper.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9561#discussion_r4271006628",
+        "id": "9561@9045fe5#6"
+      },
+      {
+        "reviewer": "P",
+        "path": "syft/sync/transport/protocols.py",
+        "line": 212,
+        "body": "`download` is `list_files` and `fetch_file` for each file. It could be a concrete helper, not abstract.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9561#discussion_r4271018855",
+        "id": "9561@9045fe5#7"
+      },
+      {
+        "reviewer": "P",
+        "path": "syft/sync/transport/protocols.py",
+        "line": 228,
+        "body": "The name `PeerState` is already used by the enum at `syft.sync.peers.peer.PeerState`. The docstring warns about it, but it should have a different name.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9561#discussion_r4271040782",
+        "id": "9561@9045fe5#8"
+      },
+      {
+        "reviewer": "P",
+        "path": "syft/sync/transport/protocols.py",
+        "line": 256,
+        "body": "This can read the key bundle of a peer, but it cannot read the bundle of this client. The auto encryption settings work (branch `pjwerneck/auto-encryption-settings`) adds `read_own_encryption_bundle` to the Drive connection. Please add `read_own_key_bundle(peer)` here, so the two branches merge without a change to the contract.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9561#discussion_r4271075718",
+        "id": "9561@9045fe5#9"
+      },
+      {
+        "reviewer": "P",
+        "path": "syft/sync/transport/protocols.py",
+        "line": 276,
+        "body": "The ticket calls this `Connections` not `Transport`. Transport is a better name, but the ticket should be updated.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9561#discussion_r4271094541",
+        "id": "9561@9045fe5#10"
+      },
+      {
+        "reviewer": "P",
+        "path": "syft/sync/sync/delivery_tracker.py",
+        "line": 21,
+        "body": "The ticket says: Lost view \u2192 PeerReset \u2192 resend everything. This docstring proposes that if no view exist, the tracker assumes that each peer already holds all files it can read.\n\nThis prevents a full resend after the upgrade, but a peer that does not have a file never gets it.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9561#discussion_r4271139054",
+        "id": "9561@9045fe5#11"
+      },
+      {
+        "reviewer": "P",
+        "path": "syft/sync/sync/delivery_tracker.py",
+        "line": 24,
+        "body": "The ticket keeps the views on Drive when `persist_owner_state` is true. It adds `deliveries` and `peer_resets` to `RollingState` and `IncrementalCheckpoint`, and `peer_views` to `Checkpoint`. Deliveries also count toward the upload threshold of the rolling state.\n\nThis stub keeps the views only in a local file (line 32). Is persistence to Drive in v2, or later? If it is later, an enclave loses the views at each boot. Then it sends all files again to each peer, or it sends nothing, as decided for line 21.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9561#discussion_r4271150735",
+        "id": "9561@9045fe5#12"
+      },
+      {
+        "reviewer": "P",
+        "path": null,
+        "line": null,
+        "body": "Left a few comments. Main points:\n\n1. The `Mailbox` contract has a shape that V2 replaces. A contract with the V2 shape now prevents a second rewrite of every caller.\n2. `OwnerStorage` and `WatcherStorage` are wrappers that only forward calls to `PrivateStore`. Two abstract classes give the same separation with one less layer.\n3. Some abstract methods are compositions of other methods. A small set of primitives, plus helper methods on the base class, makes a backend easier to write.\n4. `DeliveryTracker` differs from the ticket on the first run and on persistence to Drive.",
+        "addressed": null,
+        "url": "https://github.com/OpenMined/PySyft/pull/9561#pullrequestreview-5517987210",
+        "id": "9561@9045fe5#13"
+      }
+    ]
+  },
+  {
+    "pr": 9562,
+    "title": "feat: negotiate encryption policy per peer",
+    "author": "pjwerneck",
+    "commit": "6c84133ae0c4f10b682464c54b83d99520ca445b",
+    "reviewers": ["K"],
+    "items": [
+      {
+        "reviewer": "K",
+        "path": "syft/sync/peers/peer_store.py",
+        "line": 489,
+        "body": "`_adopt_key_file()` and `_take_key_file()` take the keys and pins of a key file loaded into a second store, and return the pins set in memory before keys existed so they can be saved.\n\nI have trouble understanding from the name what this does. The main usage seems to be in `PeerStore.create`, which creates stores and juggles information between them, but it just seems way too complicated for what it does. I think this should be simplified.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9562#discussion_r4361032826",
+        "id": "9562@6c84133#1"
+      },
+      {
+        "reviewer": "K",
+        "path": "syft/sync/peers/peer_store.py",
+        "line": 783,
+        "body": "`PeerStore.create()` now builds a store, loads the key file into a second store, copies the policy, keys and pins across with `_adopt_key_file()`, and then rewrites the file with `_record_required_policy()`.\n\nWe are doing a lot of things in place in the create method, I feel like that may be overcomplicating things. Also, why does `_read_key_file` return a dict? That should be typed.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9562#discussion_r4361033068",
+        "id": "9562@6c84133#2"
+      },
+      {
+        "reviewer": "K",
+        "path": "syft/sync/version/peer_manager.py",
+        "line": 930,
+        "body": "`_publish_bundle_to_new_encrypted_peers()` publishes our bundle to each encrypting peer once per process: `_bundle_published_for` is an in-memory set, and `_own_bundle_is_published()` reads the bundle back from Drive.\n\nIt is not super clear to me that one is the local cache and one is the Drive state. It also seems like this is quite slow, because we do it for every peer and it's not in parallel.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9562#discussion_r4361033316",
+        "id": "9562@6c84133#3"
+      },
+      {
+        "reviewer": "K",
+        "path": "syft/sync/sync/datasite_owner_syncer.py",
+        "line": 895,
+        "body": "When an outbox message has to wait, its paths stay pending and every later message to that recipient waits too, so they go out in order on a later sync.\n\nMaybe don't queue, but warn and forget?",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9562#discussion_r4361033980",
+        "id": "9562@6c84133#4"
+      },
+      {
+        "reviewer": "K",
+        "path": "syft/sync/connections/connection_router.py",
+        "line": 246,
+        "body": "`watcher_get_events_messages()` now reads outbox messages one by one through `watcher_read_events_message()`, stops at the first one that cannot be read yet, and swaps a plaintext message in an encrypting pair for an empty one.\n\nThis logic is hard to follow, add comments.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9562#discussion_r4361034223",
+        "id": "9562@6c84133#5"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-enclave/src/syft_enclaves/runner.py",
+        "line": 149,
+        "body": "The enclave now always makes keys at attestation, so that an `optional` enclave's keys are bound to the report too.\n\nThe enclave should never be booted without encryption.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9562#discussion_r4361034679",
+        "id": "9562@6c84133#6"
+      },
+      {
+        "reviewer": "K",
+        "path": "syft/sync/version/version_info.py",
+        "line": 220,
+        "body": "`encryption_policy` is `Optional` so that a version file written by an older syft, without the field, reads as `None` and the peer is treated as outdated.\n\nI think we dont need to be backwards compatible for the upcoming release.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9562#discussion_r4361036897",
+        "id": "9562@6c84133#7"
+      },
+      {
+        "reviewer": "K",
+        "path": "syft/sync/version/peer_manager.py",
+        "line": 303,
+        "body": "`get_own_version()` copies the peer store's current policy onto the cached `VersionInfo` on every call, because tests and the enclave replace the store after the first call.\n\nThis feels like a code smell. Are we doing something wrong here?",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9562#discussion_r4361037094",
+        "id": "9562@6c84133#8"
+      },
+      {
+        "reviewer": "K",
+        "path": "syft/sync/connections/drive/gdrive_transport.py",
+        "line": 1941,
+        "body": "When the version file is missing, it is now created from the passed `version_info`, and otherwise still from `VersionInfo.current()`, which carries no policy.\n\nWhy do we have 2 code paths here, do we need that?",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9562#discussion_r4361037317",
+        "id": "9562@6c84133#9"
+      },
+      {
+        "reviewer": "K",
+        "path": "syft/sync/peers/peer_store.py",
+        "line": 436,
+        "body": "Not really part of this PR, but `ensure_keys` is a bit vague as a name. We should probably mention \"own keys\".",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9562#discussion_r4361037548",
+        "id": "9562@6c84133#10"
+      },
+      {
+        "reviewer": "K",
+        "path": "syft/sync/peers/peer_store.py",
+        "line": 298,
+        "body": "When the client is not `required` and has no keys, `_keep_pinned_bundle()` now ignores the bundle in the Drive copy of `SYFT_peers.json` and keeps only a bundle that was set locally.\n\nI am not sure what this is but it's confusing me a lot. I am not sure if this logic is something we want in the first place, and given the logic, it also seems to be a confusing name.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9562#discussion_r4361037764",
+        "id": "9562@6c84133#11"
+      },
+      {
+        "reviewer": "K",
+        "path": "syft/sync/version/peer_manager.py",
+        "line": 646,
+        "body": "`my_fingerprint()` and `peer_fingerprint()` now return a fingerprint whenever keys exist, instead of only when encryption is on.\n\nWhat is this and why do we have it?",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9562#discussion_r4361037964",
+        "id": "9562@6c84133#12"
+      },
+      {
+        "reviewer": "K",
+        "path": "syft/sync/version/peer_manager.py",
+        "line": 669,
+        "body": "`_pin_published_bundle()` now warns and returns `None` on an unreadable peer bundle instead of raising.\n\nAgain, lots of tech debt here, need to investigate.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9562#discussion_r4361038228",
+        "id": "9562@6c84133#13"
+      },
+      {
+        "reviewer": "K",
+        "path": "syft/sync/connections/connection_router.py",
+        "line": 61,
+        "body": "`set_version_loader()` lets `SyftboxManager` hand `PeerManager.load_peer_version()` to each router, so `_refresh_unknown_peer()` can re-read a peer's version file before a send.\n\nWhy do we need `set_version_loader`?",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9562#discussion_r4361038467",
+        "id": "9562@6c84133#14"
+      },
+      {
+        "reviewer": "K",
+        "path": "syft/sync/peers/peer_store.py",
+        "line": 220,
+        "body": "`peer_policy_known()`, `encryption_ready()`, `should_hold()` and `take_policy_reread()` are new `PeerStore` helpers that decide whether a send to a peer goes now, waits, or first re-reads the peer's version file.\n\nDo we need this complexity?",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9562#discussion_r4361038679",
+        "id": "9562@6c84133#15"
+      },
+      {
+        "reviewer": "K",
+        "path": "syft/sync/sync/datasite_owner_syncer.py",
+        "line": 897,
+        "body": "`_send_outbox_message()` returns `False` when the message has to wait for encryption with the peer, and `True` when it is written or dropped because the recipient is not a peer.\n\nCan we not just raise?",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9562#discussion_r4361038844",
+        "id": "9562@6c84133#16"
+      },
+      {
+        "reviewer": "K",
+        "path": "syft/sync/connections/connection_router.py",
+        "line": 279,
+        "body": "`_decrypt_or_wait()` verifies and decrypts a message, and returns `None` with a warning when the peer's messages cannot be read yet.\n\n`_decrypt_or_wait` is a weird name, it doesn't reflect what it's doing.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9562#discussion_r4361039016",
+        "id": "9562@6c84133#17"
+      },
+      {
+        "reviewer": "K",
+        "path": "syft/sync/sync/caches/datasite_watcher_cache.py",
+        "line": 275,
+        "body": "`sync_down_parallel()` now stops at the first message that cannot be read yet and leaves the cursor before it, so later messages apply in order once it can be read.\n\nThis again does a lot of handling of scenarios we don't care about.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9562#discussion_r4361039196",
+        "id": "9562@6c84133#18"
+      },
+      {
+        "reviewer": "K",
+        "path": "syft/sync/peers/peer.py",
+        "line": 43,
+        "body": "A peer whose version file has no `encryption_policy` runs an older syft: `is_outdated` marks it, and `SyftboxManager.sync()` skips it with a warning to upgrade.\n\nNo need for backwards compatibility, we can just assume the policy is there.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9562#discussion_r4361039407",
+        "id": "9562@6c84133#19"
+      },
+      {
+        "reviewer": "K",
+        "path": "syft/sync/peers/peer_store.py",
+        "line": 473,
+        "body": "`check_key_file_policy()`, called at the start of every `sync()`, reads the key file as a dict and raises when it records `required` but this client started with another policy, e.g. because syft-bg made the datasite required.\n\nThis data should be typed. I also don't get why we are talking about \"processes\".",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9562#discussion_r4361039598",
+        "id": "9562@6c84133#20"
+      },
+      {
+        "reviewer": "K",
+        "path": "tests/unit/test_encryption_policy.py",
+        "line": 177,
+        "body": "This checks that a version file from an older syft, without the policy field, parses with `encryption_policy` as `None`.\n\nDelete.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9562#discussion_r4361039813",
+        "id": "9562@6c84133#21"
+      },
+      {
+        "reviewer": "K",
+        "path": "tests/unit/test_encryption_policy.py",
+        "line": 191,
+        "body": "This tests that a peer whose version file has no `encryption_policy` is skipped with an upgrade warning. Without backwards compatibility for older version files, this test can be deleted.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9562#discussion_r4361040028",
+        "id": "9562@6c84133#22"
+      },
+      {
+        "reviewer": "K",
+        "path": "tests/unit/test_encryption_policy.py",
+        "line": 431,
+        "body": "This tests that a key file written before the `encryption_policy` field reads as `required`. Without backwards compatibility for the upcoming release, this test can be deleted too.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9562#discussion_r4361040204",
+        "id": "9562@6c84133#23"
+      },
+      {
+        "reviewer": "K",
+        "path": "tests/unit/test_encryption_policy.py",
+        "line": 1039,
+        "body": "This tests that an outbox message waiting on encryption stays pending and is sent by the next process. If we warn and forget instead of queueing, this test can be deleted.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9562#discussion_r4361040401",
+        "id": "9562@6c84133#24"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-enclave/tests/test_encryption.py",
+        "line": 75,
+        "body": "The enclave should never run without encryption, so a test that sets the enclave to `off` can be deleted.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9562#discussion_r4361040592",
+        "id": "9562@6c84133#25"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-enclave/tests/test_enclave_jobs.py",
+        "line": 80,
+        "body": "The `plaintext` case runs the enclave without encryption, which should never happen. This case can be deleted; `encrypted` and `negotiated` cover the enclave.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9562#discussion_r4361040753",
+        "id": "9562@6c84133#26"
+      }
+    ]
+  },
+  {
+    "pr": 9564,
+    "title": "refactor(transport): implement the connections on Drive ",
+    "author": "rasswanth-s",
+    "commit": "3709a4cc8b0d74caac769f3ca55e20ee86fd0a56",
+    "reviewers": ["P"],
+    "items": [
+      {
+        "reviewer": "P",
+        "path": null,
+        "line": null,
+        "body": "Only minor issues. Looks good.",
+        "addressed": null,
+        "url": "https://github.com/OpenMined/PySyft/pull/9564#pullrequestreview-5565876109",
+        "id": "9564@3709a4c#1"
+      }
+    ]
+  },
+  {
+    "pr": 9564,
+    "title": "refactor(transport): implement the connections on Drive ",
+    "author": "rasswanth-s",
+    "commit": "f6ac748f208d10ba5c16ac4c16c9a8c5e6c99fd8",
+    "reviewers": ["P"],
+    "items": [
+      {
+        "reviewer": "P",
+        "path": "syft/sync/connections/connection_router.py",
+        "line": 230,
+        "body": "`download_events_message_by_id` is not being called by anyone, so the modification here lands in unused code.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9564#discussion_r4309463070",
+        "id": "9564@f6ac748#1"
+      },
+      {
+        "reviewer": "P",
+        "path": "syft/sync/connections/drive/drive_connections.py",
+        "line": 53,
+        "body": "This `else` clause feels fragile. Right now there's only PROPOSED_CHANGES and FILE_EVENTS. It should have an explicit elif for FILE_EVENTS and a warning for the else so it doesn't fail silently in case a new kind is added in the future,",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9564#discussion_r4309478319",
+        "id": "9564@f6ac748#2"
+      },
+      {
+        "reviewer": "P",
+        "path": "syft/sync/connections/drive/drive_connections.py",
+        "line": 99,
+        "body": "Minor, but `get_events_count_since_checkpoint` counts every name that starts with syfteventsmessagev3_, while list_event_handles() drops names that don't parse. The contract says the count is `len(list_event_handles())`.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9564#discussion_r4309487242",
+        "id": "9564@f6ac748#3"
+      }
+    ]
+  },
+  {
+    "pr": 9571,
+    "title": "feat: delivery tracker - deliver owner changes from per-peer views",
+    "author": "pjwerneck",
+    "commit": "3ee33120b6d00b52d29553a639fff9d33a966e58",
+    "reviewers": ["K"],
+    "items": [
+      {
+        "reviewer": "K",
+        "path": "syft/sync/sync/datasite_owner_syncer.py",
+        "line": 235,
+        "body": "`sync()` now reloads the permissions, seeds the views, records local changes, delivers, and then pulls each peer's proposals, sending again after each pull.\n\nI think it has gotten a little bit messy in terms of when what happens. A while ago, we would pull all the changes, check what happened locally, put that in the queue and then deliver from the queue. It feels like all of that is intertwined a little bit now. Why?",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9571#discussion_r4388750065",
+        "id": "9571@3ee3312#1"
+      },
+      {
+        "reviewer": "K",
+        "path": "syft/sync/sync/datasite_owner_syncer.py",
+        "line": 240,
+        "body": "The owner's changes are now sent before the proposals are pulled, so that a proposal that raises (for example an outdated one) does not hold them back.\n\nWe can just ignore those proposal errors.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9571#discussion_r4388750223",
+        "id": "9571@3ee3312#2"
+      },
+      {
+        "reviewer": "K",
+        "path": "syft/sync/sync/datasite_owner_syncer.py",
+        "line": 255,
+        "body": "`sync()` first delivers the owner's changes, then pulls each peer's proposals, and the `process_syftbox_events_queue()` in that loop sends again.\n\nI don't like the ordering of things. Why are we first delivering things, then pulling changes and delivering again, is that necessary? This doesn't help for reducing the number of API calls we want to make, because we don't batch things properly. It's also more confusing to follow. Also, `_record_local_changes` is a confusing name.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9571#discussion_r4388750374",
+        "id": "9571@3ee3312#3"
+      },
+      {
+        "reviewer": "K",
+        "path": "syft/sync/syftbox_manager.py",
+        "line": 1031,
+        "body": "Rejecting a peer resets its view, so a later approval sends it every file it may read.\n\nWe should have an option for a peer to request all the files they can see. So if a peer lost their state they can kind of relogin.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9571#discussion_r4388750992",
+        "id": "9571@3ee3312#4"
+      },
+      {
+        "reviewer": "K",
+        "path": "syft/sync/sync/delivery_tracker.py",
+        "line": 155,
+        "body": "The views are kept in `.cache/owner_delivery_views.json`, and every change loads and rewrites the whole file under a lock.\n\nIdeally `owner_delivery_views` should be a sqlite and not a json (keep this very simple), so writes (and reads) are not costly. We should also keep an in-memory option for this.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9571#discussion_r4388751231",
+        "id": "9571@3ee3312#5"
+      },
+      {
+        "reviewer": "K",
+        "path": "syft/sync/sync/datasite_owner_syncer.py",
+        "line": 705,
+        "body": "`_seed_views_if_missing()` fills the views on the first sync after an upgrade, and marks the paths the old client listed in `owner_pending_deliveries.json` as unsent.\n\nWe don't need backwards compatibility for existing clients, so we can remove both the seeding (`_seed_views_if_missing()`, `_files_held_by_peer_at_seed()`, `DeliveryTracker.seed()` / `is_seeded()` and the `seeded` flag) and the reading of `owner_pending_deliveries.json` (`legacy_pending_paths()`), with the `test_upgrade_*` tests. Resending every file once after an upgrade is fine.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9571#discussion_r4388761621",
+        "id": "9571@3ee3312#6"
+      },
+      {
+        "reviewer": "K",
+        "path": "syft/sync/sync/datasite_owner_syncer.py",
+        "line": 863,
+        "body": "When the owner accepts a change from a peer, `accept()` records the other readers it is withheld from, so only the submitter gets it until the owner edits the file again.\n\nEvery peer with read permission should get the file.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9571#discussion_r4388761810",
+        "id": "9571@3ee3312#7"
+      },
+      {
+        "reviewer": "K",
+        "path": "syft/sync/sync/datasite_owner_syncer.py",
+        "line": 954,
+        "body": "When a send fails with anything other than a not-ready peer, the error is raised and the planned messages not yet sent are dropped; only unplanned messages go back on the queue.\n\nI wonder whether this is a good idea if one broken message blocks the rest.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9571#discussion_r4388762051",
+        "id": "9571@3ee3312#8"
+      }
+    ]
+  },
+  {
+    "pr": 9571,
+    "title": "feat: delivery tracker - deliver owner changes from per-peer views",
+    "author": "pjwerneck",
+    "commit": "fd4b7cfcac8f1047e460ffffa6366be67bf1efc3",
+    "reviewers": ["K"],
+    "items": [
+      {
+        "reviewer": "K",
+        "path": "syft/sync/sync/datasite_owner_syncer.py",
+        "line": 827,
+        "body": "`_send_outbox_messages()` treats two kinds of message differently. Planned messages, which `deliver_file_changes()` builds from the views, are dropped on failure and planned again. Unplanned ones (the accepted change sent back to the submitter, dataset and enclave shares) are put back on the queue. Telling them apart takes the `planned` flag, the `not_ready` set and the `finally`.\n\nI think we can handle both cases more simply, and the same way: every peer with read permission should get them, and for delivery we just try to deliver and requeue if it failed (but not indefinitely).",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9571#discussion_r4389538245",
+        "id": "9571@fd4b7cf#1"
+      }
+    ]
+  },
+  {
+    "pr": 9604,
+    "title": "feat: release job outputs and logs through one path",
+    "author": "pjwerneck",
+    "commit": "94669191684f19ddf0232ac9317d66ce8b877803",
+    "reviewers": ["K"],
+    "items": [
+      {
+        "reviewer": "K",
+        "path": "packages/syft-job/src/syft_job/job_runner.py",
+        "line": 807,
+        "body": "`_prepare_outputs_dir()` now removes `outputs/` in both review/ and staging/ through `JobStorage.remove_outputs()`, then deletes the last run's `output_recipients.json` and `outputs_error.txt` from the job's staging folder one file at a time.\n\nWhy do we not remove the full staging dir, what is the reasoning?",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9604#discussion_r4525653593",
+        "id": "9604@9466919#1"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-job/src/syft_job/job_runner.py",
+        "line": 621,
+        "body": "After a run, the outputs are now copied into the job's `staging/outputs` instead of `review/outputs`, and only reach `review/` when they are released.\n\nIsn't this confusing from a DO perspective? Let's say I ran a job, now I want to read files, but now the folder I am expecting is empty. Not sure if I am sold on this staging folder but perhaps we can discuss.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9604#discussion_r4525653849",
+        "id": "9604@9466919#2"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-job/src/syft_job/job_runner.py",
+        "line": 748,
+        "body": "A `syft.pub.yaml` that a job writes into `outputs/` is now left out of the copy to staging, and the job fails. Before, it landed in `review/outputs` and its rules decided who could read the outputs.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9604#discussion_r4525654078",
+        "id": "9604@9466919#3"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-job/src/syft_job/job.py",
+        "line": 107,
+        "body": "`release()` takes one list of file names and one list of recipients, and grants every recipient read on every file.\n\nThis should ideally be a dict with filenames as keys and a list of recipients as values. This would be a flexible enough data structure to allow any kind of sharing.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9604#discussion_r4525654280",
+        "id": "9604@9466919#4"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-job/src/syft_job/job.py",
+        "line": 218,
+        "body": "`release_logs()` and `release_disclosures()` now both go through `release()`, which moves the files to review/ and grants read on them. `release_disclosures()` releases `granted_disclosures`, which is computed from the grant stored in `disclosures.json`.\n\nI think release is a bit more confusing than \"share\", because release may also mean \"make public\" and \"share\" implies \"with someone\" a little bit more. Disclosures are just another name for read permissions, so let's be consistent and use that. Also I think it's weird that disclosures are stored in a file, that could be implied from the permissions so it's duplicate information that we need to keep in sync now. I think we just need 1) request read_permissions, 2) approval 3) actual read_permissions, from permissions files, anything else can be inferred. I also don't understand the difference between disclosures and granted_disclosures.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9604#discussion_r4525654510",
+        "id": "9604@9466919#5"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-job/src/syft_job/job_runner.py",
+        "line": 977,
+        "body": "`JobInfo.share_outputs()` and `share_logs()` are gone: outputs now go out through `release([\"outputs\"], recipients)` and logs through `release_logs()`, while the public entry point stays `share_job_results()`.\r\n\r\nWhy do we have release_logs but not release_outputs? Also we have `release` at the low level now and `share` at the top level.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9604#discussion_r4525654697",
+        "id": "9604@9466919#6"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-enclave/src/syft_enclaves/client.py",
+        "line": 553,
+        "body": "`_release_outputs()` sends the outputs through a read grant and the sync, but still pushes `state.yaml` to each recipient through the event outbox, because the DOs hold no read grant on it.\n\nWouldn't it make more sense to just give the DOs read access on `state.yaml` in the first place?",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9604#discussion_r4525654891",
+        "id": "9604@9466919#7"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-enclave/src/syft_enclaves/receipt/writer.py",
+        "line": 74,
+        "body": "`write_receipt()`, `write_receipt_error()` and `_receipt()` now use `artifact_path(\"outputs\")`, which is `staging/outputs` until the outputs are released.\n\nLet's revert this when removing staging.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9604#discussion_r4525655095",
+        "id": "9604@9466919#8"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-enclave/src/syft_enclaves/client.py",
+        "line": 487,
+        "body": "`_forward_new_releases()` and its `forwarded_artifacts.json` record are gone. An item the submitter requested and every DO granted, also after the run, is now released by `_apply_disclosure_policy()` through `release()`, and the sync delivers it.\n\nThe idea behind enclave disclosures was that 1) a DS (may be one of the DOs) submits a job 2) the job crashes 3) the DOs decide that they want to share the logs (or parts of it) and they still have a way to do this.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9604#discussion_r4525655277",
+        "id": "9604@9466919#9"
+      },
+      {
+        "reviewer": "K",
+        "path": "packages/syft-job/tests/test_sharing.py",
+        "line": 316,
+        "body": "`setup_ds_job_folder_as_do()` sets up the DS's review folder through `review_grants.py: grant_ds_review_read()`, which gives the DS read on only `state.yaml` and `disclosures.json` in each job folder, and removes any read on the whole folder.\n\nThis is not the right place, but `grant_ds_review_read` is a weird function name, because it describes something it doesn't do.",
+        "addressed": true,
+        "url": "https://github.com/OpenMined/PySyft/pull/9604#discussion_r4525655475",
+        "id": "9604@9466919#10"
+      }
+    ]
+  }
+]
