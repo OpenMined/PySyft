@@ -222,7 +222,9 @@ class EnclaveJobInfo(JobInfo):
         The enclave shows the approval of every party and what all approved.
         A data owner shows its own approval.
         """
-        rows = [("Requested", format_read_permissions(self.requested_read_permissions))]
+        requested = format_read_permissions(self.requested_read_permissions)
+        # The enclave shares the outputs with the submitter whatever the request.
+        rows = [("Requested", f"{requested}; the submitter always gets outputs/")]
         if self.current_user_email == self.datasite_owner_email:
             return rows + self._party_rows()
         if self._approval_file.exists():

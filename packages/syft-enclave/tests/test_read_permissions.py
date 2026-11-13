@@ -617,7 +617,8 @@ def test_display_on_enclave_shows_every_party():
     rows = dict(enclave.jobs["j"].read_permission_rows())
     # The request survives the distribution, which writes the approval files.
     assert rows["Requested"] == (
-        f"returncode.txt ({ds.email}), stdout.txt ({ds.email})"
+        f"returncode.txt ({ds.email}), stdout.txt ({ds.email}); "
+        "the submitter always gets outputs/"
     )
     assert rows[f"Approved by {do1.email}"] == f"returncode.txt ({ds.email})"
     assert rows[f"Approved by {do2.email}"] == "(pending)"
@@ -633,7 +634,10 @@ def test_display_on_data_owner_shows_own_approval():
 
     job = do1.jobs["j"]
     assert job.read_permission_rows() == [
-        ("Requested", f"returncode.txt ({ds.email})"),
+        (
+            "Requested",
+            f"returncode.txt ({ds.email}); the submitter always gets outputs/",
+        ),
         ("Approved by you", f"returncode.txt ({ds.email})"),
         ("Approved by all", "needs the approval of every party"),
     ]
