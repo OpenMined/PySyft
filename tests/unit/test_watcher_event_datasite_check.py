@@ -122,23 +122,28 @@ def test_saved_message_holds_only_accepted_events():
     assert saved.message_filepath == message.message_filepath
 
 
-def test_dropped_event_is_not_restored_after_restart(tmp_path):
-    """On start, the watcher rebuilds its state from saved messages, with no sender to check."""
-    config = DataSiteWatcherCacheConfig(
-        email=VICTIM, use_in_memory_cache=False, syftbox_folder=tmp_path / "SyftBox"
+def test_dropped_event_is_not_restored_after_restart():
+    """Over the mock Drive: on start, the DS restores its saved state, which
+    holds only the accepted events."""
+    ds, do = SyftboxManager.pair_with_mock_drive_service_connection(
+        use_in_memory_cache=False
     )
-    forged = _event(VICTIM, "syft.pub.yaml")
-    legitimate = _event(PEER, "data/file.txt")
-    router = router_with_mock_connection(VICTIM)
-    DataSiteWatcherCache.from_config(config, router).apply_event_message(
-        FileChangeEventsMessage(events=[forged, legitimate]), PEER
+    forged = _event(ds.email, "syft.pub.yaml")
+    legitimate = _event(do.email, "data/file.txt")
+    do._connection_router.owner_write_event_messages_to_outbox(
+        ds.email, FileChangeEventsMessage(events=[forged, legitimate])
     )
+    ds.sync()
 
-    restarted = DataSiteWatcherCache.from_config(config, router)
+    restarted_syncer = ds._copy().datasite_watcher_syncer
+    assert restarted_syncer is not None
+    restarted = restarted_syncer.datasite_watcher_cache
 
-    assert Path(f"{VICTIM}/syft.pub.yaml") not in restarted.file_hashes
-    assert set(restarted.last_msg_id_per_peer) == {PEER}
-    assert restarted.file_hashes[Path(f"{PEER}/data/file.txt")] == legitimate.new_hash
+    assert Path(f"{ds.email}/syft.pub.yaml") not in restarted.file_hashes
+    assert set(restarted.last_msg_id_per_peer) == {do.email}
+    assert (
+        restarted.file_hashes[Path(f"{do.email}/data/file.txt")] == legitimate.new_hash
+    )
 
 
 def test_forged_outbox_message_cannot_rewrite_ds_root_permissions():

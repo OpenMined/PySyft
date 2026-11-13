@@ -22,13 +22,15 @@ from syft.sync.connections.drive.drive_collections import (
     CollectionFolder,
     DriveCollectionsConnection,
 )
-from syft.sync.connections.drive.drive_connections import DriveWatcherStoreConnection
 from syft.sync.connections.drive.drive_owner_store import DriveOwnerStoreConnection
 from syft.sync.connections.drive.drive_p2p import (
     OUTBOX_LOOKBACK_SECONDS,
     DriveP2PConnection,
 )
 from syft.sync.connections.drive.drive_peering import DrivePeeringConnection
+from syft.sync.connections.drive.drive_watcher_store import (
+    DriveWatcherStoreConnection,
+)
 from syft.sync.connections.drive.gdrive_client import GDriveClient
 from syft.sync.connections.drive.mock_drive_service import (
     MockDeleteRequest,
@@ -547,10 +549,59 @@ def test_owner_store_files_carry_the_syft_tag(pair):
 # -- WatcherStoreConnection -------------------------------------------------------
 
 
-def test_watcher_storage_on_drive_is_not_built_yet(pair):
+def test_watcher_state_save_replaces_previous(pair):
     _, ds_cached_client = pair
-    with pytest.raises(NotImplementedError):
-        DriveWatcherStoreConnection().latest_checkpoint(DO)
+    store = DriveWatcherStoreConnection(ds_cached_client)
+    assert store.get_checkpoint(DO) is None
+
+    store.put_checkpoint(DO, b"checkpoint 1")
+    store.put_rolling_state(DO, b"rolling state")
+    store.put_checkpoint(DO, b"checkpoint 2")
+
+    assert store.get_checkpoint(DO) == b"checkpoint 2"
+    assert store.get_rolling_state(DO) == b"rolling state"
+
+
+def test_watcher_state_save_and_load_after_first_save_make_no_lookup(pair, monkeypatch):
+    _, ds_cached_client = pair
+    store = DriveWatcherStoreConnection(ds_cached_client)
+    store.put_rolling_state(DO, b"first")
+    calls = _count_drive_calls(monkeypatch)
+
+    store.put_rolling_state(DO, b"second")
+
+    assert store.get_rolling_state(DO) == b"second"
+    assert calls["list"] == 0
+
+
+def test_watcher_state_two_folders_of_one_peer_refused(pair):
+    _, ds_cached_client = pair
+    DriveWatcherStoreConnection(ds_cached_client).put_rolling_state(DO, b"state")
+    first = DriveWatcherStoreConnection(ds_cached_client)
+    watcher_folder_id = first._watcher_folder_id()
+    assert watcher_folder_id is not None
+    ds_cached_client.client.create_folder(DO, watcher_folder_id)
+    store = DriveWatcherStoreConnection(ds_cached_client)
+
+    store.peers_with_saved_state()
+
+    with pytest.raises(RuntimeError, match="Exactly one is expected"):
+        store.get_rolling_state(DO)
+
+
+def test_watcher_state_reset_keeps_other_peers(pair):
+    _, ds_cached_client = pair
+    store = DriveWatcherStoreConnection(ds_cached_client)
+    other_do = "other-do@example.com"
+    store.put_rolling_state(DO, b"from do")
+    store.put_rolling_state(other_do, b"from other do")
+    assert set(store.peers_with_saved_state()) == {DO, other_do}
+
+    store.reset(DO)
+
+    assert store.get_rolling_state(DO) is None
+    assert store.get_rolling_state(other_do) == b"from other do"
+    assert store.peers_with_saved_state() == [other_do]
 
 
 # -- CollectionsConnection --------------------------------------------------------

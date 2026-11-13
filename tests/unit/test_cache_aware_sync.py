@@ -17,9 +17,7 @@ from syft.sync.events.file_change_event import (
 )
 from syft.sync.syftbox_manager import SyftboxManager
 from syft.sync.sync.collection_spec import CollectionSyncSpec
-
 from tests.unit.utils import (
-    router_with_mock_connection,
     TEST_COLLECTION_PREFIX,
     TEST_COLLECTION_SUBPATH,
     get_mock_events_messages,
@@ -94,8 +92,8 @@ def test_do_incremental_sync_downloads_only_new_events():
 
 
 def test_ds_incremental_sync_downloads_only_new_events(monkeypatch):
-    """Pre-populate cache with first n events, create new manager with same cache dir,
-    sync with n+m in outbox, verify only m new events are downloaded."""
+    """Sync n events, add m more to the outbox, restart the DS, and verify that
+    the restored state makes it download only the m new events."""
     import time
 
     # Create initial pair with filesystem cache
@@ -130,17 +128,14 @@ def test_ds_incremental_sync_downloads_only_new_events(monkeypatch):
     # Create a NEW SyftboxManager with the same cache directory (simulating restart)
     new_ds_manager = ds_manager._copy()
 
-    # Verify the new manager's cache loaded existing events from disk
+    # Verify the new manager restored its state from the DS's storage
     new_cache = new_ds_manager.datasite_watcher_syncer.datasite_watcher_cache
-    assert len(new_cache.events_connection) == initial_cache_count, (
-        f"New manager cache should have loaded {initial_cache_count} events from disk"
-    )
     assert (
         new_cache.last_msg_id_per_peer[do_manager.email]
         == ds_cache.last_msg_id_per_peer[do_manager.email]
-    ), "last_msg_id_per_peer should be pre-populated from disk cache"
+    ), "last_msg_id_per_peer should be restored from the saved state"
     assert len(new_cache.file_hashes) == 3, (
-        "file_hashes should be pre-populated from disk cache"
+        "file_hashes should be restored from the saved state"
     )
 
     # Sync the new manager - should only download the 2 new events
@@ -157,11 +152,6 @@ def test_ds_incremental_sync_downloads_only_new_events(monkeypatch):
     new_ds_manager.sync()
     assert len(received) == 2, (
         f"Should receive only 2 new messages, got {len(received)}"
-    )
-
-    # Verify total events in cache
-    assert len(new_cache.events_connection) == 5, (
-        "Should have 5 total events after syncing new events"
     )
 
 
@@ -216,7 +206,8 @@ def test_do_cache_handles_deletions_correctly():
 
 
 def test_ds_cache_handles_deletions_correctly():
-    """Test that DS file_hashes properly reflects deletions when loading from cache."""
+    """Test that DS file_hashes properly reflects deletions when restoring its
+    saved state."""
     ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
         use_in_memory_cache=False
     )
@@ -227,10 +218,11 @@ def test_ds_cache_handles_deletions_correctly():
     ctx = do_manager.datasite_owner_syncer.perm_context
     ctx.open(".").grant_read_access(ds_manager.email)
 
-    # Create a file on DO side
+    # Create two files on DO side: one is deleted later, one is kept
     test_file = datasite_dir_do / "test_file.txt"
     test_file.parent.mkdir(parents=True, exist_ok=True)
     test_file.write_text("Hello")
+    (datasite_dir_do / "kept_file.txt").write_text("Kept")
 
     do_manager.sync()
     ds_manager.sync()
@@ -266,13 +258,15 @@ def test_ds_cache_handles_deletions_correctly():
             CollectionSyncSpec.public(TEST_COLLECTION_PREFIX, TEST_COLLECTION_SUBPATH)
         ],
     )
-    new_cache = DataSiteWatcherCache.from_config(
-        config, router_with_mock_connection(do_manager.email)
-    )
+    new_cache = DataSiteWatcherCache.from_config(config, ds_manager._connection_router)
 
-    # Verify deleted file is not in reloaded cache
+    # Verify the restore kept one file and not the deleted one
+    kept_path = Path(do_manager.email) / "kept_file.txt"
+    assert kept_path in new_cache.file_hashes, (
+        "Kept file should be restored from the saved state"
+    )
     assert expected_path not in new_cache.file_hashes, (
-        "Deleted file should not appear in file_hashes after cache reload"
+        "Deleted file should not appear in file_hashes after the restore"
     )
 
 

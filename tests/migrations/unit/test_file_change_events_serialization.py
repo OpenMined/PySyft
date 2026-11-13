@@ -4,6 +4,8 @@ import base64
 import json
 from uuid import uuid4
 
+import pytest
+
 from syft.migrations import client_registry
 from syft.sync.events.file_change_event import (
     FileChangeEvent,
@@ -12,15 +14,18 @@ from syft.sync.events.file_change_event import (
     FileChangeEventV1,
 )
 from syft.sync.messages.proposed_filechange import ProposedFileChange
-from syft.sync.utils.syftbox_utils import compress_data
+from syft.sync.utils.syftbox_utils import compress_data, get_event_hash_from_content
 
 
 def _make_event(content) -> FileChangeEvent:
+    """A change to ``content``, or a delete when ``content`` is None."""
     return FileChangeEvent(
         id=uuid4(),
         path_in_datasite="data/file.txt",
         datasite_email="do@test.org",
         content=content,
+        new_hash=None if content is None else get_event_hash_from_content(content),
+        is_deleted=content is None,
         submitted_timestamp=1752900000.0,
         timestamp=1752900001.0,
     )
@@ -42,6 +47,22 @@ def test_round_trip_text_binary_and_deletion():
         assert restored.events[0].content == content
         assert restored.events[0].content_type == original.events[0].content_type
         assert restored.message_filepath == original.message_filepath
+
+
+def test_corrupt_binary_content_refused():
+    data = json.loads(_make_event(b"\x00\xff").model_dump_json())
+    data["content"] += "!"
+
+    with pytest.raises(ValueError):
+        FileChangeEvent.model_validate(data)
+
+
+def test_change_without_content_refused():
+    data = json.loads(_make_event("hello").model_dump_json())
+    data["content"] = None
+
+    with pytest.raises(ValueError, match="no content or no hash"):
+        FileChangeEvent.model_validate(data)
 
 
 def test_identity_fields_on_the_wire():

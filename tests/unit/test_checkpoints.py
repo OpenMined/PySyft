@@ -16,11 +16,12 @@ from googleapiclient.errors import HttpError
 from syft.sync.connections.drive.drive_owner_store import DriveOwnerStoreConnection
 from syft.sync.checkpoints.checkpoint import (
     CHECKPOINT_FILENAME_PREFIX,
+    CHECKPOINT_VERSION,
     INCREMENTAL_CHECKPOINT_PREFIX,
     Checkpoint,
     IncrementalCheckpoint,
 )
-from syft.sync.checkpoints.rolling_state import RollingState
+from syft.sync.checkpoints.rolling_state import ROLLING_STATE_VERSION, RollingState
 from syft.sync.connections.drive.gdrive_client import GDriveClient
 from syft.sync.connections.drive.mock_drive_service import (
     http_error,
@@ -484,7 +485,7 @@ def test_compact_with_file_overwrites_across_incrementals():
     # Should have 2 files: file1 (latest version) and file2
     assert len(compacted.files) == 2
     file1 = next(f for f in compacted.files if f.path == "file1.txt")
-    assert file1.content == "modified_v3"
+    assert file1.content == b"modified_v3"
 
 
 def test_compact_with_file_deletions():
@@ -824,8 +825,34 @@ def test_incremental_left_after_compaction_does_not_revert_a_file():
     syncer.event_cache.clear_cache()
     syncer.initial_sync_done = False
     do_manager.sync(auto_checkpoint=False)
-    assert syncer.event_cache.file_connection.read_file("file1.txt") == "v2"
+    assert syncer.event_cache.file_connection.read_file("file1.txt") == b"v2"
 
     compacted = syncer.compact_checkpoints()
     [file1] = [f for f in compacted.files if f.path == "file1.txt"]
-    assert file1.content == "v2"
+    assert file1.content == b"v2"
+
+
+def test_checkpoint_of_later_version_refused():
+    later_version = CHECKPOINT_VERSION + 1
+    checkpoint = Checkpoint(email="do@example.com", version=later_version)
+
+    with pytest.raises(ValueError, match=f"version {later_version}"):
+        Checkpoint.from_compressed_data(checkpoint.as_compressed_data())
+
+
+def test_rolling_state_of_later_version_refused():
+    later_version = ROLLING_STATE_VERSION + 1
+    state = RollingState(
+        email="do@example.com", base_checkpoint_timestamp=0.0, version=later_version
+    )
+
+    with pytest.raises(ValueError, match=f"version {later_version}"):
+        RollingState.from_compressed_data(state.as_compressed_data())
+
+
+def test_checkpoint_with_change_without_content_raises():
+    checkpoint = Checkpoint(email="do@example.com")
+    change = get_mock_event("do@example.com/a.txt").model_copy(update={"content": None})
+
+    with pytest.raises(ValueError, match="no content or no hash"):
+        checkpoint.with_events([change])

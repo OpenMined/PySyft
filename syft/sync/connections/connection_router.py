@@ -575,3 +575,72 @@ class ConnectionRouter(BaseModel):
     def delete_rolling_state(self) -> None:
         """Delete rolling state from the storage backend."""
         self.connections.owner_store_con.delete_rolling_state()
+
+    # =========================================================================
+    # WATCHER STATE (self-encrypted at rest when encryption enabled)
+    # =========================================================================
+
+    def watcher_save_checkpoint(self, peer_email: str, checkpoint: Checkpoint) -> None:
+        """Save the files received from ``peer_email``; it replaces the previous
+        checkpoint."""
+        data = self.peer_store.encrypt_for_self_if_needed(
+            checkpoint.as_compressed_data()
+        )
+        self.connections.watcher_store_con.put_checkpoint(peer_email, data)
+
+    def watcher_load_checkpoint(self, peer_email: str) -> Checkpoint | None:
+        """The saved checkpoint of ``peer_email``, or None if there is none.
+
+        Raises:
+            ValueError: if this DS key cannot decrypt it, or a later client
+                saved it.
+        """
+        data = self.connections.watcher_store_con.get_checkpoint(peer_email)
+        if data is None:
+            return None
+        return Checkpoint.from_compressed_data(
+            self._decrypt_watcher_state(data, "checkpoint", peer_email)
+        )
+
+    def watcher_save_rolling_state(
+        self, peer_email: str, rolling_state: RollingState
+    ) -> None:
+        """Save the changes received from ``peer_email`` since its checkpoint,
+        and the ids of the messages received; it replaces the previous rolling
+        state."""
+        data = self.peer_store.encrypt_for_self_if_needed(
+            rolling_state.as_compressed_data()
+        )
+        self.connections.watcher_store_con.put_rolling_state(peer_email, data)
+
+    def watcher_load_rolling_state(self, peer_email: str) -> RollingState | None:
+        """The saved rolling state of ``peer_email``, or None if there is none.
+
+        Raises:
+            ValueError: if this DS key cannot decrypt it, or a later client
+                saved it.
+        """
+        data = self.connections.watcher_store_con.get_rolling_state(peer_email)
+        if data is None:
+            return None
+        return RollingState.from_compressed_data(
+            self._decrypt_watcher_state(data, "rolling state", peer_email)
+        )
+
+    def watcher_peers_with_saved_state(self) -> list[str]:
+        """The DOs whose checkpoint or rolling state the DS saved."""
+        return self.connections.watcher_store_con.peers_with_saved_state()
+
+    def _decrypt_watcher_state(self, data: bytes, kind: str, peer_email: str) -> bytes:
+        """``data`` decrypted with this DS key. ``kind`` names the state in errors.
+
+        Raises:
+            ValueError: if this DS key cannot decrypt it.
+        """
+        try:
+            return self.peer_store.decrypt_and_verify_for_self_if_needed(data)
+        except ValueError as e:
+            raise ValueError(
+                f"This DS key cannot decrypt the {kind} of {peer_email}. Log in "
+                "with the key_file of the key that saved it."
+            ) from e
