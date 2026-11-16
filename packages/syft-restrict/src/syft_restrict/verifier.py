@@ -141,7 +141,7 @@ ViolationCode = Literal[
     "dunder-def",  # _check_def (defining a magic/hook method)
     "class-keyword",  # _check_class (metaclass= or other class keyword arg)
     "class-base",  # _check_class (non-allow-listed base class)
-    "reserved-name",  # _check_name, _check_arguments_dont_abuse_self_or_cls, _check_reserved_name
+    "reserved-name",  # _check_name, _check_arguments_dont_abuse_self_or_cls, _check_reserved_name, _check_attribute
     "banned-name",  # _check_call (banned bare call) / _check_name (any other Load reference)
     "call-not-allowed",  # _check_call, _check_call_attribute
     "call-unresolved",  # _check_call (bare-name/value call not traceable to a safe source)
@@ -732,6 +732,7 @@ class _Checker:
         - a dunder attribute read (x.__class__, obj.__dict__)
         - a self-rooted chain deeper than a single self.<name>/cls.<name> level (self.a.b)
         - a non-allow-listed library path (np.dot when only jax.* is allowed)
+        - a store into a library path (jax.nn.relu = g)
         - an attribute read on an opaque value (x.shape, x.T, x.ndim)
         """
         if id(node) in self._checked_call_targets:
@@ -762,6 +763,13 @@ class _Checker:
                 return
             # a non-self dotted path: must resolve to an allow-listed import
             if root in self.scan.import_bindings:
+                if not isinstance(node.ctx, ast.Load):
+                    self.report(
+                        node,
+                        "reserved-name",
+                        f"{self._resolve(path)!r} is a library path and may not be rebound",
+                    )
+                    return
                 if not self._resolved_allowed(path):
                     self.report(
                         node,

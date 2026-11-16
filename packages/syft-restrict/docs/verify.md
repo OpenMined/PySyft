@@ -152,8 +152,9 @@ the rules. The verifier checks each piece independently.
 
 Assignments are allowed, but the target and the value are still checked:
 reassigning a reserved name (`self`, an import alias, a public wrapper) or
-assigning to an attribute on an opaque value (`obj.x = ...`) is rejected, and
-the value is checked like any other expression.
+assigning to an attribute on an opaque value (`obj.x = ...`) or on a library
+path (`jnp.sin = f`) is rejected, and the value is checked like any other
+expression.
 
 | Category          | Examples                                                   |
 | ----------------- | ---------------------------------------------------------- |

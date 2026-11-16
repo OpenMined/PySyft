@@ -264,6 +264,19 @@ def test_importlib_import_module_bypass(verify_all):
     _assert_error_code(verify_all, src, "call-not-allowed", private=[[3, 4]])
 
 
+def test_store_into_library_path_bypass(verify_all):
+    # The store replaces jax.nn.relu for the whole process, so the call runs g, a parameter
+    # that the private code may not call directly.
+    src = """
+    import jax
+
+    def run(g, x):
+        jax.nn.relu = g
+        return jax.nn.relu(x)
+    """
+    _assert_error_code(verify_all, src, "reserved-name", private=[[3, 5]])
+
+
 # ── homoglyphs ───────────────────────────────────────────────────────────────
 
 

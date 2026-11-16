@@ -210,6 +210,7 @@ Rebinding a name the checker trusts reports **`reserved-name`**.
 | Reserved             | Example rebind                                | Why                                    |
 | -------------------- | --------------------------------------------- | -------------------------------------- |
 | Import aliases       | `jnp = make_evil()`                           | Would lie about resolved library paths |
+| Library paths        | `jax.nn.relu = g`                             | Replaces the function for the process  |
 | Public wrappers      | nested `def transpose` shadowing a public one | Defeats the reviewed wrapper           |
 | Private defs/classes | `helper = evil` after `def helper`            | Bare calls trust the def by name       |
 | Safe builtins        | `list = None`                                 | Bare calls trust `list(...)` by name   |
