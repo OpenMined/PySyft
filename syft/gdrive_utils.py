@@ -281,14 +281,24 @@ def _download_folder(
     target.mkdir(parents=True, exist_ok=True)
 
     query = f"'{folder_id}' in parents and trashed=false"
-    results = execute_with_retries(
-        service.files().list(q=query, fields="files(id,name,mimeType)")
-    )
+    page_token = None
+    while True:
+        results = execute_with_retries(
+            service.files().list(
+                q=query,
+                fields="files(id,name,mimeType),nextPageToken",
+                pageToken=page_token,
+            )
+        )
 
-    for f in results.get("files", []):
-        if f["mimeType"] == GOOGLE_FOLDER_MIME_TYPE:
-            continue
-        _download_single_file(service, f["id"], target / f["name"], f["name"])
+        for f in results.get("files", []):
+            if f["mimeType"] == GOOGLE_FOLDER_MIME_TYPE:
+                continue
+            _download_single_file(service, f["id"], target / f["name"], f["name"])
+
+        page_token = results.get("nextPageToken")
+        if not page_token:
+            break
 
     return target
 
