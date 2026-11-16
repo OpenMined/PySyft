@@ -192,7 +192,33 @@ def test_bare_name_import_bypass(verify_all):
     def run():
         system('id')
     """
-    _assert_error_code(verify_all, src, "call-not-allowed", private=[[3, 4]])
+    _assert_error_code(
+        verify_all, src, "call-not-allowed", private=[[3, 4]], strict=True
+    )
+
+
+def test_bare_name_import_as_value_bypass(verify_all):
+    # A bare import used as a value reaches the library as a call does: sorted() calls its key.
+    src = """
+    from os import system
+
+    def run(cmd):
+        return sorted([cmd], key=system)
+    """
+    _assert_error_code(
+        verify_all, src, "attr-not-allowed", private=[[3, 4]], strict=True
+    )
+
+
+def test_call_in_annotation_is_checked(verify_all):
+    # Python evaluates annotations, so sorted() calls system('id') when the def runs.
+    src = """
+    from os import system
+
+    def run(x: sorted(['id'], key=system)):
+        return x
+    """
+    _assert_error_code(verify_all, src, "attr-not-allowed", private=[[3, 4]])
 
 
 def test_bare_name_disallowed_leaf_bypass(verify_all):
@@ -710,6 +736,21 @@ def test_dunder_call_and_read_positions_are_consistent(verify_all):
     assert "dunder-attr" in get_error_codes(
         verify_all(read_then_call, private=[[2, 4]])
     )
+
+
+def test_dunder_in_imported_path_is_not_allowed(verify_all):
+    # A dunder in the import itself reaches what `jax.__builtins__` reaches. A broad `jax.*`
+    # glob must not allow it as a callee or as a value.
+    src = """
+    from jax import __builtins__ as b
+    from jax import __getattr__ as g
+
+    def run(src):
+        a = g(src)
+        return sorted([src], key=b['exec'])
+    """
+    result = verify_all(src, private=[[4, 6]])
+    assert {v.line for v in result.violations} == {5, 6}
 
 
 # ── multi-segment `import a.b` must not poison path resolution / defeat the floor ────────────

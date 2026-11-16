@@ -119,8 +119,9 @@ reach:
   region is rejected as `banned-construct`.
 - **The private region's _use_ of an import is what's gated.** A private call
   like `jnp.einsum(...)` resolves through the public import table and must match
-  `allow_functions` (see below); otherwise it fails. So the control point is the
-  private-side call, not the public import.
+  `allow_functions` (see below); otherwise it fails. An imported name used as a
+  value, such as `key=system`, must match too. So the control point is the
+  private-side use, not the public import.
 
 Star imports (`from jax import *`) are disallowed everywhere, because they make
 it impossible to review the imported names.
@@ -361,7 +362,7 @@ r = jnp.einsum("ij,jk->ik", a, b)
 ```
 
 ```python
-# annotations may mention banned type names; they are not executed
+# annotations may mention banned type names; an annotation with a call is checked
 def f(x: list[str]) -> dict[str, bytes]:
     return {}
 ```

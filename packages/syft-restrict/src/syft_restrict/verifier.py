@@ -148,7 +148,7 @@ ViolationCode = Literal[
     "dunder-attr",  # _check_call_attribute, _check_attribute
     "attr-on-value",  # _check_call_attribute, _check_self_subscript_call, _check_attribute
     "method-on-value",  # _check_call_attribute
-    "attr-not-allowed",  # _check_attribute
+    "attr-not-allowed",  # _check_attribute, _check_name
     "dunder-name",  # _check_name
     "operator-disabled",  # _require_bundle
     "duplicate-method",  # _forbid_duplicate_methods
@@ -191,7 +191,7 @@ def verify(source: str, private, policy: Policy) -> VerifyResult:
 #   dynamic-code / reflection builtins   -> _check_call, _check_name
 #   IO / host-escape statements          -> _BANNED_NODES (in _enforce)
 #   unknown / future syntax              -> _ALLOWED_NODES default-deny (in _enforce)
-#   library call/attr by name            -> _check_call_attribute, _check_attribute (resolver + allow/disallow)
+#   library call/attr by name            -> _check_call_attribute, _check_attribute, _check_name (resolver + allow/disallow)
 #   named method / attr on opaque value  -> _check_call_attribute, _check_attribute
 #   f-strings (any shape)                -> _BANNED_NODES (in _enforce)
 #   forged self/cls trust                -> _check_arguments_dont_abuse_self_or_cls, _check_name
@@ -223,6 +223,9 @@ class _Checker:
 
         # nodes inside a type annotation (never invoked), exempt from name/container checks
         self._annotation_nodes: set[int] = set()
+
+        # names that start a dotted path (`jnp` in `jnp.einsum`); the attribute checks judge the path
+        self._path_roots: set[int] = set()
 
         # per-scope locals provably safe to call. see _track_safe_local /
         # _is_safe_local_source. Starts with one frame already present because Module itself never
@@ -292,6 +295,8 @@ class _Checker:
             self._scope_stack.append(node)
             self._safe_locals_stack.append({})
         self._mark_annotation_subtrees(node)
+        if isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name):
+            self._path_roots.add(id(node.value))
 
         # recurse to children, which may be outside the private ranges
         for child in ast.iter_child_nodes(node):
@@ -359,14 +364,16 @@ class _Checker:
 
     def _mark_annotation_subtrees(self, node: ast.AST) -> None:
         # a type annotation (`x: str`, `x: list[str]`, `def f() -> dict[str,
-        # bytes]`) is never invoked, so it can hold a name that is banned in a
-        # real reference.
+        # bytes]`) only names types, so it can hold a name that is banned in a
+        # real reference. Python evaluates annotations, so one that holds a call
+        # is checked like any other expression.
         for ann in (getattr(node, "annotation", None), getattr(node, "returns", None)):
             if ann is not None:
                 # Mark the WHOLE subtree, not just its top node: generics nest the
                 # type names one or more levels down
-                for descendant in ast.walk(ann):
-                    self._annotation_nodes.add(id(descendant))
+                subtree = list(ast.walk(ann))
+                if not any(isinstance(n, ast.Call) for n in subtree):
+                    self._annotation_nodes.update(id(n) for n in subtree)
 
     def _enforce(self, node: ast.AST) -> None:
         """Run the one check that applies to this node type (recursion is
@@ -571,6 +578,7 @@ class _Checker:
                 self._checked_call_targets.add(id(func))
                 return
             if func.id in self.scan.import_bindings:
+                self._checked_call_targets.add(id(func))
                 # resolves through the same import-binding table as a dotted call
                 if not self._resolved_allowed(func.id):
                     self.report(
@@ -778,6 +786,7 @@ class _Checker:
         - rebinding a reserved name
         - loading a banned builtin (`open`, `eval`, `exec`, ...)
         - loading a bare dunder name (`__class__`, `__dict__`, ...)
+        - loading an import alias whose path is not allow-listed (`key=system`)
         """
         if isinstance(node.ctx, ast.Store):
             # self/cls itself: always denied, never delegated to _check_reserved_name
@@ -815,6 +824,19 @@ class _Checker:
                 node,
                 "dunder-name",
                 f"reference to dunder name {node.id!r} is not allowed",
+            )
+
+        # an import alias used as a value (`key=system`) gives the library path to whatever calls it
+        elif (
+            node.id in self.scan.import_bindings
+            and id(node) not in self._path_roots
+            and id(node) not in self._annotation_nodes
+            and not self._resolved_allowed(node.id)
+        ):
+            self.report(
+                node,
+                "attr-not-allowed",
+                f"reference to {self._resolve(node.id)!r} is not allow-listed",
             )
 
     # ── operators ────────────────────────────────────────────────────────────────────────────
@@ -977,8 +999,12 @@ class _Checker:
 
     def _resolved_allowed(self, path: str) -> bool:
         """Resolve an import alias, then apply the policy allow-list (disallow
-        beats allow)."""
-        return self.policy.function_allowed(self._resolve(path))
+        beats allow). A path with a dunder segment is never allowed."""
+        resolved = self._resolve(path)
+        # the import itself can hold the dunder (`from jax import __builtins__ as b`)
+        if any(is_dunder(part) for part in resolved.split(".")):
+            return False
+        return self.policy.function_allowed(resolved)
 
 
 def _iter_bound_local_names(target: ast.AST):
