@@ -91,6 +91,7 @@ def _digest(
     submission_dir: Path,
     entries: Optional[frozenset[str]],
     skip: frozenset[str] = frozenset(),
+    normalize_newlines: bool = False,
 ) -> str:
     digest = hashlib.sha256()
     # Sort on the posix string: WindowsPath sorts case-insensitively.
@@ -106,15 +107,22 @@ def _digest(
         key=lambda path: path.relative_to(submission_dir).as_posix(),
     )
     for path in files:
-        digest.update(path.relative_to(submission_dir).as_posix().encode())
+        content = path.read_bytes()
+        if normalize_newlines:
+            content = content.replace(b"\r\n", b"\n")
+        digest.update(path.relative_to(submission_dir).as_posix().encode("utf-8"))
         digest.update(b"\0")
-        digest.update(hashlib.sha256(path.read_bytes()).digest())
+        digest.update(hashlib.sha256(content).digest())
     return digest.hexdigest()
 
 
 def code_hash(submission_dir: Path) -> str:
-    """SHA-256 over run.sh and code/: the hash the submitter declares."""
-    return _digest(submission_dir, CODE_ENTRIES)
+    """SHA-256 over run.sh and code/: the hash the submitter declares.
+
+    Line endings fold to LF, so a hash declared on a CRLF checkout still
+    matches the LF copy the data owner hashes.
+    """
+    return _digest(submission_dir, CODE_ENTRIES, normalize_newlines=True)
 
 
 def request_hash(request_dir: Path) -> str:
