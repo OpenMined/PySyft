@@ -469,6 +469,8 @@ class SyftEnclaveClient:
         # receipt is written, so results and receipt arrive together instead
         # of the receipt a sync later.
         self._rds.process_approved_jobs(
+            # Not container stdout: the platform can forward it to the VM operator.
+            stream_output=False,
             force_execution=True,
             share_logs_with_submitter=False,
             share_outputs_with_submitter=self.receipts is None,
