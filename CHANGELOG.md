@@ -9,6 +9,9 @@
   collection variant, and the frozen release artifacts and fixtures of earlier
   releases. Jobs now live under `v0/` and dataset collections use the `v0`
   variant.
+- **Protocol 0 stays open until 1.0.0.** Releases freeze no protocol and write
+  no release artifacts or fixtures, so a change to a version-0 object needs no
+  new version. The scripts that froze them are removed until then.
 - **No compatibility with earlier releases.** This release reads no file and
   no peer that a release up to 0.10.1 wrote. Such a peer is refused with a
   clear reason. At login, a SyftBox written by an earlier release offers a

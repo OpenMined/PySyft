@@ -132,11 +132,7 @@ Two checks find a mistake:
 - `protocol_bump_missing()` — the protocol changed after the newest released protocol, but the constant is the same.
 - `protocol_changed_without_bump()` — the protocol changed against the released artifact for the current constant.
 
-Each package runs both checks in its own export script, and the script then stops the release:
-
-- `scripts/export_release_artifact.py` for `syft`
-- `packages/syft-job/scripts/export_release_artifact.py` for `syft-job`
-- `packages/syft-datasets/scripts/export_release_artifact.py` for `syft-dataset`
+Before 1.0.0 neither check can fail: no protocol is released, so there is no artifact to compare against ("Release artifacts" in `docs/release.md`). From 1.0.0 on, each package's export script runs both checks before the release, and stops the release on a mistake.
 
 Both checks compare object versions only. A change to the layout that adds no object version is invisible to both checks. Therefore bump the constant by hand for a path change or a folder rename.
 
