@@ -2,9 +2,13 @@
 
 from abc import ABC, abstractmethod
 from collections.abc import Awaitable, Callable
+from typing import Any
 
 # (sender email, offer sdp) -> answer sdp
 OnOffer = Callable[[str, str], Awaitable[str]]
+# Each item is an RTCIceServer as JSON: "urls", and "username" and
+# "credential" for a TURN server.
+IceServers = list[dict[str, Any]]
 
 
 class Signaling(ABC):
