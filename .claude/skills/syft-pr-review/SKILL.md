@@ -73,6 +73,13 @@ Flows come first, because they are why the reader opened the document.
 
 <2-4 plain sentences: what this PR does and why.>
 
+**Guidelines, high level:** 🟢 Split · 🟠 Size — <why, e.g. two unrelated changes; split X from Y>
+
+**Guidelines, mid level:** 🟢 User-facing code · 🔴 Error handling — <why> (5.1) · 🟢 State versioning ·
+🟢 Function structure · 🟢 Tests
+
+**Guidelines, low level:** 🟢 Naming · 🟢 Code style
+
 > Read time ~<n> min. Not read: <what, with counts>.
 
 ---
@@ -122,25 +129,24 @@ Number the sections that survive in order. The comments section is always last, 
 
 ### What counts as a code-standards problem
 
+The standards are in `dev-guidelines/guidelines.md`. Read it before you write this section, and flag
+new code that breaks one of its rules.
+
 Judge only the lines this PR touched. Do not review the code around them, and do not turn this into
 a second review. Name the file and the `Class.method()` or `file.py: function()`, keep each to one
-line, and write nothing when there is nothing wrong. Look for:
-
-- a function or method you have to scroll to read; aim for 30 lines, and allow more only when it
-  calls nothing else. Test functions are exempt — a long test is normal, so never flag one for
-  length
-- a method that calls out and then works on the answer inline — `ab = Y.Z()` followed by logic on
-  `ab` belongs in its own helper
-- string building that is not an f-string
-- a repeated or magic value that belongs in a module-level constant
-- two functions or methods that do substantially the same work; one of them belongs, called from
-  both places. Name the pair and what they share. Let a repeated line or two go — the copy has to be
-  big enough that pulling it out is worth a helper
-- an import inside a function; fine only to break a circular import, and worth one short note
-- a name that does not say what the thing is, or pads a name that does. Length is free when every
-  word earns it, so drop articles and filler. Say it as a plain sentence and stop there:
-  `test_no_hint_when_the_do_owns_none_of_the_jobs() violates the no-filler rule, rename to
+line, and write nothing when there is nothing wrong. For two functions that do the same work, name
+the pair and what they share. An import inside a function that breaks a circular import is allowed,
+but still gets one short note. Say a naming problem as a plain sentence and stop there:
+`test_no_hint_when_the_do_owns_none_of_the_jobs() violates the no-filler rule, rename to
 test_no_hint_when_do_owns_no_jobs()`
+
+### The guidelines in the summary
+
+Under the summary sentences, rate the PR against `dev-guidelines/guidelines.md` in three short
+paragraphs, one per level. They are plain text, not checkboxes. Give each guideline 🟢 when the
+PR follows it, 🟠 when it partly does, and 🔴 when it breaks it. After a 🟠 or 🔴, say why in a few
+words and point to its bullet in the Code standards section by number, when it has one. Rate Split and Size against the High level
+section, and the others against the Mid level and Low level sections of the same names.
 
 ## Rules
 

@@ -121,12 +121,8 @@ class StderrViewer:
             </div>
             """
 
-        html_content = self._convert_ansi_to_html(raw_content)
-        html_content = (
-            html_content.replace("&", "&amp;")
-            .replace('"', "&quot;")
-            .replace("'", "&#x27;")
-        )
+        # Escape the job output first, then convert ANSI codes to HTML spans.
+        html_content = self._convert_ansi_to_html(escape(raw_content))
 
         clean_content = self._strip_ansi_codes(raw_content)
         lines = clean_content.split("\n")
