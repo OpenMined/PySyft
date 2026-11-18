@@ -7,10 +7,10 @@ from collections.abc import Awaitable, Callable
 import pytest
 from websockets.asyncio.client import ClientConnection, connect
 from websockets.exceptions import ConnectionClosed
+from websockets.frames import CloseCode
 
 from syft.sync.connections.webrtc.signaling.server import (
-    POLICY_VIOLATION,
-    REPLACED,
+    REPLACED_CLOSE_CODE,
     SignalingServer,
     SignalingServerConfig,
 )
@@ -81,17 +81,17 @@ def test_hello_with_wrong_key_is_refused():
                 "type": "error",
                 "reason": "The access key is wrong",
             }
-            assert await close_code(client) == POLICY_VIOLATION
+            assert await close_code(client) == CloseCode.POLICY_VIOLATION
 
     run_with_server(scenario)
 
 
-def test_message_that_is_not_json_closes_connection():
+def test_non_json_message_closes_connection():
     async def scenario(url: str) -> None:
         async with connect(url) as client:
             await client.send("not json")
             assert (await receive(client))["type"] == "error"
-            assert await close_code(client) == POLICY_VIOLATION
+            assert await close_code(client) == CloseCode.POLICY_VIOLATION
 
     run_with_server(scenario)
 
@@ -153,7 +153,7 @@ def test_second_sign_in_replaces_first():
         a = await sign_in(url, A)
         first = await sign_in(url, B)
         second = await sign_in(url, B)
-        assert await close_code(first) == REPLACED
+        assert await close_code(first) == REPLACED_CLOSE_CODE
 
         await a.send(json.dumps({"type": "offer", "to": B, "id": "1", "sdp": "o"}))
         assert (await receive(second))["type"] == "offer"

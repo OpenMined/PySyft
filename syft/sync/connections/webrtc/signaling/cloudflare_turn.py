@@ -43,9 +43,9 @@ class CloudflareIceServers:
         self._config = config
 
     async def __call__(self) -> IceServers:
-        return pick_ice_servers(await asyncio.to_thread(self._generate))
+        return pick_ice_servers(await asyncio.to_thread(self._request_ice_servers))
 
-    def _generate(self) -> dict:
+    def _request_ice_servers(self) -> dict:
         request = urllib.request.Request(
             GENERATE_URL.format(key_id=self._config.key_id),
             data=json.dumps({"ttl": self._config.ttl_seconds}).encode(),
@@ -63,8 +63,15 @@ class CloudflareIceServers:
 
 
 def pick_ice_servers(response: dict) -> IceServers:
-    """The first STUN URL and ``TURN_URL`` with its credentials, from a
-    generate-ice-servers response."""
+    """Pick the first STUN URL, and ``TURN_URL`` with its credentials.
+
+    Args:
+        response: A response from Cloudflare's generate-ice-servers endpoint.
+
+    Raises:
+        ValueError: The response does not have exactly one STUN server and one
+            TURN server, or the TURN server does not have ``TURN_URL``.
+    """
     [stun] = [server for server in response["iceServers"] if "username" not in server]
     [turn] = [server for server in response["iceServers"] if "username" in server]
     if TURN_URL not in turn["urls"]:

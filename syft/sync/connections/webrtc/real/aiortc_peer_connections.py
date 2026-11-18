@@ -33,21 +33,23 @@ LOCAL_ONLY = RTCConfiguration(iceServers=[])
 # that arrives, aiortc's InboundStream.pop_messages scans all earlier fragments of
 # the message. Therefore the receive time grows with the square of the message size.
 MAX_MESSAGE_BYTES = RTCSctpTransport.getCapabilities().maxMessageSize
-# The first byte of each chunk. MORE: more chunks of the frame follow.
-# LAST: this chunk is the last chunk of the frame.
-MORE = b"\x00"
-LAST = b"\x01"
-CHUNK_PAYLOAD_BYTES = MAX_MESSAGE_BYTES - len(LAST)
+# The first byte of each chunk tells whether more chunks of the frame follow.
+MORE_CHUNKS = b"\x00"
+LAST_CHUNK = b"\x01"
+CHUNK_PAYLOAD_BYTES = MAX_MESSAGE_BYTES - len(LAST_CHUNK)
 
 
-def frame_chunks(frame: bytes) -> list[bytes]:
+def split_frame_into_chunks(frame: bytes) -> list[bytes]:
     """Split ``frame`` into chunks of at most ``MAX_MESSAGE_BYTES`` each.
 
-    The last chunk starts with ``LAST``, and each other chunk starts with
-    ``MORE``. An empty frame gives one chunk that holds only ``LAST``."""
+    Returns:
+        The chunks in order. The last chunk starts with ``LAST_CHUNK``, and
+        each other chunk starts with ``MORE_CHUNKS``. An empty frame gives one
+        chunk that holds only ``LAST_CHUNK``.
+    """
     count = max(1, math.ceil(len(frame) / CHUNK_PAYLOAD_BYTES))
     return [
-        (LAST if i == count - 1 else MORE)
+        (LAST_CHUNK if i == count - 1 else MORE_CHUNKS)
         + frame[i * CHUNK_PAYLOAD_BYTES : (i + 1) * CHUNK_PAYLOAD_BYTES]
         for i in range(count)
     ]
@@ -58,8 +60,9 @@ class AiortcPeerConnections(PeerConnections):
     loop thread that runs them. ``on_open`` and ``on_frame`` run on that
     thread.
 
-    A frame can have any size. ``frame_chunks`` splits it into chunks of at
-    most ``MAX_MESSAGE_BYTES``, and the peer joins the chunks again."""
+    A frame can have any size. ``split_frame_into_chunks`` splits it into
+    chunks of at most ``MAX_MESSAGE_BYTES``, and the peer joins the chunks
+    again."""
 
     def __init__(self, signaling: Signaling):
         self.signaling = signaling
@@ -113,7 +116,7 @@ class AiortcPeerConnections(PeerConnections):
         if channel is not None and channel.readyState == "open":
             # The channel is ordered, and this call sends all chunks of the
             # frame. Therefore the chunks of two frames do not mix.
-            for chunk in frame_chunks(frame):
+            for chunk in split_frame_into_chunks(frame):
                 channel.send(chunk)
 
     async def _connect(self, peer: str) -> None:
@@ -161,16 +164,22 @@ class AiortcPeerConnections(PeerConnections):
         channel.on("message", lambda chunk: self._handle_chunk(peer, chunk))
 
     def _handle_chunk(self, peer: str, chunk: bytes) -> None:
-        """Add ``chunk`` to the incomplete frame of ``peer``. After the last
-        chunk, give the complete frame to ``on_frame``."""
+        """Add ``chunk`` to the incomplete frame of ``peer``.
+
+        After the last chunk, give the complete frame to ``on_frame``.
+
+        Raises:
+            ValueError: ``chunk`` starts with neither ``MORE_CHUNKS`` nor
+                ``LAST_CHUNK``.
+        """
         flag, payload = chunk[:1], chunk[1:]
-        if flag not in (MORE, LAST):
+        if flag not in (MORE_CHUNKS, LAST_CHUNK):
             raise ValueError(
-                f"A chunk from {peer} must start with {MORE!r} or {LAST!r}, "
-                f"but it starts with {flag!r}"
+                f"A chunk from {peer} must start with {MORE_CHUNKS!r} or "
+                f"{LAST_CHUNK!r}, but it starts with {flag!r}"
             )
         self._partial_frames[peer] += payload
-        if flag == LAST:
+        if flag == LAST_CHUNK:
             frame = bytes(self._partial_frames[peer])
             self._partial_frames[peer] = bytearray()
             self._handle_frame(peer, frame)
