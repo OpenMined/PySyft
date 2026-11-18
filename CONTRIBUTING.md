@@ -110,11 +110,8 @@ git checkout -b fix/bug-description
 
 ### 2. Make Your Changes
 
-- Write clean, readable code
-- Follow existing code style and patterns
-- Keep functions focused and simple (complexity ≤ 10)
-- Add type hints to new functions
-- Update docstrings for modified functions
+Follow [`dev-guidelines/guidelines.md`](dev-guidelines/guidelines.md): code style, testing, and
+Drive API calls.
 
 ### 3. Run Quality Checks
 
@@ -154,10 +151,40 @@ git commit --no-verify -m "Description of changes"
 ### 5. Push and Create PR
 
 ```bash
-git push origin feature/your-feature-name
+git push -u origin feature/your-feature-name
 ```
 
-Then create a Pull Request on GitHub.
+Then open a Pull Request against `dev`. **Every PR must follow the
+[pull request format](#pull-request-format) below.**
+
+## Pull Request Format
+
+Every PR must follow this format. Reviewers check it, and the title check blocks the merge when the
+title is wrong.
+
+- **Base branch:** open the PR against `dev`, not `main`.
+- **Before you push:** run `pre-commit run --all-files` until every hook passes.
+- **Title:** `type: short description in lowercase`, for example `fix: handle empty peer list`. The
+  allowed types are `feat`, `fix`, `docs`, `chore`, `refactor`, `test`, `ci`, `perf` and `build`.
+  The table in [`.github/PULL_REQUEST_TEMPLATE.md`](.github/PULL_REQUEST_TEMPLATE.md) says when to
+  use each. The `PR: Lint & Label` check blocks the merge when the title does not match.
+- **Body:** fill in every section of
+  [`.github/PULL_REQUEST_TEMPLATE.md`](.github/PULL_REQUEST_TEMPLATE.md). GitHub puts the template
+  in the PR body for you.
+  - **Summary:** one bullet per use case the PR changes: "When we do X, we previously did Y. Now we
+    do Z." Give each change a user sees its own bullet, and say what changes for the user.
+  - **Guidelines:** rate the PR against [`dev-guidelines/guidelines.md`](dev-guidelines/guidelines.md),
+    one line per guideline: 🟢 follows it, 🟠 partly follows it, 🔴 breaks it. For 🟠 and 🔴, say
+    why in one line. Reviewers check these ratings.
+  - **Security:** how the PR changes the security properties of the system, or "No change."
+  - **Testing:** how you checked that it works.
+  - **Asana task:** the URL of the Asana task for this work.
+- **Writing:** write the description by the rules in
+  [`dev-guidelines/language.md`](dev-guidelines/language.md): simple language, the terms the code
+  already uses, and no assumed context.
+
+With Claude Code, the `open-pr` skill does all of this for you: it runs pre-commit, writes the
+title, and fills in the template.
 
 ## CI/CD Pipeline
 
@@ -178,13 +205,9 @@ These run automatically on every PR via GitHub Actions.
 
 ## Code Style Guidelines
 
-### Python Style
-
-- **Line length**: 88 characters (black default)
-- **Import order**: stdlib → third-party → local (isort with black profile)
-- **Docstrings**: Google style
-- **Type hints**: Use type hints for all public functions
-- **Complexity**: Keep cyclomatic complexity ≤ 10
+The code style, testing and Drive API rules are in
+[`dev-guidelines/guidelines.md`](dev-guidelines/guidelines.md). Claude Code follows the same file,
+and PR reviews check against it.
 
 ### Security Guidelines
 
@@ -195,13 +218,6 @@ These run automatically on every PR via GitHub Actions.
 - **Be cautious with user input** - validate and sanitize
 - **Review AI-generated code** carefully for security issues
 - The `bandit` security scanner will catch common issues
-
-### Naming Conventions
-
-- **Functions/variables**: `snake_case`
-- **Classes**: `PascalCase`
-- **Constants**: `UPPER_SNAKE_CASE`
-- **Private methods**: `_leading_underscore`
 
 ## Testing
 
