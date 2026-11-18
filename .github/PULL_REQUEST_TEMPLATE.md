@@ -1,12 +1,43 @@
 ## Summary
 
-<!-- What does this PR do and why? One or two sentences. -->
-
-## Changes
-
-<!-- Key changes, bulleted. -->
+<!--
+One bullet per use case this PR changes: "When we do X, we previously did Y. Now we do Z."
+If you change something users see directly, add a bullet that says what changes for them:
+"When we call create_dataset, we previously passed X, which caused Y. Now we pass Z, which causes A."
+-->
 
 -
+
+## Guidelines
+
+<!--
+Rate this PR against dev-guidelines/guidelines.md. Keep one colour per line:
+🟢 follows the guideline, 🟠 partly follows it, 🔴 breaks it.
+For 🟠 and 🔴, say why in one line and point to the most important problem.
+Keep it short.
+-->
+
+**High level**
+
+- 🟢 🟠 🔴 Split: <how confident you are that this PR should be split>
+- 🟢 🟠 🔴 Size: <this PR in one sentence; if it is too big, the split you suggest>
+
+**Mid level**
+
+- 🟢 🟠 🔴 User-facing code
+- 🟢 🟠 🔴 Error handling
+- 🟢 🟠 🔴 State versioning
+- 🟢 🟠 🔴 Function structure
+- 🟢 🟠 🔴 Tests
+
+**Low level**
+
+- 🟢 🟠 🔴 Naming
+- 🟢 🟠 🔴 Code style
+
+## Security
+
+<!-- If this PR changes the security properties of the system, summarize how in a few lines. Otherwise write "No change." -->
 
 ## Testing
 
