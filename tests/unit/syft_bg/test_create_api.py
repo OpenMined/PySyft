@@ -24,6 +24,7 @@ from syft_bg.approve.config import AutoApproveConfig
 from syft_bg.approve.handlers.job import ApprovedJobHandler
 from syft_bg.common.config import get_default_paths
 from syft_bg.common.syft_bg_config import SyftBgConfig
+from syft.sync.version import VersionUnknownError
 
 DO_EMAIL = "do@test.com"
 PINNED = ["run.sh", "code/main.py"]
@@ -270,32 +271,61 @@ class TestCreateApi:
             assert list(store.apis_dir.iterdir()) == []
 
 
-class TestApiDisclosures:
-    """A call's approval releases what its api says, set when it was made."""
+class TestApiReadPermissions:
+    """A caller reads the run files its api names, set when it was made."""
 
-    def test_api_releases_nothing_by_default(self, temp_dir):
+    def test_api_shares_outputs_by_default(self, temp_dir):
         with _patched_paths(temp_dir) as store:
             _create(_write_project(temp_dir), allow_any_peer=True)
-            assert store.get("main").disclosures == []
+            assert store.get("main").approved_read_permissions == ["outputs"]
 
-    def test_config_sets_released_items(self, temp_dir):
+    def test_config_sets_readable_files(self, temp_dir):
         with _patched_paths(temp_dir) as store:
             SyftBgConfig(
                 do_email=DO_EMAIL,
                 syftbox_root=temp_dir / "syftbox",
-                approve=AutoApproveConfig(default_disclosures=["logs", "return_code"]),
+                approve=AutoApproveConfig(
+                    default_approved_read_permissions=["stdout.txt", "returncode.txt"]
+                ),
             ).save()
             _create(_write_project(temp_dir), allow_any_peer=True)
-            assert store.get("main").disclosures == ["logs", "return_code"]
+            assert store.get("main").approved_read_permissions == [
+                "outputs",
+                "stdout.txt",
+                "returncode.txt",
+            ]
 
     def test_argument_overrides_config(self, temp_dir):
         with _patched_paths(temp_dir) as store:
-            _create(_write_project(temp_dir), allow_any_peer=True, disclosures=["logs"])
-            assert store.get("main").disclosures == ["logs"]
+            _create(
+                _write_project(temp_dir),
+                allow_any_peer=True,
+                read_permissions=["stdout.txt"],
+            )
+            assert store.get("main").approved_read_permissions == ["stdout.txt"]
+
+    def test_dict_refused(self, temp_dir):
+        with _patched_paths(temp_dir):
+            with pytest.raises(TypeError, match="as a list"):
+                _create(
+                    _write_project(temp_dir),
+                    allow_any_peer=True,
+                    read_permissions={"stdout.txt": ["ds@test.com"]},
+                )
+
+
+def _approved_job(
+    approval_method: str = "api", datasite_owner_email: str = DO_EMAIL
+) -> MagicMock:
+    return MagicMock(
+        status="approved",
+        datasite_owner_email=datasite_owner_email,
+        approval_method=approval_method,
+    )
 
 
 class TestApprovedJobHandler:
-    """The approve service runs what is approved; calls arrive approved."""
+    """The approve service runs api calls; they arrive approved."""
 
     def _handler(
         self, temp_dir: Path, jobs: list
@@ -307,24 +337,33 @@ class TestApprovedJobHandler:
         )
         return handler, client
 
-    def test_runs_approved_jobs_on_own_datasite(self, temp_dir):
-        call = MagicMock(status="approved", datasite_owner_email=DO_EMAIL)
+    def test_runs_api_calls_on_own_datasite(self, temp_dir):
+        call = _approved_job()
         handler, client = self._handler(temp_dir, [call])
 
         assert handler.run_approved_jobs() == [call]
         client.receive_jobs.assert_called_once()
-        client.process_approved_jobs.assert_called_once()
-        assert "share_logs_with_submitter" not in (
-            client.process_approved_jobs.call_args.kwargs
-        )
+        client.run_job.assert_called_once_with(call, stream_output=False)
+        client.sync.assert_called_once()
 
-    def test_runs_nothing_without_approved_jobs(self, temp_dir):
+    def test_runs_nothing_without_approved_api_calls(self, temp_dir):
         pending = MagicMock(status="pending", datasite_owner_email=DO_EMAIL)
-        elsewhere = MagicMock(status="approved", datasite_owner_email="other@test.com")
-        handler, client = self._handler(temp_dir, [pending, elsewhere])
+        elsewhere = _approved_job(datasite_owner_email="other@test.com")
+        by_hand = _approved_job(approval_method="manual")
+        handler, client = self._handler(temp_dir, [pending, elsewhere, by_hand])
 
         assert handler.run_approved_jobs() == []
-        client.process_approved_jobs.assert_not_called()
+        client.run_job.assert_not_called()
+        client.sync.assert_not_called()
+
+    def test_incompatible_submitter_does_not_stop_next_call(self, temp_dir):
+        blocked, call = _approved_job(), _approved_job()
+        handler, client = self._handler(temp_dir, [blocked, call])
+        client.run_job.side_effect = [VersionUnknownError("ds@test.com", "run"), None]
+
+        handler.run_approved_jobs()
+
+        assert [c.args[0] for c in client.run_job.call_args_list] == [blocked, call]
 
 
 class TestJobUserFiles:

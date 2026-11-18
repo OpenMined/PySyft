@@ -183,8 +183,14 @@ SyftBox/
 !.claude/skills/
 .claude/skills/*
 !.claude/skills/syft-pr-review/
+!.claude/skills/syft-pr-quickfix/
+!.claude/skills/syft-pr-quickfix-iterate/
+!.claude/skills/open-pr/
+# The root CLAUDE.md is shared. Nested ones are personal, unless re-included below.
 CLAUDE.md
+!/CLAUDE.md
 !packages/syft-enclave/tinfoil/CLAUDE.md
+CLAUDE.local.md
 
 # CI test outputs
 test_outputs/

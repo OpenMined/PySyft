@@ -19,8 +19,8 @@ class JobRef:
 class RequestRef:
     """One api call on disk, in requests/: who it is for, and who sent it.
 
-    A request becomes a job of the same name in inbox/. That job's folders in
-    review/ and staging/ also hold the request's state while it waits.
+    A request becomes a job of the same name in inbox/. That job's folder in
+    review/ also holds the request's state while it waits.
     """
 
     datasite_email: str  # DO whose datasite holds the request

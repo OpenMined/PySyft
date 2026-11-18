@@ -52,6 +52,19 @@ def test_attribute_read_on_allowlisted_namespace(verify_all):
     assert result.ok, [(v.code, v.message) for v in result.violations]
 
 
+def test_exact_allow_list_accepts_allowed_path_in_any_form(verify_all):
+    """``jnp`` in ``jnp.einsum`` is part of the allowed path, not a reference to ``jax.numpy``."""
+    src = """
+    import jax.numpy as jnp
+    from jax.numpy import einsum
+    r = jnp.einsum('ij,jk->ik', a, b)
+    s = sorted(xs, key=einsum)
+    """
+    pol = make_policy(functions=["jax.numpy.einsum"])
+    result = verify_all(src, pol=pol, private=[[3, 4]])
+    assert result.ok, [(v.code, v.message) for v in result.violations]
+
+
 # ── operator bundles: enabled => allowed ─────────────────────────────────────
 
 

@@ -5,10 +5,8 @@ from typing import Dict, List
 
 from pydantic import BaseModel, Field, PrivateAttr
 
-from syft.sync.connections.base_connection import ConnectionConfig
 from syft.sync.connections.connection_router import ConnectionRouter
 from syft.sync.callback_mixin import BaseModelCallbackMixin
-from syft.sync.events.file_change_event import FileChangeEventsMessage
 from syft.sync.peers.exceptions import SyftPeerNotReadyError
 from syft.sync.messages.proposed_filechange import (
     ProposedFileChange,
@@ -23,7 +21,6 @@ from syft.sync.sync.caches.datasite_watcher_cache import (
 class DatasiteWatcherSyncerConfig(BaseModel):
     syftbox_folder: Path | None = None
     email: str | None = None
-    connection_configs: List[ConnectionConfig] = []
     datasite_watcher_cache_config: DataSiteWatcherCacheConfig = Field(
         default_factory=DataSiteWatcherCacheConfig
     )
@@ -46,22 +43,29 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
     )
 
     @classmethod
-    def from_config(cls, config: DatasiteWatcherSyncerConfig):
+    def from_config(
+        cls, config: DatasiteWatcherSyncerConfig, connection_router: ConnectionRouter
+    ):
+        """``config`` holds plain values only. ``connection_router`` is live and
+        shared with the other parts of the manager, so the caller builds it
+        once and passes it in next to the config (see
+        ``SyftboxManager.from_config``)."""
         return cls(
             syftbox_folder=config.syftbox_folder,
             email=config.email,
-            connection_router=ConnectionRouter.from_configs(
-                config.email, config.connection_configs
-            ),
+            connection_router=connection_router,
             datasite_watcher_cache=DataSiteWatcherCache.from_config(
-                config.datasite_watcher_cache_config
+                config.datasite_watcher_cache_config, connection_router
             ),
         )
 
     # --- Pushing proposed file changes ---
 
     def get_proposed_file_change_object(
-        self, relative_path: Path, content: str, datasite_email: str | None = None
+        self,
+        relative_path: Path,
+        content: str | bytes,
+        datasite_email: str | None = None,
     ) -> ProposedFileChange:
         if datasite_email is None:
             datasite_email = self.email
@@ -82,8 +86,12 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
 
             # for in memory connection we pass content directly
             if content is None:
-                with open(self.syftbox_folder / relative_path, "r") as f:
-                    content = f.read()
+                raw = (self.syftbox_folder / relative_path).read_bytes()
+                # A text file goes as text, any other file as bytes.
+                try:
+                    content = raw.decode("utf-8")
+                except UnicodeDecodeError:
+                    content = raw
 
             datasite_email = relative_path.parts[0]
             path_in_datasite = (
@@ -151,7 +159,10 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
         self._record_sent_hashes(message)
 
     def on_file_change(
-        self, relative_path: Path | str, content: str | None = None, process_now=True
+        self,
+        relative_path: Path | str,
+        content: str | bytes | None = None,
+        process_now=True,
     ):
         relative_path = Path(relative_path)
         self.queue.put((relative_path, content))
@@ -160,24 +171,14 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
 
     # --- Pulling from datasite outboxes ---
 
-    def download_events_message_with_new_connection(
-        self, file_id: str, peer_email: str
-    ) -> FileChangeEventsMessage | None:
-        """Download from outbox using a new connection (thread-safe).
-
-        Returns None when the message is skipped (see
-        ``ConnectionRouter.watcher_read_events_message``).
-        """
-        connection = self.connection_router.connection_for_parallel_download()
-        raw = connection.download_file(file_id)
-        return self.connection_router.watcher_read_events_message(peer_email, raw)
-
     def download_collection_file_with_new_connection(
         self, file_id: str, owner_email: str
     ) -> bytes:
         """Download collection file using a new connection (thread-safe)."""
-        connection = self.connection_router.connection_for_parallel_download()
-        data = connection.watcher_download_collection_file(file_id)
+        collections = (
+            self.connection_router.connections.collections_con.clone_for_thread()
+        )
+        data = collections.fetch_file(file_id)
         data = self.connection_router.peer_store.decrypt_dataset_if_needed(
             owner_email, data
         )
@@ -185,15 +186,7 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
 
     def sync_down(self, peer_emails: list[str]):
         for peer_email in peer_emails:
-            # Sync messages with parallel download
-            event_count = self.datasite_watcher_cache.sync_down_parallel(
-                peer_email,
-                self._executor,
-                lambda fid,
-                pe=peer_email: self.download_events_message_with_new_connection(
-                    fid, pe
-                ),
-            )
+            event_count = self.datasite_watcher_cache.sync_down(peer_email)
             if event_count:
                 print(f"Pulled {event_count} inbound event(s) from {peer_email}")
             # Sync collections with parallel download

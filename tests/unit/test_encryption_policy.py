@@ -11,6 +11,8 @@ from pydantic import ValidationError
 
 from syft.sync.connections.connection_router import ConnectionRouter
 from syft.sync.connections.drive import mock_drive_service
+from syft.sync.connections.drive.drive_peering import DrivePeeringConnection
+from syft.sync.connections.types import MessageKind
 from syft.sync.encryption_policy import (
     EncryptionPolicy,
     EncryptionPolicyMismatchError,
@@ -22,11 +24,13 @@ from syft.sync.events.file_change_event import (
 from syft.sync.peers.exceptions import SyftPeerNotReadyError
 from syft.sync.peers.peer import Peer
 from syft.sync.peers.peer_store import (
+    DATASITE_SETTINGS_VERSION,
     PeerStore,
     datasite_settings_path,
     resolve_encryption_policy,
 )
 from syft.sync.syftbox_manager import SyftboxManager
+from syft.sync.sync.datasite_owner_syncer import OutgoingMessage
 from syft.sync.version.peer_info import PeerInfo
 from syft.sync.version.peer_manager import PeerManager, PeerManagerConfig
 from syft.sync.version.version_info import VersionInfo
@@ -72,13 +76,11 @@ def _keyed_pair(
 
 
 def _raw_inbox_message(do_manager, sender_email: str) -> bytes:
-    connection = do_manager.datasite_owner_syncer.connection_router
-    raw, _ = (
-        connection.connection_for_receive_message().owner_download_next_raw_proposed_message_from_inbox(
-            sender_email
-        )
+    router = do_manager.datasite_owner_syncer.connection_router
+    [message] = router.connections.p2p_con.receive(
+        sender_email, MessageKind.PROPOSED_CHANGES, max_messages=1
     )
-    return raw
+    return message.data
 
 
 def _accepted_contents(do_manager) -> list[str]:
@@ -169,11 +171,18 @@ def test_own_version_advertises_policy():
 
 
 def test_missing_version_file_created_with_own_policy():
-    a_conn, b_conn = mock_drive_service.pair_with_mock_service(
+    a_cached_client, b_cached_client = mock_drive_service.pair_with_mock_service(
         "a@example.com", "b@example.com"
     )
-    a_conn.share_peer_info_file_with_peer("b@example.com", _peer_info(REQUIRED))
-    assert b_conn.read_peer_info_file("a@example.com").encryption_policy == REQUIRED
+    DrivePeeringConnection(a_cached_client).grant_peer_info_read(
+        "b@example.com", _peer_info(REQUIRED)
+    )
+    assert (
+        DrivePeeringConnection(b_cached_client)
+        .read_peer_info("a@example.com")
+        .encryption_policy
+        == REQUIRED
+    )
 
 
 def test_malformed_peer_bundle_raises_on_peer_load():
@@ -272,6 +281,19 @@ def test_client_with_other_policy_than_disk_raises(tmp_path):
         resolve_encryption_policy(path, REQUIRED)
 
 
+def test_settings_file_of_later_version_refused(tmp_path):
+    path = tmp_path / "syft_settings.json"
+    resolve_encryption_policy(path, OPTIONAL)
+    later_version = DATASITE_SETTINGS_VERSION + 1
+    data = json.loads(path.read_text())
+    # A later release that bumps the version also changes the fields.
+    data.update(version=later_version, new_setting=True)
+    path.write_text(json.dumps(data))
+
+    with pytest.raises(ValueError, match=f"version {later_version}"):
+        resolve_encryption_policy(path, None)
+
+
 def test_client_without_policy_takes_policy_of_syftbox(tmp_path):
     """syft-bg starts after a notebook that required encryption."""
 
@@ -279,7 +301,7 @@ def test_client_without_policy_takes_policy_of_syftbox(tmp_path):
         config = PeerManagerConfig(
             syftbox_folder=tmp_path, email="alice@example.com", encryption_policy=policy
         )
-        return PeerManager.from_config(config).peer_store.encryption_policy
+        return PeerManager.peer_store_from_config(config).encryption_policy
 
     assert start(REQUIRED) == REQUIRED
     assert start(None) == REQUIRED
@@ -427,15 +449,15 @@ def test_negotiated_encryption_flow(ds_policy, do_policy):
     assert len(_ds_cached_contents(ds_manager)) > 0
 
 
-def test_owner_send_to_non_peer_raises():
+def test_owner_send_to_non_peer_warns():
     _, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
         do_encryption_policy=REQUIRED,
     )
     syncer = do_manager.datasite_owner_syncer
     message = FileChangeEventsMessage(events=[])
-    syncer.outbox_queue.put(("former@example.com", message))
-    with pytest.raises(SyftPeerNotReadyError, match="not known"):
-        syncer.process_syftbox_events_queue()
+    syncer.outbox_queue.put(OutgoingMessage("former@example.com", message))
+    with pytest.warns(UserWarning, match="not known"):
+        syncer._send_outbox_messages()
 
 
 def test_owner_leaves_envelope_from_peer_without_bundle_in_inbox():
@@ -504,10 +526,8 @@ def test_changes_for_two_datasites_go_to_each(monkeypatch):
     monkeypatch.setattr(
         ConnectionRouter,
         "watcher_send_proposed_file_changes_message",
-        lambda self, recipient, message: (
-            sent.append(
-                (recipient, {fc.datasite_email for fc in message.proposed_file_changes})
-            )
+        lambda self, recipient, message: sent.append(
+            (recipient, {fc.datasite_email for fc in message.proposed_file_changes})
         ),
     )
     watcher = ds_manager.datasite_watcher_syncer
@@ -548,7 +568,7 @@ def test_failure_for_one_recipient_still_sends_to_other(monkeypatch):
 
 
 def test_unsent_owner_change_stays_pending(monkeypatch):
-    """The send raises, and the next sync sends the change."""
+    """The send warns, and the next sync sends the change."""
     ds_manager, do_manager = _pair_with_unsent_do_file()
 
     def fail(self, recipient, message):
@@ -556,7 +576,7 @@ def test_unsent_owner_change_stays_pending(monkeypatch):
 
     with monkeypatch.context() as m:
         m.setattr(ConnectionRouter, "owner_write_event_messages_to_outbox", fail)
-        with pytest.raises(SyftPeerNotReadyError):
+        with pytest.warns(UserWarning, match="are not sent"):
             do_manager.sync(auto_checkpoint=False)
 
     _assert_ds_receives_after_notebook_sync(ds_manager, do_manager)

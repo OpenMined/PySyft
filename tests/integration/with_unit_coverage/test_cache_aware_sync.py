@@ -129,7 +129,7 @@ def test_ds_cache_aware_sync_gdrive():
     verify cache has 3 events, sync and end up with 5.
 
     This test verifies that when a DS manager is restarted with a persisted filesystem cache,
-    it uses the cached last_event_timestamp_per_peer to only download new events.
+    it uses the cached last_msg_id_per_peer to only download new events.
     """
     # Create initial pair with filesystem cache
     ds_manager1, do_manager1 = (
@@ -171,8 +171,8 @@ def test_ds_cache_aware_sync_gdrive():
     assert initial_hash_count >= 3, (
         f"Should have at least 3 file hashes cached, got {initial_hash_count}"
     )
-    assert len(ds_cache1.last_event_timestamp_per_peer) > 0, (
-        "Should have timestamps for peers"
+    assert len(ds_cache1.last_msg_id_per_peer) > 0, (
+        "Should have the last message of each peer"
     )
 
     # Save the syftbox_folder for creating a new manager
@@ -203,8 +203,8 @@ def test_ds_cache_aware_sync_gdrive():
         f"New manager cache should have loaded {initial_cache_count} events from disk, "
         f"got {len(new_cache.events_connection)}"
     )
-    assert len(new_cache.last_event_timestamp_per_peer) > 0, (
-        "last_event_timestamp_per_peer should be pre-populated from disk cache"
+    assert len(new_cache.last_msg_id_per_peer) > 0, (
+        "last_msg_id_per_peer should be pre-populated from disk cache"
     )
     assert len(new_cache.file_hashes) >= 3, (
         f"New manager should have at least 3 file hashes pre-populated, got {len(new_cache.file_hashes)}"

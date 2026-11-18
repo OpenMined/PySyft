@@ -1,5 +1,5 @@
-"""``RawMessage`` lives with the other transport types; this path keeps working."""
+"""``RawMessage`` lives with the other connection types; this path keeps working."""
 
-from syft.sync.transport.types import RawMessage
+from syft.sync.connections.types import RawMessage
 
 __all__ = ["RawMessage"]

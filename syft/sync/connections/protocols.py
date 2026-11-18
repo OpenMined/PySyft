@@ -1,10 +1,11 @@
-"""The jobs a transport backend does, one abstract class each.
+"""The connections a backend provides, one abstract class for each job.
 
-``P2PConnection`` carries messages between peers, ``OwnerStore`` and
-``WatcherStore`` hold each role's own storage, ``Collections`` shares datasets,
-and ``Peering`` finds and trusts peers. A backend implements the classes it
-can. The sync layer above never sees backend ids: it passes back the messages
-and handles a backend returns.
+``P2PConnection`` carries messages between peers, ``OwnerStoreConnection`` and
+``WatcherStoreConnection`` hold each role's own storage,
+``CollectionsConnection`` shares datasets, and ``PeeringConnection`` finds and
+trusts peers. A backend implements the classes it can. The sync layer above
+never sees backend ids: it passes back the messages and handles a backend
+returns.
 
 Each class keeps its abstract methods to the few a backend must write. Methods
 that only combine those are ordinary methods on the base class, which a
@@ -14,27 +15,49 @@ backend may override when it can do them faster.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
+from collections.abc import Container
+from typing import TYPE_CHECKING, Self
 
 from pydantic import BaseModel, ConfigDict
 
 from syft.sync.platforms.base_platform import BasePlatform
-from syft.sync.transport.types import MessageKind, RawMessage, SendStatus
+from syft.sync.connections.types import MessageKind, RawMessage, SendStatus
 
 if TYPE_CHECKING:
     from syft.sync.connections.base_connection import FileCollection
     from syft.sync.version.peer_info import PeerInfo
 
 
-class P2PConnection(ABC):
-    """Messages between peers, kept until the recipient acknowledges them.
+class RouterConnection:
+    """What every connection of the router does besides its own work."""
 
-    One rule for every message, whatever its kind: ``receive`` returns the
-    messages not acknowledged yet, and ``ack`` finishes one. On Drive a written
-    message is ``DELIVERED`` and ``ack`` removes it. On a live link such as
-    WebRTC a message is ``QUEUED`` until the peer acknowledges it, which
-    ``delivered()`` then reports.
+    def clone_for_thread(self) -> Self:
+        """A copy that another thread may use. This one, unless its
+        connection cannot be shared across threads."""
+        return self
+
+    def reset_caches(self) -> None:
+        """Forget what was cached from the connection."""
+
+
+class P2PConnection(RouterConnection, ABC):
+    """Messages between peers, kept until the recipient has processed them.
+
+    Sending and receiving each have their own confirmation:
+
+    - Sender: a message is delivered once it is stored where the peer will
+      find it. On Drive that is when the upload returns, so ``send`` returns
+      ``DELIVERED``. On a live link such as WebRTC ``send`` returns ``QUEUED``,
+      and ``delivered()`` reports the message once the peer has stored it and
+      sent a receipt back.
+    - Receiver: ``receive`` returns the messages not processed yet, and
+      ``mark_processed`` finishes one. This stays with the receiver: nothing
+      is sent back to the peer.
     """
+
+    # Whether sent messages stay where the peer reads them, as in Drive's
+    # outbox, so the owner compacts them. A live link drops them on receipt.
+    keeps_sent_messages: bool = False
 
     @abstractmethod
     def send(
@@ -49,26 +72,45 @@ class P2PConnection(ABC):
 
     @abstractmethod
     def delivered(self) -> list[str]:
-        """The ``msg_id`` of each queued message the peer acknowledged since
-        the last call. A connection that only returns ``DELIVERED`` returns
-        nothing."""
+        """The ``msg_id`` of each queued message the peer stored since the last
+        call. A connection that only returns ``DELIVERED`` returns nothing."""
 
     @abstractmethod
-    def receive(self, max_messages: int | None = None) -> list[RawMessage]:
-        """Messages from every peer that are not acknowledged yet, oldest first
-        per sender, at most ``max_messages`` of them.
+    def receive(
+        self,
+        peer: str,
+        kind: MessageKind,
+        after: str | None = None,
+        max_messages: int | None = None,
+        already_received: Container[str] = frozenset(),
+    ) -> list[RawMessage]:
+        """Messages of ``kind`` from ``peer`` that are not processed yet, oldest
+        first, at most ``max_messages`` of them.
+
+        ``after`` is the ``msg_id`` of the newest message the receiver
+        processed. A connection that keeps processed messages, as Drive keeps
+        the outbox, returns the later ones with no gap: a message it cannot
+        return now ends the list. It may also list back a bit before ``after``
+        for late messages, skipping the ones in ``already_received``. A
+        connection that drops processed messages ignores both.
 
         A peer whose channel does not exist yet has no messages. The connection
         sets each ``RawMessage.sender`` from where the message came from.
         """
 
     @abstractmethod
-    def ack(self, message: RawMessage) -> None:
+    def mark_processed(self, message: RawMessage) -> None:
         """Record that ``message`` was processed; ``receive`` never returns it
-        again."""
+        again, or, on a connection that keeps processed messages, not once
+        ``after`` is at or past it."""
+
+    def mark_all_processed(self, messages: list[RawMessage]) -> None:
+        """``mark_processed`` for each of ``messages``."""
+        for message in messages:
+            self.mark_processed(message)
 
 
-class OwnerStore(ABC):
+class OwnerStoreConnection(RouterConnection, ABC):
     """The data owner's own storage: event log, checkpoints, rolling state.
 
     Only the owner writes and reads it, and it is never shared.
@@ -142,8 +184,14 @@ class OwnerStore(ABC):
     def delete_rolling_state(self) -> None:
         """Remove the rolling state."""
 
+    # -- the whole account -----------------------------------------------------
+    @abstractmethod
+    def delete_all(self) -> int:
+        """Delete everything this account stores, for every role, and return
+        how many files and folders went."""
 
-class WatcherStore(ABC):
+
+class WatcherStoreConnection(RouterConnection, ABC):
     """The data scientist's memory of what each owner sent it.
 
     One area per owner, in the scientist's own storage, never shared, so it
@@ -174,7 +222,7 @@ class WatcherStore(ABC):
         everything again."""
 
 
-class Collections(ABC):
+class CollectionsConnection(RouterConnection, ABC):
     """Sets of files a data owner shares with named readers (datasets)."""
 
     @abstractmethod
@@ -211,6 +259,10 @@ class Collections(ABC):
         """Remove every layout of ``tag`` published under ``prefix``."""
 
     @abstractmethod
+    def delete_by_handle(self, handle: str) -> None:
+        """Remove the one collection folder ``handle`` names."""
+
+    @abstractmethod
     def list_shared_with_me(self, prefix: str) -> list[dict]:
         """Collections peers shared with me, each with owner_email, tag,
         content_hash and variant."""
@@ -233,7 +285,7 @@ class Collections(ABC):
         return {f["file_name"]: self.fetch_file(f["file_id"]) for f in files}
 
 
-class Peering(ABC):
+class PeeringConnection(RouterConnection, ABC):
     """Finding and trusting a peer: identity, channels, peer list, published
     documents."""
 
@@ -284,11 +336,21 @@ class Peering(ABC):
 
     @abstractmethod
     def read_own_peer_info(self) -> PeerInfo | None:
-        """My published version document, or None."""
+        """My published version document, or None.
+
+        Raises:
+            ConnectionUnavailableError: when the backend cannot be reached.
+            ValueError: when the document is not one this client reads.
+        """
 
     @abstractmethod
     def read_peer_info(self, peer: str) -> PeerInfo | None:
-        """``peer``'s published version document, or None."""
+        """``peer``'s published version document, or None.
+
+        Raises:
+            ConnectionUnavailableError: when the backend cannot be reached.
+            ValueError: when the document is not one this client reads.
+        """
 
     @abstractmethod
     def grant_peer_info_read(self, peer: str, peer_info: PeerInfo) -> None:
@@ -298,16 +360,30 @@ class Peering(ABC):
         """
 
 
-class Transport(BaseModel):
-    """One implementation of each job. The parts may come from different
-    backends, though a peer's ``p2p`` and ``peering`` go together."""
+# The fields of ``Connections``, one per connection.
+CONNECTION_FIELDS = (
+    "p2p_con",
+    "owner_store_con",
+    "watcher_store_con",
+    "collections_con",
+    "peering_con",
+)
+
+
+class Connections(BaseModel):
+    """One connection for each job. The connections may come from different
+    backends, though a peer's ``p2p_con`` and ``peering_con`` go together."""
 
     model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
 
-    p2p: P2PConnection
-    owner_store: OwnerStore
-    watcher_store: WatcherStore
-    collections: Collections
-    peering: Peering
+    p2p_con: P2PConnection
+    owner_store_con: OwnerStoreConnection
+    watcher_store_con: WatcherStoreConnection
+    collections_con: CollectionsConnection
+    peering_con: PeeringConnection
     # Recorded on each Peer so a peer list says which backend reaches it.
     platform: BasePlatform
+
+    def all(self) -> list[RouterConnection]:
+        """The connections, in ``CONNECTION_FIELDS`` order."""
+        return [getattr(self, name) for name in CONNECTION_FIELDS]

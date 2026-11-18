@@ -38,6 +38,15 @@ def _version_order(version: str) -> int:
         ) from None
 
 
+def protocol_version_at_least(version: str, minimum: str) -> bool:
+    """Whether protocol ``version`` is ``minimum`` or later.
+
+    Protocol versions are incrementing integers held as strings, so ``"10"`` is
+    later than ``"2"``.
+    """
+    return _version_order(version) >= _version_order(minimum)
+
+
 def _identity(cls: type[MigratableObject]) -> tuple[str, str]:
     """Return (canonical_name, version) for a concrete subclass.
 

@@ -8,6 +8,7 @@ from tests.integration.utils import (
     token_path_do,
     token_path_ds,
 )
+from syft.sync.events.file_change_event import FileChangeEventsMessageFileName
 from syft.sync.syftbox_manager import SyftboxManager
 from tests.integration.with_unit_coverage.utils import is_mock_mode
 
@@ -17,7 +18,7 @@ from tests.integration.with_unit_coverage.utils import is_mock_mode
 @pytest.mark.usefixtures("setup_delete_syftboxes")
 def test_pagination_and_early_termination():
     """Test pagination with small page size and early termination with since_timestamp"""
-    from syft.sync.connections.drive.gdrive_transport import GDriveConnection
+    from syft.sync.connections.drive.drive_cached_client import DriveCachedClient
 
     manager_ds, manager_do = SyftboxManager._pair_with_google_drive_testing_connection(
         do_email=EMAIL_DO,
@@ -36,13 +37,13 @@ def test_pagination_and_early_termination():
     sleep(1)
 
     # Test pagination with small page size
-    original_method = GDriveConnection.get_file_metadatas_from_folder
+    original_method = DriveCachedClient.get_file_metadatas_from_folder
 
     def get_files_page_size_2(self, folder_id, since_timestamp=None, page_size=100):
         return original_method(self, folder_id, since_timestamp, page_size=2)
 
     with patch.object(
-        GDriveConnection,
+        DriveCachedClient,
         "get_file_metadatas_from_folder",
         get_files_page_size_2,
     ):
@@ -71,9 +72,13 @@ def test_pagination_and_early_termination():
         manager_ds.datasite_watcher_syncer.datasite_watcher_cache.connection_router
     )
 
-    new_events = connection_router.watcher_get_events_messages(
-        EMAIL_DO, since_timestamp=checkpoint_timestamp
-    )
+    after = FileChangeEventsMessageFileName(timestamp=checkpoint_timestamp)
+    new_events = [
+        m
+        for _, m in connection_router.watcher_receive_events_messages(
+            EMAIL_DO, after=after.as_string()
+        )
+    ]
 
     new_event_timestamps = [e.timestamp for e in new_events]
     assert all(t > checkpoint_timestamp for t in new_event_timestamps)

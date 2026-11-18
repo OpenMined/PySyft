@@ -5,7 +5,7 @@ in any number of batches. A job counts as received only when its files hash to
 the value the submitter declared in config.yaml. The data owner then records
 the hash of what it received, later the hash of what it approved, and the
 runner executes a fresh copy only after checking it against the approved hash.
-The record lives in the owner's staging/, which no submitter can write.
+The record lives in the owner's review/, where the submitter holds no grant on it.
 """
 
 import hashlib
@@ -55,7 +55,7 @@ SYNC_EXCLUDED_NAMES = frozenset(
 # config.yaml header where the submitter declares code_hash() of its job.
 SUBMISSION_HASH_HEADER = "submission_hash"
 
-# The data owner's record of a job, in staging/.
+# The data owner's record of a job, in review/.
 OWNER_RECORD_FILENAME = "owner_record.json"
 
 
@@ -87,54 +87,39 @@ def _is_skipped(relative: Path) -> bool:
     return any(part in SYNC_EXCLUDED_NAMES for part in relative.parts)
 
 
-def _as_sent(path: Path) -> bytes:
-    """The bytes the data owner ends up with for ``path``.
-
-    The submitter's syncer reads a file as text and the owner writes it back
-    as UTF-8, so line endings and the local encoding do not survive.
-    """
-    try:
-        with open(path, "r") as f:
-            return f.read().encode("utf-8")
-    except UnicodeDecodeError:
-        return path.read_bytes()
-
-
 def _digest(
     submission_dir: Path,
     entries: Optional[frozenset[str]],
-    as_sent: bool,
     skip: frozenset[str] = frozenset(),
 ) -> str:
     digest = hashlib.sha256()
+    # Sort on the posix string: WindowsPath sorts case-insensitively.
     files = sorted(
-        path
-        for path in submission_dir.rglob("*")
-        if path.is_file()
-        and not _is_skipped(relative := path.relative_to(submission_dir))
-        and (entries is None or relative.parts[0] in entries)
-        and relative.as_posix() not in skip
+        (
+            path
+            for path in submission_dir.rglob("*")
+            if path.is_file()
+            and not _is_skipped(relative := path.relative_to(submission_dir))
+            and (entries is None or relative.parts[0] in entries)
+            and relative.as_posix() not in skip
+        ),
+        key=lambda path: path.relative_to(submission_dir).as_posix(),
     )
     for path in files:
-        content = _as_sent(path) if as_sent else path.read_bytes()
         digest.update(path.relative_to(submission_dir).as_posix().encode())
         digest.update(b"\0")
-        digest.update(hashlib.sha256(content).digest())
+        digest.update(hashlib.sha256(path.read_bytes()).digest())
     return digest.hexdigest()
 
 
-def code_hash(submission_dir: Path, as_sent: bool = False) -> str:
-    """SHA-256 over run.sh and code/: the hash the submitter declares.
-
-    ``as_sent`` hashes the bytes as the data owner will receive them; the
-    submitter passes it, the owner hashes its files as they are on disk.
-    """
-    return _digest(submission_dir, CODE_ENTRIES, as_sent)
+def code_hash(submission_dir: Path) -> str:
+    """SHA-256 over run.sh and code/: the hash the submitter declares."""
+    return _digest(submission_dir, CODE_ENTRIES)
 
 
-def request_hash(request_dir: Path, as_sent: bool = False) -> str:
+def request_hash(request_dir: Path) -> str:
     """SHA-256 over every file of a request but request.yaml, which carries it."""
-    return _digest(request_dir, None, as_sent, skip=frozenset({REQUEST_FILE_NAME}))
+    return _digest(request_dir, None, skip=frozenset({REQUEST_FILE_NAME}))
 
 
 def submission_hash(submission_dir: Path) -> str:
@@ -144,7 +129,7 @@ def submission_hash(submission_dir: Path) -> str:
     one digest pins the job, its code and its dataset set. Permission files and
     names that sync never carries are left out.
     """
-    return _digest(submission_dir, None, as_sent=False)
+    return _digest(submission_dir, None)
 
 
 def validate_submission(submission_dir: Path) -> tuple[bool, str]:

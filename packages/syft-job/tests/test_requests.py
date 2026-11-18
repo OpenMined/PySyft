@@ -108,7 +108,7 @@ def test_request_with_symlink_is_rejected_and_kept(env):
     (request_dir / "code" / "link.txt").symlink_to("/etc/hosts")
     [ref] = list(ds.manager.iter_request_refs(DO_EMAIL))
     request = ds.manager.read_request(ref)
-    request.files_hash = request_hash(request_dir, as_sent=True)
+    request.files_hash = request_hash(request_dir)
     ds.manager.write_request(ref, request)
 
     [request] = do.requests
@@ -155,7 +155,7 @@ def _write_request_by_hand(ds: JobClient, job_name: str) -> None:
         api=API_NAME,
         submitted_at=datetime.now(timezone.utc),
         files=sorted(PARAMS),
-        files_hash=request_hash(request_dir, as_sent=True),
+        files_hash=request_hash(request_dir),
     )
     ds.manager.write_request(ref, request)
 

@@ -18,6 +18,7 @@ from syft_job.policies import (
 )
 from syft_job.config import protocol_dir_name
 from syft_job.migrations.registry import JOB_PROTOCOL_VERSION
+from syft_job.read_permissions import OUTPUTS
 
 # The path segment of the current job protocol, e.g. "v2".
 PROTOCOL_DIR = protocol_dir_name(JOB_PROTOCOL_VERSION)
@@ -73,12 +74,13 @@ CSV_JOB = (
 )
 
 
-def _recipients_policy(recipients: list[str]) -> str:
+def _read_permissions_policy(permissions: object) -> str:
+    """An output policy that writes ``permissions`` as the read permissions."""
     return (
         "import json, os\n"
         "from pathlib import Path\n"
-        'path = Path(os.environ["SYFT_POLICY_RECIPIENTS_PATH"])\n'
-        f"path.write_text(json.dumps({recipients!r}))\n"
+        'path = Path(os.environ["SYFT_POLICY_READ_PERMISSIONS_PATH"])\n'
+        f"path.write_text(json.dumps({permissions!r}))\n"
     )
 
 
@@ -94,6 +96,8 @@ class FakeApis:
         self.output_code: str | None = None
         self.refused: str | None = None  # a reason check_request raises
         self.gone = False
+        # The run files a call's caller may read, as the api lists them.
+        self.readable = [OUTPUTS]
 
     def __call__(self, api_name: str) -> ResolvedApi:
         if api_name != API_NAME or self.gone:
@@ -105,7 +109,7 @@ class FakeApis:
             output=self._script("output", self.output_code),
             call_files=tuple(PARAMS),
         )
-        return ResolvedApi(api_name, self.files_dir, policies)
+        return ResolvedApi(api_name, self.files_dir, policies, list(self.readable))
 
     def check_request(self, api_name: str, request_dir: Path, submitter: str) -> None:
         if self.refused:
@@ -191,8 +195,9 @@ def test_input_policy_allows_then_blocks_on_rate_limit(env):
     assert env.reads(DS_EMAIL, "call3.job", "policy_error.txt")
     # The job never ran, and the full traceback stays with the DO.
     assert not (blocked.job_review_path / "outputs" / "out.txt").exists()
-    stderr = (blocked.job_staging_path / "input_policy_stderr.txt").read_text()
+    stderr = (blocked.job_review_path / "input_policy_stderr.txt").read_text()
     assert "Traceback" in stderr
+    assert not env.reads(DS_EMAIL, "call3.job", "input_policy_stderr.txt")
     assert json.loads((env.state_dir / "state.json").read_text()) == {DS_EMAIL: 2}
 
 
@@ -206,6 +211,7 @@ def test_output_policy_blocks_word_and_keeps_outputs_with_do(env):
     assert env.reads(DS_EMAIL, "call.job", "policy_error.txt")
     assert (job.job_review_path / "outputs" / "out.txt").read_text() == "SECRET\n"
     assert not env.reads(DS_EMAIL, "call.job", "outputs/out.txt")
+    assert job.approved_read_permissions == {}
 
 
 def test_output_policy_redacts_csv_from_candidates(env):
@@ -226,20 +232,88 @@ def test_output_policy_redacts_csv_from_candidates(env):
     assert (env.state_dir / "redactions.csv").read_text().strip() == "SECRET bob,4"
 
 
-def test_recipients_add_approved_peer_and_skip_stranger(env):
-    env.apis.output_code = _recipients_policy([DS_EMAIL, PEER_EMAIL, "stranger@x.org"])
+def test_output_policy_adds_approved_peer_and_skips_stranger(env):
+    readers = [DS_EMAIL, PEER_EMAIL, "stranger@x.org"]
+    env.apis.output_code = _read_permissions_policy({OUTPUTS: readers})
 
     job = env.call("echo hi > code/outputs/out.txt", approved_peers=[PEER_EMAIL])
 
     assert job.status == "done"
+    assert job.approved_read_permissions == {OUTPUTS: sorted([DS_EMAIL, PEER_EMAIL])}
     assert env.reads(DS_EMAIL, "call.job", "outputs/out.txt")
     assert env.reads(PEER_EMAIL, "call.job", "outputs/out.txt")
     assert not env.reads("stranger@x.org", "call.job", "outputs/out.txt")
     assert not job.outputs_withheld
 
 
-def test_empty_recipients_hold_outputs_back(env):
-    env.apis.output_code = _recipients_policy([])
+def test_output_policy_starts_from_api_read_permissions(env):
+    """A policy that changes nothing keeps what the api approves for the caller."""
+    env.apis.output_code = "pass\n"
+
+    job = env.call("echo hi > code/outputs/out.txt")
+
+    assert job.approved_read_permissions == {OUTPUTS: [DS_EMAIL]}
+    assert env.reads(DS_EMAIL, "call.job", "outputs/out.txt")
+
+
+def test_output_policy_can_add_a_file(env):
+    env.apis.output_code = _read_permissions_policy(
+        {OUTPUTS: [DS_EMAIL], "stdout.txt": [DS_EMAIL]}
+    )
+
+    env.call("echo hi; echo hi > code/outputs/out.txt")
+
+    assert env.reads(DS_EMAIL, "call.job", "stdout.txt")
+
+
+def test_failed_api_call_shares_nothing(env):
+    """The output policy never ran, so what the api approves stays with the DO."""
+    approved = {OUTPUTS: [DS_EMAIL], "stdout.txt": [DS_EMAIL]}
+    env.apis.readable = list(approved)
+    env.apis.output_code = _read_permissions_policy({OUTPUTS: [DS_EMAIL]})
+
+    job = env.call("echo private; echo hi > code/outputs/out.txt; exit 3")
+
+    assert job.status == "failed"
+    assert not env.reads(DS_EMAIL, "call.job", "stdout.txt")
+    assert not env.reads(DS_EMAIL, "call.job", "outputs/out.txt")
+    assert job.approved_read_permissions == approved
+
+
+def test_timed_out_api_call_shares_nothing(env):
+    env.apis.readable = ["returncode.txt"]
+
+    job = env.call("sleep 5", timeout=1)
+
+    assert job.status == "failed"
+    assert (job.job_review_path / "returncode.txt").exists()
+    assert not env.reads(DS_EMAIL, "call.job", "returncode.txt")
+
+
+def test_output_policy_with_bad_read_permissions_denies(env):
+    env.apis.output_code = _read_permissions_policy(["not", "a", "dict"])
+
+    job = env.call("echo hi > code/outputs/out.txt")
+
+    assert job.status == "failed"
+    assert "read_permissions.json" in job.policy_error
+    assert job.approved_read_permissions == {}
+    assert not env.reads(DS_EMAIL, "call.job", "outputs/out.txt")
+
+
+def test_api_without_outputs_keeps_them_from_caller(env):
+    """With no output policy, the api's read permissions alone decide."""
+    env.apis.readable = ["stdout.txt"]
+
+    job = env.call("echo hi; echo hi > code/outputs/out.txt")
+
+    assert env.reads(DS_EMAIL, "call.job", "stdout.txt")
+    assert not env.reads(DS_EMAIL, "call.job", "outputs/out.txt")
+    assert job.outputs_withheld
+
+
+def test_empty_read_permissions_hold_outputs_back(env):
+    env.apis.output_code = _read_permissions_policy({})
 
     job = env.call("echo hi > code/outputs/out.txt")
 
@@ -248,9 +322,28 @@ def test_empty_recipients_hold_outputs_back(env):
     assert job.outputs_withheld and job.policy_error is None
     assert "Outputs not shared with you" in _ds_job(env)._repr_html_()
 
-    env.runner.share_job_results("call.job", True, False, user=DS_EMAIL)
+    env.runner.share_job_results(
+        "call.job", share_outputs_with_submitter=True, user=DS_EMAIL
+    )
     assert env.reads(DS_EMAIL, "call.job", "outputs/out.txt")
     assert not job.outputs_withheld
+    assert env.do_job("call.job").approved_read_permissions == {OUTPUTS: [DS_EMAIL]}
+
+
+def test_api_call_ignores_share_flags(env):
+    """The run's share flags never undo what the output policy removed."""
+    env.apis.output_code = _read_permissions_policy({})
+
+    job = env.call(
+        "echo hi; echo hi > code/outputs/out.txt",
+        share_logs_with_submitter=True,
+        share_requested_files=True,
+    )
+
+    assert job.approved_read_permissions == {}
+    assert not env.reads(DS_EMAIL, "call.job", "outputs/out.txt")
+    assert not env.reads(DS_EMAIL, "call.job", "stdout.txt")
+    assert job.outputs_withheld
 
 
 def test_request_becomes_approved_job_with_api_code(env):

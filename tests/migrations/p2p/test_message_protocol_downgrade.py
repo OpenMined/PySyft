@@ -24,6 +24,7 @@ from syft.migrations import client_registry
 from syft.sync.events.file_change_event import FileChangeEventsMessageV1
 from syft.sync.messages.proposed_filechange import ProposedFileChangesMessageV1
 from syft.sync.syftbox_manager import SyftboxManager
+from syft.sync.connections.types import MessageKind
 from syft.sync.utils.syftbox_utils import uncompress_data
 from syft_migration import MigrationError, ProtocolSchema
 
@@ -119,18 +120,17 @@ def _wire_version(manager, peer_email: str, raw: bytes) -> str:
 
 def _raw_proposal_version(do_manager, ds_email: str) -> str:
     """The version field of the next proposal blob in the DO's inbox, unparsed."""
-    raw, _ = do_manager._connection_router.connections[
-        0
-    ].owner_download_next_raw_proposed_message_from_inbox(ds_email)
-    return _wire_version(do_manager, ds_email, raw)
+    [message] = do_manager._connection_router.connections.p2p_con.receive(
+        ds_email, MessageKind.PROPOSED_CHANGES, max_messages=1
+    )
+    return _wire_version(do_manager, ds_email, message.data)
 
 
 def _raw_outbox_versions(ds_manager, do_email: str) -> list[str]:
     """The version fields of the DO's outbox blobs for us, unparsed."""
-    raw_list = ds_manager._connection_router.connections[
-        0
-    ].watcher_download_raw_events_from_outbox(do_email, None)
-    return [_wire_version(ds_manager, do_email, raw) for raw in raw_list]
+    p2p = ds_manager._connection_router.connections.p2p_con
+    received = p2p.receive(do_email, MessageKind.FILE_EVENTS)
+    return [_wire_version(ds_manager, do_email, m.data) for m in received]
 
 
 def test_a_v2_proposal_for_a_protocol0_peer_downgrades_on_the_wire(

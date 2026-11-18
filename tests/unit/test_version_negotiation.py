@@ -2,8 +2,12 @@
 
 import logging
 
+import httplib2
 import pytest
+from googleapiclient.errors import HttpError
+from syft.sync.connections.drive.gdrive_client import GDriveClient
 from syft.sync.syftbox_manager import SyftboxManager
+from syft.sync.connections.exceptions import ConnectionUnavailableError
 from syft.sync.version.exceptions import (
     VersionMismatchError,
 )
@@ -11,6 +15,7 @@ from syft.sync.encryption_policy import EncryptionPolicy
 from syft.sync.version.peer_info import PeerInfo
 from syft.sync.version.peer_manager import CompatAction
 from syft.sync.version.version_info import CompatibilityStatus, VersionInfo
+from syft.sync.connections.drive.drive_connections import drive_cached_client_of
 
 
 def build_client_version(client_version: str) -> VersionInfo:
@@ -223,7 +228,7 @@ class TestPeerManager:
         assert version is None
 
     def test_load_peer_versions_parallel(self):
-        from syft.sync.connections.drive.gdrive_transport import (
+        from syft.sync.connections.drive.drive_peering import (
             SYFT_VERSION_FILE,
         )
         from syft.sync.connections.drive.mock_drive_service import (
@@ -235,9 +240,9 @@ class TestPeerManager:
             SyftboxManager.pair_with_mock_drive_service_connection()
         )
 
-        backing_store = ds_manager._connection_router.connections[
-            0
-        ].drive_service._backing_store
+        backing_store = drive_cached_client_of(
+            ds_manager._connection_router.connections
+        ).client.drive_service._backing_store
 
         third_peer_email = "third_peer@test.com"
         third_peer_info = PeerInfo(
@@ -274,6 +279,82 @@ class TestPeerManager:
             versions[third_peer_email].version_info.syft_client_version
             == third_peer_info.version_info.syft_client_version
         )
+
+    def test_drive_error_during_peer_version_read_raises(self, monkeypatch):
+        ds_manager, do_manager = (
+            SyftboxManager.pair_with_mock_drive_service_connection()
+        )
+        monkeypatch.setattr(GDriveClient, "download_file", _raises(DRIVE_DOWN))
+
+        with pytest.raises(ConnectionUnavailableError):
+            ds_manager.peer_manager.load_peer_infos_parallel([do_manager.email])
+
+    def test_drive_error_during_peer_version_read_aborts_sync(self, monkeypatch):
+        ds_manager, do_manager = (
+            SyftboxManager.pair_with_mock_drive_service_connection()
+        )
+        monkeypatch.setattr(GDriveClient, "download_file", _raises(DRIVE_DOWN))
+
+        with pytest.raises(ConnectionUnavailableError):
+            do_manager.sync()
+
+    def test_drive_error_during_own_version_read_raises(self, monkeypatch):
+        _, do_manager = SyftboxManager.pair_with_mock_drive_service_connection()
+        monkeypatch.setattr(GDriveClient, "download_file", _raises(DRIVE_DOWN))
+
+        with pytest.raises(ConnectionUnavailableError):
+            do_manager.peer_manager.connection_router.read_own_peer_info_file()
+
+    def test_offline_during_peer_version_read_raises_unavailable(self, monkeypatch):
+        ds_manager, do_manager = (
+            SyftboxManager.pair_with_mock_drive_service_connection()
+        )
+        no_dns = httplib2.ServerNotFoundError("no DNS")
+        monkeypatch.setattr(GDriveClient, "download_file", _raises(no_dns))
+
+        with pytest.raises(ConnectionUnavailableError):
+            ds_manager.peer_manager.load_peer_infos_parallel([do_manager.email])
+
+    def test_drive_refusal_during_peer_version_read_skips_peer(self, monkeypatch):
+        ds_manager, do_manager = (
+            SyftboxManager.pair_with_mock_drive_service_connection()
+        )
+        forbidden = HttpError(
+            httplib2.Response({"status": 403}),
+            b'{"error": {"code": 403, "errors": [{"reason": "forbidden"}]}}',
+        )
+        monkeypatch.setattr(GDriveClient, "download_file", _raises(forbidden))
+
+        infos = ds_manager.peer_manager.load_peer_infos_parallel([do_manager.email])
+
+        assert infos == {do_manager.email: None}
+
+    def test_unreadable_peer_version_file_skips_peer(self, monkeypatch):
+        ds_manager, do_manager = (
+            SyftboxManager.pair_with_mock_drive_service_connection()
+        )
+        monkeypatch.setattr(GDriveClient, "download_file", _returns(b"{trunc"))
+
+        infos = ds_manager.peer_manager.load_peer_infos_parallel([do_manager.email])
+
+        assert infos == {do_manager.email: None}
+
+
+DRIVE_DOWN = ConnectionResetError("Drive is down")
+
+
+def _raises(error: Exception):
+    def download_file(self, file_id: str) -> bytes:
+        raise error
+
+    return download_file
+
+
+def _returns(data: bytes):
+    def download_file(self, file_id: str) -> bytes:
+        return data
+
+    return download_file
 
 
 def _set_peer_version(manager: SyftboxManager, peer_email: str, version: VersionInfo):

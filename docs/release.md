@@ -12,16 +12,28 @@ The version on a branch is always a version that is **not yet published**. There
 
 Do not change a version by hand before a release. The release job makes the bump.
 
+## Before the first release from a machine or a new package
+
+Each package uploads with its own PyPI token, stored as a repository secret: `PYPI_PASS_SYFT`, `PYPI_PASS_SYFT_RESTRICT`, `PYPI_PASS_SYFT_PERMISSIONS`, `PYPI_PASS_SYFT_PERMS`, `PYPI_PASS_SYFT_MIGRATION`, `PYPI_PASS_SYFT_DATASET`, `PYPI_PASS_SYFT_JOB`, `PYPI_PASS_SYFT_ENCLAVE` and `PYPI_PASS_SYFT_BG`. `syft-rds` uses trusted publishing instead: its PyPI trusted publisher names the workflow `cd-syft-rds.yml`, and the job runs in the `pypi` environment. Check that every secret exists (`gh secret list`); a missing one fails that package's upload.
+
 ## Steps
 
-1. **Create a release branch** from `dev` (the default branch; `main` is the frozen legacy-PySyft branch), don't include the patch version in the semver, so we can hotfix patches on the same branch (e.g. `release/v0.10`). If you are patching, re-use the branch:
+1. **Bring the release branch up to date with `dev`.** Release branches drop the patch number (`release/v0.10`), so every patch of a minor version is released from the same branch. `dev` is the default branch; `main` is the frozen legacy-PySyft branch.
    ```bash
-   git fetch origin && git checkout -b release/vX.Y origin/dev && git push -u origin release/vX.Y   # patches: git checkout release/vX.Y
+   git fetch origin
+   # Creates the branch for a new minor version, or fast-forwards it for a patch.
+   git push origin origin/dev:refs/heads/release/vX.Y
    ```
-2. **Run the release workflow.** You can trigger frmo github UI from the Actions tab. In most cases, release the mono repo — this releases all individual packages (`syft-permissions`, `syft-perms`, `syft-migration`, `syft-dataset`, `syft-job`, `syft-rds`, `syft-enclave`, `syft-bg`, then `syft`) in one go. Always release them together: a partial run can publish a package whose workspace dependency is not on PyPI at the version it needs. You only need to release individual packages if they are changed, but we are not detecting that automatically currently.
-3. **Integration tests are optional.** You can skip them during the release if needed. Unit tests should still pass.
-4. **The release job publishes, tags, and then bumps the version.** No manual version edit is necessary.
-5. Merge the release branch back into `dev` (run `uv lock` on that PR and commit `uv.lock`, since the CD bump commits only touch `pyproject.toml`) before cutting any later release, so version bumps and hotfixes are carried forward.
+   The push is refused if the branch has commits that `dev` lacks, such as a hotfix that was not merged back; merge `dev` into the branch in a PR instead. The release runs the workflows of the release branch, so an outdated branch runs outdated workflows.
+2. **Run `CD - Monorepo` on the release branch**, from the Actions tab or with `gh workflow run cd-monorepo.yml --ref release/vX.Y -f bump_type=patch`. The run refuses any branch that is not `release/*`. It releases every package one after another, in dependency order: `syft-restrict`, `syft-permissions`, `syft-perms`, `syft-migration`, `syft-dataset`, `syft-job`, `syft`, `syft-rds`, `syft-enclave`, `syft-bg`. Release them together: a package released on its own can name a dependency version that is not on PyPI. Do not push to the release branch while the run is going: each job builds what the branch holds when the job starts, and a push that lands while a job runs makes that job's own push fail.
+3. **Tests.** `run_tests` switches lint, unit and integration tests together. Turn it off only for a commit that already passed CI.
+4. **The run publishes, tags, then bumps each package.** Do not edit a version by hand. Each job pushes its bump commit and its `<package>/vX.Y.Z` tag (`vX.Y.Z` for `syft`) together.
+5. **If a job fails**, fix the cause and use **Re-run failed jobs** on the same run. A job whose version is already on PyPI skips the upload and goes on to tag and bump, so a re-run finishes a release that failed after its upload. Do not start a new run instead: the packages that already released were bumped, so a new run would release them again at the next version. If you must start a new run, deselect the packages that already released.
+6. **After the run:**
+   - Merge the release branch into `dev` in a PR. Run `uv lock` on that PR and commit `uv.lock`; the bump commits change only `pyproject.toml` files.
+   - Create the GitHub Release: `gh release create vX.Y.Z --verify-tag --generate-notes --notes-start-tag v<previous>`.
+   - Rebuild the enclave image from the release tag, not from the branch, which already holds the next version. A verifier expects the enclave to run its own syft version, so clients of the new release reject an older image. From `packages/syft-enclave`, on a checkout of `vX.Y.Z`: `just build-push "X.Y.Z latest"` (needs `OM_DOCKER_LOGIN` and `OM_DOCKER_PW`), then update the image digest where the enclave is deployed (`just tinfoil-release X.Y.Z` for Tinfoil, `image_digest` in the Terraform variables for Confidential Space).
+   - Add the release to `CHANGELOG.md`.
 
 ## Release artifacts
 

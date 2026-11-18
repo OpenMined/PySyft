@@ -290,9 +290,9 @@ def test_claims_cannot_set_what_the_enclave_writes(tmp_path):
         read_job_claims(tmp_path)
 
 
-def test_policy_grants_owners_the_results_only_when_shared():
-    shared = policy_section("ds@x", ["do@x", "ds@x"], share_with_owners=True)
-    private = policy_section("ds@x", ["do@x"], share_with_owners=False)
+def test_policy_grants_owners_the_results_only_when_readers():
+    shared = policy_section("ds@x", ["do@x", "ds@x"], output_readers=["do@x"])
+    private = policy_section("ds@x", ["do@x"], output_readers=["ds@x"])
 
     assert shared["outputPolicy"] == [
         {"party": "ds@x", "grants": ["results", "receipt"]},

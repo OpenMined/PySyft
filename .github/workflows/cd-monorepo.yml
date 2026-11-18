@@ -67,31 +67,51 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Every job below pushes a bump commit straight to the branch, and the dev
+  # ruleset rejects that push after the upload. Refuse before anything runs.
+  preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Release only from a release branch
+        run: |
+          case "${{ github.ref }}" in
+            refs/heads/release/*) echo "Releasing from ${{ github.ref_name }}" ;;
+            *) echo "::error::Dispatch the release from a release/vX.Y branch, not ${{ github.ref_name }}"; exit 1 ;;
+          esac
+
+  # The test workflows come from this branch, like the code they test.
   call-linting-tests:
+    needs: [preflight]
     if: inputs.run_tests == true
-    uses: OpenMined/PySyft/.github/workflows/ci.yml@dev
+    uses: ./.github/workflows/ci.yml
 
   call-unit-tests:
+    needs: [preflight]
     if: inputs.run_tests == true
-    uses: OpenMined/PySyft/.github/workflows/unit-tests.yml@dev
+    uses: ./.github/workflows/unit-tests.yml
 
   call-integration-tests:
+    needs: [preflight]
     if: inputs.run_tests == true
-    uses: OpenMined/PySyft/.github/workflows/integration-tests.yml@dev
+    uses: ./.github/workflows/integration-tests.yml
     secrets: inherit
 
-  # Release order follows the dependency graph:
+  # Release order follows the dependency graph. The jobs run one at a time:
+  # each pushes a bump commit, and two pushes from parallel jobs conflict.
   # 1. syft-restrict (no internal deps)
   # 2. syft-permissions (no internal deps)
   # 3. syft-perms (depends on syft-permissions)
   # 4. syft-migration (no internal deps; needed by dataset + job)
   # 5. syft-dataset, then syft-job (depend on syft-perms + syft-migration)
-  # 6. syft-rds (depends on syft, syft-job, syft-dataset)
-  # 7. syft-enclave + syft-bg (depend on syft-rds) — parallel
-  # 8. syft (root; its pins were rewritten by the jobs above)
+  # 6. syft (root; depends on the packages above, whose jobs rewrote its pins)
+  # 7. syft-rds (depends on syft, syft-job, syft-dataset)
+  # 8. syft-enclave, then syft-bg (depend on syft-rds)
+  # syft goes before the packages that depend on it, so a failure in one of
+  # them does not hold syft back.
 
   release-syft-restrict:
-    needs: [call-linting-tests, call-unit-tests, call-integration-tests]
+    needs:
+      [preflight, call-linting-tests, call-unit-tests, call-integration-tests]
     if: >-
       !cancelled() && !failure() &&
       inputs.release_syft_restrict == true
@@ -151,7 +171,7 @@ jobs:
     secrets: inherit
 
   release-syft-rds:
-    needs: [release-syft-job]
+    needs: [deploy-syft]
     if: >-
       !cancelled() && !failure() &&
       inputs.release_syft_rds == true
@@ -176,7 +196,7 @@ jobs:
     secrets: inherit
 
   release-syft-bg:
-    needs: [release-syft-rds]
+    needs: [release-syft-enclave]
     if: >-
       !cancelled() && !failure() &&
       inputs.release_syft_bg == true
@@ -186,7 +206,7 @@ jobs:
     secrets: inherit
 
   deploy-syft:
-    needs: [release-syft-bg, release-syft-enclave, release-syft-dataset]
+    needs: [release-syft-job]
     if: >-
       !cancelled() && !failure()
     runs-on: ubuntu-latest
@@ -218,7 +238,8 @@ jobs:
       # the publish, so the version on the branch names an unreleased version
       - name: Read the version to release
         run: |
-          git pull
+          # Only this branch and no tags: a bare `git pull` fetches every old
+          git pull --ff-only --no-tags origin "${{ github.ref_name }}"
           VERSION=$(python3 syft/version.py)
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "Releasing syft $VERSION"
@@ -232,31 +253,38 @@ jobs:
           git diff --cached --quiet || \
             git commit -m "Freeze syft v${{ env.VERSION }} release artifacts"
 
+      - name: Build
+        run: just build
+
       - name: Upload to PyPI
-        id: publish
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_PASS_SYFT }}
-        run: |
-          just publish
-          echo "version=${{ env.VERSION }}" >> $GITHUB_OUTPUT
+        run: uvx twine upload dist/*
+
+      - name: Record the released version
+        id: publish
+        run: echo "version=${{ env.VERSION }}" >> $GITHUB_OUTPUT
 
       # The tag must name the published version, so it is created before the bump.
       # Root tags continue the repo's historical vX.Y.Z lineage; sub-packages
       # use <name>/vX.Y.Z. The tag is annotated and pushed explicitly:
       # `--follow-tags` only pushes annotated tags, so a lightweight tag would
-      # never reach origin.
+      # never reach origin. The bump and the tag are pushed together (--atomic),
+      # so a re-run never finds one without the other.
       - name: Tag the release, then bump for the next one
         run: |
           git tag -a "v${{ env.VERSION }}" -m "syft v${{ env.VERSION }}"
           just bump ${{ inputs.bump_type }}
-          git push origin HEAD
-          git push origin "refs/tags/v${{ env.VERSION }}"
+          git push --atomic origin HEAD "refs/tags/v${{ env.VERSION }}"
 
+  # Waits for the last package so the smoke test installs what this run
+  # published, but runs whenever syft itself was published.
   post-release-tests:
-    needs: [deploy-syft]
+    needs: [deploy-syft, release-syft-bg]
     if: >-
-      !cancelled() && !failure()
+      !cancelled() &&
+      needs.deploy-syft.result == 'success'
     uses: ./.github/workflows/post-release-tests.yml
     with:
       package_version: ${{ needs.deploy-syft.outputs.version }}

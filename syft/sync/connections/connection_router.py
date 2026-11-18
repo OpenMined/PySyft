@@ -1,25 +1,23 @@
 import logging
 import warnings
+from collections.abc import Container
 from typing import TYPE_CHECKING, List, Optional
 
-from pydantic import BaseModel, PrivateAttr
-from syft_migration import MigratableObject
+from pydantic import BaseModel
+from syft_migration import MigratableObject, protocol_version_at_least
 
 from syft.migrations import (
+    PROTOCOL_NAME,
     SYFT_CLIENT_PROTOCOL_VERSION,
     client_migration_service,
     client_registry,
 )
 from syft.sync.checkpoints.checkpoint import Checkpoint, IncrementalCheckpoint
 from syft.sync.checkpoints.rolling_state import RollingState
-from syft.sync.connections.base_connection import (
-    ConnectionConfig,
-    FileCollection,
-    SyftboxPlatformConnection,
-)
-from syft.sync.encryption_policy import (
-    MessageFormatError,
-)
+from syft.sync.connections.base_connection import FileCollection
+from syft.sync.connections.naming import PEERS_META_KEY
+from syft.sync.connections.protocols import Connections
+from syft.sync.connections.types import MessageKind, RawMessage, SendStatus
 from syft.sync.events.file_change_event import (
     FileChangeEventsMessage,
 )
@@ -27,9 +25,6 @@ from syft.sync.messages.proposed_filechange import ProposedFileChangesMessage
 from syft.sync.peers.exceptions import SyftPeerNotReadyError
 from syft.sync.peers.peer import Peer, PeerState
 from syft.sync.peers.peer_store import PeerStore
-from syft.sync.transport.naming import PEERS_META_KEY
-from syft.sync.transport.protocols import Transport
-from syft.sync.transport.types import MessageKind
 from syft.sync.utils.print_utils import (
     print_peer_added_to_platform,
     print_peer_adding_to_platform,
@@ -43,67 +38,49 @@ logger = logging.getLogger(__name__)
 
 
 class ConnectionRouter(BaseModel):
-    connections: List[SyftboxPlatformConnection]
+    """The one router of a manager. ``SyftboxManager.from_config`` builds it
+    and hands it to every part, so they share one set of connections and one
+    peer store."""
+
+    # Built once with the router and never replaced. A test may swap in a
+    # connection that does not use Google Drive, such as a fake p2p.
+    connections: Connections
 
     peer_store: PeerStore
 
-    # The transport jobs over connections[0], rebuilt if that connection is
-    # replaced (tests swap in a mock connection with add_connection).
-    _transport: Optional[Transport] = PrivateAttr(default=None)
-    _transport_source: Optional[SyftboxPlatformConnection] = PrivateAttr(default=None)
-
-    @property
-    def transport(self) -> Transport:
-        connection = self.connections[0]
-        if self._transport is None or self._transport_source is not connection:
-            self._transport = connection.as_transport()
-            self._transport_source = connection
-        return self._transport
-
-    @classmethod
-    def from_configs(cls, email: str, connection_configs: List[ConnectionConfig]):
-        return cls(
-            connections=[
-                SyftboxPlatformConnection.from_config(config)
-                for config in connection_configs
-            ],
-            peer_store=PeerStore(email=email),
-        )
-
-    def add_connection(self, connection: SyftboxPlatformConnection):
-        self.connections.append(connection)
-
     def get_authenticated_email(self) -> str:
-        return self.connections[0].get_authenticated_email()
+        return self.connections.peering_con.whoami()
 
-    def connection_for_send_message(self) -> SyftboxPlatformConnection:
-        return self.connections[0]
+    # =========================================================================
+    # PROTOCOL NEGOTIATION
+    # =========================================================================
 
-    def connection_for_receive_message(self) -> SyftboxPlatformConnection:
-        return self.connections[0]
+    def negotiated_protocol_version_for_peer(self, peer_email: str) -> str | None:
+        """The syft protocol version this client and ``peer_email`` both speak,
+        or None when the peer's schema is not known.
 
-    def copy_connection(
-        self, connection: SyftboxPlatformConnection
-    ) -> SyftboxPlatformConnection:
-        return connection.clone_for_thread()
+        Raises:
+            MigrationError: when no version satisfies both sides.
+        """
+        schema = self.peer_store.protocol_schema(peer_email, PROTOCOL_NAME)
+        if schema is None:
+            return None
+        return client_registry.infer_protocol_version_to_use(schema)
 
-    def connection_for_eventlog(
-        self, create_new: bool = False
-    ) -> SyftboxPlatformConnection:
-        existing_connection = self.connections[0]
-        if create_new:
-            return self.copy_connection(existing_connection)
-        else:
-            return existing_connection
+    def pair_speaks_protocol(self, peer_email: str, version: str) -> bool:
+        """Whether this client and ``peer_email`` both speak syft protocol
+        ``version`` or later. False when the peer's schema is not known.
 
-    def connection_for_datasite_watcher(self) -> SyftboxPlatformConnection:
-        return self.connections[0]
+        Gate the behaviour that a protocol version adds on this check. Each side
+        decides from the version file it read last, so one side can switch
+        before the other. The new behaviour must still work while the peer uses
+        the old one.
 
-    def connection_for_outbox(self) -> SyftboxPlatformConnection:
-        return self.connections[0]
-
-    def connection_for_own_syftbox(self) -> SyftboxPlatformConnection:
-        return self.connections[0]
+        Raises:
+            MigrationError: when no version satisfies both sides.
+        """
+        negotiated = self.negotiated_protocol_version_for_peer(peer_email)
+        return negotiated is not None and protocol_version_at_least(negotiated, version)
 
     # =========================================================================
     # MESSAGE SEND/RECEIVE (with encryption)
@@ -123,7 +100,7 @@ class ConnectionRouter(BaseModel):
         A peer without a known schema is assumed to run the current protocol,
         the same policy as jobs; the assumption is logged.
         """
-        schema = self.peer_store.protocol_schema(peer_email, "syft")
+        schema = self.peer_store.protocol_schema(peer_email, PROTOCOL_NAME)
         if schema is None:
             logger.warning(
                 f"No syft protocol schema known for peer {peer_email!r}. "
@@ -131,10 +108,7 @@ class ConnectionRouter(BaseModel):
                 "peer that speaks an earlier protocol cannot read this message."
             )
             return message
-        protocol_version = client_registry.infer_protocol_version_to_use(
-            peer_version=schema.version,
-            peer_min=schema.min_supported_version,
-        )
+        protocol_version = client_registry.infer_protocol_version_to_use(schema)
         if schema.version == protocol_version:
             # The peer speaks the negotiated version, so its advertised slim
             # schema is the target; computing our own full schema on every
@@ -153,89 +127,124 @@ class ConnectionRouter(BaseModel):
         data = proposed_file_changes_message.as_compressed_data()
         data = self.peer_store.encrypt_if_needed(recipient, data)
         filename = proposed_file_changes_message.message_filename.as_string()
-        self.transport.p2p.send(recipient, filename, data, MessageKind.PROPOSED_CHANGES)
+        self.connections.p2p_con.send(
+            recipient, filename, data, MessageKind.PROPOSED_CHANGES
+        )
 
-    def owner_get_next_proposed_filechange_message(
+    def owner_receive_proposed_messages(
         self, sender_email: str
-    ) -> ProposedFileChangesMessage | None:
-        """The next message from ``sender_email``, or None when the inbox is empty.
+    ) -> list[tuple[RawMessage, ProposedFileChangesMessage]]:
+        """Every readable proposal waiting from ``sender_email``, oldest first,
+        as received and as read. Pass the received ones to
+        ``mark_all_processed`` once they are handled.
 
-        A message whose format does not match the pair is archived unread,
-        with a warning.
+        A message that cannot be read (wrong format for the pair, bad
+        signature, cannot be decrypted or decoded) is marked processed unread,
+        with a warning, so it does not hold back the others.
 
         Raises:
-            SyftPeerNotReadyError: when the message cannot be read yet. It
-                stays in the inbox.
+            SyftPeerNotReadyError: when the peer is not set up yet. Every
+                message stays unprocessed.
         """
-        connection = self.connection_for_receive_message()
-        while True:
-            result = connection.owner_download_next_raw_proposed_message_from_inbox(
-                sender_email
+        received = self.connections.p2p_con.receive(
+            sender_email, MessageKind.PROPOSED_CHANGES
+        )
+        readable = []
+        for raw in received:
+            if (message := self._read_proposed_message(raw)) is not None:
+                readable.append((raw, message))
+        return readable
+
+    def _read_proposed_message(
+        self, raw: RawMessage
+    ) -> ProposedFileChangesMessage | None:
+        """``raw`` verified, decrypted and decoded, or None when it cannot be
+        read; that message is then marked processed with a warning."""
+        try:
+            decrypted = self.peer_store.decrypt_and_verify_if_needed(
+                raw.sender, raw.data
             )
-            if result is None:
-                return None
-            raw_data, file_id = result
-            try:
-                decrypted = self.peer_store.decrypt_and_verify_if_needed(
-                    sender_email, raw_data
-                )
-            except MessageFormatError as e:
-                warnings.warn(f"Archived message file {file_id} unread: {e}")
-                connection.owner_archive_inbox_file(file_id, sender_email)
-                continue
-            msg = ProposedFileChangesMessage.from_compressed_data(decrypted)
-            msg.platform_id = file_id
-            return msg
+            return ProposedFileChangesMessage.from_compressed_data(decrypted)
+        except SyftPeerNotReadyError:
+            raise
+        except Exception as e:
+            warnings.warn(f"Archived message {raw.msg_id} unread: {e!r}")
+            self.connections.p2p_con.mark_processed(raw)
+            return None
+
+    def mark_all_processed(self, messages: list[RawMessage]) -> None:
+        """Finish ``messages``, as received by either role."""
+        self.connections.p2p_con.mark_all_processed(messages)
 
     def owner_write_event_messages_to_outbox(
         self, recipient_email: str, events_message: FileChangeEventsMessage
-    ):
+    ) -> SendStatus:
         events_message = self._downgrade_for_peer(events_message, recipient_email)
         data = events_message.as_compressed_data()
         data = self.peer_store.encrypt_if_needed(recipient_email, data)
         fname = events_message.message_filepath.as_string()
-        self.transport.p2p.send(recipient_email, fname, data, MessageKind.FILE_EVENTS)
-
-    def watcher_get_events_messages(
-        self, peer_email: str, since_timestamp: float | None
-    ) -> List[FileChangeEventsMessage]:
-        """The outbox messages of ``peer_email``, without the skipped ones."""
-        connection = self.connection_for_datasite_watcher()
-        raw_list = connection.watcher_download_raw_events_from_outbox(
-            peer_email, since_timestamp
+        return self.connections.p2p_con.send(
+            recipient_email, fname, data, MessageKind.FILE_EVENTS
         )
-        messages = [
-            self.watcher_read_events_message(peer_email, raw) for raw in raw_list
-        ]
-        return [m for m in messages if m is not None]
 
-    def watcher_read_events_message(
-        self, peer_email: str, raw: bytes
-    ) -> FileChangeEventsMessage | None:
-        """Verify, decrypt and parse one outbox message of ``peer_email``.
+    def watcher_receive_events_messages(
+        self,
+        sender_email: str,
+        after: str | None = None,
+        already_received: Container[str] = frozenset(),
+    ) -> list[tuple[RawMessage, FileChangeEventsMessage | None]]:
+        """The events messages from ``sender_email`` after the message
+        ``after``, and any that landed after it, without those in
+        ``already_received``, oldest first, as received and as read. Pass the
+        received ones to ``mark_all_processed`` once they are applied.
 
-        Returns None when the message is skipped, with a warning: its format
-        does not match the pair, or it cannot be read now.
+        A message that can never be read (wrong format for the pair, bad
+        signature, cannot be decrypted or decoded) comes with None and a
+        warning, so the caller moves past it. The list ends, with a warning,
+        at a message that cannot be read yet because the peer is not set up;
+        it comes again at the next receive.
+        """
+        received = self.connections.p2p_con.receive(
+            sender_email,
+            MessageKind.FILE_EVENTS,
+            after=after,
+            already_received=already_received,
+        )
+        read = []
+        for raw in received:
+            try:
+                read.append((raw, self._read_events_message(raw)))
+            except SyftPeerNotReadyError as e:
+                warnings.warn(f"Outbox messages of {sender_email} wait: {e}")
+                break
+        return read
+
+    def _read_events_message(self, raw: RawMessage) -> FileChangeEventsMessage | None:
+        """``raw`` verified, decrypted and decoded, or None with a warning when
+        it can never be read.
+
+        Raises:
+            SyftPeerNotReadyError: when the peer is not set up yet.
         """
         try:
-            data = self.peer_store.decrypt_and_verify_if_needed(peer_email, raw)
-        except (
-            MessageFormatError,
-            SyftPeerNotReadyError,
-        ) as e:
-            warnings.warn(f"Skipped an outbox message of {peer_email}: {e}")
+            data = self.peer_store.decrypt_and_verify_if_needed(raw.sender, raw.data)
+            return FileChangeEventsMessage.from_compressed_data(data)
+        except SyftPeerNotReadyError:
+            raise
+        except Exception as e:
+            warnings.warn(f"Skipped unreadable outbox message {raw.msg_id}: {e!r}")
             return None
-        return FileChangeEventsMessage.from_compressed_data(data)
 
-    def watcher_get_outbox_file_metadatas(
-        self, peer_email: str, since_timestamp: float | None
-    ) -> List[dict]:
-        connection = self.connection_for_datasite_watcher()
-        return connection.watcher_get_outbox_file_metadatas(peer_email, since_timestamp)
+    def download_outbox_message(self, file_id: str) -> bytes:
+        """Download one message of my own outbox by its handle (thread-safe)."""
+        return self.connections.p2p_con.clone_for_thread().fetch_message(file_id)
 
-    def connection_for_parallel_download(self) -> SyftboxPlatformConnection:
-        """Create a new connection for thread-safe parallel downloads."""
-        return self.copy_connection(self.connection_for_datasite_watcher())
+    def owner_get_outbox_file_metadatas(self, recipient_email: str) -> List[dict]:
+        """The messages in my outbox to ``recipient_email``, without downloading."""
+        return self.connections.p2p_con.own_outbox_message_metadatas(recipient_email)
+
+    def owner_delete_outbox_messages(self, file_ids: List[str]) -> None:
+        self.connections.p2p_con.delete_messages(file_ids)
 
     # =========================================================================
     # EVENT LOG (self-encrypted at rest when encryption enabled)
@@ -247,23 +256,15 @@ class ConnectionRouter(BaseModel):
         data = events_message.as_compressed_data()
         data = self.peer_store.encrypt_for_self_if_needed(data)
         filename = events_message.message_filepath.as_string()
-        self.transport.owner_store.append_event(filename, data)
-
-    def owner_get_all_accepted_events_messages(self) -> List[FileChangeEventsMessage]:
-        raw_list = self.transport.owner_store.fetch_all_events()
-        return [
-            FileChangeEventsMessage.from_compressed_data(
-                self.peer_store.decrypt_and_verify_for_self_if_needed(raw)
-            )
-            for raw in raw_list
-        ]
+        self.connections.owner_store_con.append_event(filename, data)
 
     def download_events_message_by_id(
         self, events_message_id: str
     ) -> FileChangeEventsMessage:
         """Download and decrypt a single events message (thread-safe)."""
-        connection = self.connection_for_eventlog(create_new=True)
-        raw = connection.as_transport().owner_store.fetch(events_message_id)
+        raw = self.connections.owner_store_con.clone_for_thread().fetch(
+            events_message_id
+        )
         raw = self.peer_store.decrypt_and_verify_for_self_if_needed(raw)
         return FileChangeEventsMessage.from_compressed_data(raw)
 
@@ -272,12 +273,12 @@ class ConnectionRouter(BaseModel):
     # =========================================================================
 
     def add_peer(self, peer_email: str, verbose: bool = True) -> Peer:
-        platform = self.transport.platform
+        platform = self.connections.platform
 
         if verbose:
             print_peer_adding_to_platform(peer_email, platform.module_path)
 
-        self.transport.peering.open_channels(peer_email)
+        self.connections.peering_con.open_channels(peer_email)
 
         if verbose:
             print_peer_added_to_platform(peer_email, platform.module_path)
@@ -285,7 +286,7 @@ class ConnectionRouter(BaseModel):
 
     def get_all_peers_from_json(self, force_download: bool = False) -> List[Peer]:
         """Get all peers from SYFT_peers.json with their stored state."""
-        peers_data = self.transport.peering.read_peer_registry(
+        peers_data = self.connections.peering_con.read_peer_registry(
             force_download=force_download
         )
         peers = []
@@ -306,7 +307,7 @@ class ConnectionRouter(BaseModel):
                 continue
             peer = Peer(
                 email=email,
-                platforms=[self.transport.platform],
+                platforms=[self.connections.platform],
                 state=state,
                 public_encryption_bundle=data.get("public_encryption_bundle"),
             )
@@ -315,11 +316,11 @@ class ConnectionRouter(BaseModel):
 
     def get_peer_requests(self) -> List[Peer]:
         """Get pending peer requests"""
-        peer_emails = self.transport.peering.incoming_requests()
+        peer_emails = self.connections.peering_con.incoming_requests()
         return [
             Peer(
                 email=peer_email,
-                platforms=[self.transport.platform],
+                platforms=[self.connections.platform],
                 state=PeerState.REQUESTED_BY_PEER,
             )
             for peer_email in peer_emails
@@ -332,18 +333,8 @@ class ConnectionRouter(BaseModel):
         public_encryption_bundle: dict | None = None,
     ):
         """Update peer state in storage"""
-        self.transport.peering.update_peer_registry(
+        self.connections.peering_con.update_peer_registry(
             peer_email, state, public_encryption_bundle
-        )
-
-    def owner_remove_proposed_filechange_from_inbox(
-        self,
-        proposed_filechange_message: ProposedFileChangesMessage,
-        sender_email: str,
-    ):
-        connection = self.connection_for_receive_message()
-        connection.owner_remove_proposed_filechange_message_from_inbox(
-            proposed_filechange_message, sender_email
         )
 
     # =========================================================================
@@ -352,15 +343,15 @@ class ConnectionRouter(BaseModel):
 
     def write_encryption_bundle(self, peer_email: str, bundle_json: str) -> None:
         """Write own encryption bundle for a peer."""
-        self.transport.peering.publish_key_bundle(peer_email, bundle_json)
+        self.connections.peering_con.publish_key_bundle(peer_email, bundle_json)
 
     def share_encryption_bundles_folder(self, peer_email: str) -> None:
         """Share the bundles folder with a peer."""
-        self.transport.peering.grant_key_bundle_read(peer_email)
+        self.connections.peering_con.grant_key_bundle_read(peer_email)
 
     def read_peer_encryption_bundle(self, peer_email: str) -> str | None:
         """Read encryption bundle that peer wrote for us."""
-        return self.transport.peering.read_peer_key_bundle(peer_email)
+        return self.connections.peering_con.read_peer_key_bundle(peer_email)
 
     # =========================================================================
     # GENERIC PREFIX-PARAMETERIZED COLLECTION METHODS (with encryption)
@@ -369,17 +360,19 @@ class ConnectionRouter(BaseModel):
     def owner_create_collection_folder(
         self, prefix: str, tag: str, content_hash: str, owner_email: str
     ) -> str:
-        return self.transport.collections.create(prefix, tag, content_hash, owner_email)
+        return self.connections.collections_con.create(
+            prefix, tag, content_hash, owner_email
+        )
 
     def owner_tag_collection_as_any(
         self, prefix: str, tag: str, content_hash: str
     ) -> None:
-        self.transport.collections.mark_shared_with_any(prefix, tag, content_hash)
+        self.connections.collections_con.mark_shared_with_any(prefix, tag, content_hash)
 
     def owner_share_collection(
         self, prefix: str, tag: str, content_hash: str, users: list[str]
     ) -> None:
-        self.transport.collections.grant_read(prefix, tag, content_hash, users)
+        self.connections.collections_con.grant_read(prefix, tag, content_hash, users)
 
     def owner_upload_collection_files(
         self,
@@ -395,26 +388,26 @@ class ConnectionRouter(BaseModel):
                 name: self.peer_store.encrypt_if_needed(recipient_email, data)
                 for name, data in files.items()
             }
-        self.transport.collections.upload(prefix, tag, content_hash, files)
+        self.connections.collections_con.upload(prefix, tag, content_hash, files)
 
     def owner_list_collections(self, prefix: str) -> list[str]:
-        return self.transport.collections.list_mine(prefix)
+        return self.connections.collections_con.list_mine(prefix)
 
     def owner_list_all_collections_with_permissions(
         self, prefix: str
     ) -> list[FileCollection]:
-        return self.transport.collections.list_mine_with_permissions(prefix)
+        return self.connections.collections_con.list_mine_with_permissions(prefix)
 
     def owner_delete_collection(self, prefix: str, tag: str) -> None:
-        self.transport.collections.delete(prefix, tag)
+        self.connections.collections_con.delete(prefix, tag)
 
     def watcher_list_collections(self, prefix: str) -> list[dict]:
-        return self.transport.collections.list_shared_with_me(prefix)
+        return self.connections.collections_con.list_shared_with_me(prefix)
 
     def watcher_download_collection(
         self, prefix: str, tag: str, content_hash: str, owner_email: str
     ) -> dict[str, bytes]:
-        files = self.transport.collections.download(
+        files = self.connections.collections_con.download(
             prefix, tag, content_hash, owner_email
         )
         if self.peer_store and owner_email:
@@ -424,46 +417,33 @@ class ConnectionRouter(BaseModel):
             }
         return files
 
-    def connection_for_peer_file_read(
-        self, create_new: bool = False
-    ) -> SyftboxPlatformConnection:
-        """Connection for reading files a peer publishes: peer info and key bundles.
-
-        Can create a new one for thread safety.
-        """
-        existing_connection = self.connections[0]
-        if create_new:
-            return self.copy_connection(existing_connection)
-        else:
-            return existing_connection
-
     def write_peer_info_file(self, peer_info: "PeerInfo") -> None:
         """Write the peer info file to own SyftBox folder."""
-        self.transport.peering.publish_peer_info(peer_info)
+        self.connections.peering_con.publish_peer_info(peer_info)
 
     def read_own_peer_info_file(self) -> Optional["PeerInfo"]:
         """Read the peer info file from own SyftBox folder."""
-        return self.transport.peering.read_own_peer_info()
+        return self.connections.peering_con.read_own_peer_info()
 
     def read_peer_info_file(self, peer_email: str) -> Optional["PeerInfo"]:
         """Read the peer info file from a peer's SyftBox folder."""
-        return self.transport.peering.read_peer_info(peer_email)
+        return self.connections.peering_con.read_peer_info(peer_email)
 
     def share_peer_info_file_with_peer(
         self, peer_email: str, peer_info: "PeerInfo"
     ) -> None:
         """Share the peer info file with a peer so they can read it."""
-        self.transport.peering.grant_peer_info_read(peer_email, peer_info)
+        self.connections.peering_con.grant_peer_info_read(peer_email, peer_info)
 
     def watcher_get_collection_file_metadatas(
         self, prefix: str, tag: str, content_hash: str, owner_email: str
     ) -> List[dict]:
-        return self.transport.collections.list_files(
+        return self.connections.collections_con.list_files(
             prefix, tag, content_hash, owner_email
         )
 
     def watcher_download_collection_file(self, file_id: str, owner_email: str) -> bytes:
-        data = self.transport.collections.fetch_file(file_id)
+        data = self.connections.collections_con.fetch_file(file_id)
         data = self.peer_store.decrypt_dataset_if_needed(owner_email, data)
         return data
 
@@ -471,40 +451,22 @@ class ConnectionRouter(BaseModel):
     # MISC
     # =========================================================================
 
-    def delete_multiple_files_by_ids(
-        self,
-        file_ids: List[str],
-        ignore_permissions_errors: bool = True,
-        ignore_file_not_found: bool = True,
-    ):
-        connection = self.connection_for_own_syftbox()
-        connection.delete_multiple_files_by_ids(
-            file_ids,
-            ignore_permissions_errors=ignore_permissions_errors,
-            ignore_file_not_found=ignore_file_not_found,
-        )
-
     def owner_get_all_accepted_event_file_ids(
         self, since_timestamp: float | None = None
     ) -> List[str]:
-        return self.transport.owner_store.list_event_handles(since_timestamp)
+        return self.connections.owner_store_con.list_event_handles(since_timestamp)
 
-    def gather_all_file_and_folder_ids(self) -> List[str]:
-        connection = self.connection_for_own_syftbox()
-        return connection.gather_all_file_and_folder_ids()
-
-    def find_orphaned_message_files(self) -> List[str]:
-        """Find message files by name pattern (catches orphaned files)."""
-        connection = self.connection_for_own_syftbox()
-        return connection.find_orphaned_message_files()
+    def delete_all(self) -> int:
+        """Delete everything this account stores; return how many files and
+        folders went."""
+        return self.connections.owner_store_con.delete_all()
 
     def reset_caches(self):
-        connection = self.connection_for_own_syftbox()
-        connection.reset_caches()
+        for connection in self.connections.all():
+            connection.reset_caches()
 
     def delete_file_by_id(self, file_id: str):
-        connection = self.connection_for_own_syftbox()
-        connection.delete_file_by_id(file_id)
+        self.connections.collections_con.delete_by_handle(file_id)
 
     # =========================================================================
     # CHECKPOINT METHODS
@@ -514,31 +476,33 @@ class ConnectionRouter(BaseModel):
         """Serialize, encrypt, and upload a checkpoint."""
         data = checkpoint.as_compressed_data()
         data = self.peer_store.encrypt_for_self_if_needed(data)
-        return self.transport.owner_store.put_checkpoint(checkpoint.filename, data)
+        return self.connections.owner_store_con.put_checkpoint(
+            checkpoint.filename, data
+        )
 
     def get_latest_checkpoint(self) -> Checkpoint | None:
         """Download, decrypt, and deserialize the latest checkpoint."""
-        raw = self.transport.owner_store.latest_checkpoint()
+        raw = self.connections.owner_store_con.latest_checkpoint()
         if raw is None:
             return None
         try:
             raw = self.peer_store.decrypt_and_verify_for_self_if_needed(raw)
             return Checkpoint.from_compressed_data(raw)
         except Exception as e:
-            print(f"Warning: Failed to load checkpoint: {e}")
+            logger.warning(f"Failed to load checkpoint: {e}")
             return None
 
     def get_events_count_since_checkpoint(
         self, checkpoint_timestamp: float | None
     ) -> int:
         """Count events created after the checkpoint timestamp."""
-        return self.transport.owner_store.count_events_since(checkpoint_timestamp)
+        return self.connections.owner_store_con.count_events_since(checkpoint_timestamp)
 
     def get_events_messages_since_timestamp(
         self, since_timestamp: float
     ) -> List[FileChangeEventsMessage]:
         """Download, decrypt, and deserialize events since a timestamp."""
-        raw_list = self.transport.owner_store.fetch_events_since(since_timestamp)
+        raw_list = self.connections.owner_store_con.fetch_events_since(since_timestamp)
         return [
             FileChangeEventsMessage.from_compressed_data(
                 self.peer_store.decrypt_and_verify_for_self_if_needed(raw)
@@ -554,11 +518,13 @@ class ConnectionRouter(BaseModel):
         """Serialize, encrypt, and upload an incremental checkpoint."""
         data = checkpoint.as_compressed_data()
         data = self.peer_store.encrypt_for_self_if_needed(data)
-        return self.transport.owner_store.put_incremental(checkpoint.filename, data)
+        return self.connections.owner_store_con.put_incremental(
+            checkpoint.filename, data
+        )
 
     def get_all_incremental_checkpoints(self) -> List[IncrementalCheckpoint]:
         """Download, decrypt, and deserialize all incremental checkpoints."""
-        raw_list = self.transport.owner_store.all_incrementals()
+        raw_list = self.connections.owner_store_con.all_incrementals()
         checkpoints = []
         for raw in raw_list:
             try:
@@ -566,21 +532,21 @@ class ConnectionRouter(BaseModel):
                 cp = IncrementalCheckpoint.from_compressed_data(raw)
                 checkpoints.append(cp)
             except Exception as e:
-                print(f"Warning: Failed to load incremental checkpoint: {e}")
+                logger.warning(f"Failed to load incremental checkpoint: {e}")
                 continue
         return sorted(checkpoints, key=lambda c: c.sequence_number)
 
     def get_incremental_checkpoint_count(self) -> int:
         """Get the number of incremental checkpoints."""
-        return self.transport.owner_store.incremental_count()
+        return self.connections.owner_store_con.incremental_count()
 
     def get_next_incremental_sequence_number(self) -> int:
         """Get the next sequence number for incremental checkpoints."""
-        return self.transport.owner_store.next_incremental_sequence()
+        return self.connections.owner_store_con.next_incremental_sequence()
 
     def delete_all_incremental_checkpoints(self) -> None:
         """Delete all incremental checkpoints from the storage backend."""
-        self.transport.owner_store.delete_incrementals()
+        self.connections.owner_store_con.delete_incrementals()
 
     # =========================================================================
     # ROLLING STATE METHODS
@@ -590,22 +556,22 @@ class ConnectionRouter(BaseModel):
         """Serialize, encrypt, and upload rolling state."""
         data = rolling_state.as_compressed_data()
         data = self.peer_store.encrypt_for_self_if_needed(data)
-        return self.transport.owner_store.put_rolling_state(
+        return self.connections.owner_store_con.put_rolling_state(
             rolling_state.filename, data
         )
 
     def get_rolling_state(self) -> RollingState | None:
         """Download, decrypt, and deserialize rolling state."""
-        raw = self.transport.owner_store.get_rolling_state()
+        raw = self.connections.owner_store_con.get_rolling_state()
         if raw is None:
             return None
         try:
             raw = self.peer_store.decrypt_and_verify_for_self_if_needed(raw)
             return RollingState.from_compressed_data(raw)
         except Exception as e:
-            print(f"Warning: Failed to load rolling state: {e}")
+            logger.warning(f"Failed to load rolling state: {e}")
             return None
 
     def delete_rolling_state(self) -> None:
         """Delete rolling state from the storage backend."""
-        self.transport.owner_store.delete_rolling_state()
+        self.connections.owner_store_con.delete_rolling_state()

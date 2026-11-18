@@ -1,12 +1,12 @@
 """Object versions order by number, not as strings."""
 
 import pytest
-
 from syft_migration import (
     MigratableObject,
     MigrationError,
     MigrationRegistry,
     ProtocolSchema,
+    protocol_version_at_least,
 )
 
 
@@ -92,6 +92,12 @@ def test_upgradeable_path_targets_the_highest_version():
     assert not reg.has_upgradeable_path_to_latest(
         canonical_name="thing", from_version="3"
     )
+
+
+def test_protocol_version_at_least_orders_by_number():
+    assert protocol_version_at_least("10", "2")
+    assert not protocol_version_at_least("2", "10")
+    assert protocol_version_at_least("2", "2")
 
 
 def test_non_numeric_object_version_is_rejected():
