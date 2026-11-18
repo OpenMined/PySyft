@@ -3,6 +3,7 @@
 import os
 
 import pytest
+from aiortc import RTCDataChannel, RTCSctpTransport
 
 from syft.sync.connections.types import MessageKind
 from syft.sync.connections.webrtc.real.aiortc_peer_connections import (
@@ -75,3 +76,22 @@ def test_large_message_arrives_whole(open_pair):
 
     [message] = do.receive(DS, PROPOSAL)
     assert message.data == data
+
+
+def test_channel_messages_stay_within_max_message_size(open_pair, monkeypatch):
+    # The aiortc receiver needs quadratic time for a message above the maximum size.
+    sizes: list[int] = []
+    send = RTCDataChannel.send
+
+    def recording_send(channel: RTCDataChannel, data: bytes) -> None:
+        sizes.append(len(data))
+        send(channel, data)
+
+    monkeypatch.setattr(RTCDataChannel, "send", recording_send)
+    _, ds = open_pair
+    ds.connect(DO)
+
+    ds.send(DO, "big", os.urandom(1_000_000), PROPOSAL)
+    ds.wait_until_delivered()
+
+    assert max(sizes) <= RTCSctpTransport.getCapabilities().maxMessageSize
