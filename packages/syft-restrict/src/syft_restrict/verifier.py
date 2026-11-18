@@ -788,33 +788,39 @@ class _Checker:
 
     # ── bare name reads (not the func of a call) ─────────────────────────────────────────────
     def _check_name(self, node: ast.Name) -> None:
+        """Check a bare name as a rebind (Store) or a reference (Load)."""
+        if isinstance(node.ctx, ast.Store):
+            self._check_name_rebind(node)
+        # only a reference (Load) can leak/dispatch a name; a Del target is bound elsewhere
+        elif isinstance(node.ctx, ast.Load):
+            self._check_name_reference(node)
+
+    def _check_name_rebind(self, node: ast.Name) -> None:
         """Guards against:
 
         - rebinding self/cls
         - rebinding a reserved name
+        """
+        # self/cls itself: always denied, never delegated to _check_reserved_name
+        if node.id in ("self", "cls"):
+            self.report(
+                node,
+                "reserved-name",
+                f"{node.id!r} may not be rebound; self/cls attribute access is "
+                f"trusted by identifier alone, not a verified reference to the real "
+                f"instance",
+            )
+            return
+        # any other Store target: is this name reserved by the resolver?
+        self._check_reserved_name(node, node.id)
+
+    def _check_name_reference(self, node: ast.Name) -> None:
+        """Guards against:
+
         - loading a banned builtin (`open`, `eval`, `exec`, ...)
         - loading a bare dunder name (`__class__`, `__dict__`, ...)
         - loading an import alias whose path is not allow-listed (`key=system`)
         """
-        if isinstance(node.ctx, ast.Store):
-            # self/cls itself: always denied, never delegated to _check_reserved_name
-            if node.id in ("self", "cls"):
-                self.report(
-                    node,
-                    "reserved-name",
-                    f"{node.id!r} may not be rebound; self/cls attribute access is "
-                    f"trusted by identifier alone, not a verified reference to the real "
-                    f"instance",
-                )
-                return
-            # any other Store target: is this name reserved by the resolver?
-            self._check_reserved_name(node, node.id)
-            return
-
-        # only a reference (Load) can leak/dispatch a name; a Del target is bound elsewhere
-        if not isinstance(node.ctx, ast.Load):
-            return
-
         # skip if already reported as the func of a banned call by _check_call
         if id(node) in self._checked_call_targets:
             return
@@ -835,17 +841,20 @@ class _Checker:
             )
 
         # an import alias used as a value (`key=system`) gives the library path to whatever calls it
-        elif (
-            node.id in self.scan.import_bindings
-            and id(node) not in self._path_roots
-            and id(node) not in self._annotation_nodes
-            and not self._resolved_allowed(node.id)
-        ):
+        elif self._is_import_alias_value(node) and not self._resolved_allowed(node.id):
             self.report(
                 node,
                 "attr-not-allowed",
                 f"reference to {self._resolve(node.id)!r} is not allow-listed",
             )
+
+    def _is_import_alias_value(self, node: ast.Name) -> bool:
+        """Whether an import alias is used as a value, not as a path root (`jnp.einsum`) or in an annotation."""
+        return (
+            node.id in self.scan.import_bindings
+            and id(node) not in self._path_roots
+            and id(node) not in self._annotation_nodes
+        )
 
     # ── operators ────────────────────────────────────────────────────────────────────────────
     def _require_bundle(self, node: ast.AST, bundle: str) -> None:
