@@ -21,7 +21,7 @@ This document lists everything the checker rejects in the **private** region.
 | `call-unresolved`   | Call target not provably safe                                            |
 | `method-on-value`   | Named method on an unknown value (`x.reshape`)                           |
 | `attr-on-value`     | Attribute read/write on an unknown value, or bad `self` chain            |
-| `attr-not-allowed`  | Library attribute path not allow-listed                                  |
+| `attr-not-allowed`  | Library attribute path or imported name not allow-listed                 |
 | `dunder-attr`       | Dunder attribute (`.__class__`, …)                                       |
 | `dunder-name`       | Bare dunder name (`__class__`)                                           |
 | `dunder-def`        | Defining a forbidden magic method                                        |
@@ -156,6 +156,7 @@ y = [v for v in open(path)]  # passive positions still checked
 | Dunder attribute                             | `obj.__class__`, `jnp.fn.__wrapped__(x)`   | `dunder-attr`      |
 | Bare dunder name                             | `c = __class__`                            | `dunder-name`      |
 | Library attr not allowed                     | `np.pi` when numpy is not allowed          | `attr-not-allowed` |
+| Imported name used as a value, not allowed   | `sorted(xs, key=system)`                   | `attr-not-allowed` |
 
 ```python
 # rejected
@@ -209,6 +210,7 @@ Rebinding a name the checker trusts reports **`reserved-name`**.
 | Reserved             | Example rebind                                | Why                                    |
 | -------------------- | --------------------------------------------- | -------------------------------------- |
 | Import aliases       | `jnp = make_evil()`                           | Would lie about resolved library paths |
+| Library paths        | `jax.nn.relu = g`                             | Replaces the function for the process  |
 | Public wrappers      | nested `def transpose` shadowing a public one | Defeats the reviewed wrapper           |
 | Private defs/classes | `helper = evil` after `def helper`            | Bare calls trust the def by name       |
 | Safe builtins        | `list = None`                                 | Bare calls trust `list(...)` by name   |
