@@ -1,16 +1,17 @@
+from dataclasses import dataclass
 from pathlib import Path
 
-from syft.sync.utils.syftbox_utils import check_env
+from syft.sync.config.config import settings
+from syft.sync.connections.webrtc.webrtc_config import WebRTCConfig
 from syft.sync.environments.environment import Environment
+from syft.sync.login_utils import handle_potential_version_mismatches_on_login
 from syft.sync.peers.peer_store import datasite_crypto_keys_path, import_key_file
 from syft.sync.syftbox_manager import SyftboxManager, SyftboxManagerConfig
 from syft.sync.utils.print_utils import (
     print_client_connected,
     print_client_connecting,
 )
-from syft.sync.utils.syftbox_utils import get_email_colab
-from syft.sync.config.config import settings
-from syft.sync.login_utils import handle_potential_version_mismatches_on_login
+from syft.sync.utils.syftbox_utils import check_env, get_email_colab
 
 
 def _verify_token_matches_email(client: SyftboxManager) -> None:
@@ -94,6 +95,58 @@ def _resolve_login_params(
     return email, token_path
 
 
+@dataclass(frozen=True)
+class LoginTarget:
+    email: str
+    # None on Colab, and in WebRTC mode.
+    token_path: str | Path | None
+    # True when a version mismatch kept the data, and the state needs a repair.
+    repair_pending: bool
+    # None: the client syncs over Google Drive.
+    webrtc: WebRTCConfig | None
+
+
+def _resolve_login_target(
+    email: str | None, token_path: str | Path | None, webrtc: bool | WebRTCConfig
+) -> LoginTarget:
+    """Resolve what a login connects to.
+
+    Raises:
+        ValueError: ``webrtc`` is set and ``email`` is None, or ``webrtc`` is
+            True and a signaling setting is missing.
+    """
+    if webrtc is False:
+        email, token_path = _resolve_login_params(email, token_path)
+        repair_pending = handle_potential_version_mismatches_on_login(email, token_path)
+        return LoginTarget(email, token_path, repair_pending, None)
+    if email is None:
+        raise ValueError("Pass your email to log in with webrtc.")
+    webrtc_config = _webrtc_config_from_settings() if webrtc is True else webrtc
+    return LoginTarget(email, None, False, webrtc_config)
+
+
+def _webrtc_config_from_settings() -> WebRTCConfig:
+    """Return the signaling server in the settings.
+
+    Raises:
+        ValueError: A signaling setting is missing.
+    """
+    if settings.signaling_url is None:
+        raise ValueError(
+            "Set SYFT_SIGNALING_URL to the URL of the signaling server, then log "
+            "in again."
+        )
+    if settings.signaling_access_key is None:
+        raise ValueError(
+            "Set SYFT_SIGNALING_ACCESS_KEY to the access key of the signaling "
+            "server, then log in again."
+        )
+    return WebRTCConfig(
+        signaling_url=settings.signaling_url,
+        access_key=settings.signaling_access_key,
+    )
+
+
 def _import_key_file(
     key_file: str | Path | None, syftbox_folder: Path, email: str
 ) -> None:
@@ -116,6 +169,7 @@ def login(
     | None = None,  # None: value is determined by the role
     encryption: bool | None = None,  # True: required; None: the datasite's policy
     key_file: str | Path | None = None,  # crypto_keys.json of an earlier session
+    webrtc: bool | WebRTCConfig = False,  # True: the signaling server in the settings
 ):
     return login_ds(
         email,
@@ -125,6 +179,7 @@ def login(
         skip_peer_on_patch_version_diff=skip_peer_on_patch_version_diff,
         encryption=encryption,
         key_file=key_file,
+        webrtc=webrtc,
     )
 
 
@@ -137,31 +192,19 @@ def login_ds(
     | None = None,  # None: value is determined by the role
     encryption: bool | None = None,  # True: required; None: the datasite's policy
     key_file: str | Path | None = None,  # crypto_keys.json of an earlier session
+    webrtc: bool | WebRTCConfig = False,  # True: the signaling server in the settings
 ):
-    env = check_env()
-    email, token_path = _resolve_login_params(email, token_path)
-
-    repair_pending = handle_potential_version_mismatches_on_login(email, token_path)
-
-    if env == Environment.COLAB:
-        config = SyftboxManagerConfig.for_colab(
-            email=email,
-            has_ds_role=True,
-            skip_peer_on_patch_version_diff=skip_peer_on_patch_version_diff,
-            encryption=encryption,
-        )
-    else:
-        config = SyftboxManagerConfig.for_jupyter(
-            email=email,
-            has_ds_role=True,
-            token_path=Path(token_path) if token_path is not None else None,
-            skip_peer_on_patch_version_diff=skip_peer_on_patch_version_diff,
-            encryption=encryption,
-        )
-    _import_key_file(key_file, config.syftbox_folder, email)
+    target = _resolve_login_target(email, token_path, webrtc)
+    config = _manager_config(
+        target,
+        has_ds_role=True,
+        skip_peer_on_patch_version_diff=skip_peer_on_patch_version_diff,
+        encryption=encryption,
+    )
+    _import_key_file(key_file, config.syftbox_folder, target.email)
     client = SyftboxManager.from_config(config)
 
-    return _init_client_login(client, sync, load_peers, repair_pending)
+    return _init_client_login(client, sync, load_peers, target.repair_pending)
 
 
 def login_do(
@@ -173,28 +216,29 @@ def login_do(
     | None = None,  # None: value is determined by the role
     encryption: bool | None = None,  # True: required; None: the datasite's policy
     key_file: str | Path | None = None,  # crypto_keys.json of an earlier session
+    webrtc: bool | WebRTCConfig = False,  # True: the signaling server in the settings
 ):
-    env = check_env()
-    email, token_path = _resolve_login_params(email, token_path)
-
-    repair_pending = handle_potential_version_mismatches_on_login(email, token_path)
-
-    if env == Environment.COLAB:
-        config = SyftboxManagerConfig.for_colab(
-            email=email,
-            has_do_role=True,
-            skip_peer_on_patch_version_diff=skip_peer_on_patch_version_diff,
-            encryption=encryption,
-        )
-    else:
-        config = SyftboxManagerConfig.for_jupyter(
-            email=email,
-            has_do_role=True,
-            token_path=Path(token_path) if token_path is not None else None,
-            skip_peer_on_patch_version_diff=skip_peer_on_patch_version_diff,
-            encryption=encryption,
-        )
-    _import_key_file(key_file, config.syftbox_folder, email)
+    target = _resolve_login_target(email, token_path, webrtc)
+    config = _manager_config(
+        target,
+        has_do_role=True,
+        skip_peer_on_patch_version_diff=skip_peer_on_patch_version_diff,
+        encryption=encryption,
+    )
+    _import_key_file(key_file, config.syftbox_folder, target.email)
     client = SyftboxManager.from_config(config)
 
-    return _init_client_login(client, sync, load_peers, repair_pending)
+    return _init_client_login(client, sync, load_peers, target.repair_pending)
+
+
+def _manager_config(target: LoginTarget, **config_kwargs) -> SyftboxManagerConfig:
+    """The config of a manager that logs in to ``target``, on Colab or in
+    Jupyter."""
+    if check_env() == Environment.COLAB:
+        return SyftboxManagerConfig.for_colab(
+            email=target.email, webrtc=target.webrtc, **config_kwargs
+        )
+    token_path = Path(target.token_path) if target.token_path is not None else None
+    return SyftboxManagerConfig.for_jupyter(
+        email=target.email, token_path=token_path, webrtc=target.webrtc, **config_kwargs
+    )

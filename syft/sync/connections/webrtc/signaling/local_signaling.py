@@ -46,6 +46,8 @@ class LocalSignaling(Signaling):
         return []
 
     async def watch(self, email: str, peers: list[str]) -> None:
+        for watchers in self._watchers.values():
+            watchers.discard(email)
         for peer in peers:
             self._watchers[peer].add(email)
             if peer in self._listeners:

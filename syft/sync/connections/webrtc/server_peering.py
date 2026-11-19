@@ -14,9 +14,7 @@ from websockets.sync.client import connect
 
 from syft.sync.connections.exceptions import ConnectionUnavailableError
 from syft.sync.connections.protocols import PeeringConnection
-from syft.sync.connections.webrtc.signaling.server_signaling import (
-    ServerSignalingConfig,
-)
+from syft.sync.connections.webrtc.webrtc_config import WebRTCConfig
 from syft.sync.peers.peer import PeerState
 from syft.sync.sync.caches.persisted_dict import PersistedDict
 from syft.sync.sync.constants import CACHE_DIR
@@ -37,7 +35,7 @@ def key_bundle_document(reader: str) -> str:
 
 @dataclass(frozen=True)
 class ServerPeeringConfig:
-    server: ServerSignalingConfig
+    server: WebRTCConfig
     # The email of this client. The server trusts it, and shows it to peers as
     # spelled here.
     email: str
@@ -155,7 +153,7 @@ class ServerPeeringConnection(PeeringConnection):
             "email": self._config.email,
             "access_key": self._config.server.access_key,
         }
-        url = self._config.server.url
+        url = self._config.server.signaling_url
         try:
             with connect(url, open_timeout=REQUEST_TIMEOUT_SECONDS) as connection:
                 connection.send(json.dumps({**request, **credentials}))

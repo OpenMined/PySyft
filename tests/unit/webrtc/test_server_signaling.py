@@ -4,10 +4,8 @@ import asyncio
 
 import pytest
 
-from syft.sync.connections.webrtc.signaling.server_signaling import (
-    ServerSignaling,
-    ServerSignalingConfig,
-)
+from syft.sync.connections.webrtc.signaling.server_signaling import ServerSignaling
+from syft.sync.connections.webrtc.webrtc_config import WebRTCConfig
 from syft.sync.connections.webrtc.signaling.signaling import OnOnline
 from tests.unit.webrtc.test_signaling_server import (
     ACCESS_KEY,
@@ -29,14 +27,16 @@ def ignore_online(peer: str) -> None:
 async def listen(
     url: str, email: str, on_online: OnOnline = ignore_online
 ) -> ServerSignaling:
-    signaling = ServerSignaling(ServerSignalingConfig(url, ACCESS_KEY))
+    signaling = ServerSignaling(WebRTCConfig(signaling_url=url, access_key=ACCESS_KEY))
     await signaling.listen(email, echo_answer, on_online)
     return signaling
 
 
 def test_listen_returns_server_ice_servers():
     async def scenario(url: str) -> None:
-        signaling = ServerSignaling(ServerSignalingConfig(url, ACCESS_KEY))
+        signaling = ServerSignaling(
+            WebRTCConfig(signaling_url=url, access_key=ACCESS_KEY)
+        )
         assert await signaling.listen(A, echo_answer, ignore_online) == ICE_SERVERS
         await signaling.close(A)
 
@@ -45,7 +45,7 @@ def test_listen_returns_server_ice_servers():
 
 def test_listen_with_wrong_key_raises():
     async def scenario(url: str) -> None:
-        signaling = ServerSignaling(ServerSignalingConfig(url, "wrong"))
+        signaling = ServerSignaling(WebRTCConfig(signaling_url=url, access_key="wrong"))
         with pytest.raises(ConnectionError, match="The access key is wrong"):
             await signaling.listen(A, echo_answer, ignore_online)
 

@@ -6,7 +6,6 @@ import json
 import logging
 import uuid
 from collections.abc import Callable, Coroutine
-from dataclasses import dataclass
 from typing import Any
 
 from websockets.asyncio.client import ClientConnection, connect
@@ -18,24 +17,9 @@ from syft.sync.connections.webrtc.signaling.signaling import (
     OnOnline,
     Signaling,
 )
+from syft.sync.connections.webrtc.webrtc_config import WebRTCConfig
 
 logger = logging.getLogger(__name__)
-
-WEBSOCKET_SCHEMES = ("ws://", "wss://")
-
-
-@dataclass(frozen=True)
-class ServerSignalingConfig:
-    # The WebSocket URL of the signaling server.
-    url: str
-    # The shared access key of the signaling server.
-    access_key: str
-
-    def __post_init__(self) -> None:
-        if not self.url.startswith(WEBSOCKET_SCHEMES):
-            raise ValueError(f"url must start with ws:// or wss://, got {self.url!r}")
-        if not self.access_key:
-            raise ValueError("access_key must not be empty")
 
 
 class ServerSignaling(Signaling):
@@ -51,7 +35,7 @@ class ServerSignaling(Signaling):
     _on_offer: OnOffer
     _on_online: OnOnline
 
-    def __init__(self, config: ServerSignalingConfig):
+    def __init__(self, config: WebRTCConfig):
         self._config = config
         # request id -> the answer to an offer of this client
         self._pending_answers: dict[str, asyncio.Future[str]] = {}
@@ -77,7 +61,7 @@ class ServerSignaling(Signaling):
         """
         self._on_offer = on_offer
         self._on_online = on_online
-        connection = await connect(self._config.url)
+        connection = await connect(self._config.signaling_url)
         hello = {"type": "hello", "email": email, "access_key": self._config.access_key}
         await connection.send(json.dumps(hello))
         reply = json.loads(await connection.recv())
@@ -140,7 +124,12 @@ class ServerSignaling(Signaling):
         self._start_answer_task(self._answer_offer(message))
 
     async def _answer_offer(self, message: dict) -> None:
-        sdp = await self._on_offer(message["from"], message["sdp"])
+        try:
+            sdp = await self._on_offer(message["from"], message["sdp"])
+        except ConnectionRefusedError as err:
+            # The offerer gets no answer, and its offer times out.
+            logger.warning(f"Refused an offer from {message['from']}: {err}")
+            return
         await self._send(
             {"type": "answer", "to": message["from"], "id": message["id"], "sdp": sdp}
         )

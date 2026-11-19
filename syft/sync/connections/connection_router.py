@@ -272,6 +272,10 @@ class ConnectionRouter(BaseModel):
     # PEER MANAGEMENT
     # =========================================================================
 
+    def set_peers(self, peer_emails: list[str]) -> None:
+        """Set the peers that this client may exchange messages with."""
+        self.connections.p2p_con.set_peers(peer_emails)
+
     def add_peer(self, peer_email: str, verbose: bool = True) -> Peer:
         platform = self.connections.platform
 

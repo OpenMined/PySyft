@@ -73,6 +73,9 @@ class WebRTCP2PConnection(P2PConnection):
         """Open a channel to ``peer``; return once it is open."""
         self._peer_connections.connect(peer)
 
+    def set_peers(self, peers: list[str]) -> None:
+        self._peer_connections.set_peers(peers)
+
     def close(self) -> None:
         """Close the peer connections. Unconfirmed messages stay in the outgoing
         queues."""

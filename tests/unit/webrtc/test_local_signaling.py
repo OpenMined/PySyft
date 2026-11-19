@@ -52,3 +52,18 @@ def test_watch_reports_peers_listening_now_and_later():
         return online
 
     assert asyncio.run(watch_two_peers()) == [DS, OTHER_DS]
+
+
+def test_watch_replaces_earlier_watch_list():
+    async def watch_then_unwatch() -> list[str]:
+        signaling = LocalSignaling()
+        online: list[str] = []
+        await signaling.listen(DO, answer_nothing, online.append)
+
+        await signaling.watch(DO, [DS])
+        await signaling.watch(DO, [])
+        await signaling.listen(DS, answer_nothing, ignore_online)
+        await asyncio.sleep(0)
+        return online
+
+    assert asyncio.run(watch_then_unwatch()) == []

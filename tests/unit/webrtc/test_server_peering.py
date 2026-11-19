@@ -10,9 +10,7 @@ from syft.sync.connections.webrtc.server_peering import (
     ServerPeeringConfig,
     ServerPeeringConnection,
 )
-from syft.sync.connections.webrtc.signaling.server_signaling import (
-    ServerSignalingConfig,
-)
+from syft.sync.connections.webrtc.webrtc_config import WebRTCConfig
 from syft.sync.peers.peer import PeerState
 from syft.sync.syftbox_manager import SyftboxManager
 from tests.unit.webrtc.signaling_server_thread import (
@@ -33,7 +31,7 @@ def server_url():
 def server_peering(
     url: str, email: str, syftbox_folder: Path
 ) -> ServerPeeringConnection:
-    server = ServerSignalingConfig(url, ACCESS_KEY)
+    server = WebRTCConfig(signaling_url=url, access_key=ACCESS_KEY)
     return ServerPeeringConnection(ServerPeeringConfig(server, email, syftbox_folder))
 
 

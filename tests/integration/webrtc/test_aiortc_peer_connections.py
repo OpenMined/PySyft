@@ -24,8 +24,9 @@ def open_pair(tmp_path):
     do = WebRTCP2PConnection(DO, tmp_path / "do")
     ds = WebRTCP2PConnection(DS, tmp_path / "ds")
     signaling = LocalSignaling()
-    do.open(AiortcPeerConnections(signaling))
-    ds.open(AiortcPeerConnections(signaling))
+    do.open(AiortcPeerConnections(signaling, sends_offers=False))
+    ds.open(AiortcPeerConnections(signaling, sends_offers=True))
+    do.set_peers([DS])
     yield do, ds
     do.close()
     ds.close()
@@ -95,3 +96,23 @@ def test_channel_messages_stay_within_max_message_size(open_pair, monkeypatch):
     ds.wait_until_delivered()
 
     assert max(sizes) <= RTCSctpTransport.getCapabilities().maxMessageSize
+
+
+def test_do_refuses_offer_from_peer_it_did_not_accept(open_pair):
+    do, ds = open_pair
+    do.set_peers([])
+
+    with pytest.raises(ConnectionRefusedError):
+        ds.connect(DO)
+
+
+def test_do_closes_channel_of_peer_it_no_longer_accepts(open_pair):
+    do, ds = open_pair
+    ds.connect(DO)
+
+    do.set_peers([])
+    ds.send(DO, "late", b"", PROPOSAL)
+
+    with pytest.raises(TimeoutError):
+        ds.wait_until_delivered(timeout=2)
+    assert do.receive(DS, PROPOSAL) == []

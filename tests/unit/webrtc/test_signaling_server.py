@@ -251,3 +251,18 @@ def test_session_reports_peer_spelling():
         assert await receive(a) == offer
 
     run_with_server(scenario)
+
+
+def test_watch_replaces_earlier_watch_list():
+    async def scenario(url: str) -> None:
+        a = await sign_in(url, A)
+        await a.send(json.dumps({"type": "watch", "peers": [B]}))
+        # A is online, so its own entry comes back at once: the server has the watch.
+        await a.send(json.dumps({"type": "watch", "peers": [A]}))
+        assert await receive(a) == {"type": "online", "email": A}
+
+        await sign_in(url, B)
+        await a.send(json.dumps({"type": "watch", "peers": [A]}))
+        assert await receive(a) == {"type": "online", "email": A}
+
+    run_with_server(scenario)

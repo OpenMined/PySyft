@@ -69,7 +69,14 @@ from syft.sync.connections.webrtc.mock.fake_peer_connections import (
 )
 from syft.sync.connections.webrtc.signaling.local_signaling import LocalSignaling
 from syft.sync.connections.webrtc.peer_connections import PeerConnections
+from syft.sync.connections.webrtc.local_owner_store import (
+    OWNER_STORE_PATH,
+    LocalOwnerStoreConnection,
+)
+from syft.sync.connections.webrtc.webrtc_collections import WebRTCCollectionsConnection
+from syft.sync.connections.webrtc.webrtc_config import WebRTCConfig
 from syft.sync.connections.webrtc.webrtc_p2p import WebRTCP2PConnection
+from syft.sync.platforms.webrtc_platform import WebRTCPlatform
 from syft.sync.version.peer_manager import (
     PeerManager,
     PeerManagerConfig,
@@ -162,6 +169,8 @@ class SyftboxManagerConfig(BaseModel):
         ] = None,  # None: value is determined by the role
         force_ignore_peer_version: bool = False,
         collection_specs: list["CollectionSyncSpec"] | None = None,
+        # None: the client syncs over Google Drive.
+        webrtc: WebRTCConfig | None = None,
     ):
         if not has_ds_role and not has_do_role:
             raise ValueError("At least one of has_ds_role or has_do_role must be True")
@@ -170,6 +179,10 @@ class SyftboxManagerConfig(BaseModel):
         # about custom collections (eg: datasets or jobs).
         if collection_specs is None:
             collection_specs = []
+        # Datasets do not go over WebRTC yet. A WebRTC client syncs no
+        # collections, so a sync never removes local dataset copies.
+        if webrtc is not None:
+            collection_specs = []
 
         syftbox_folder = get_colab_default_syftbox_folder(email)
         use_in_memory_cache = False
@@ -177,8 +190,9 @@ class SyftboxManagerConfig(BaseModel):
             syftbox_folder, email, collection_specs
         )
         collection_variants = default_collection_variants(collection_specs)
+        drive_login = GdriveConnectionConfig(email=email, token_path=None)
         connection_router_config = ConnectionRouterConfig.one_connection(
-            GdriveConnectionConfig(email=email, token_path=None)
+            drive_login if webrtc is None else webrtc
         )
         datasite_owner_syncer_config = DatasiteOwnerSyncerConfig(
             email=email,
@@ -240,6 +254,8 @@ class SyftboxManagerConfig(BaseModel):
         ] = None,  # None: value is determined by the role
         force_ignore_peer_version: bool = False,
         collection_specs: list["CollectionSyncSpec"] | None = None,
+        # None: the client syncs over Google Drive.
+        webrtc: WebRTCConfig | None = None,
     ):
         if not has_ds_role and not has_do_role:
             raise ValueError("At least one of has_ds_role or has_do_role must be True")
@@ -249,6 +265,10 @@ class SyftboxManagerConfig(BaseModel):
         # (see syft_rds.config.DATASET_COLLECTION_SPECS).
         if collection_specs is None:
             collection_specs = []
+        # Datasets do not go over WebRTC yet. A WebRTC client syncs no
+        # collections, so a sync never removes local dataset copies.
+        if webrtc is not None:
+            collection_specs = []
 
         syftbox_folder = get_jupyter_default_syftbox_folder(email)
         collections_folder = default_collections_folder(
@@ -256,8 +276,9 @@ class SyftboxManagerConfig(BaseModel):
         )
         collection_variants = default_collection_variants(collection_specs)
 
+        drive_login = GdriveConnectionConfig(email=email, token_path=token_path)
         connection_router_config = ConnectionRouterConfig.one_connection(
-            GdriveConnectionConfig(email=email, token_path=token_path)
+            drive_login if webrtc is None else webrtc
         )
         datasite_owner_syncer_config = DatasiteOwnerSyncerConfig(
             email=email,
@@ -603,16 +624,17 @@ class SyftboxManager(BaseModelCallbackMixin):
                 "The config names no connections: set connection_router_config, "
                 "or pass connections to SyftboxManager.from_config"
             )
-        drive_config = connection_router_config.p2p_con
-        if not (
-            isinstance(drive_config, GdriveConnectionConfig)
-            and connection_router_config.uses_one_connection()
-        ):
+        if not connection_router_config.uses_one_connection():
             raise NotImplementedError(
-                "Only one Google Drive login for every connection is built so far"
+                "Only one login for every connection is built so far"
             )
-        cached_client = DriveCachedClient.from_config(drive_config)
-        return SyftboxManager._drive_connections(cached_client)
+        login = connection_router_config.p2p_con
+        if isinstance(login, GdriveConnectionConfig):
+            cached_client = DriveCachedClient.from_config(login)
+            return SyftboxManager._drive_connections(cached_client)
+        if isinstance(login, WebRTCConfig):
+            return SyftboxManager._webrtc_connections(config, login)
+        raise NotImplementedError(f"No connections are built for {login!r}")
 
     @staticmethod
     def _drive_connections(cached_client: DriveCachedClient) -> Connections:
@@ -624,6 +646,40 @@ class SyftboxManager(BaseModelCallbackMixin):
             collections_con=DriveCollectionsConnection(cached_client),
             peering_con=DrivePeeringConnection(cached_client),
             platform=GdriveFilesPlatform(),
+        )
+
+    @staticmethod
+    def _webrtc_connections(
+        config: SyftboxManagerConfig, webrtc: WebRTCConfig
+    ) -> Connections:
+        """Every connection of the router in WebRTC mode, with no Google Drive."""
+        # Imported here: aiortc and websockets are in the optional webrtc extra.
+        from syft.sync.connections.webrtc.real.aiortc_peer_connections import (
+            AiortcPeerConnections,
+        )
+        from syft.sync.connections.webrtc.server_peering import (
+            ServerPeeringConfig,
+            ServerPeeringConnection,
+        )
+        from syft.sync.connections.webrtc.signaling.server_signaling import (
+            ServerSignaling,
+        )
+
+        p2p = WebRTCP2PConnection(config.email, config.syftbox_folder)
+        signaling = ServerSignaling(webrtc)
+        p2p.open(AiortcPeerConnections(signaling, sends_offers=config.has_ds_role))
+        peering_config = ServerPeeringConfig(
+            webrtc, config.email, config.syftbox_folder
+        )
+        return Connections(
+            p2p_con=p2p,
+            owner_store_con=LocalOwnerStoreConnection(
+                config.syftbox_folder / OWNER_STORE_PATH
+            ),
+            watcher_store_con=DriveWatcherStoreConnection(),
+            collections_con=WebRTCCollectionsConnection(),
+            peering_con=ServerPeeringConnection(peering_config),
+            platform=WebRTCPlatform(),
         )
 
     @classmethod
@@ -841,7 +897,7 @@ class SyftboxManager(BaseModelCallbackMixin):
         datasets and storage."""
         network = FakeNetwork()
         return cls._mock_drive_and_webrtc_pair(
-            lambda: FakePeerConnections(network), **kwargs
+            lambda sends_offers: FakePeerConnections(network), **kwargs
         )
 
     @classmethod
@@ -858,27 +914,30 @@ class SyftboxManager(BaseModelCallbackMixin):
 
         signaling = LocalSignaling()
         return cls._mock_drive_and_webrtc_pair(
-            lambda: AiortcPeerConnections(signaling), **kwargs
+            lambda sends_offers: AiortcPeerConnections(signaling, sends_offers),
+            **kwargs,
         )
 
     @classmethod
     def _mock_drive_and_webrtc_pair(
         cls,
-        make_peer_connections: Callable[[], PeerConnections],
+        make_peer_connections: Callable[[bool], PeerConnections],
         add_peers: bool = True,
         **config_kwargs: Any,
     ) -> tuple["SyftboxManager", "SyftboxManager"]:
         """(ds_manager, do_manager) over one mock Drive, their p2p replaced by a
-        ``WebRTCP2PConnection`` on each side and the DS connected to the DO."""
+        ``WebRTCP2PConnection`` on each side. With ``add_peers``, the approval
+        gives both sides their peers, and the DS connects to the DO.
+        ``make_peer_connections`` takes whether its client sends offers: the
+        DS does, and the DO does not."""
         do_config, ds_config = cls._mock_pair_configs(**config_kwargs)
         do_connections, ds_connections = cls._mock_drive_connections(
             do_config, ds_config
         )
         do_p2p = WebRTCP2PConnection(do_config.email, do_config.syftbox_folder)
         ds_p2p = WebRTCP2PConnection(ds_config.email, ds_config.syftbox_folder)
-        do_p2p.open(make_peer_connections())
-        ds_p2p.open(make_peer_connections())
-        ds_p2p.connect(do_config.email)
+        do_p2p.open(make_peer_connections(False))
+        ds_p2p.open(make_peer_connections(True))
         return cls._test_pair(
             do_config,
             do_connections.model_copy(update={"p2p_con": do_p2p}),
@@ -1133,6 +1192,7 @@ class SyftboxManager(BaseModelCallbackMixin):
                 instead of using the cached copy.
         """
         cast(PeerManager, self.peer_manager).load_peers(force_download=force_download)
+        self._set_approved_peers()
         self._emit_peers_loaded()
 
     def _check_peer_request_exists(self, email: str) -> bool:
@@ -1149,6 +1209,7 @@ class SyftboxManager(BaseModelCallbackMixin):
         self.peer_manager.approve_peer_request(
             email_or_peer, verbose=verbose, peer_must_exist=peer_must_exist
         )
+        self._set_approved_peers()
         self._post_approve_peer_do(email_or_peer)
 
     def _post_approve_peer_do(self, email_or_peer: str | Peer):
@@ -1157,6 +1218,12 @@ class SyftboxManager(BaseModelCallbackMixin):
         )
         self._emit_peers_loaded()
         self._emit("peer_approved", peer_email)
+
+    def _set_approved_peers(self) -> None:
+        """Give the connections the approved peers, the only peers this client
+        exchanges messages with."""
+        approved = [peer.email for peer in self.peer_manager.approved_peers]
+        self._connection_router.set_peers(approved)
 
     def _emit_peers_loaded(self) -> None:
         self._emit("peers_loaded")

@@ -109,11 +109,11 @@ def test_manager_without_connections_config_fails_at_init():
     [ConnectionConfig(), _drive_config("other@example.com")],
     ids=["not_drive", "other_drive_login"],
 )
-def test_connections_other_than_one_drive_connection_are_not_built_yet(p2p_config):
+def test_connections_with_different_logins_are_not_built_yet(p2p_config):
     config = _config_with_both_roles()
     config.connection_router_config = ConnectionRouterConfig.one_connection(
         _drive_config(config.email)
     ).model_copy(update={"p2p_con": p2p_config})
 
-    with pytest.raises(NotImplementedError, match="one Google Drive login"):
+    with pytest.raises(NotImplementedError, match="one login for every connection"):
         SyftboxManager.from_config(config)

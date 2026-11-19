@@ -11,7 +11,8 @@ Each message is one JSON object with a "type" field. A session starts with
 ``hello {email, access_key}``, and the answer is ``welcome {ice_servers}``.
 Then the client sends these messages:
 
-- ``watch {peers}``: the server sends ``online {email}`` for each watched peer
+- ``watch {peers}``: ``peers`` replaces the earlier watch list of the client.
+  The server sends ``online {email}`` for each watched peer
   that is online. Later it sends ``online`` or ``offline`` when a watched peer
   connects or disconnects.
 - ``offer {to, id, sdp}`` and ``answer {to, id, sdp}``: the peer gets the
@@ -284,6 +285,8 @@ class SignalingServer:
     async def _watch_peers(
         self, email: str, connection: ServerConnection, message: dict
     ) -> None:
+        # The new list replaces the earlier one.
+        self._remove_watcher(connection)
         for peer in read_text_list_field(message, "peers"):
             self._watchers[peer.lower()].add(connection)
             if peer.lower() in self._clients:

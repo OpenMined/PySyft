@@ -2,11 +2,11 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
+from syft_rds import login as rds_login
 
 import syft.sync.login
 from syft.sync.environments.environment import Environment
 from syft.sync.peers.peer_store import PeerStore
-from syft_rds import login as rds_login
 
 EMAIL = "do@openmined.org"
 
@@ -20,7 +20,7 @@ def test_login_restores_uploaded_key_file(tmp_path, monkeypatch, login):
     for module in (rds_login, syft.sync.login):
         monkeypatch.setattr(module, "check_env", lambda: Environment.JUPYTER)
     monkeypatch.setattr(
-        rds_login,
+        syft.sync.login,
         "handle_potential_version_mismatches_on_login",
         lambda email, token_path: False,
     )

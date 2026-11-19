@@ -35,7 +35,8 @@ class Signaling(ABC):
         """Call the ``on_online`` of ``email`` when one of ``peers`` is online.
 
         If a peer is online now, the first call comes at once. The signaling
-        calls ``on_online`` again each time the peer comes online.
+        calls ``on_online`` again each time the peer comes online. ``peers``
+        replaces the peers of an earlier call.
         """
 
     @abstractmethod

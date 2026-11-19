@@ -13,15 +13,14 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from syft.sync.connections.webrtc.webrtc_config import WebRTCConfig
 from syft.sync.environments.environment import Environment
 from syft.sync.login import (
     _import_key_file,
     _init_client_login,
-    _resolve_login_params,
+    _resolve_login_target,
 )
-from syft.sync.login_utils import handle_potential_version_mismatches_on_login
 from syft.sync.utils.syftbox_utils import check_env
-
 from syft_rds.client import SyftRDSClient
 from syft_rds.config import SyftRDSClientConfig
 
@@ -37,41 +36,42 @@ def _login(
     has_ds_role: bool,
     encryption: bool | None = None,
     key_file: str | Path | None = None,
+    webrtc: bool | WebRTCConfig = False,
 ) -> SyftRDSClient:
     """Shared RDS login.
 
     Mirrors the pre-split ``syft`` login flow: detect the environment,
     resolve login params
     """
-    env = check_env()
-    email, token_path = _resolve_login_params(email, token_path)
-    repair_pending = handle_potential_version_mismatches_on_login(email, token_path)
+    target = _resolve_login_target(email, token_path, webrtc)
 
-    if env == Environment.COLAB:
+    if check_env() == Environment.COLAB:
         config = SyftRDSClientConfig.for_colab(
-            email=email,
+            email=target.email,
             has_do_role=has_do_role,
             has_ds_role=has_ds_role,
             skip_peer_on_patch_version_diff=skip_peer_on_patch_version_diff,
             encryption=encryption,
+            webrtc=target.webrtc,
         )
     else:
         config = SyftRDSClientConfig.for_jupyter(
-            email=email,
+            email=target.email,
             has_do_role=has_do_role,
             has_ds_role=has_ds_role,
-            token_path=Path(token_path) if token_path is not None else None,
+            token_path=Path(target.token_path) if target.token_path else None,
             skip_peer_on_patch_version_diff=skip_peer_on_patch_version_diff,
             encryption=encryption,
+            webrtc=target.webrtc,
         )
 
-    _import_key_file(key_file, config.sync.syftbox_folder, email)
+    _import_key_file(key_file, config.sync.syftbox_folder, target.email)
     client = SyftRDSClient.from_config(config)
     _init_client_login(
         client.sync_engine,
         sync=sync,
         load_peers=load_peers,
-        repair_pending=repair_pending,
+        repair_pending=target.repair_pending,
     )
     return client
 
@@ -85,8 +85,14 @@ def login_do(
     skip_peer_on_patch_version_diff: bool | None = None,
     encryption: bool | None = None,
     key_file: str | Path | None = None,
+    webrtc: bool | WebRTCConfig = False,
 ) -> SyftRDSClient:
-    """Log in as a Data Owner and return a self-contained RDS client."""
+    """Log in as a DO and return a self-contained RDS client.
+
+    ``webrtc=True`` syncs over WebRTC through the signaling server in the
+    ``SYFT_SIGNALING_URL`` and ``SYFT_SIGNALING_ACCESS_KEY`` settings, with no
+    Google login.
+    """
     return _login(
         email=email,
         token_path=token_path,
@@ -95,6 +101,7 @@ def login_do(
         skip_peer_on_patch_version_diff=skip_peer_on_patch_version_diff,
         encryption=encryption,
         key_file=key_file,
+        webrtc=webrtc,
         has_do_role=True,
         has_ds_role=False,
     )
@@ -109,8 +116,14 @@ def login_ds(
     skip_peer_on_patch_version_diff: bool | None = None,
     encryption: bool | None = None,
     key_file: str | Path | None = None,
+    webrtc: bool | WebRTCConfig = False,
 ) -> SyftRDSClient:
-    """Log in as a Data Scientist and return a self-contained RDS client."""
+    """Log in as a DS and return a self-contained RDS client.
+
+    ``webrtc=True`` syncs over WebRTC through the signaling server in the
+    ``SYFT_SIGNALING_URL`` and ``SYFT_SIGNALING_ACCESS_KEY`` settings, with no
+    Google login.
+    """
     return _login(
         email=email,
         token_path=token_path,
@@ -119,6 +132,7 @@ def login_ds(
         skip_peer_on_patch_version_diff=skip_peer_on_patch_version_diff,
         encryption=encryption,
         key_file=key_file,
+        webrtc=webrtc,
         has_do_role=False,
         has_ds_role=True,
     )
