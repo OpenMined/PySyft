@@ -4,6 +4,8 @@ import re
 from html import escape
 from typing import TYPE_CHECKING, List
 
+from .job_stdout import LOG_TRUNCATION_MESSAGE
+
 if TYPE_CHECKING:
     from .job import JobInfo
 
@@ -81,9 +83,12 @@ class StderrViewer:
 
         lines = content.split("\n")
         if len(lines) <= 3:
-            return content
+            text = content
         else:
-            return f"StderrViewer({len(lines)} lines, {len(content)} chars)"
+            text = f"StderrViewer({len(lines)} lines, {len(content)} chars)"
+        if self.job_info.log_is_truncated("stderr.txt"):
+            text += f"\n{LOG_TRUNCATION_MESSAGE}"
+        return text
 
     def _repr_html_(self) -> str:
         """HTML representation for Jupyter notebooks with scrollable view."""
@@ -128,6 +133,8 @@ class StderrViewer:
         lines = clean_content.split("\n")
         char_count = len(clean_content)
         line_count = len(lines)
+        if self.job_info.log_is_truncated("stderr.txt"):
+            html_content += f"\n{escape(LOG_TRUNCATION_MESSAGE)}"
 
         return f"""
         <style>

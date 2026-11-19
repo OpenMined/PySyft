@@ -2,10 +2,15 @@ from __future__ import annotations
 
 import html
 import re
+from html import escape
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .job import JobInfo
+
+LOG_TRUNCATION_MESSAGE = (
+    "[truncated: the data owners shared only the start of this log]"
+)
 
 
 class StdoutViewer:
@@ -88,9 +93,12 @@ class StdoutViewer:
 
         lines = content.split("\n")
         if len(lines) <= 3:
-            return content
+            text = content
         else:
-            return f"StdoutViewer({len(lines)} lines, {len(content)} chars)"
+            text = f"StdoutViewer({len(lines)} lines, {len(content)} chars)"
+        if self.job_info.log_is_truncated("stdout.txt"):
+            text += f"\n{LOG_TRUNCATION_MESSAGE}"
+        return text
 
     def _repr_html_(self) -> str:
         """HTML representation for Jupyter notebooks with scrollable view."""
@@ -140,6 +148,8 @@ class StdoutViewer:
         lines = clean_content.split("\n")
         char_count = len(clean_content)
         line_count = len(lines)
+        if self.job_info.log_is_truncated("stdout.txt"):
+            html_content += f"\n{escape(LOG_TRUNCATION_MESSAGE)}"
 
         return f"""
         <style>
