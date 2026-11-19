@@ -13,7 +13,7 @@ jobs:
     name: Validate PR title
     runs-on: ubuntu-latest
     steps:
-      - uses: amannn/action-semantic-pull-request@v5
+      - uses: amannn/action-semantic-pull-request@v6
         id: lint_title
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -30,7 +30,7 @@ jobs:
             build
           requireScope: false
 
-      - uses: marocchino/sticky-pull-request-comment@v2
+      - uses: marocchino/sticky-pull-request-comment@v3
         if: always() && (steps.lint_title.outputs.error_message != null)
         with:
           header: pr-title-lint-error
@@ -58,7 +58,7 @@ jobs:
 
             See the [PR guidelines](https://github.com/${{ github.repository }}/blob/main/.github/PULL_REQUEST_TEMPLATE.md#pr-naming-convention) for full details.
 
-      - uses: marocchino/sticky-pull-request-comment@v2
+      - uses: marocchino/sticky-pull-request-comment@v3
         if: ${{ steps.lint_title.outputs.error_message == null }}
         with:
           header: pr-title-lint-error
@@ -69,7 +69,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       # Apply type label based on PR title prefix
-      - uses: actions/github-script@v7
+      - uses: actions/github-script@v9
         with:
           script: |
             const title = context.payload.pull_request.title;
@@ -95,6 +95,6 @@ jobs:
             }
 
       # Apply package labels based on changed files
-      - uses: actions/labeler@v5
+      - uses: actions/labeler@v7
         with:
           configuration-path: .github/labeler.yml
