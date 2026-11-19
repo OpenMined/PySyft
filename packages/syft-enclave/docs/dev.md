@@ -5,7 +5,7 @@
 Production image features:
 
 - No SSH access
-- No container log redirection (serial logs only show launcher output)
+- No container log redirection (serial logs only show launcher output). The image label `tee.launch_policy.log_redirect` is `debugonly`, so job output can't reach the VM operator's logs. Keep it that way.
 - `tee-restart-policy=Never` shuts down the VM if the container exits
 - `Hardened:true` in attestation claims
 
