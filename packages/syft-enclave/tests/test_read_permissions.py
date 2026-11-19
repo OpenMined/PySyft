@@ -786,8 +786,32 @@ def run_crash_sharing_nothing():
 
 
 def request_stderr(do, **request):
-    with pytest.warns(UserWarning, match="stdout or stderr"):
+    with pytest.warns(UserWarning, match="read stderr.txt, as the job wrote it"):
         do.request_stderr(do.jobs["j"], **request)
+
+
+def _log_request_warnings(record):
+    return [str(w.message) for w in record if "This request lets" in str(w.message)]
+
+
+def test_log_request_warning_names_readers():
+    enclave, do1, do2, ds = run_crash_sharing_nothing()
+
+    with pytest.warns(UserWarning) as record:
+        do1.request_stderr(do1.jobs["j"], readers=ds.email, n_chars=1000)
+    assert _log_request_warnings(record) == [
+        f"This request lets {ds.email} read stderr.txt, as the job wrote it. "
+        "The job code can print private data into it. To read it first, "
+        "request it with no readers: the enclave then releases it to the "
+        "data owners only."
+    ]
+
+    with pytest.warns(UserWarning) as record:
+        do1.request_stdout(do1.jobs["j"])
+    assert _log_request_warnings(record) == [
+        "This request lets the enclave's data owners read stdout.txt, as the "
+        "job wrote it. The job code can print private data into it."
+    ]
 
 
 def test_requested_stderr_head_reaches_submitter():
