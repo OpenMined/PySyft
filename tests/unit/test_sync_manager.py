@@ -3,8 +3,10 @@ from pathlib import Path
 import pytest
 import yaml
 
+from syft.sync.connections.drive.drive_peering import DrivePeeringConnection
 from syft.sync.connections.connection_router import ConnectionRouter
-from syft.sync.connections.drive.gdrive_transport import GDriveConnection
+from syft.sync.connections.types import MessageKind
+from syft.sync.connections.drive.drive_cached_client import DriveCachedClient
 from syft.sync.encryption_policy import EncryptionPolicy
 from syft.sync.peers.peer import Peer
 from syft.sync.peers.peer_store import PeerStore
@@ -24,6 +26,7 @@ from tests.unit.utils import (
     get_mock_proposed_events_messages,
     grant_job_inbox_access,
 )
+from syft.sync.connections.drive.drive_connections import drive_cached_client_of
 
 
 def path_for_job(do_email: str, ds_email: str, filename: str = "test.job") -> str:
@@ -53,6 +56,7 @@ def test_valid_and_invalid_proposed_filechange_event():
     do_manager.datasite_owner_syncer.perm_context.open(".").grant_write_access(
         ds_manager.email
     )
+    do_manager.sync()
     ds_email = ds_manager.email
     do_email = do_manager.email
 
@@ -147,7 +151,7 @@ def test_sync_existing_datasite_state_do():
     ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
         use_in_memory_cache=False
     )
-    connection_ds = ds_manager._connection_router.connections[0]
+    ds_p2p = ds_manager._connection_router.connections.p2p_con
     events_messages = get_mock_events_messages(2)
 
     for message in events_messages:
@@ -166,7 +170,7 @@ def test_sync_existing_datasite_state_do():
     n_files_in_cache = len(do_manager.datasite_owner_syncer.event_cache.file_connection)
     hashes_in_cache = len(do_manager.datasite_owner_syncer.event_cache.file_hashes)
 
-    n_outbox = connection_ds.watcher_get_outbox_file_metadatas(do_manager.email, None)
+    n_outbox = ds_p2p.receive(do_manager.email, MessageKind.FILE_EVENTS)
     assert n_messages_in_cache >= 1  # At least 1 message with the 2 file changes
     # 2 data files + private/crypto_keys.json + private/syft_settings.json
     assert n_files_in_cache == 4
@@ -185,13 +189,11 @@ def test_sync_existing_inbox_state_do():
     do_manager.datasite_owner_syncer.perm_context.open(".").grant_write_access(
         ds_manager.email
     )
-    connection_ds = ds_manager._connection_router.connections[0]
-
     proposed_events_messages = get_mock_proposed_events_messages(
         2, email=ds_manager.email
     )
     for message in proposed_events_messages:
-        connection_ds.watcher_send_proposed_file_changes_message(
+        ds_manager._connection_router.watcher_send_proposed_file_changes_message(
             do_manager.email, message
         )
 
@@ -298,6 +300,28 @@ def test_file_connections():
     ds_manager.sync()
 
     assert (syftbox_dir_ds / do_manager.email / result_rel_path).exists()
+
+
+def test_binary_job_file_reaches_do_byte_for_byte():
+    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+        use_in_memory_cache=False
+    )
+    grant_job_inbox_access(do_manager, ds_manager.email)
+    job_path = path_for_job(do_manager.email, ds_manager.email, "model.bin")
+    content = b"\x89PNG\r\n\x1a\n\x00\xff\xfe"
+    local_file = ds_manager.datasite_watcher_syncer.syftbox_folder / job_path
+    local_file.parent.mkdir(parents=True, exist_ok=True)
+    local_file.write_bytes(content)
+
+    # No content given: the DS reads the file from its SyftBox folder.
+    ds_manager.datasite_watcher_syncer.on_file_change(job_path)
+    do_manager.sync()
+
+    datasite_dir_do = (
+        do_manager.datasite_owner_syncer.event_cache.file_connection.base_dir
+    )
+    job_path_in_datasite = job_path.split("/", 1)[1]
+    assert (datasite_dir_do / job_path_in_datasite).read_bytes() == content
 
 
 def test_file_deletion_do_to_ds():
@@ -461,12 +485,28 @@ def _add_known_peer(do_manager, email: str) -> None:
     do_manager.peer_manager.peer_store.add_peer(Peer(email=email, info=info))
 
 
+def _peer_router(ds_manager, do_manager, email: str) -> ConnectionRouter:
+    """Make ``email`` a second peer of the DO, and return its router."""
+    cached_client = DriveCachedClient.from_service(
+        email,
+        drive_cached_client_of(
+            ds_manager._connection_router.connections
+        ).client.drive_service,
+    )
+    DrivePeeringConnection(cached_client).open_channels(do_manager.email)
+    _add_known_peer(do_manager, email)
+    return ConnectionRouter(
+        connections=SyftboxManager._drive_connections(cached_client),
+        peer_store=_store_knowing(email, do_manager.email),
+    )
+
+
 def test_job_files_sync_to_submitter_only():
     """Test that job files only sync to the peer who submitted the job.
 
     When a DO has multiple approved peers, job results should only be sent
     to the peer who submitted that specific job, not broadcast to all peers.
-    Uses permission-based routing: submitter gets read access via share_outputs(),
+    Uses permission-based routing: the outputs release grants the submitter read,
     non-submitter has no read access to job outputs.
     """
     ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
@@ -510,22 +550,15 @@ def test_job_files_sync_to_submitter_only():
 
     # Process local changes with both recipients
     recipients = [submitter_email, non_submitter_email]
-    submitter_conn = GDriveConnection.from_service(
-        submitter_email, ds_manager._connection_router.connections[0].drive_service
-    )
-    submitter_conn.add_peer(do_manager.email)
-    _add_known_peer(do_manager, submitter_email)
-    submitter_router = ConnectionRouter(
-        connections=[submitter_conn],
-        peer_store=_store_knowing(submitter_email, do_manager.email),
-    )
-    do_manager.datasite_owner_syncer.process_local_changes(recipients)
+    submitter_router = _peer_router(ds_manager, do_manager, submitter_email)
+    do_manager.datasite_owner_syncer.sync(recipients)
 
-    messages_for_non_submitter = (
-        ds_manager._connection_router.watcher_get_events_messages(
-            do_manager.email, None
+    messages_for_non_submitter = [
+        m
+        for _, m in ds_manager._connection_router.watcher_receive_events_messages(
+            do_manager.email
         )
-    )
+    ]
 
     paths_for_non_submitter = [
         str(event.path_in_datasite)
@@ -533,9 +566,9 @@ def test_job_files_sync_to_submitter_only():
         for event in msg.events
     ]
 
-    messages_for_submitter = submitter_router.watcher_get_events_messages(
-        do_manager.email, None
-    )
+    messages_for_submitter = [
+        m for _, m in submitter_router.watcher_receive_events_messages(do_manager.email)
+    ]
     paths_for_submitter = [
         str(event.path_in_datasite)
         for msg in messages_for_submitter
@@ -599,12 +632,12 @@ def test_job_file_beside_outputs_does_not_sync_to_submitter():
     assert (review_dir / "outputs" / "result.txt").exists()
     review_rel = review_dir.relative_to(do_manager.syftbox_folder / do_manager.email)
 
-    do_manager.datasite_owner_syncer.process_local_changes([ds_email])
+    do_manager.datasite_owner_syncer.sync([ds_email])
 
     paths = [
         str(event.path_in_datasite)
-        for msg in ds_manager._connection_router.watcher_get_events_messages(
-            do_manager.email, None
+        for _, msg in ds_manager._connection_router.watcher_receive_events_messages(
+            do_manager.email
         )
         for event in msg.events
     ]
@@ -712,16 +745,7 @@ def test_permission_change_triggers_resend():
 
     datasite_dir_do = do_manager.syftbox_folder / do_manager.email
 
-    # Set up a second peer connection router for peer B
-    peer_b_conn = GDriveConnection.from_service(
-        peer_b_email, ds_manager._connection_router.connections[0].drive_service
-    )
-    peer_b_conn.add_peer(do_manager.email)
-    _add_known_peer(do_manager, peer_b_email)
-    peer_b_router = ConnectionRouter(
-        connections=[peer_b_conn],
-        peer_store=_store_knowing(peer_b_email, do_manager.email),
-    )
+    peer_b_router = _peer_router(ds_manager, do_manager, peer_b_email)
 
     # Grant only peer A read access to project/
     ctx = do_manager.datasite_owner_syncer.perm_context
@@ -734,16 +758,21 @@ def test_permission_change_triggers_resend():
 
     # First sync: only peer A should receive the file
     recipients = [peer_a_email, peer_b_email]
-    do_manager.datasite_owner_syncer.process_local_changes(recipients)
+    do_manager.datasite_owner_syncer.sync(recipients)
 
-    messages_for_a = ds_manager._connection_router.watcher_get_events_messages(
-        do_manager.email, None
-    )
+    messages_for_a = [
+        m
+        for _, m in ds_manager._connection_router.watcher_receive_events_messages(
+            do_manager.email
+        )
+    ]
     paths_for_a = [
         str(e.path_in_datasite) for msg in messages_for_a for e in msg.events
     ]
 
-    messages_for_b = peer_b_router.watcher_get_events_messages(do_manager.email, None)
+    messages_for_b = [
+        m for _, m in peer_b_router.watcher_receive_events_messages(do_manager.email)
+    ]
     paths_for_b = [
         str(e.path_in_datasite) for msg in messages_for_b for e in msg.events
     ]
@@ -757,11 +786,11 @@ def test_permission_change_triggers_resend():
     ctx.open("project/").grant_read_access(peer_b_email)
 
     # Second sync: peer B should receive data.txt via resend
-    do_manager.datasite_owner_syncer.process_local_changes(recipients)
+    do_manager.datasite_owner_syncer.sync(recipients)
 
-    messages_for_b_after = peer_b_router.watcher_get_events_messages(
-        do_manager.email, None
-    )
+    messages_for_b_after = [
+        m for _, m in peer_b_router.watcher_receive_events_messages(do_manager.email)
+    ]
     paths_for_b_after = [
         str(e.path_in_datasite) for msg in messages_for_b_after for e in msg.events
     ]
@@ -769,6 +798,105 @@ def test_permission_change_triggers_resend():
     assert any("data.txt" in p for p in paths_for_b_after), (
         "Peer B should receive data.txt after permission change"
     )
+
+
+def _events_for(router: ConnectionRouter, do_manager) -> list[tuple[str, bool]]:
+    """(path, is_deleted) of each event in the DO's outbox for ``router``'s peer."""
+    return [
+        (str(e.path_in_datasite), e.is_deleted)
+        for _, m in router.watcher_receive_events_messages(do_manager.email)
+        for e in m.events
+    ]
+
+
+def _accept_setup(ds_manager, do_manager, peer_b_email: str):
+    """Peer A may write ``shared/``, peer B may read it, and both hold
+    ``shared/data.txt`` with "one". Returns the syncer, the folder and the peers."""
+    syncer = do_manager.datasite_owner_syncer
+    shared = syncer.perm_context.open("shared/")
+    shared.grant_write_access(ds_manager.email)
+    shared.grant_read_access(peer_b_email)
+    peers = [ds_manager.email, peer_b_email]
+    data = do_manager.syftbox_folder / do_manager.email / "shared/data.txt"
+    data.parent.mkdir(parents=True, exist_ok=True)
+    data.write_text("one")
+    syncer.sync(peers)
+    ds_manager.sync()
+    return syncer, shared, peers
+
+
+def test_accepted_change_reaches_every_reader():
+    """A change that the DO accepts from peer A goes to peer A, and to peer B, who
+    may read the file."""
+    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+        use_in_memory_cache=False,
+    )
+    peer_b_email = "peer_b@example.com"
+    peer_b_router = _peer_router(ds_manager, do_manager, peer_b_email)
+    syncer, _, peers = _accept_setup(ds_manager, do_manager, peer_b_email)
+
+    ds_manager._send_file_change(f"{do_manager.email}/shared/proposal.txt", "from A")
+    syncer.sync(peers)
+    syncer.sync(peers)
+    assert ("shared/proposal.txt", False) in _events_for(
+        ds_manager._connection_router, do_manager
+    )
+    assert ("shared/proposal.txt", False) in _events_for(peer_b_router, do_manager)
+
+
+def test_revoke_after_accepted_change_sends_delete():
+    """Peer B gets peer A's accepted change to a file, and a delete once it loses
+    read access."""
+    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+        use_in_memory_cache=False,
+    )
+    peer_b_email = "peer_b@example.com"
+    peer_b_router = _peer_router(ds_manager, do_manager, peer_b_email)
+    syncer, shared, peers = _accept_setup(ds_manager, do_manager, peer_b_email)
+
+    ds_manager._send_file_change(f"{do_manager.email}/shared/data.txt", "from A")
+    syncer.sync(peers)
+    syncer.sync(peers)
+    shared.revoke_read_access(peer_b_email)
+    syncer.sync(peers)
+    assert _events_for(peer_b_router, do_manager) == [
+        ("shared/data.txt", False),
+        ("shared/data.txt", False),
+        ("shared/data.txt", True),
+    ]
+
+
+def test_accepted_delete_reaches_every_reader():
+    """A delete that the DO accepts from peer A goes to peer A, and to peer B, who
+    may read the file."""
+    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+        use_in_memory_cache=False,
+    )
+    peer_b_email = "peer_b@example.com"
+    peer_b_router = _peer_router(ds_manager, do_manager, peer_b_email)
+    syncer, _, peers = _accept_setup(ds_manager, do_manager, peer_b_email)
+
+    proposal = ProposedFileChangesMessage(
+        sender_email=ds_manager.email,
+        proposed_file_changes=[
+            ProposedFileChange(
+                path_in_datasite="shared/data.txt",
+                old_hash=syncer.event_cache.file_hashes[Path("shared/data.txt")],
+                datasite_email=do_manager.email,
+                is_deleted=True,
+            )
+        ],
+    )
+    syncer.handle_proposed_filechange_events_message(ds_manager.email, proposal)
+    syncer.save_owner_state()
+    syncer.sync(peers)
+    assert ("shared/data.txt", True) in _events_for(
+        ds_manager._connection_router, do_manager
+    )
+    assert _events_for(peer_b_router, do_manager) == [
+        ("shared/data.txt", False),
+        ("shared/data.txt", True),
+    ]
 
 
 def test_default_collections_folder_picks_shareable_spec_regardless_of_order():

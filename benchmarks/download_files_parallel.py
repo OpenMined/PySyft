@@ -44,8 +44,8 @@ def benchmark_gdrive_load_state():
 
     connection = manager_do1._connection_router.connections[0]
 
-    personal_syftbox_folder_id = connection.get_personal_syftbox_folder_id()
-    file_metadatas = connection.get_file_metadatas_from_folder(
+    personal_syftbox_folder_id = connection.layout.get_personal_syftbox_folder_id()
+    file_metadatas = connection.layout.get_file_metadatas_from_folder(
         personal_syftbox_folder_id
     )
     # valid_fname_objs = connection._get_valid_events_from_file_metadatas(file_metadatas)

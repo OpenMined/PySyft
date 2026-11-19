@@ -229,28 +229,28 @@ class MigrationRegistry:
             },
         )
 
-    def infer_protocol_version_to_use(
-        self, peer_version: str, peer_min: str | None = None
-    ) -> str:
-        """The protocol version to speak with a peer.
+    def infer_protocol_version_to_use(self, peer_schema: ProtocolSchema) -> str:
+        """The protocol version to speak with a peer that advertises ``peer_schema``.
 
         Both sides speak the lower of the two current versions, because each side
         must read what the other writes. That version must also be at or above
-        both floors. A peer that publishes no floor is treated as ``"0"``, which
-        refuses nothing.
+        both floors.
 
         Raises MigrationError when no version satisfies both sides.
         """
-        chosen = min(self.protocol_version, peer_version, key=_version_order)
+        chosen = min(self.protocol_version, peer_schema.version, key=_version_order)
         floor = max(
-            self.min_supported_protocol_version, peer_min or "0", key=_version_order
+            self.min_supported_protocol_version,
+            peer_schema.min_supported_version,
+            key=_version_order,
         )
         if _version_order(chosen) < _version_order(floor):
             raise MigrationError(
                 f"No usable {self.protocol_name} protocol version with this peer. "
                 f"This client speaks {self.protocol_version} and reads down to "
                 f"{self.min_supported_protocol_version}; the peer speaks "
-                f"{peer_version} and reads down to {peer_min or '0'}."
+                f"{peer_schema.version} and reads down to "
+                f"{peer_schema.min_supported_version}."
             )
         return chosen
 

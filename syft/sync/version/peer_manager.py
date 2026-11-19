@@ -11,7 +11,6 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict, PrivateAttr, model_validator
-from syft.sync.connections.base_connection import ConnectionConfig
 from syft.sync.connections.connection_router import ConnectionRouter
 from syft.sync.encryption_policy import EncryptionPolicy
 from syft.sync.peers.peer import Peer, PeerNotReadyError, PeerSetupError, PeerState
@@ -21,6 +20,7 @@ from syft.sync.peers.peer_store import (
     datasite_settings_path,
     resolve_encryption_policy,
 )
+from syft.sync.connections.exceptions import ConnectionUnavailableError
 from syft.sync.utils.print_utils import (
     print_peer_already_connected,
     print_peer_connection_established,
@@ -32,6 +32,7 @@ from syft.sync.utils.print_utils import (
 from syft.sync.version.exceptions import (
     VersionMismatchError,
     VersionUnknownError,
+    peer_info_unavailable_reason,
 )
 from syft.sync.version.peer_info import PeerInfo
 from syft.sync.version.version_info import CompatibilityStatus, VersionInfo
@@ -105,7 +106,6 @@ class PeerManagerConfig(BaseModel):
 
     syftbox_folder: Path
     email: str = ""
-    connection_configs: List[ConnectionConfig] = []
     # Proceeds with a peer whose version is unknown or whose client version is
     # incompatible, instead of skipping it.
     force_ignore_peer_version: bool = False
@@ -183,29 +183,34 @@ class PeerManager(BaseModel):
         """Get all peers we can sync with (DS side)."""
         return self.peer_store.syncable_peers
 
-    @classmethod
-    def from_config(cls, config: PeerManagerConfig, email: str = "") -> "PeerManager":
-        """Create a PeerManager from a config.
+    @staticmethod
+    def peer_store_from_config(config: PeerManagerConfig, email: str = "") -> PeerStore:
+        """The peer store ``config`` describes. The manager builds it before the
+        connection router, which holds it for every part.
 
         ``email`` is a fallback for configs built without one; the config's own
         ``email`` takes precedence so the key path matches the datasite.
         """
-        resolved_email = config.email or email
-        peer_store = PeerStore.create(
-            email=resolved_email,
+        return PeerStore.create(
+            email=config.email or email,
             encryption_policy=resolve_encryption_policy(
                 config.settings_path, config.encryption_policy
             ),
             keys_path=config.crypto_keys_path,
         )
-        connection_router = ConnectionRouter.from_configs(
-            resolved_email, config.connection_configs
-        )
-        connection_router.peer_store = peer_store
+
+    @classmethod
+    def from_config(
+        cls, config: PeerManagerConfig, connection_router: ConnectionRouter
+    ) -> "PeerManager":
+        """``config`` holds plain values only. ``connection_router`` is live and
+        shared with the other parts of the manager, so the caller builds it
+        once and passes it in next to the config (see
+        ``SyftboxManager.from_config``). The peer store is the router's."""
         return cls(
             syftbox_folder=config.syftbox_folder,
             connection_router=connection_router,
-            peer_store=peer_store,
+            peer_store=connection_router.peer_store,
             force_ignore_peer_version=config.force_ignore_peer_version,
             suppress_version_warnings=config.suppress_version_warnings,
             n_threads=config.n_threads,
@@ -268,18 +273,23 @@ class PeerManager(BaseModel):
             cached_peer.info = peer_info
 
     def _load_single_peer_info(self, peer_email: str) -> tuple[str, Optional[PeerInfo]]:
-        """Load the info of a single peer. Used by parallel loader."""
+        """Load the info of a single peer. Used by parallel loader.
+
+        A peer whose file cannot be read gets None, so it does not stop the sync.
+
+        Raises:
+            ConnectionUnavailableError: when the backend cannot be reached.
+        """
+        # A copy per thread: the connection may not be thread-safe
+        peering = self.connection_router.connections.peering_con.clone_for_thread()
         try:
-            # Create new connection for thread safety
-            connection = self.connection_router.connection_for_peer_file_read(
-                create_new=True
-            )
-            peer_info = connection.read_peer_info_file(peer_email)
+            return (peer_email, peering.read_peer_info(peer_email))
+        except ConnectionUnavailableError:
+            raise
         except Exception as e:
             if not self.suppress_version_warnings:
                 warnings.warn(f"Failed to load peer info for {peer_email}: {e}")
             return (peer_email, None)
-        return (peer_email, peer_info)
 
     def load_peer_infos_parallel(
         self, peer_emails: List[str], force: bool = False
@@ -388,10 +398,7 @@ class PeerManager(BaseModel):
         # and an incompatible client version is refused by default. Either way the
         # override lets the caller proceed.
         if status == CompatibilityStatus.UNKNOWN:
-            detail = (
-                "version information not available "
-                "(if you are unsure if it is up to date, call client.sync())"
-            )
+            detail = peer_info_unavailable_reason(peer_email)
         else:
             detail = own_version.get_incompatibility_reason(peer_version)
 
@@ -449,10 +456,12 @@ class PeerManager(BaseModel):
         )
         if not any_compatible:
             warnings.warn(
-                f"All connected peers ({len(peer_emails)}) run an incompatible "
-                "client version, or their version is unknown. Such a peer is "
-                "skipped, and cannot receive jobs or datasets; call client.sync() "
-                "to read the version of each peer."
+                f"None of your peers ({len(peer_emails)}) can receive jobs or "
+                "datasets yet. For each one, either their account info is not "
+                "available yet (usually the connection request has not been "
+                "approved yet, or they have not created their account yet, or "
+                "recently deleted it), or they run an incompatible client version. "
+                "Once that is fixed, call client.sync()."
             )
 
     def shutdown(self) -> None:
@@ -585,7 +594,7 @@ class PeerManager(BaseModel):
                 peers.append(
                     Peer(
                         email=email,
-                        platforms=[self.connection_router.transport.platform],
+                        platforms=[self.connection_router.connections.platform],
                         state=PeerState.REQUESTED_BY_PEER,
                     )
                 )
@@ -641,10 +650,8 @@ class PeerManager(BaseModel):
 
     def _read_own_published_bundle(self, peer_email: str) -> dict | None:
         """The bundle this client published for ``peer_email``, or None (thread-safe)."""
-        connection = self.connection_router.connection_for_peer_file_read(
-            create_new=True
-        )
-        bundle_json = connection.read_own_encryption_bundle(peer_email)
+        peering = self.connection_router.connections.peering_con.clone_for_thread()
+        bundle_json = peering.read_own_key_bundle(peer_email)
         if bundle_json is None:
             return None
         return json.loads(bundle_json)["public_encryption_bundle"]

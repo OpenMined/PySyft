@@ -15,6 +15,8 @@ serialized objects to a version the other side understands.
   the current + historical protocol schemas.
 - `MigrationService` — upgrades/downgrades objects, including to the version a peer's
   package version supports.
+- `protocol_version_at_least` — compares two protocol versions as integers, so `"10"` is
+  later than `"2"`. Use it instead of a string or `int()` comparison.
 - `coverage` — checks a package runs against its own registry: `unregistered_objects`
   finds a versioned object filed into another package's registry, and
   `missing_upgrade_paths` / `missing_downgrade_paths` find a version that cannot reach

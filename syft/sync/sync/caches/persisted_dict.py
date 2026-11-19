@@ -26,7 +26,7 @@ import json
 import os
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Iterator
 from uuid import uuid4
 
 import portalocker
@@ -35,6 +35,36 @@ import portalocker
 # the layout of an entry changes. A file with no version holds the entries at the
 # top level, was written before the field, and is version 0.
 PERSISTED_DICT_VERSION = 1
+
+
+@contextmanager
+def locked_file(path: Path, exclusive: bool = True) -> Iterator[None]:
+    """Hold a cross-process lock on ``path``, exclusive or shared.
+
+    The lock is on a sibling ``.lock`` file, so ``path`` itself can be
+    replaced while the lock is held.
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    flag = portalocker.LOCK_EX if exclusive else portalocker.LOCK_SH
+    with open(path.with_suffix(f"{path.suffix}.lock"), "a") as f:
+        portalocker.lock(f, flag)
+        try:
+            yield
+        finally:
+            portalocker.unlock(f)
+
+
+def write_text_atomic(path: Path, text: str) -> None:
+    """Replace the content of ``path`` with ``text`` in one step."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    # Per-process unique tmp path: even with the file lock, this guards
+    # against any path where two writers share a tmp filename.
+    tmp = path.with_suffix(f".tmp.{os.getpid()}.{uuid4().hex}")
+    try:
+        tmp.write_text(text)
+        tmp.replace(path)
+    finally:
+        tmp.unlink(missing_ok=True)
 
 
 class PersistedDict(dict):
@@ -55,22 +85,13 @@ class PersistedDict(dict):
 
     # --- locking primitives ---
 
-    def _lock_path(self) -> Path:
-        return self._path.with_suffix(self._path.suffix + ".lock")
-
     @contextmanager
     def _locked(self, exclusive: bool):
         if self._path is None:
             yield
             return
-        self._path.parent.mkdir(parents=True, exist_ok=True)
-        flag = portalocker.LOCK_EX if exclusive else portalocker.LOCK_SH
-        with open(self._lock_path(), "a") as f:
-            portalocker.lock(f, flag)
-            try:
-                yield
-            finally:
-                portalocker.unlock(f)
+        with locked_file(self._path, exclusive):
+            yield
 
     def exclusive_lock(self):
         """Acquire a cross-process exclusive lock on this dict's file.
@@ -125,19 +146,11 @@ class PersistedDict(dict):
     def _write_to_file(self) -> None:
         if self._path is None:
             return
-        self._path.parent.mkdir(parents=True, exist_ok=True)
-        # Per-process unique tmp path: even with the file lock, this guards
-        # against any path where two writers share a tmp filename.
-        tmp = self._path.with_suffix(f".tmp.{os.getpid()}.{uuid4().hex}")
         serialized = {
             "version": PERSISTED_DICT_VERSION,
             "entries": {self._key_serializer(k): v for k, v in super().items()},
         }
-        try:
-            tmp.write_text(json.dumps(serialized))
-            tmp.replace(self._path)
-        finally:
-            tmp.unlink(missing_ok=True)
+        write_text_atomic(self._path, json.dumps(serialized))
 
     # --- I/O with locking ---
 

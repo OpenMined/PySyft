@@ -47,4 +47,6 @@ repos:
     rev: 'v3.0.0-alpha.9-for-vscode'
     hooks:
       - id: prettier
-        exclude: (\.min\.(js|css)$|^ci/|^test_outputs/|^packages/syft-datasets/tests/migrations/(p2p|unit)/fixtures/)
+        # migrations/history/ holds release artifacts that CD writes and commits
+        # during a release, without pre-commit; they are frozen, never formatted.
+        exclude: (\.min\.(js|css)$|^ci/|^test_outputs/|^packages/syft-datasets/tests/migrations/(p2p|unit)/fixtures/|/migrations/history/)

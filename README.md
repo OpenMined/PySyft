@@ -36,7 +36,7 @@ PySyft allows data scientists run computations which are reviewed and run by dat
 - **Transport-agnostic** — Works over Google Drive today, extensible to any file-based transport
 - **Offline-first** — Full functionality even when peers are offline; changes sync when connectivity resumes
 - **Peer-to-peer with explicit auth** — Data owners must approve each collaborator before any data flows
-- **Isolated job execution** — Jobs run in sandboxed Python virtual environments with controlled access to private data
+- **Approved job execution** — Jobs only run after approval from the data owner(s), the approval includes access to specific private data
 - **Dataset sharing with mock/private separation** — Data scientists explore mock data, then submit jobs that run on the real thing
 
 ## Quick Start

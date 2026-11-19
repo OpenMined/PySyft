@@ -61,7 +61,7 @@ class StderrViewer:
         if self.job_info.status not in ("done", "failed"):
             return "No stderr available - job not completed yet"
 
-        stderr_file = self.job_info.artifact_path("stderr.txt")
+        stderr_file = self.job_info._log_path("stderr.txt")
 
         if not stderr_file.exists():
             return "No stderr file found"
@@ -90,7 +90,7 @@ class StderrViewer:
         if self.job_info.status not in ("done", "failed"):
             error_msg = "No stderr available - job not completed yet"
         else:
-            stderr_file = self.job_info.artifact_path("stderr.txt")
+            stderr_file = self.job_info._log_path("stderr.txt")
 
             if not stderr_file.exists():
                 error_msg = "No stderr file found"
@@ -121,12 +121,8 @@ class StderrViewer:
             </div>
             """
 
-        html_content = self._convert_ansi_to_html(raw_content)
-        html_content = (
-            html_content.replace("&", "&amp;")
-            .replace('"', "&quot;")
-            .replace("'", "&#x27;")
-        )
+        # Escape the job output first, then convert ANSI codes to HTML spans.
+        html_content = self._convert_ansi_to_html(escape(raw_content))
 
         clean_content = self._strip_ansi_codes(raw_content)
         lines = clean_content.split("\n")
@@ -465,13 +461,13 @@ def job_info_repr_html(job: "JobInfo") -> str:
                 </div>"""
     policy_details, policy_section = _policy_html(job)
 
-    disclosure_details = "".join(
+    read_permission_details = "".join(
         f"""
                     <div class="syftjob-single-detail">
                         <div class="syftjob-single-detail-label">{escape(label)}:</div>
                         <div class="syftjob-single-detail-value">{escape(value)}</div>
                     </div>"""
-        for label, value in job.disclosure_rows()
+        for label, value in job.read_permission_rows()
     )
 
     return f"""
@@ -738,7 +734,7 @@ def job_info_repr_html(job: "JobInfo") -> str:
                     <div class="syftjob-single-detail">
                         <div class="syftjob-single-detail-label">Review reason:</div>
                         <div class="syftjob-single-detail-value">{job.review_reason or ""}</div>
-                    </div>{disclosure_details}{policy_details}
+                    </div>{read_permission_details}{policy_details}
                 </div>
                 <div class="syftjob-single-section">
                     <h4>📜 Script</h4>

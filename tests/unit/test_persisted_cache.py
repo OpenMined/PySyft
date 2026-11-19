@@ -15,6 +15,11 @@ from syft.sync.sync.constants import (
 )
 
 
+def _owner_event_count(do_manager) -> int:
+    """The events in the owner's state on the backend."""
+    return sum(len(m.events) for m in do_manager._get_all_accepted_events_do())
+
+
 def test_no_duplicate_events_across_processes():
     """Two managers sharing a syftbox_folder must not create duplicate events
     for the same file change.
@@ -40,17 +45,13 @@ def test_no_duplicate_events_across_processes():
 
     # Process A syncs — detects changes, uploads events, saves cache
     do_manager.sync(auto_checkpoint=False)
-    events_after_a = len(
-        do_manager.datasite_owner_syncer.connection_router.owner_get_all_accepted_event_file_ids()
-    )
+    events_after_a = _owner_event_count(do_manager)
     assert events_after_a > 0
 
     # Process B (syft-bg) syncs — must NOT re-create the same events
     do_manager_b = do_manager._copy()
     do_manager_b.sync(auto_checkpoint=False)
-    events_after_b = len(
-        do_manager_b.datasite_owner_syncer.connection_router.owner_get_all_accepted_event_file_ids()
-    )
+    events_after_b = _owner_event_count(do_manager_b)
 
     # Verify cache files were created
     cache_dir = do_manager.syftbox_folder / CACHE_DIR
@@ -171,8 +172,7 @@ def test_peer_gets_file_when_other_process_fails_outbox_upload(monkeypatch):
     # ConnectionRouter is a pydantic model, so patch the class for B's sync only.
     with monkeypatch.context() as m:
         m.setattr(ConnectionRouter, "owner_write_event_messages_to_outbox", fail_upload)
-        with pytest.raises(ConnectionError):
-            do_manager_b.sync(auto_checkpoint=False)
+        do_manager_b.sync(auto_checkpoint=False)
 
     _assert_ds_receives_after_notebook_sync(ds_manager, do_manager)
 
@@ -201,8 +201,8 @@ def test_peer_loses_file_deleted_while_other_process_skipped_it(monkeypatch):
     assert not received.exists(), "The DS kept a file that the DO deleted."
 
 
-def test_read_error_on_pending_file_raises_and_keeps_peer_copy(monkeypatch):
-    """A pending file that cannot be read must not reach the peer as a deletion."""
+def test_read_error_on_unsent_file_raises_and_keeps_peer_copy(monkeypatch):
+    """A changed file that cannot be read must not reach the peer as a deletion."""
     ds_manager, do_manager = _pair_with_unsent_do_file()
     do_manager.sync(auto_checkpoint=False)
     ds_manager.sync()
@@ -220,7 +220,7 @@ def test_read_error_on_pending_file_raises_and_keeps_peer_copy(monkeypatch):
     api_file.write_text("print('api v2')")
     do_manager_b.sync(auto_checkpoint=False)
 
-    # The first read is the resend of the pending path.
+    # The first read is the send of the changed file.
     read_file = FSFileConnection.read_file
     calls = []
 

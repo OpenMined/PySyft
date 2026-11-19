@@ -1,4 +1,3 @@
-import json
 import logging
 import os
 import shutil
@@ -11,6 +10,7 @@ from pathlib import Path
 from typing import List, Set
 
 import psutil
+from syft_permissions.spec.ruleset import PERMISSION_FILE_NAME
 
 from . import __version__
 from .client import JobClient
@@ -19,18 +19,24 @@ from .job import JobInfo
 from .job_storage import JobRef, JobStateNotFoundError, JobStorage
 from .models import JobState, JobStatus, JobSubmissionMetadata
 from .policies import (
-    OUTPUT_RECIPIENTS_FILENAME,
     OUTPUTS_WITHHELD_FILENAME,
     POLICY_ERROR_FILENAME,
+    ApiResolver,
     JobPolicies,
     PolicyEnv,
     PolicyKind,
-    ApiResolver,
     PolicyResolutionError,
     PolicyResult,
     PolicyRunner,
     PolicyState,
     policy_stderr_filename,
+)
+from .read_permissions import (
+    LOG_FILES,
+    OUTPUTS,
+    ReadPermissions,
+    merge_read_permissions,
+    validate_read_permissions,
 )
 from .review_grants import replace_ds_folder_read
 from .submission import (
@@ -38,7 +44,6 @@ from .submission import (
     copy_submission,
     submission_hash,
 )
-from .traceback_capture import write_frames_record
 
 # Default timeout for job execution (10 minutes)
 DEFAULT_JOB_TIMEOUT_SECONDS = 600
@@ -130,6 +135,16 @@ def _remove_run_dir(run_dir: Path | None) -> None:
         shutil.rmtree(run_dir.parent, ignore_errors=True)
 
 
+def _submitter_read_permissions(
+    ds_email: str, share_logs: bool, share_outputs: bool
+) -> ReadPermissions:
+    """Read for the submitter on the logs and exit code, and on the outputs."""
+    permissions = {name: [ds_email] for name in LOG_FILES} if share_logs else {}
+    if share_outputs:
+        permissions[OUTPUTS] = [ds_email]
+    return permissions
+
+
 def _kill_process_tree(pid: int, timeout: float = 2.0) -> None:
     """Kill `pid` and every descendant. Cross-platform via psutil."""
     try:
@@ -149,8 +164,8 @@ def _kill_process_tree(pid: int, timeout: float = 2.0) -> None:
 class SyftJobRunner:
     """Job runner that monitors and executes approved jobs.
 
-    Reads run.sh from inbox/. Outputs and state go to review/, logs and the
-    return code to staging/.
+    Reads run.sh from inbox/. State, outputs, logs and the return code go to
+    review/. Only the DO reads a run file there until a share grants read.
     """
 
     def __init__(
@@ -329,7 +344,7 @@ class SyftJobRunner:
     def _execute_job_streaming(self, ref: JobRef, timeout: int, run_dir: Path) -> int:
         """Execute job with real-time streaming output.
 
-        Runs run.sh from ``run_dir``, writes stdout/stderr to staging/.
+        Runs run.sh from ``run_dir``, writes stdout/stderr to review/.
         """
         run_script = run_dir / "run.sh"
         job_name = ref.job_name
@@ -347,10 +362,10 @@ class SyftJobRunner:
         env[IS_IN_JOB_ENV_VAR] = "true"
         env["PYTHONUNBUFFERED"] = "1"
 
-        staging_dir = self.manager.staging_dir(ref)
-        staging_dir.mkdir(parents=True, exist_ok=True)
-        stdout_file = staging_dir / "stdout.txt"
-        stderr_file = staging_dir / "stderr.txt"
+        review_dir = self.manager.review_dir(ref)
+        review_dir.mkdir(parents=True, exist_ok=True)
+        stdout_file = review_dir / "stdout.txt"
+        stderr_file = review_dir / "stderr.txt"
 
         import selectors
 
@@ -423,7 +438,7 @@ class SyftJobRunner:
     def _execute_job_captured(self, ref: JobRef, timeout: int, run_dir: Path) -> int:
         """Execute job with captured output (non-streaming).
 
-        Runs run.sh from ``run_dir``, writes stdout/stderr to staging/.
+        Runs run.sh from ``run_dir``, writes stdout/stderr to review/.
         """
         run_script = run_dir / "run.sh"
         job_name = ref.job_name
@@ -458,37 +473,42 @@ class SyftJobRunner:
             stderr = (stderr or "") + "\n--- PROCESS TIMED OUT ---\n"
             print(f" Job {job_name} timed out after {_format_timeout(timeout)}")
 
-        staging_dir = self.manager.staging_dir(ref)
-        staging_dir.mkdir(parents=True, exist_ok=True)
+        review_dir = self.manager.review_dir(ref)
+        review_dir.mkdir(parents=True, exist_ok=True)
 
-        stdout_file = staging_dir / "stdout.txt"
+        stdout_file = review_dir / "stdout.txt"
         with open(stdout_file, "w") as f:
             f.write(stdout)
 
-        stderr_file = staging_dir / "stderr.txt"
+        stderr_file = review_dir / "stderr.txt"
         with open(stderr_file, "w") as f:
             f.write(stderr)
 
         return returncode
 
-    def _execute_job(
+    def _execute_job_and_policies(
         self,
         ref: JobRef,
         stream_output: bool = True,
         timeout: int | None = None,
+        approved_peers: list[str] | None = None,
+        run_permissions: ReadPermissions | None = None,
     ) -> bool:
         """
         Execute run.sh of the submission the owner approved.
 
         The inbox is copied into a fresh folder outside the SyftBox, and the
         copy must match the approved hash before anything runs, so an edit of
-        the submitter's inbox never runs. Outputs and state go to review/, logs
-        and the return code to staging/.
+        the submitter's inbox never runs. State, outputs, logs and the return
+        code go to review/, where only the DO reads them until a share.
 
         Args:
             ref: Ref of the job to execute.
             stream_output: If True (default), stream output in real-time.
             timeout: Timeout in seconds. Defaults to the configured value or 600.
+            approved_peers: The peers an output policy may give read permissions.
+            run_permissions: Read permissions the run settings add to the
+                approved ones, once the copy is verified and before the run.
 
         Returns:
             bool: True if run.sh ran, whatever its exit code. False if the job
@@ -503,7 +523,10 @@ class SyftJobRunner:
         try:
             resolved, policies = self._load_policies(ref)
             if resolved:
-                self._run_approved_job(ref, run_dir, stream_output, timeout, policies)
+                self._add_approved(ref, run_permissions or {})
+                self._run_approved_job(
+                    ref, run_dir, stream_output, timeout, policies, approved_peers
+                )
         finally:
             _remove_run_dir(run_dir)
         return resolved
@@ -595,9 +618,9 @@ class SyftJobRunner:
         stream_output: bool,
         timeout: int,
         policies: JobPolicies | None = None,
+        approved_peers: list[str] | None = None,
     ) -> None:
         job_name = ref.job_name
-        review_dir = self.manager.review_dir(ref)
         self._prepare_outputs_dir(ref, run_dir)
 
         print(f" Executing job: {job_name}")
@@ -612,11 +635,11 @@ class SyftJobRunner:
             else:
                 returncode = self._execute_job_captured(ref, timeout, run_dir)
 
-            self._capture_traceback(ref, returncode, run_dir / "code")
-            returncode = self._run_output_policy(ref, run_dir, policies, returncode)
+            returncode = self._run_output_policy(
+                ref, run_dir, policies, returncode, approved_peers
+            )
 
-            # Move outputs from the run copy to review/
-            self._move_outputs_to_review(run_dir, review_dir)
+            self._copy_outputs_to_review(ref, run_dir)
 
             self._finalize(ref, returncode)
             self._report_result(ref, returncode)
@@ -647,29 +670,75 @@ class SyftJobRunner:
         return False
 
     def _run_output_policy(
-        self, ref: JobRef, run_dir: Path, policies: JobPolicies | None, returncode: int
+        self,
+        ref: JobRef,
+        run_dir: Path,
+        policies: JobPolicies | None,
+        returncode: int,
+        approved_peers: list[str] | None,
     ) -> int:
-        """Run the output policy, record who gets the outputs, return the exit code.
+        """Run the output policy on the approved read permissions; return the exit code.
 
-        A failed job or a deny shares the outputs with nobody; a deny also
-        fails the job. The outputs still go to review/, for the data owner.
+        The policy starts from the api's approved read permissions and may change
+        them. A deny approves none and fails the job. A failed job skips the
+        policy, and the runner then shares nothing.
         """
-        if policies is None or policies.output is None:
+        if policies is None or policies.output is None or returncode != 0:
             return returncode
-        if returncode != 0:
-            self._write_recipients(ref, [])
-            return returncode
-        result = self._run_policy(PolicyKind.OUTPUT, ref, run_dir, policies)
-        self._write_recipients(ref, result.recipients if result.passed else [])
-        if result.passed:
-            return returncode
-        self._deny(ref, PolicyKind.OUTPUT, result)
-        return 1
+        approved = self.manager.read_state(ref).approved_read_permissions
+        # The policy edits a temp copy of these (read_permissions.json), not state.yaml.
+        result = self._run_policy(PolicyKind.OUTPUT, ref, run_dir, policies, approved)
+        if not result.passed:
+            self._set_approved(ref, {})
+            self._deny(ref, PolicyKind.OUTPUT, result)
+            return 1
+        # result.read_permissions is that copy as the policy left it.
+        allowed = self._allowed_readers(ref, result.read_permissions, approved_peers)
+        # Only the submitter and approved peers remain; this writes state.yaml.
+        self._set_approved(ref, allowed)
+        return returncode
+
+    def _set_approved(self, ref: JobRef, approved: ReadPermissions) -> None:
+        state = self.manager.read_state(ref)
+        state.approved_read_permissions = approved
+        self.manager.write_state(ref, state)
+
+    def _add_approved(self, ref: JobRef, added: ReadPermissions) -> None:
+        """Add ``added`` to the approved read permissions; no write if nothing is new."""
+        state = self.manager.read_state(ref)
+        merged = merge_read_permissions(state.approved_read_permissions, added)
+        if merged != state.approved_read_permissions:
+            state.approved_read_permissions = merged
+            self.manager.write_state(ref, state)
+
+    def _allowed_readers(
+        self,
+        ref: JobRef,
+        permissions: ReadPermissions,
+        approved_peers: list[str] | None,
+    ) -> ReadPermissions:
+        """``permissions`` with only the submitter and approved peers as readers."""
+        allowed = set(approved_peers or []) | {ref.ds_email}
+        named = {email for emails in permissions.values() for email in emails}
+        if named - allowed:
+            logger.warning(
+                f"Job {ref.job_name}: no read for {sorted(named - allowed)}, "
+                f"they are not approved peers"
+            )
+        kept = {
+            f: [e for e in emails if e in allowed] for f, emails in permissions.items()
+        }
+        return {f: emails for f, emails in kept.items() if emails}
 
     def _run_policy(
-        self, kind: PolicyKind, ref: JobRef, run_dir: Path, policies: JobPolicies
+        self,
+        kind: PolicyKind,
+        ref: JobRef,
+        run_dir: Path,
+        policies: JobPolicies,
+        read_permissions: ReadPermissions | None = None,
     ) -> PolicyResult:
-        """Run one policy of the job's api; its full stderr stays in staging."""
+        """Run one policy of the job's api; its full stderr stays with the DO."""
         policy_env = PolicyEnv(
             api_name=policies.api_name,
             submitter=ref.ds_email,
@@ -678,32 +747,29 @@ class SyftJobRunner:
         )
         if kind == PolicyKind.OUTPUT:
             policy_env.outputs_dir = run_dir / "code" / "outputs"
-            policy_env.recipients = [ref.ds_email]
+            policy_env.read_permissions = read_permissions or {}
         print(f" Running the {kind.value} policy of api '{policies.api_name}'")
         state = PolicyState(policies.state_dir)
         result = self.policy_runner.run(policies.script(kind), state, policy_env)
-        self._write_staged(ref, policy_stderr_filename(kind), result.stderr)
+        self._write_artifact(ref, policy_stderr_filename(kind), result.stderr)
         return result
 
     def _deny(self, ref: JobRef, kind: PolicyKind, result: PolicyResult) -> None:
-        """Release the reason of a deny to the submitter."""
-        self._write_staged(ref, POLICY_ERROR_FILENAME, f"{result.error}\n")
-        self._get_job_info(ref)._release_to_submitter([POLICY_ERROR_FILENAME])
+        """Share the reason of a deny with the submitter."""
+        self._write_artifact(ref, POLICY_ERROR_FILENAME, f"{result.error}\n")
+        self._get_job_info(ref).share({POLICY_ERROR_FILENAME: [ref.ds_email]})
         print(f" Job {ref.job_name} denied by the {kind.value} policy: {result.error}")
 
-    def _write_recipients(self, ref: JobRef, recipients: list[str]) -> None:
-        self._write_staged(ref, OUTPUT_RECIPIENTS_FILENAME, json.dumps(recipients))
-
-    def _write_staged(self, ref: JobRef, filename: str, content: str) -> None:
-        staging_dir = self.manager.staging_dir(ref)
-        staging_dir.mkdir(parents=True, exist_ok=True)
-        (staging_dir / filename).write_text(content)
+    def _write_artifact(self, ref: JobRef, filename: str, content: str) -> None:
+        review_dir = self.manager.review_dir(ref)
+        review_dir.mkdir(parents=True, exist_ok=True)
+        (review_dir / filename).write_text(content)
 
     def _report_result(self, ref: JobRef, returncode: int) -> None:
         """Print how the job ended and where its logs are."""
-        staging_dir = self.manager.staging_dir(ref)
-        stdout_file = staging_dir / "stdout.txt"
-        stderr_file = staging_dir / "stderr.txt"
+        review_dir = self.manager.review_dir(ref)
+        stdout_file = review_dir / "stdout.txt"
+        stderr_file = review_dir / "stderr.txt"
         if returncode == 0:
             print(f" Job {ref.job_name} completed successfully")
             print(f" Output written to {stdout_file}")
@@ -716,70 +782,65 @@ class SyftJobRunner:
         except OSError:
             pass
 
-    def _capture_traceback(self, ref: JobRef, returncode: int, code_root: Path) -> None:
-        """Stage where the job failed, from the traceback it printed.
-
-        A run that succeeds prints no traceback, so it leaves no record.
-        """
-        if returncode == 0:
-            return
-        staging_dir = self.manager.staging_dir(ref)
-        write_frames_record(staging_dir / "stderr.txt", staging_dir, code_root)
-
     def _finalize(self, ref: JobRef, returncode: int) -> None:
-        """Stage the exit code, and set the state to DONE or FAILED.
+        """Write the exit code, and set the state to DONE or FAILED.
 
-        The exit code carries more than DONE or FAILED, so it waits in staging/.
+        The exit code carries more than DONE or FAILED, so it goes to its own
+        file, not to the state that the DS reads.
         """
-        staging_dir = self.manager.staging_dir(ref)
-        staging_dir.mkdir(parents=True, exist_ok=True)
-        (staging_dir / "returncode.txt").write_text(str(returncode))
+        review_dir = self.manager.review_dir(ref)
+        review_dir.mkdir(parents=True, exist_ok=True)
+        (review_dir / "returncode.txt").write_text(str(returncode))
 
         state = self.manager.read_state(ref)
         state.status = JobStatus.DONE if returncode == 0 else JobStatus.FAILED
         state.completed_at = datetime.now(timezone.utc)
-        # The exact code is in staged returncode.txt.
+        # The exact code is in returncode.txt.
         state.return_code = None
         self.manager.write_state(ref, state)
 
-    def _move_outputs_to_review(self, run_dir: Path, review_dir: Path) -> None:
+    def _copy_outputs_to_review(self, ref: JobRef, run_dir: Path) -> None:
+        """Copy the outputs from the run copy to review/, with no grant.
+
+        The copy follows symlinks, so review/ holds only real files. In review/,
+        a permission file would decide who reads the outputs, so the copy skips
+        each one unless the config allows them. macOS and Windows match the
+        name without case, so the skip does too.
+        """
         run_outputs = run_dir / "code" / "outputs"
-        review_outputs = review_dir / "outputs"
-        if run_outputs.exists() and run_outputs.is_dir():
-            # Merge into review/outputs (which was pre-created by _prepare_outputs_dir)
-            for item in run_outputs.iterdir():
-                dest = review_outputs / item.name
-                if item.is_file():
-                    shutil.copy2(str(item), str(dest))
-                elif item.is_dir():
-                    if dest.exists():
-                        shutil.rmtree(dest)
-                    shutil.copytree(str(item), str(dest))
-            shutil.rmtree(run_outputs)
+        skipped: list[str] = []
+
+        def skip_permission_files(folder: str, names: list[str]) -> set[str]:
+            found = {name for name in names if name.casefold() == PERMISSION_FILE_NAME}
+            skipped.extend(
+                (Path(folder) / name).relative_to(run_outputs).as_posix()
+                for name in found
+            )
+            return found
+
+        shutil.copytree(
+            run_outputs,
+            self.manager.review_dir(ref) / "outputs",
+            ignore=None
+            if self.config.allow_output_permission_files
+            else skip_permission_files,
+        )
+        if skipped:
+            logger.warning(
+                f"Job {ref.job_name}: skipped the permission files in outputs/: "
+                f"{', '.join(sorted(skipped))}"
+            )
 
     def _prepare_outputs_dir(self, ref: JobRef, run_dir: Path) -> None:
-        """Create outputs/ in the run copy (for the job) and review/ (for results).
+        """Create outputs/ in the run copy, and delete the files of the last run.
 
         The job writes its outputs in the run copy, outside the SyftBox, so no
-        sync can send them to the submitter before they are released.
+        sync can send them before they are shared. The files of the last run go
+        with their grants, or this run inherits them.
         """
         # Create outputs/ inside code/ dir so job scripts can write there (cwd is code/)
         (run_dir / "code" / "outputs").mkdir(parents=True, exist_ok=True)
-
-        # Create outputs/ in review dir with owner-only read permissions
-        review_dir = self.manager.review_dir(ref)
-        outputs_dir = review_dir / "outputs"
-        if outputs_dir.exists():
-            shutil.rmtree(outputs_dir)
-        outputs_dir.mkdir(parents=True, exist_ok=True)
-
-        from syft_perms import SyftPermContext
-
-        datasite = self.config.syftbox_folder / self.config.current_user_email
-        rel_path = str(outputs_dir.relative_to(datasite)) + "/"
-        ctx = SyftPermContext(datasite=datasite)
-        folder = ctx.open(rel_path)
-        folder.grant_read_access(self.config.current_user_email)
+        self.manager.reset_run(ref)
 
     def _replace_ds_folder_reads(self) -> None:
         """Replace the read grant on a whole DS review folder with the named files.
@@ -790,8 +851,9 @@ class SyftJobRunner:
         review_root = self.config.get_review_dir(self.config.current_user_email)
         if not review_root.is_dir():
             return
+        datasite = self.config.syftbox_folder / self.config.current_user_email
         for ds_dir in sorted(p for p in review_root.iterdir() if p.is_dir()):
-            replace_ds_folder_read(ds_dir, ds_dir.name)
+            replace_ds_folder_read(datasite, ds_dir, ds_dir.name)
 
     def _get_job_metadata(self, ref: JobRef) -> JobSubmissionMetadata | None:
         try:
@@ -864,12 +926,18 @@ class SyftJobRunner:
         stream_output: bool = True,
         timeout: int | None = None,
         skip_jobs: list[tuple[str, str]] | None = None,
-        share_outputs_with_submitter: bool = False,
         share_logs_with_submitter: bool = False,
+        share_outputs_with_submitter: bool = False,
         skip_job_names: list[str] | None = None,
         approved_peers: list[str] | None = None,
+        share_requested_files: bool = False,
     ) -> None:
         """Process all jobs in approved status.
+
+        The share flags add to each job's approved read permissions before it
+        runs, whatever the job requested; once it ran, the runner shares only
+        what its state approves. An api call ignores the flags: its api and
+        output policy decide.
 
         Args:
             stream_output: If True (default), stream output in real-time.
@@ -878,15 +946,16 @@ class SyftJobRunner:
                 does not identify a job — it is unique per datasite and
                 submitter — so skipping by name drops every other job that
                 shares it.
-            share_outputs_with_submitter: If True, grant read access on outputs to submitter.
-            share_logs_with_submitter: If True, release the logs and the exit
-                code to the submitter, whatever the job requested. False
-                (default) releases only the items that the submitter requested
-                and the approval granted. The rest stays in staging, where only
-                the datasite owner reads it.
+            share_logs_with_submitter: If True, approve the logs and the exit
+                code for the submitter. False (default) shares only what the
+                approval granted. Only the DO reads the rest.
+            share_outputs_with_submitter: If True, approve the outputs for the
+                submitter.
             skip_job_names: Deprecated. The name-only form of ``skip_jobs``.
-            approved_peers: The peers an output policy may send outputs to.
-                None allows the submitter only.
+            approved_peers: The peers an output policy may give read
+                permissions. None allows the submitter only.
+            share_requested_files: If True, approve everything each job's
+                submitter requested.
         """
         self._replace_ds_folder_reads()
         approved_jobs = self._get_jobs_in_approved()
@@ -906,75 +975,162 @@ class SyftJobRunner:
         print(f" Found {len(approved_jobs)} job(s) in approved status")
 
         for ref in approved_jobs:
-            print(f"\n{'=' * 50}")
-            if self._execute_job(ref, stream_output=stream_output, timeout=timeout):
-                self._share_job_results(
-                    ref,
-                    share_outputs_with_submitter,
-                    share_logs_with_submitter,
-                    self._output_recipients(ref, approved_peers),
-                )
-            print(f"{'=' * 50}")
+            self._run_full_job_lifecycle(
+                ref,
+                stream_output,
+                timeout,
+                share_logs_with_submitter,
+                share_outputs_with_submitter,
+                approved_peers,
+                share_requested_files,
+            )
 
         if approved_jobs:
             print(f"\n Processed {len(approved_jobs)} job(s)")
 
+    def run_job(
+        self,
+        job_name: str,
+        ds_email: str,
+        stream_output: bool = True,
+        timeout: int | None = None,
+        share_logs_with_submitter: bool = False,
+        share_outputs_with_submitter: bool = False,
+        approved_peers: list[str] | None = None,
+        share_requested_files: bool = False,
+    ) -> None:
+        """Run one approved job, and share what its state approves.
+
+        Takes the same options as ``process_approved_jobs``. Raises if the job
+        is not approved.
+        """
+        ref = self._find_jobref_from_name(job_name, ds_email)
+        status = self._get_job_state(ref).status
+        if status != JobStatus.APPROVED:
+            raise ValueError(
+                f"Job '{job_name}' from {ds_email} is {status.value}, not approved"
+            )
+        self._replace_ds_folder_reads()
+        self._run_full_job_lifecycle(
+            ref,
+            stream_output,
+            timeout,
+            share_logs_with_submitter,
+            share_outputs_with_submitter,
+            approved_peers,
+            share_requested_files,
+        )
+
+    def _run_full_job_lifecycle(
+        self,
+        ref: JobRef,
+        stream_output: bool,
+        timeout: int | None,
+        share_logs_with_submitter: bool,
+        share_outputs_with_submitter: bool,
+        approved_peers: list[str] | None,
+        share_requested_files: bool,
+    ) -> None:
+        """Add the share flags to the approved read permissions, execute the
+        job, then share what its state approves if it ran."""
+        print(f"\n{'=' * 50}")
+        run_permissions = self._run_flag_permissions(
+            ref,
+            share_logs_with_submitter,
+            share_outputs_with_submitter,
+            share_requested_files,
+        )
+        ran = self._execute_job_and_policies(
+            ref, stream_output, timeout, approved_peers, run_permissions
+        )
+        if ran and not self._is_failed_api_call(ref):
+            self._share_job_results(ref)
+        print(f"{'=' * 50}")
+
+    def _is_failed_api_call(self, ref: JobRef) -> bool:
+        """An api call that failed shares nothing: its output policy never ran."""
+        if self._get_job_state(ref).status != JobStatus.FAILED:
+            return False
+        record = self.manager.read_owner_record(ref)
+        return record is not None and record.api_name is not None
+
+    def _run_flag_permissions(
+        self,
+        ref: JobRef,
+        share_logs_with_submitter: bool,
+        share_outputs_with_submitter: bool,
+        share_requested_files: bool,
+    ) -> ReadPermissions:
+        """The read permissions the share flags approve; none for an api call."""
+        if self._is_api_call(ref):
+            return {}
+        requested = (
+            self._get_job_state(ref).requested_read_permissions
+            if share_requested_files
+            else {}
+        )
+        return merge_read_permissions(
+            _submitter_read_permissions(
+                ref.ds_email, share_logs_with_submitter, share_outputs_with_submitter
+            ),
+            requested,
+        )
+
+    def _is_api_call(self, ref: JobRef) -> bool:
+        record = self.manager.read_owner_record(ref)
+        return bool(record and record.api_name)
+
     def share_job_results(
         self,
         job_name: str,
-        share_outputs: bool,
-        share_logs: bool,
+        share_logs_with_submitter: bool = False,
+        share_outputs_with_submitter: bool = False,
         user: str | None = None,
+        share_files: ReadPermissions | None = None,
     ) -> None:
-        """Share job outputs/logs with submitter if requested.
+        """Approve more readers of a finished job's files, and share them at once.
 
-        Shares with the submitter even when an output policy held the outputs
-        back.
+        The flags approve the logs and exit code, or the outputs, for the
+        submitter; ``share_files`` approves {file: [emails]}. Works on an api
+        call whose output policy held the outputs back. Adds to the approved
+        read permissions, since a read already given is not taken back.
+
+        Raises:
+            ValueError: If the job has not finished.
+            TypeError: If share_files is not {file: [emails]}.
         """
         ref = self._find_jobref_from_name(job_name, user)
-        if share_outputs:
-            # The outputs reach the submitter now, so drop the marker that
-            # said they were held back.
-            (self.manager.review_dir(ref) / OUTPUTS_WITHHELD_FILENAME).unlink(
-                missing_ok=True
-            )
-        self._share_job_results(ref, share_outputs, share_logs, [ref.ds_email])
+        status = self._get_job_state(ref).status
+        if status not in (JobStatus.DONE, JobStatus.FAILED):
+            raise ValueError(f"Job '{job_name}' is {status.value}; run it first.")
+        added = merge_read_permissions(
+            _submitter_read_permissions(
+                ref.ds_email, share_logs_with_submitter, share_outputs_with_submitter
+            ),
+            validate_read_permissions(share_files),
+        )
+        self._add_approved(ref, added)
+        self._share_job_results(ref)
 
-    def _share_job_results(
-        self, ref: JobRef, share_outputs: bool, share_logs: bool, recipients: list[str]
-    ) -> None:
+    def _share_job_results(self, ref: JobRef) -> None:
+        """Grant each reader in the job's approved read permissions read on its file."""
         job_info = self._get_job_info(ref)
-        job_info.release_disclosures()
-        if share_outputs:
-            job_info.share_outputs(recipients)
-            if ref.ds_email not in recipients:
-                # An empty marker: that the submitter can read this file is
-                # the message. Their job then shows "Outputs not shared with
-                # you" instead of looking like it wrote no outputs.
-                self._write_staged(ref, OUTPUTS_WITHHELD_FILENAME, "")
-                job_info._release_to_submitter([OUTPUTS_WITHHELD_FILENAME])
-        if share_logs:
-            job_info.release_logs()
+        job_info.share_read_permissions()
+        if job_info.api_name:
+            self._update_outputs_withheld_marker(ref, job_info)
 
-    def _output_recipients(
-        self, ref: JobRef, approved_peers: list[str] | None
-    ) -> list[str]:
-        """Who gets the outputs: the output policy's list, else the submitter.
+    def _update_outputs_withheld_marker(self, ref: JobRef, job_info: JobInfo) -> None:
+        """Tell the submitter, with an empty marker, that it can't read the outputs.
 
-        Only approved peers receive outputs; other emails are skipped and logged.
+        Their job then shows "Outputs not shared with you" instead of no outputs.
+        The marker goes once the outputs are approved for them.
         """
-        path = self.manager.staging_dir(ref) / OUTPUT_RECIPIENTS_FILENAME
-        if not path.exists():
-            return [ref.ds_email]
-        allowed = set(approved_peers or []) | {ref.ds_email}
-        requested = json.loads(path.read_text())
-        skipped = [email for email in requested if email not in allowed]
-        if skipped:
-            logger.warning(
-                f"Job {ref.job_name}: outputs not shared with {skipped}, "
-                f"they are not approved peers"
-            )
-        return [email for email in dict.fromkeys(requested) if email in allowed]
+        marker = self.manager.review_dir(ref) / OUTPUTS_WITHHELD_FILENAME
+        if ref.ds_email in job_info.approved_read_permissions.get(OUTPUTS, []):
+            marker.unlink(missing_ok=True)
+            return
+        self._write_artifact(ref, OUTPUTS_WITHHELD_FILENAME, "")
+        job_info.share({OUTPUTS_WITHHELD_FILENAME: [ref.ds_email]})
 
     def run(self) -> None:
         """Start monitoring the inbox and approved folders for jobs."""

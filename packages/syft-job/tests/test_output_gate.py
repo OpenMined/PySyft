@@ -7,10 +7,10 @@ from syft_perms import SyftPermContext
 
 from syft_job.client import JobClient
 from syft_job.config import SyftJobConfig
-from syft_job.disclosures import DISCLOSURES_FILENAME
 from syft_job.job_runner import SyftJobRunner
 from syft_job.config import protocol_dir_name
 from syft_job.migrations.registry import JOB_PROTOCOL_VERSION
+from syft_job.protocolcodecs import CODECS
 
 # The path segment of the current job protocol, e.g. "v2".
 PROTOCOL_DIR = protocol_dir_name(JOB_PROTOCOL_VERSION)
@@ -79,7 +79,6 @@ def test_nested_files_named_like_state_are_not_readable_by_ds(env):
     script = (
         f"mkdir -p '{review_dir}/nested'\n"
         f"echo private > '{review_dir}/nested/state.yaml'\n"
-        f"echo private > '{review_dir}/nested/{DISCLOSURES_FILENAME}'\n"
     )
     _submit_and_approve(env, script)
 
@@ -87,35 +86,27 @@ def test_nested_files_named_like_state_are_not_readable_by_ds(env):
 
     assert (review_dir / "nested" / "state.yaml").exists()
     assert not _ds_reads(env, f"{JOB_REVIEW_REL}/nested/state.yaml")
-    assert not _ds_reads(env, f"{JOB_REVIEW_REL}/nested/{DISCLOSURES_FILENAME}")
     assert not _ds_reads(env, f"{REVIEW_REL}/{JOB_NAME}/nested/state.yaml")
     assert _ds_reads(env, f"{JOB_REVIEW_REL}/state.yaml")
 
 
-def test_ds_reads_state_and_disclosures_before_release(env):
+def test_ds_reads_only_state_before_release(env):
     env["do_client"].setup_ds_job_folder_as_do(DS_EMAIL)
     _submit_and_approve(env, "echo hi\n")
 
     assert _ds_reads(env, f"{JOB_REVIEW_REL}/state.yaml")
-    assert _ds_reads(env, f"{JOB_REVIEW_REL}/{DISCLOSURES_FILENAME}")
     assert not _ds_reads(env, f"{JOB_REVIEW_REL}/other.txt")
 
 
-def test_v0_layout_state_is_readable_by_ds(env):
+@pytest.mark.parametrize(
+    "version", [v for codec in CODECS for v in codec.protocol_versions]
+)
+def test_ds_reads_state_in_every_layout(env, version):
     env["do_client"].setup_ds_job_folder_as_do(DS_EMAIL)
+    job_rel = "/".join(filter(None, (REVIEW_REL, protocol_dir_name(version), JOB_NAME)))
 
-    assert _ds_reads(env, f"{REVIEW_REL}/{JOB_NAME}/state.yaml")
-    assert not _ds_reads(env, f"{REVIEW_REL}/{JOB_NAME}/stdout.txt")
-
-
-def test_setup_removes_old_folder_grant(env):
-    _grant_old_folder_read(env)
-    assert _ds_reads(env, f"{JOB_REVIEW_REL}/exfil.txt")
-
-    env["do_client"].setup_ds_job_folder_as_do(DS_EMAIL)
-
-    assert not _ds_reads(env, f"{JOB_REVIEW_REL}/exfil.txt")
-    assert _ds_reads(env, f"{JOB_REVIEW_REL}/state.yaml")
+    assert _ds_reads(env, f"{job_rel}/state.yaml")
+    assert not _ds_reads(env, f"{job_rel}/stdout.txt")
 
 
 def test_setup_twice_keeps_one_rule_per_pattern(env):

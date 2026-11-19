@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import html
 import re
 from typing import TYPE_CHECKING
 
@@ -64,10 +65,10 @@ class StdoutViewer:
 
     def __str__(self) -> str:
         """Return the stdout content with ANSI codes stripped."""
-        if self.job_info.status != "done":
+        if self.job_info.status not in ("done", "failed"):
             return "No stdout available - job not completed yet"
 
-        stdout_file = self.job_info.artifact_path("stdout.txt")
+        stdout_file = self.job_info._log_path("stdout.txt")
 
         if not stdout_file.exists():
             return "No stdout file found"
@@ -94,10 +95,10 @@ class StdoutViewer:
     def _repr_html_(self) -> str:
         """HTML representation for Jupyter notebooks with scrollable view."""
         # Get raw content first to check for errors
-        if self.job_info.status != "done":
+        if self.job_info.status not in ("done", "failed"):
             error_msg = "No stdout available - job not completed yet"
         else:
-            stdout_file = self.job_info.artifact_path("stdout.txt")
+            stdout_file = self.job_info._log_path("stdout.txt")
 
             if not stdout_file.exists():
                 error_msg = "No stdout file found"
@@ -129,17 +130,10 @@ class StdoutViewer:
             </div>
             """
 
-        # Convert ANSI codes to HTML for display
-        html_content = self._convert_ansi_to_html(raw_content)
-
-        # Escape any remaining HTML characters that aren't our color spans
-        # We need to be careful not to escape our intentional HTML
-        html_content = (
-            html_content.replace("&", "&amp;")
-            .replace('"', "&quot;")
-            .replace("'", "&#x27;")
-        )
-        # Don't escape < and > since we want our HTML spans to work
+        # Escape the job output first, then convert ANSI codes to HTML spans.
+        # ANSI escape sequences contain no HTML special characters, so they
+        # survive escaping and the generated spans stay intact.
+        html_content = self._convert_ansi_to_html(html.escape(raw_content))
 
         # Count lines and characters (use clean content for stats)
         clean_content = self._strip_ansi_codes(raw_content)

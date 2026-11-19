@@ -82,15 +82,15 @@ def _read_stderr_tail(path: Path) -> str | None:
 def _read_job_stderr(
     job_client: "JobClient", job_name: str
 ) -> tuple[Optional[str], Optional[int]]:
-    """Read stderr and return code, released or still staged."""
+    """Read stderr and return code from the review folder of the job."""
     job = next((j for j in job_client.jobs if j.name == job_name), None)
     if not job:
         return None, None
 
-    stderr_text = _read_stderr_tail(job.artifact_path("stderr.txt"))
+    stderr_text = _read_stderr_tail(job.job_review_path / "stderr.txt")
 
     try:
-        return_code = int(job.artifact_path("returncode.txt").read_text().strip())
+        return_code = int((job.job_review_path / "returncode.txt").read_text().strip())
     except (ValueError, OSError):
         return_code = None
 

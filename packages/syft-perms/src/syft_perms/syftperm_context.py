@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from syft_permissions import ACLService
+from syft_permissions import ACLRequest, ACLService, AccessLevel, User
 
 from syft_perms.browser import FilesBrowser
 from syft_perms.file import SyftFile
@@ -30,6 +30,15 @@ class SyftPermContext:
         if path.endswith("/") or abs_path.is_dir():
             return SyftFolder(abs_path, self)
         return SyftFile(abs_path, self)
+
+    def can_read(self, path: str, user: str) -> bool:
+        """Whether ``user`` may read the file at ``path``, relative to the datasite.
+
+        Unlike ``open(path).has_read_access(user)``, this does not touch the
+        filesystem.
+        """
+        request = ACLRequest(path=path, level=AccessLevel.READ, user=User(id=user))
+        return self.service.can_access(request)
 
     @property
     def files(self) -> FilesBrowser:
