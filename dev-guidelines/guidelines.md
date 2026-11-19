@@ -29,6 +29,21 @@ high-level, mid-level and low-level sections below, and so does the `syft-pr-rev
 
 - Keep the condition for doing something in the caller, not inside the function. When the function
   really must check the condition itself, prefix its name with `maybe_`, as in `maybe_do_x()`.
+
+  This also covers a function that returns a value or None, where None means "skip this". Ask the
+  question with a separate function instead:
+
+  ```python
+  # not this
+  note = job._log_note(log_file)
+  if note:
+      text += note
+
+  # but this
+  if job.log_is_truncated(log_file):
+      text += LOG_TRUNCATION_MESSAGE
+  ```
+
 - Aim for 20 lines. A reviewer flags a function or method over 40 lines, unless it:
 
   - makes many calls to other functions,
