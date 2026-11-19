@@ -11,6 +11,7 @@ from typing import Any
 from aiortc import (
     RTCConfiguration,
     RTCDataChannel,
+    RTCIceServer,
     RTCPeerConnection,
     RTCSctpTransport,
     RTCSessionDescription,
@@ -27,8 +28,6 @@ logger = logging.getLogger(__name__)
 
 CONNECT_TIMEOUT_SECONDS = 10.0
 CHANNEL_LABEL = "syft"
-# No STUN or TURN server: peers on one machine or LAN reach each other directly.
-LOCAL_ONLY = RTCConfiguration(iceServers=[])
 # The maximum message size that aiortc advertises. For each 1200-byte SCTP fragment
 # that arrives, aiortc's InboundStream.pop_messages scans all earlier fragments of
 # the message. Therefore the receive time grows with the square of the message size.
@@ -55,6 +54,15 @@ def split_frame_into_chunks(frame: bytes) -> list[bytes]:
     ]
 
 
+def is_offerer(email: str, peer: str) -> bool:
+    """Return whether ``email`` sends the WebRTC offer to ``peer``.
+
+    The email that sorts first, in lower case, sends the offer.
+    """
+    # A user can sign in with capitals, but the server sends emails in lower case.
+    return email.lower() < peer.lower()
+
+
 class AiortcPeerConnections(PeerConnections):
     """One aiortc peer connection and data channel per peer, and the asyncio
     loop thread that runs them. ``on_open`` and ``on_frame`` run on that
@@ -64,9 +72,13 @@ class AiortcPeerConnections(PeerConnections):
     chunks of at most ``MAX_MESSAGE_BYTES``, and the peer joins the chunks
     again."""
 
+    # open() sets these. The RTC configuration holds the ICE servers that the
+    # signaling gives.
+    email: str
+    _rtc_configuration: RTCConfiguration
+
     def __init__(self, signaling: Signaling):
         self.signaling = signaling
-        self.email: str | None = None
         self._on_open: OnOpen | None = None
         self._on_frame: OnFrame | None = None
         self._loop = asyncio.new_event_loop()
@@ -77,6 +89,10 @@ class AiortcPeerConnections(PeerConnections):
         self._channels: dict[str, RTCDataChannel] = {}
         # peer email -> the received chunks of its incomplete frame
         self._partial_frames: dict[str, bytearray] = {}
+        # The tasks that connect to a peer after its online event, until they
+        # end. This set keeps a strong reference to each task, because asyncio
+        # keeps only a weak one.
+        self._connect_tasks: set[asyncio.Task] = set()
 
     def open(self, email: str, on_open: OnOpen, on_frame: OnFrame) -> None:
         """Start the loop thread and answer offers from peers."""
@@ -85,18 +101,33 @@ class AiortcPeerConnections(PeerConnections):
         self._on_frame = on_frame
         self._thread.name = f"webrtc-{email}"
         self._thread.start()
-        self._run(self.signaling.listen(email, self._answer))
+        ice_servers = self._run(
+            self.signaling.listen(email, self._answer, self._on_peer_online)
+        )
+        self._rtc_configuration = RTCConfiguration(
+            iceServers=[RTCIceServer(**server) for server in ice_servers]
+        )
 
     def connect(self, peer: str, timeout: float = CONNECT_TIMEOUT_SECONDS) -> None:
         self._run(self._connect(peer), timeout)
+
+    def watch(self, peers: list[str]) -> None:
+        """Connect to each of ``peers`` when it is online.
+
+        If a peer is online now, the connection starts at once. A new
+        connection starts each time the peer comes online again. Of two peers,
+        only the peer for which ``is_offerer`` returns True connects. The other
+        peer answers its offer.
+        """
+        self._run(self.signaling.watch(self.email, peers))
 
     def send(self, peer: str, frame: bytes) -> None:
         """Works from any thread; the frame goes out on the loop thread."""
         self._loop.call_soon_threadsafe(self._send_on_loop, peer, frame)
 
     def close(self) -> None:
-        """Close every peer connection and stop the loop thread."""
-        self._run(self._close_rtc_connections())
+        """Close the signaling and each peer connection, then stop the loop."""
+        self._run(self._close_signaling_and_rtc_connections())
         self._loop.call_soon_threadsafe(self._loop.stop)
         self._thread.join()
         self._loop.close()
@@ -118,6 +149,19 @@ class AiortcPeerConnections(PeerConnections):
             # frame. Therefore the chunks of two frames do not mix.
             for chunk in split_frame_into_chunks(frame):
                 channel.send(chunk)
+
+    def _on_peer_online(self, peer: str) -> None:
+        if is_offerer(self.email, peer):
+            task = asyncio.create_task(self._connect_in_background(peer))
+            self._connect_tasks.add(task)
+            task.add_done_callback(self._connect_tasks.discard)
+
+    async def _connect_in_background(self, peer: str) -> None:
+        try:
+            await asyncio.wait_for(self._connect(peer), CONNECT_TIMEOUT_SECONDS)
+        except (ConnectionError, TimeoutError) as err:
+            # The next online event of the peer starts a new connection.
+            logger.warning(f"Could not connect to {peer}: {err!r}")
 
     async def _connect(self, peer: str) -> None:
         rtc = await self._new_rtc_connection(peer)
@@ -154,7 +198,7 @@ class AiortcPeerConnections(PeerConnections):
         old = self._rtc_connections.pop(peer, None)
         if old is not None:
             await old.close()
-        self._rtc_connections[peer] = RTCPeerConnection(LOCAL_ONLY)
+        self._rtc_connections[peer] = RTCPeerConnection(self._rtc_configuration)
         return self._rtc_connections[peer]
 
     def _use_channel(self, peer: str, channel: RTCDataChannel) -> None:
@@ -191,7 +235,10 @@ class AiortcPeerConnections(PeerConnections):
         except Exception:
             logger.exception("Dropped a WebRTC frame from %s", peer)
 
-    async def _close_rtc_connections(self) -> None:
+    async def _close_signaling_and_rtc_connections(self) -> None:
+        for task in self._connect_tasks:
+            task.cancel()
+        await self.signaling.close(self.email)
         await asyncio.gather(*(c.close() for c in self._rtc_connections.values()))
         self._rtc_connections.clear()
         self._channels.clear()
