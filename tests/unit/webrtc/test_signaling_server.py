@@ -20,6 +20,10 @@ ICE_SERVERS = [{"urls": "stun:stun.example.com:3478"}]
 TIMEOUT_SECONDS = 5
 A = "a@example.com"
 B = "b@example.com"
+# Emails with capitals, to check that the server reports each email as its
+# owner spells it.
+SPELLED_A = "A@Example.com"
+SPELLED_B = "B@Example.com"
 
 
 async def fake_ice_servers() -> list[dict]:
@@ -170,5 +174,80 @@ def test_emails_compare_in_lower_case():
             json.dumps({"type": "offer", "to": "b@EXAMPLE.com", "id": "1", "sdp": "o"})
         )
         assert (await receive(b))["type"] == "offer"
+
+    run_with_server(scenario)
+
+
+async def send_peering_request(
+    url: str, email: str, request: dict, access_key: str = ACCESS_KEY
+) -> dict:
+    async with connect(url) as client:
+        credentials = {"email": email, "access_key": access_key}
+        await client.send(json.dumps({**request, **credentials}))
+        return await receive(client)
+
+
+def test_peer_request_reaches_peer():
+    async def scenario(url: str) -> None:
+        request = {"type": "request_peer", "peer": B}
+        assert await send_peering_request(url, A, request) == {"type": "ok"}
+
+        listed = await send_peering_request(url, B, {"type": "list_peer_requests"})
+        assert listed == {"type": "peer_requests", "emails": [A]}
+
+    run_with_server(scenario)
+
+
+def test_document_needs_grant_before_peer_reads_it():
+    async def scenario(url: str) -> None:
+        put = {"type": "put_document", "name": "info", "data": "x"}
+        grant = {"type": "grant_document", "name": "info", "reader": B}
+        get = {"type": "get_document", "owner": A, "name": "info"}
+
+        await send_peering_request(url, A, put)
+        assert await send_peering_request(url, B, get) == {
+            "type": "document",
+            "data": None,
+        }
+        await send_peering_request(url, A, grant)
+        assert await send_peering_request(url, B, get) == {
+            "type": "document",
+            "data": "x",
+        }
+
+    run_with_server(scenario)
+
+
+def test_peering_request_with_wrong_key_is_refused():
+    async def scenario(url: str) -> None:
+        request = {"type": "list_peer_requests"}
+        reply = await send_peering_request(url, A, request, access_key="wrong")
+        assert reply == {"type": "error", "reason": "The access key is wrong"}
+
+    run_with_server(scenario)
+
+
+def test_peer_request_keeps_sender_spelling():
+    async def scenario(url: str) -> None:
+        await send_peering_request(url, SPELLED_A, {"type": "request_peer", "peer": B})
+
+        listed = await send_peering_request(url, B, {"type": "list_peer_requests"})
+        assert listed == {"type": "peer_requests", "emails": [SPELLED_A]}
+
+    run_with_server(scenario)
+
+
+def test_session_reports_peer_spelling():
+    async def scenario(url: str) -> None:
+        a = await sign_in(url, A)
+        # A is online, so its own entry comes back at once: the server has the watch.
+        await a.send(json.dumps({"type": "watch", "peers": [B, A]}))
+        assert await receive(a) == {"type": "online", "email": A}
+
+        b = await sign_in(url, SPELLED_B)
+        assert await receive(a) == {"type": "online", "email": SPELLED_B}
+        await b.send(json.dumps({"type": "offer", "to": A, "id": "1", "sdp": "o"}))
+        offer = {"type": "offer", "from": SPELLED_B, "id": "1", "sdp": "o"}
+        assert await receive(a) == offer
 
     run_with_server(scenario)

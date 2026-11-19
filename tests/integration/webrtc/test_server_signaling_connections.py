@@ -1,7 +1,6 @@
 """Two AiortcPeerConnections that find each other through a signaling server
 in this process."""
 
-import asyncio
 import queue
 import threading
 
@@ -10,41 +9,24 @@ import pytest
 from syft.sync.connections.webrtc.real.aiortc_peer_connections import (
     AiortcPeerConnections,
 )
-from syft.sync.connections.webrtc.signaling.server import (
-    SignalingServer,
-    SignalingServerConfig,
-)
 from syft.sync.connections.webrtc.signaling.server_signaling import (
     ServerSignaling,
     ServerSignalingConfig,
 )
-from syft.sync.connections.webrtc.signaling.signaling import IceServers
+from tests.unit.webrtc.signaling_server_thread import (
+    ACCESS_KEY,
+    signaling_server_in_thread,
+)
 
 DO = "do@example.com"
 DS = "ds@example.com"
-ACCESS_KEY = "test-key"
 TIMEOUT_SECONDS = 10
-
-
-async def no_ice_servers() -> IceServers:
-    # Peers on one machine reach each other with no STUN or TURN server.
-    return []
 
 
 @pytest.fixture
 def server_url():
-    """The URL of a signaling server that runs on its own loop thread."""
-    loop = asyncio.new_event_loop()
-    thread = threading.Thread(target=loop.run_forever, daemon=True)
-    thread.start()
-    config = SignalingServerConfig(host="127.0.0.1", port=0, access_key=ACCESS_KEY)
-    running = SignalingServer(config, no_ice_servers).running()
-    port = asyncio.run_coroutine_threadsafe(running.__aenter__(), loop).result()
-    yield f"ws://127.0.0.1:{port}"
-    asyncio.run_coroutine_threadsafe(running.__aexit__(None, None, None), loop).result()
-    loop.call_soon_threadsafe(loop.stop)
-    thread.join()
-    loop.close()
+    with signaling_server_in_thread() as url:
+        yield url
 
 
 def test_watched_peers_connect_when_online(server_url):

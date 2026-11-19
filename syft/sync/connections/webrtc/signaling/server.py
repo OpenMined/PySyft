@@ -1,24 +1,41 @@
 """The signaling server for syft's WebRTC peers.
 
-Each client keeps one WebSocket open. The server relays offers and answers
-between two clients that are online. It tells a client when a watched peer
-comes online or goes offline, and it gives each client its ICE servers. It
+A connection carries one signaling session or one peering request. In a
+session, the server relays offers and answers between two clients that are
+online. It tells a client when a watched peer comes online or goes offline, and
+it gives each client its ICE servers. A peering request stores or reads peer
+requests and the documents that clients publish for their peers. The server
 keeps all state in memory.
 
-Each message is one JSON object with a "type" field:
+Each message is one JSON object with a "type" field. A session starts with
+``hello {email, access_key}``, and the answer is ``welcome {ice_servers}``.
+Then the client sends these messages:
 
-- ``hello {email, access_key}``: the first message of a client. The answer is
-  ``welcome {ice_servers}``.
 - ``watch {peers}``: the server sends ``online {email}`` for each watched peer
   that is online. Later it sends ``online`` or ``offline`` when a watched peer
   connects or disconnects.
 - ``offer {to, id, sdp}`` and ``answer {to, id, sdp}``: the peer gets the
   message with ``from`` in place of ``to``.
-- ``error {reason}``, with the ``id`` of the request when there is one. After
-  a protocol error, the server closes the connection.
 
-Emails are compared in lower case. A second sign-in with the same email
-replaces the first connection.
+A peering request also has ``email`` and ``access_key``. It is one of these:
+
+- ``request_peer {peer}``: ask ``peer`` to peer. The answer is ``ok``.
+- ``list_peer_requests``: the answer is ``peer_requests {emails}``, the emails
+  that asked to peer with the client.
+- ``put_document {name, data}``: store a document of the client. The answer is
+  ``ok``.
+- ``grant_document {name, reader}``: let ``reader`` read a document of the
+  client. The answer is ``ok``.
+- ``get_document {owner, name}``: the answer is ``document {data}``. ``data``
+  is null if the document does not exist, or if the client may not read it.
+
+After a protocol error, the server sends ``error {reason}`` and closes the
+connection. An offer or answer to a peer that is offline gets ``error {id,
+reason}``, and the session continues.
+
+Emails are compared in lower case. The server reports each email as its owner
+spells it in a hello or a peering request. A second sign-in with the same email
+replaces the first session.
 
 Run it with ``python -m syft.sync.connections.webrtc.signaling.server``. It
 reads its settings from these environment variables: ``SYFT_SIGNALING_HOST``,
@@ -36,6 +53,7 @@ import os
 from collections import defaultdict
 from collections.abc import AsyncIterator, Awaitable, Callable
 from dataclasses import dataclass
+from typing import TypeVar
 
 from websockets.asyncio.server import ServerConnection, broadcast, serve
 from websockets.exceptions import ConnectionClosed
@@ -50,6 +68,12 @@ from syft.sync.connections.webrtc.signaling.signaling import IceServers
 logger = logging.getLogger(__name__)
 
 IceServerSource = Callable[[], Awaitable[IceServers]]
+# (email of the client, its connection, a message of its session)
+SessionHandler = Callable[[str, ServerConnection, dict], Awaitable[None]]
+# (email of the client, its peering request) -> the answer
+PeeringHandler = Callable[[str, dict], dict]
+Handler = TypeVar("Handler")
+OK_ANSWER = {"type": "ok"}
 # A client that stays signed in longer than this loses its TURN relay.
 CREDENTIALS_TTL_SECONDS = 24 * 3600
 
@@ -79,16 +103,79 @@ class SignalingServerConfig:
             raise ValueError("access_key must not be empty")
 
 
+@dataclass(frozen=True)
+class SignedInClient:
+    # The email as the client spells it in its hello.
+    email: str
+    connection: ServerConnection
+
+
+class PeeringStore:
+    """The peer requests, and the documents that clients publish for peers.
+
+    Emails compare in lower case. A request keeps the email of its sender as
+    the sender spells it.
+    """
+
+    def __init__(self):
+        # email in lower case -> the senders that asked to peer with it, as
+        # sender email in lower case -> sender email as the sender spells it
+        self._requests: dict[str, dict[str, str]] = defaultdict(dict)
+        # (owner email in lower case, document name) -> the document
+        self._documents: dict[tuple[str, str], str] = {}
+        # (owner email in lower case, document name) -> the emails in lower case
+        # that may read it
+        self._readers: dict[tuple[str, str], set[str]] = defaultdict(set)
+
+    def add_request(self, sender: str, peer: str) -> None:
+        self._requests[peer.lower()][sender.lower()] = sender
+
+    def list_requests(self, email: str) -> list[str]:
+        """Return the emails that asked to peer with ``email``."""
+        return sorted(self._requests.get(email.lower(), {}).values())
+
+    def put_document(self, owner: str, name: str, data: str) -> None:
+        self._documents[(owner.lower(), name)] = data
+
+    def grant_document(self, owner: str, name: str, reader: str) -> None:
+        self._readers[(owner.lower(), name)].add(reader.lower())
+
+    def get_document(self, reader: str, owner: str, name: str) -> str | None:
+        """Return the document, or None if it does not exist or ``reader`` may
+        not read it."""
+        key = (owner.lower(), name)
+        readers = self._readers.get(key, set())
+        if reader.lower() != owner.lower() and reader.lower() not in readers:
+            return None
+        return self._documents.get(key)
+
+
 class SignalingServer:
-    """Relays signaling messages between the clients that are online."""
+    """Relays signaling messages between the clients that are online, and
+    answers peering requests."""
 
     def __init__(self, config: SignalingServerConfig, ice_servers: IceServerSource):
         self._config = config
         self._ice_servers = ice_servers
-        # email -> the connection of the client that signed in with it
-        self._clients: dict[str, ServerConnection] = {}
-        # email -> the connections that watch it
+        # email in lower case -> the client that signed in with it
+        self._clients: dict[str, SignedInClient] = {}
+        # email in lower case -> the connections that watch it
         self._watchers: dict[str, set[ServerConnection]] = defaultdict(set)
+        self._peering = PeeringStore()
+        # message type -> the method that handles it in a session
+        self._session_handlers: dict[str, SessionHandler] = {
+            "watch": self._watch_peers,
+            "offer": self._relay_offer_or_answer,
+            "answer": self._relay_offer_or_answer,
+        }
+        # peering request type -> the method that runs it
+        self._peering_handlers: dict[str, PeeringHandler] = {
+            "request_peer": self._request_peer,
+            "list_peer_requests": self._list_peer_requests,
+            "put_document": self._put_document,
+            "grant_document": self._grant_document,
+            "get_document": self._get_document,
+        }
 
     @contextlib.asynccontextmanager
     async def running(self) -> AsyncIterator[int]:
@@ -103,76 +190,110 @@ class SignalingServer:
             yield next(iter(server.sockets)).getsockname()[1]
 
     async def _handle_connection(self, connection: ServerConnection) -> None:
-        email = None
         try:
-            email = await self._sign_in(connection)
-            async for raw in connection:
-                await self._dispatch_message(email, connection, read_message(raw))
+            first = read_message(await connection.recv())
+            if first["type"] == "hello":
+                await self._run_session(connection, first)
+            else:
+                await self._answer_peering_request(connection, first)
         except ProtocolError as err:
             await connection.send(json.dumps({"type": "error", "reason": str(err)}))
             await connection.close(CloseCode.POLICY_VIOLATION, "protocol error")
+
+    async def _run_session(self, connection: ServerConnection, hello: dict) -> None:
+        email = await self._sign_in(connection, hello)
+        try:
+            async for raw in connection:
+                await self._dispatch_message(email, connection, read_message(raw))
         finally:
             self._remove_watcher(connection)
             # A replaced connection is not the current one; its email stays online.
-            if email is not None and self._clients.get(email) is connection:
+            current = self._clients.get(email.lower())
+            if current is not None and current.connection is connection:
                 self._sign_out(email)
 
-    async def _sign_in(self, connection: ServerConnection) -> str:
-        email = await self._read_hello(connection)
+    async def _sign_in(self, connection: ServerConnection, hello: dict) -> str:
+        email = self._authenticate(hello)
         ice_servers = await self._ice_servers()
         await connection.send(
             json.dumps({"type": "welcome", "ice_servers": ice_servers})
         )
-        replaced = self._clients.get(email)
-        self._clients[email] = connection
+        replaced = self._clients.get(email.lower())
+        self._clients[email.lower()] = SignedInClient(email, connection)
         logger.info(f"{email} signed in")
         if replaced is not None:
-            await replaced.close(REPLACED_CLOSE_CODE, "signed in again")
+            await replaced.connection.close(REPLACED_CLOSE_CODE, "signed in again")
         self._notify_watchers(email, "online")
         return email
 
-    async def _read_hello(self, connection: ServerConnection) -> str:
-        """Read the hello of a client and check its access key.
+    def _authenticate(self, message: dict) -> str:
+        """Check the access key in a hello or a peering request.
 
         Returns:
-            The email of the client, in lower case.
+            The email of the client, as the client spells it.
 
         Raises:
-            ProtocolError: The first message is not a hello, or its access key
-                is wrong.
+            ProtocolError: The access key is wrong.
         """
-        hello = read_message(await connection.recv())
-        require_message_type(hello, "hello")
-        access_key = read_text_field(hello, "access_key")
+        access_key = read_text_field(message, "access_key")
         if not hmac.compare_digest(
             access_key.encode(), self._config.access_key.encode()
         ):
             raise ProtocolError("The access key is wrong")
-        return read_text_field(hello, "email").lower()
+        return read_text_field(message, "email")
+
+    async def _answer_peering_request(
+        self, connection: ServerConnection, request: dict
+    ) -> None:
+        email = self._authenticate(request)
+        handler = find_handler(self._peering_handlers, request["type"])
+        await connection.send(json.dumps(handler(email, request)))
+
+    def _request_peer(self, email: str, request: dict) -> dict:
+        self._peering.add_request(email, read_text_field(request, "peer"))
+        return OK_ANSWER
+
+    def _list_peer_requests(self, email: str, request: dict) -> dict:
+        return {"type": "peer_requests", "emails": self._peering.list_requests(email)}
+
+    def _put_document(self, email: str, request: dict) -> dict:
+        name = read_text_field(request, "name")
+        self._peering.put_document(email, name, read_text_field(request, "data"))
+        return OK_ANSWER
+
+    def _grant_document(self, email: str, request: dict) -> dict:
+        name = read_text_field(request, "name")
+        reader = read_text_field(request, "reader")
+        self._peering.grant_document(email, name, reader)
+        return OK_ANSWER
+
+    def _get_document(self, email: str, request: dict) -> dict:
+        owner = read_text_field(request, "owner")
+        name = read_text_field(request, "name")
+        return {
+            "type": "document",
+            "data": self._peering.get_document(email, owner, name),
+        }
 
     async def _dispatch_message(
         self, email: str, connection: ServerConnection, message: dict
     ) -> None:
-        kind = message["type"]
-        if kind == "watch":
-            await self._watch_peers(connection, message)
-        elif kind in ("offer", "answer"):
-            await self._relay_offer_or_answer(email, connection, message)
-        else:
-            raise ProtocolError(
-                f"Expected a watch, offer or answer message, got {kind!r}"
-            )
+        handler = find_handler(self._session_handlers, message["type"])
+        await handler(email, connection, message)
 
-    async def _watch_peers(self, connection: ServerConnection, message: dict) -> None:
-        for peer in (p.lower() for p in read_text_list_field(message, "peers")):
-            self._watchers[peer].add(connection)
-            if peer in self._clients:
-                await connection.send(json.dumps({"type": "online", "email": peer}))
+    async def _watch_peers(
+        self, email: str, connection: ServerConnection, message: dict
+    ) -> None:
+        for peer in read_text_list_field(message, "peers"):
+            self._watchers[peer.lower()].add(connection)
+            if peer.lower() in self._clients:
+                online = {"type": "online", "email": self._clients[peer.lower()].email}
+                await connection.send(json.dumps(online))
 
     async def _relay_offer_or_answer(
         self, sender: str, connection: ServerConnection, message: dict
     ) -> None:
-        receiver_email = read_text_field(message, "to").lower()
+        receiver_email = read_text_field(message, "to")
         request_id = read_text_field(message, "id")
         relayed = json.dumps(
             {
@@ -182,12 +303,12 @@ class SignalingServer:
                 "sdp": read_text_field(message, "sdp"),
             }
         )
-        receiver = self._clients.get(receiver_email)
+        receiver = self._clients.get(receiver_email.lower())
         if receiver is None:
             await send_offline_error(connection, request_id, receiver_email)
             return
         try:
-            await receiver.send(relayed)
+            await receiver.connection.send(relayed)
         except ConnectionClosed:
             # The receiver left before its own handler signed it out.
             await send_offline_error(connection, request_id, receiver_email)
@@ -196,16 +317,28 @@ class SignalingServer:
         """Send ``kind`` (online or offline) for ``email`` to its watchers."""
         event = json.dumps({"type": kind, "email": email})
         # broadcast skips a watcher whose connection is closed.
-        broadcast(self._watchers[email], event)
+        broadcast(self._watchers[email.lower()], event)
 
     def _remove_watcher(self, connection: ServerConnection) -> None:
         for watchers in self._watchers.values():
             watchers.discard(connection)
 
     def _sign_out(self, email: str) -> None:
-        del self._clients[email]
+        del self._clients[email.lower()]
         logger.info(f"{email} signed out")
         self._notify_watchers(email, "offline")
+
+
+def find_handler(handlers: dict[str, Handler], kind: str) -> Handler:
+    """Return the handler for a message of type ``kind``.
+
+    Raises:
+        ProtocolError: No handler takes ``kind``.
+    """
+    if kind not in handlers:
+        expected = ", ".join(handlers)
+        raise ProtocolError(f"Expected a message of type {expected}, got {kind!r}")
+    return handlers[kind]
 
 
 def read_message(raw: str | bytes) -> dict:
@@ -230,16 +363,6 @@ def read_message(raw: str | bytes) -> dict:
             f"Expected an object with a type, got {raw[:MAX_QUOTED_CHARS]!r}"
         )
     return message
-
-
-def require_message_type(message: dict, kind: str) -> None:
-    """Check that ``message`` is a ``kind`` message.
-
-    Raises:
-        ProtocolError: ``message`` has a different type.
-    """
-    if message["type"] != kind:
-        raise ProtocolError(f"Expected a {kind} message, got {message['type']!r}")
 
 
 def read_text_field(message: dict, name: str) -> str:

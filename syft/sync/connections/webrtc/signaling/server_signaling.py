@@ -5,7 +5,7 @@ import asyncio
 import json
 import logging
 import uuid
-from collections.abc import Coroutine
+from collections.abc import Callable, Coroutine
 from dataclasses import dataclass
 from typing import Any
 
@@ -58,6 +58,14 @@ class ServerSignaling(Signaling):
         # The tasks that answer offers, until they end. This set keeps a strong
         # reference to each task, because asyncio keeps only a weak one.
         self._answer_tasks: set[asyncio.Task] = set()
+        # message type -> the method that handles it
+        self._message_handlers: dict[str, Callable[[dict], None]] = {
+            "offer": self._handle_offer,
+            "answer": self._handle_answer,
+            "error": self._handle_error,
+            "online": self._handle_online,
+            "offline": self._handle_offline,
+        }
 
     async def listen(
         self, email: str, on_offer: OnOffer, on_online: OnOnline
@@ -118,18 +126,18 @@ class ServerSignaling(Signaling):
 
     def _handle_message(self, message: dict) -> None:
         kind = message["type"]
-        if kind == "offer":
-            # Each offer gets its own task, so a slow answer does not delay the
-            # other messages.
-            self._start_answer_task(self._answer_offer(message))
-        elif kind == "answer":
-            self._resolve_answer(message["id"], message["sdp"])
-        elif kind == "error":
-            self._handle_error(message)
-        elif kind == "online":
-            self._on_online(message["email"])
-        elif kind != "offline":
-            raise ValueError(f"Unexpected message from the signaling server: {kind!r}")
+        if kind not in self._message_handlers:
+            expected = ", ".join(self._message_handlers)
+            raise ValueError(
+                f"Expected a message of type {expected} from the signaling server, "
+                f"got {kind!r}"
+            )
+        self._message_handlers[kind](message)
+
+    def _handle_offer(self, message: dict) -> None:
+        # Each offer gets its own task, so a slow answer does not delay the
+        # other messages.
+        self._start_answer_task(self._answer_offer(message))
 
     async def _answer_offer(self, message: dict) -> None:
         sdp = await self._on_offer(message["from"], message["sdp"])
@@ -137,11 +145,18 @@ class ServerSignaling(Signaling):
             {"type": "answer", "to": message["from"], "id": message["id"], "sdp": sdp}
         )
 
-    def _resolve_answer(self, request_id: str, sdp: str) -> None:
+    def _handle_answer(self, message: dict) -> None:
         # An offer removes its entry when it no longer waits. Then a late
         # answer finds no entry, and the client ignores it.
-        if request_id in self._pending_answers:
-            self._pending_answers.pop(request_id).set_result(sdp)
+        if message["id"] in self._pending_answers:
+            self._pending_answers.pop(message["id"]).set_result(message["sdp"])
+
+    def _handle_online(self, message: dict) -> None:
+        self._on_online(message["email"])
+
+    def _handle_offline(self, message: dict) -> None:
+        """Ignore the message: the signaling has nothing to do for a peer that
+        goes offline."""
 
     def _handle_error(self, message: dict) -> None:
         if "id" not in message:
