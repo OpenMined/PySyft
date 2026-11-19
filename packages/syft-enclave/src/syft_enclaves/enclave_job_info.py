@@ -358,24 +358,17 @@ class EnclaveJobInfo(JobInfo):
         # The data owners may have shared only the first chars of the log.
         return longest_log_head(self.job_review_path, log_file) or full
 
-    def _log_note(self, log_file: str) -> Optional[str]:
-        """Say when the viewers show only the first chars of ``log_file``.
+    def log_is_truncated(self, log_file: str) -> bool:
+        """Whether the viewers show only the first chars of ``log_file``.
 
-        The reader knows the log's full length only when the copy is shorter
-        than asked for: then it holds the whole log.
+        True when the data owners shared a copy of the first ``n_chars`` chars
+        that is ``n_chars`` long. A shorter copy holds the whole log.
         """
         path = self._log_path(log_file)
         n_chars = log_head_length(path, log_file)
         if n_chars is None:
-            return None
-        note = f"first {n_chars:,} characters, released by the data owners"
-        try:
-            length = len(path.read_text(errors="replace"))
-        except OSError:
-            return note
-        if length < n_chars:
-            note += f"; the whole log is {length:,} characters"
-        return note
+            return False
+        return len(path.read_text(errors="replace")) >= n_chars
 
     def reject(self, reason: Optional[str] = None) -> None:
         """Reject this job in the DO's own approval file.

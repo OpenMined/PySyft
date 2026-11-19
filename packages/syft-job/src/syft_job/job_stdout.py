@@ -7,6 +7,10 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .job import JobInfo
 
+LOG_TRUNCATION_MESSAGE = (
+    "[truncated: the data owners shared only the start of this log]"
+)
+
 
 class StdoutViewer:
     """A viewer for stdout content with scrollable display in Jupyter notebooks."""
@@ -91,8 +95,9 @@ class StdoutViewer:
             text = content
         else:
             text = f"StdoutViewer({len(lines)} lines, {len(content)} chars)"
-        note = self.job_info._log_note("stdout.txt")
-        return f"{text}\n({note})" if note else text
+        if self.job_info.log_is_truncated("stdout.txt"):
+            text += f"\n{LOG_TRUNCATION_MESSAGE}"
+        return text
 
     def _repr_html_(self) -> str:
         """HTML representation for Jupyter notebooks with scrollable view."""
@@ -149,8 +154,8 @@ class StdoutViewer:
         lines = clean_content.split("\n")
         char_count = len(clean_content)
         line_count = len(lines)
-        note = self.job_info._log_note("stdout.txt")
-        title = f"stdout.txt ({escape(note)})" if note else "stdout.txt"
+        if self.job_info.log_is_truncated("stdout.txt"):
+            html_content += f"\n{escape(LOG_TRUNCATION_MESSAGE)}"
 
         return f"""
         <style>
@@ -276,7 +281,7 @@ class StdoutViewer:
         <div class="syftjob-stdout-container">
             <div class="syftjob-stdout-header">
                 <div class="syftjob-stdout-title">
-                    📄 {title}
+                    📄 stdout.txt
                 </div>
                 <div class="syftjob-stdout-stats">
                     <span>{line_count} lines</span>
