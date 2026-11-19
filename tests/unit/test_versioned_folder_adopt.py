@@ -14,6 +14,7 @@ is decided: the name gives the address, and the version field of each file
 decides whether the content loads.
 """
 
+import logging
 from unittest.mock import Mock
 
 import pytest
@@ -198,12 +199,13 @@ def test_an_adopted_folder_serves_a_checkpoint_from_an_earlier_client():
     assert older_name not in _checkpoints_folder_names(cached_client)
 
 
-def test_an_adopted_folder_still_refuses_a_later_checkpoint(capsys):
+def test_an_adopted_folder_still_refuses_a_later_checkpoint(caplog):
     # The answer to "how do we know the renamed folder is in the right format":
     # the rename does not vouch for the content. A checkpoint from a later client
     # is refused inside an adopted folder exactly as it is anywhere else, and the
     # caller falls back to a download of all events.
     router, cached_client, _ = _checkpoints_owner_with_version(CHECKPOINT_VERSION + 1)
 
-    assert router.get_latest_checkpoint() is None
-    assert "Failed to load checkpoint" in capsys.readouterr().out
+    with caplog.at_level(logging.WARNING):
+        assert router.get_latest_checkpoint() is None
+    assert "Failed to load checkpoint" in caplog.text
