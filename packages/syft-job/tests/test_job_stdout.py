@@ -9,7 +9,11 @@ from syft_job.job_stdout import StdoutViewer
 
 def _viewer(tmp_path: Path, content: str) -> StdoutViewer:
     (tmp_path / "stdout.txt").write_text(content)
-    job_info = SimpleNamespace(status="done", _log_path=lambda name: tmp_path / name)
+    job_info = SimpleNamespace(
+        status="done",
+        _log_path=lambda name: tmp_path / name,
+        log_is_truncated=lambda name: False,
+    )
     return StdoutViewer(job_info)
 
 
@@ -31,7 +35,11 @@ def test_stderr_repr_html_escapes_output_and_keeps_colors(tmp_path: Path):
     (tmp_path / "stderr.txt").write_text(
         'File "run.py", line 1, in <module>\n\x1b[31mValueError\x1b[0m\n'
     )
-    job_info = SimpleNamespace(status="done", _log_path=lambda name: tmp_path / name)
+    job_info = SimpleNamespace(
+        status="done",
+        _log_path=lambda name: tmp_path / name,
+        log_is_truncated=lambda name: False,
+    )
     html = StderrViewer(job_info)._repr_html_()
 
     assert "in &lt;module&gt;" in html

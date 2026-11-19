@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import html
 import re
-from html import escape
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -149,7 +148,7 @@ class StdoutViewer:
         char_count = len(clean_content)
         line_count = len(lines)
         if self.job_info.log_is_truncated("stdout.txt"):
-            html_content += f"\n{escape(LOG_TRUNCATION_MESSAGE)}"
+            html_content += f"\n{html.escape(LOG_TRUNCATION_MESSAGE)}"
 
         return f"""
         <style>
