@@ -255,6 +255,13 @@ class JobInfo:
 
         return output_files
 
+    def log_is_truncated(self, log_file: str) -> bool:
+        """Whether the viewers show only the first chars of ``log_file``.
+
+        Always False here: only an enclave job can share part of a log.
+        """
+        return False
+
     @property
     def stdout(self) -> StdoutViewer:
         """Get a viewer for the stdout content."""

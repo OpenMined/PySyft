@@ -14,6 +14,7 @@ import yaml
 os.environ["PRE_SYNC"] = "false"
 
 from syft_job.job import JobInfo  # noqa: E402
+from syft_job.job_stdout import LOG_TRUNCATION_MESSAGE  # noqa: E402
 from syft_job.models import JobState, JobStatus  # noqa: E402
 from syft_job.read_permissions import (  # noqa: E402
     LOGS_WARNING,
@@ -786,8 +787,32 @@ def run_crash_sharing_nothing():
 
 
 def request_stderr(do, **request):
-    with pytest.warns(UserWarning, match="stdout or stderr"):
+    with pytest.warns(UserWarning, match="read stderr.txt, as the job wrote it"):
         do.request_stderr(do.jobs["j"], **request)
+
+
+def _log_request_warnings(record):
+    return [str(w.message) for w in record if "This request lets" in str(w.message)]
+
+
+def test_log_request_warning_names_readers():
+    enclave, do1, do2, ds = run_crash_sharing_nothing()
+
+    with pytest.warns(UserWarning) as record:
+        do1.request_stderr(do1.jobs["j"], readers=ds.email, n_chars=1000)
+    assert _log_request_warnings(record) == [
+        f"This request lets {ds.email} read stderr.txt, as the job wrote it. "
+        "The job code can print private data into it. To read it first, "
+        "request it with no readers: the enclave then releases it to the "
+        "data owners only."
+    ]
+
+    with pytest.warns(UserWarning) as record:
+        do1.request_stdout(do1.jobs["j"])
+    assert _log_request_warnings(record) == [
+        "This request lets the enclave's data owners read stdout.txt, as the "
+        "job wrote it. The job code can print private data into it."
+    ]
 
 
 def test_requested_stderr_head_reaches_submitter():
@@ -804,6 +829,24 @@ def test_requested_stderr_head_reaches_submitter():
     assert not has_file(ds, "stderr.txt")
     assert str(ds.jobs["j"].stderr) == full[:10]
     assert ds.jobs["j"].approved_read_permissions == {"stderr_10.txt": [ds.email]}
+    # The viewer says it shows only the first chars.
+    assert ds.jobs["j"].log_is_truncated("stderr.txt")
+    assert repr(ds.jobs["j"].stderr) == f"{full[:10]}\n{LOG_TRUNCATION_MESSAGE}"
+    assert LOG_TRUNCATION_MESSAGE in ds.jobs["j"].stderr._repr_html_()
+
+
+def test_log_head_longer_than_log_not_truncated():
+    enclave, do1, do2, ds = run_crash_sharing_nothing()
+    for do in (do1, do2):
+        request_stderr(do, readers=ds.email, n_chars=100_000)
+    run_and_share(enclave, ds)
+
+    enclave_review = Path(enclave._rds.job_client.jobs["j"].job_review_path)
+    full = (enclave_review / "stderr.txt").read_text()
+    assert has_file(ds, "stderr_100000.txt")
+    assert str(ds.jobs["j"].stderr) == full
+    assert not ds.jobs["j"].log_is_truncated("stderr.txt")
+    assert LOG_TRUNCATION_MESSAGE not in repr(ds.jobs["j"].stderr)
 
 
 def test_one_owner_requesting_log_shares_nothing():
@@ -822,6 +865,7 @@ def test_log_request_defaults_to_data_owners():
     assert readers_of(enclave, "stderr.txt", (ds, do1, do2)) == [do1, do2]
     assert has_file(do1, "stderr.txt")
     assert not has_file(ds, "stderr.txt")
+    assert not do1.jobs["j"].log_is_truncated("stderr.txt")
 
 
 def test_default_log_readers_ignore_owners_named_by_submitter():
