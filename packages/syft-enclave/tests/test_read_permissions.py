@@ -257,13 +257,24 @@ def has_file(client, name):
     return (Path(client.jobs["j"].job_review_path) / name).exists()
 
 
-def readers_of(enclave, name, parties):
-    """The parties that may read ``name`` in the enclave's review folder."""
+def review_file_path(enclave, name):
+    """The path of ``name`` in the enclave's review folder, relative to its datasite."""
     datasite = enclave._rds.syftbox_folder / enclave.email
     review = Path(enclave._rds.job_client.jobs["j"].job_review_path)
-    path = str((review / name).relative_to(datasite))
-    ctx = SyftPermContext(datasite=datasite)
+    return str((review / name).relative_to(datasite))
+
+
+def readers_of(enclave, name, parties):
+    """The parties that may read ``name`` in the enclave's review folder."""
+    ctx = SyftPermContext(datasite=enclave._rds.syftbox_folder / enclave.email)
+    path = review_file_path(enclave, name)
     return [p for p in parties if ctx.can_read(path, p.email)]
+
+
+def enclave_accepts_write(enclave, party, name):
+    """Whether the enclave accepts a change from ``party`` to ``name`` in its review folder."""
+    syncer = enclave._rds.sync_engine.datasite_owner_syncer
+    return syncer.check_write_permission(party.email, review_file_path(enclave, name))
 
 
 def test_submitter_gets_no_logs_without_approval():
@@ -652,6 +663,11 @@ def test_owner_logs_approval_warns():
         do1.jobs["j"].approve(share_files=logs)
 
 
+def lines(value):
+    """The lines of a row value, in any order."""
+    return set(value.splitlines())
+
+
 def test_display_on_enclave_shows_every_party():
     enclave, do1, do2, ds = build_quad()
     submit(
@@ -666,25 +682,57 @@ def test_display_on_enclave_shows_every_party():
     assert rows["Requested"] == (
         f"returncode.txt ({ds.email}), stdout.txt ({ds.email})"
     )
-    assert rows[f"Approved by {do1.email}"] == f"returncode.txt ({ds.email})"
-    assert rows[f"Approved by {do2.email}"] == "(pending)"
-    assert rows["Approved by all"] == "none"
+    assert lines(rows["Job approved"]) == {f"{do1.email} ✓", f"{do2.email} pending"}
+    assert lines(rows["Output files approved"]) == {
+        f"{do1.email}: returncode.txt ({ds.email})",
+        f"{do2.email}: none",
+    }
 
 
-def test_display_on_data_owner_shows_own_approval():
+def test_data_owner_sees_every_owner_approval():
     enclave, do1, do2, ds = build_quad()
     return_code = readable(RETURN_CODE, ds.email)
     submit(ds, enclave, do1, do2, OK_CODE, return_code)
-    distribute(enclave, do1)
+    distribute(enclave, do1, do2)
     do1.jobs["j"].approve(share_files=return_code)
+    enclave.sync()
+    do2.sync()
+
+    rows = dict(do2.jobs["j"].read_permission_rows())
+    assert lines(rows["Job approved"]) == {f"{do1.email} ✓", f"{do2.email} pending"}
+    assert lines(rows["Output files approved"]) == {
+        f"{do1.email}: returncode.txt ({ds.email})",
+        f"{do2.email}: none",
+    }
+
+    do2.jobs["j"].reject("too much\ndata")
+    enclave.sync()
+    do1.sync()
 
     job = do1.jobs["j"]
-    assert job.read_permission_rows() == [
-        ("Requested", f"returncode.txt ({ds.email})"),
-        ("Approved by you", f"returncode.txt ({ds.email})"),
-        ("Approved by all", "needs the approval of every party"),
-    ]
-    assert "Approved by you:" in job._repr_html_()
+    rows = dict(job.read_permission_rows())
+    # The reason stays on the line of the data owner that rejected.
+    assert lines(rows["Job approved"]) == {
+        f"{do1.email} ✓",
+        f"{do2.email} ✗ (too much data)",
+    }
+    assert lines(rows["Output files approved"]) == {
+        f"{do1.email}: returncode.txt ({ds.email})",
+        f"{do2.email}: none",
+    }
+    # A data owner's status stays its own decision.
+    assert job.status == "approved"
+    assert rows["Job approved"].replace("\n", "<br>") in job._repr_html_()
+    job_approved = " / ".join(rows["Job approved"].splitlines())
+    assert f"Job approved: {job_approved};" in str(job)
+    # Each data owner reads every approval file, and writes only its own.
+    do2_file = enclave_approval_file_name(do2.email)
+    assert readers_of(enclave, do2_file, [do1, do2, ds]) == [do1, do2]
+    assert enclave_accepts_write(enclave, do2, do2_file)
+    assert not enclave_accepts_write(enclave, do1, do2_file)
+    # The submitter does not get the approval files.
+    assert not has_file(ds, enclave_approval_file_name(do1.email))
+    assert dict(ds.jobs["j"].read_permission_rows()).keys() == {"Requested"}
 
 
 # -- the request is DS-writable after the approval ------------------------------
@@ -759,8 +807,10 @@ def test_display_lists_party_without_file():
     (review / enclave_approval_file_name(do2.email)).unlink()
 
     rows = dict(enclave.jobs["j"].read_permission_rows())
-    assert rows[f"Approved by {do1.email}"] == "(pending)"
-    assert rows[f"Approved by {do2.email}"] == "(no approval file)"
+    assert lines(rows["Job approved"]) == {
+        f"{do1.email} pending",
+        f"{do2.email} pending",
+    }
 
 
 def test_job_reject_reaches_enclave():

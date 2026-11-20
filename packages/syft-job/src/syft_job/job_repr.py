@@ -469,12 +469,7 @@ def job_info_repr_html(job: "JobInfo") -> str:
     policy_details, policy_section = _policy_html(job)
 
     read_permission_details = "".join(
-        f"""
-                    <div class="syftjob-single-detail">
-                        <div class="syftjob-single-detail-label">{escape(label)}:</div>
-                        <div class="syftjob-single-detail-value">{escape(value)}</div>
-                    </div>"""
-        for label, value in job.read_permission_rows()
+        _detail_html(label, value) for label, value in job.read_permission_rows()
     )
 
     return f"""
@@ -753,10 +748,13 @@ def job_info_repr_html(job: "JobInfo") -> str:
 
 
 def _detail_html(label: str, value: str) -> str:
+    """One detail row. Each line of ``value``, such as one per data owner, shows
+    on its own line."""
+    value_html = "<br>".join(escape(line) for line in value.splitlines())
     return f"""
                     <div class="syftjob-single-detail">
                         <div class="syftjob-single-detail-label">{escape(label)}:</div>
-                        <div class="syftjob-single-detail-value">{escape(value)}</div>
+                        <div class="syftjob-single-detail-value">{value_html}</div>
                     </div>"""
 
 
