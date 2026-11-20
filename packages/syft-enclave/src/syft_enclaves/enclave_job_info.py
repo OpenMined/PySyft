@@ -32,11 +32,6 @@ from syft_enclaves.log_requests import (
 )
 
 
-# How a data owner's decision on a job shows. Any other status shows as pending.
-APPROVAL_MARKS = {JobStatus.APPROVED: "✓", JobStatus.REJECTED: "✗"}
-PENDING_MARK = "pending"
-
-
 class PartyApprovalStatus(BaseModel):
     """Tracks approval from a single party in a multi-party (enclave) job."""
 
@@ -102,9 +97,9 @@ class EnclaveJobInfo(JobInfo):
     """Enclave-specific JobInfo with multi-party approval logic.
 
     ``_required_approvers`` is set only on the enclave, which runs the job:
-    there every configured data owner must approve this exact submission. A
-    data owner's client holds only its own approval file, so it keeps showing
-    the status of the files it has.
+    there every configured data owner must approve this exact submission. Each
+    data owner and the submitter hold every approval file, and read the status
+    from the files they hold.
     """
 
     _required_approvers: Optional[list[str]] = None
@@ -186,14 +181,19 @@ class EnclaveJobInfo(JobInfo):
 
     @property
     def status(self) -> str:
+        """The job's status, the same on the enclave, each data owner and the submitter.
+
+        The runner records running, done and failed in the state. Before that,
+        the status comes from the approval files, as ``_party_approvals`` picks
+        them: on the enclave, of every data owner it is configured with.
+        """
         if self._state.status in (JobStatus.DONE, JobStatus.FAILED, JobStatus.RUNNING):
             return self._state.status.value
-        if self._required_approvers is not None:
-            return self._status_from_required_approvers(self._required_approvers)
-        if not self._approval_file.exists():
+        approvals = _party_approvals(self.job_review_path, self._required_approvers)
+        if not approvals and self._required_approvers is None:
+            # Off the enclave, before it distributed the job: its state is pending.
             return self._state.status.value
-        # A data owner holds every party's approval file, and shows its own.
-        return self._load_own_approval().status.value
+        return self._status_from_approvals([a for _, a in approvals])
 
     @property
     def can_approve(self) -> bool:
@@ -204,15 +204,18 @@ class EnclaveJobInfo(JobInfo):
         """
         return self._approval_file.exists()
 
-    def _status_from_required_approvers(self, required: list[str]) -> str:
-        """Approved only when every required party approved this exact submission.
+    def _status_from_approvals(
+        self, approvals: list[Optional[PartyApprovalStatus]]
+    ) -> str:
+        """Approved only when every party approved this exact submission.
 
         A missing or unreadable approval file counts as no approval, so removing
         a file never stands in for consent. A rejection from any party wins.
+        With no party to approve, as on an enclave with no data owners
+        configured, the job is never approved.
         """
-        if not required:
+        if not approvals:
             return JobStatus.PENDING.value
-        approvals = [load_party_approval(self.job_review_path, p) for p in required]
         if any(a is not None and a.status == JobStatus.REJECTED for a in approvals):
             return JobStatus.REJECTED.value
         current = submission_hash(self.job_submission_path)
@@ -220,28 +223,29 @@ class EnclaveJobInfo(JobInfo):
             return JobStatus.APPROVED.value
         return JobStatus.PENDING.value
 
-    def read_permission_rows(self) -> list[tuple[str, str]]:
+    def read_permissions_repr_rows(self) -> list[tuple[str, str]]:
         """The read permission state as (label, value) rows, for display.
 
-        The enclave and each data owner also show, with a line per data owner,
-        whether it approved the job and which output files it approved.
+        Once the enclave has distributed the job, the enclave, each data owner
+        and the submitter also show, with a line per data owner, whether it
+        approved the job and which output files it approved.
         """
         rows = [("Requested", format_read_permissions(self.requested_read_permissions))]
-        if not self._holds_approval_files:
+        # A party without a valid approval file has not approved: it shows as pending.
+        approvals = [
+            approval or PartyApprovalStatus(party=party)
+            for party, approval in _party_approvals(
+                self.job_review_path, self._required_approvers
+            )
+        ]
+        if not approvals:
             return rows
-        approvals = _party_approvals(self.job_review_path, self._required_approvers)
-        job_lines = [_job_approval_line(party, a) for party, a in approvals]
-        file_lines = [f"{party}: {_approved_output_files(a)}" for party, a in approvals]
+        job_lines = [_job_approval_line(a) for a in approvals]
+        file_lines = [f"{a.party}: {_approved_output_files(a)}" for a in approvals]
         return rows + [
             ("Job approved", "\n".join(job_lines)),
             ("Output files approved", "\n".join(file_lines)),
         ]
-
-    @property
-    def _holds_approval_files(self) -> bool:
-        """Whether this client holds the approval files: the enclave or a data owner."""
-        is_enclave = self.current_user_email == self.datasite_owner_email
-        return is_enclave or self._approval_file.exists()
 
     def _restrict_to_request(
         self, read_permissions: Optional[ReadPermissions]
@@ -405,20 +409,22 @@ class EnclaveJobInfo(JobInfo):
         print(f"Job '{self.name}' rejected by {self.current_user_email}.")
 
 
-def _job_approval_line(party: str, approval: Optional[PartyApprovalStatus]) -> str:
+def _job_approval_line(approval: PartyApprovalStatus) -> str:
     """The party, then ✓ when it approved the job, ✗ and its reason when it
     rejected it, and pending otherwise."""
-    status = approval.status if approval is not None else JobStatus.PENDING
-    line = f"{party} {APPROVAL_MARKS.get(status, PENDING_MARK)}"
-    if status == JobStatus.REJECTED and approval.reason:
-        # On one line, so that each party keeps one line.
-        line += f" ({' '.join(approval.reason.split())})"
-    return line
+    party = approval.party
+    if approval.status == JobStatus.APPROVED:
+        return f"{party} ✓"
+    if approval.status != JobStatus.REJECTED:
+        return f"{party} pending"
+    # On one line, so that each party keeps one line.
+    reason = " ".join((approval.reason or "").split())
+    return f"{party} ✗ ({reason})" if reason else f"{party} ✗"
 
 
-def _approved_output_files(approval: Optional[PartyApprovalStatus]) -> str:
+def _approved_output_files(approval: PartyApprovalStatus) -> str:
     """The output files the party approved, for display; "none" until it approved."""
-    if approval is None or approval.status != JobStatus.APPROVED:
+    if approval.status != JobStatus.APPROVED:
         return format_read_permissions({})
     return format_read_permissions(approval.approved_read_permissions)
 

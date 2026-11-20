@@ -469,7 +469,7 @@ def job_info_repr_html(job: "JobInfo") -> str:
     policy_details, policy_section = _policy_html(job)
 
     read_permission_details = "".join(
-        _detail_html(label, value) for label, value in job.read_permission_rows()
+        _detail_html(label, value) for label, value in job.read_permissions_repr_rows()
     )
 
     return f"""

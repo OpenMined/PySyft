@@ -87,6 +87,15 @@ def test_approve_refuses_when_already_approved(tmp_path: Path):
         job.approve()
 
 
+def test_enclave_without_data_owners_never_approves(tmp_path: Path):
+    """The enclave runs only an approved job, so no data owners means no run."""
+    job = _make_enclave_job(tmp_path)
+    job._state.status = JobStatus.APPROVED
+    on_enclave = EnclaveJobInfo.from_job_info(job, required_approvers=[])
+
+    assert on_enclave.status == "pending"
+
+
 REQUESTED = {"outputs": [DO_EMAIL, DS_EMAIL], "returncode.txt": [DS_EMAIL]}
 
 
