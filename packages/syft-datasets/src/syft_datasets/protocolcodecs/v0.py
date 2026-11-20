@@ -33,13 +33,13 @@ class DatasetConfigV0:
     def __init__(self, syftbox_config: SyftBoxConfig) -> None:
         self.syftbox_config = syftbox_config
 
-    def public_all_dataset_folder(self, datasite: str) -> Path:
+    def public_all_datasets_folder(self, datasite: str) -> Path:
         return (
             self.syftbox_config.datasite_public_root(datasite)
             / self.datasets_folder_name
         )
 
-    def private_all_datatset_folder(self, owner: str) -> Path:
+    def private_all_datasets_folder(self, owner: str) -> Path:
         return (
             self.syftbox_config.datasite_private_root(owner) / self.datasets_folder_name
         )
@@ -49,11 +49,13 @@ class DatasetConfigV0:
         return protocol_dir_name(ref.protocol_version)
 
     def public_dataset_dir(self, ref: DatasetRef) -> Path:
-        return self.public_all_dataset_folder(ref.owner) / self._segment(ref) / ref.name
+        return (
+            self.public_all_datasets_folder(ref.owner) / self._segment(ref) / ref.name
+        )
 
     def private_dataset_dir(self, ref: DatasetRef) -> Path:
         return (
-            self.private_all_datatset_folder(ref.owner) / self._segment(ref) / ref.name
+            self.private_all_datasets_folder(ref.owner) / self._segment(ref) / ref.name
         )
 
     def metadata_path(self, ref: DatasetRef) -> Path:
@@ -66,7 +68,7 @@ class DatasetConfigV0:
         self, datasite_email: str
     ) -> Iterator[DatasetRef]:
         """Yield refs for datasets stored under any supported protocol's segment."""
-        root = self.public_all_dataset_folder(datasite_email)
+        root = self.public_all_datasets_folder(datasite_email)
         for protocol_version in self.protocol_versions:
             version_dir = root / protocol_dir_name(protocol_version)
             if not version_dir.is_dir():

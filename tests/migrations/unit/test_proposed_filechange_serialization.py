@@ -49,7 +49,7 @@ def test_round_trip_text_and_binary():
         )
 
 
-def test_a_blob_without_identity_fields_is_refused():
+def test_blob_without_identity_fields_refused():
     data = json.loads(_make_message("hello").model_dump_json())
     del data["canonical_name"], data["version"]
     blob = compress_data(json.dumps(data).encode("utf-8"))

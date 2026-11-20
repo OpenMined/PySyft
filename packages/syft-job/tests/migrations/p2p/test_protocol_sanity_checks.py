@@ -27,7 +27,7 @@ def test_reserved_job_name_rejected(tmp_path: Path):
     ds_client.submit_bash_job(user=DO_EMAIL, script="echo hi", job_name="version1")
 
 
-def test_ds_perms_cover_the_protocol_subfolder(tmp_path: Path):
+def test_ds_perms_cover_protocol_subfolder(tmp_path: Path):
     syftbox = tmp_path / "SyftBox"
     syftbox.mkdir()
     do_config = SyftJobConfig(syftbox_folder=syftbox, current_user_email=DO_EMAIL)

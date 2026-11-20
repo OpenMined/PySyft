@@ -31,7 +31,7 @@ def test_a_saved_file_loads_back(tmp_path):
     assert PersistedDict(path=_path(tmp_path)).get("a") == "1"
 
 
-def test_a_file_without_a_version_starts_empty(tmp_path):
+def test_file_without_version_starts_empty(tmp_path):
     # A bare map of entries has no version, so it is not read: the cache
     # costs a re-scan instead.
     _path(tmp_path).write_text(json.dumps({"a": "1", "b": "2"}))

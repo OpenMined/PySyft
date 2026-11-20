@@ -29,14 +29,14 @@ def test_json_round_trip():
     assert restored == original
 
 
-def test_a_file_without_identity_fields_is_refused():
+def test_file_without_identity_fields_refused():
     data = json.loads(VersionInfo.current().to_json())
     del data["canonical_name"], data["version"]
     with pytest.raises(MigrationError):
         VersionInfo.from_json(json.dumps(data))
 
 
-def test_a_file_of_an_unknown_version_is_refused():
+def test_file_of_unknown_version_refused():
     data = json.loads(VersionInfo.current().to_json())
     data["version"] = "99"
     with pytest.raises(MigrationError):

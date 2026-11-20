@@ -1,3 +1,4 @@
+import json
 import random
 import time
 import uuid
@@ -20,6 +21,17 @@ from syft.sync.connections.connection_router import ConnectionRouter
 from syft.sync.connections.drive.mock_drive_service import pair_with_mock_service
 from syft.sync.peers.peer_store import PeerStore
 from syft.sync.syftbox_manager import SyftboxManager
+
+
+# The version file of a release whose PeerInfo is a version this one lacks.
+EARLIER_RELEASE_FILE = json.dumps(
+    {
+        "canonical_name": "PeerInfo",
+        "version": "1",
+        "version_info": {"canonical_name": "VersionInfo", "version": "2"},
+        "encryption_policy": "optional",
+    }
+).encode()
 
 
 def fail_next_listing(monkeypatch, name_prefix: str) -> None:

@@ -38,7 +38,7 @@ def _shipped_private_paths(ds_manager, do_manager) -> list[str]:
     ]
 
 
-def test_private_files_for_a_current_peer_ship_in_the_versioned_layout(pair):
+def test_private_files_for_current_peer_use_versioned_layout(pair):
     ds_manager, do_manager = pair
     mock_path, private_path, readme_path = create_tmp_dataset_files()
     do_manager.create_dataset(

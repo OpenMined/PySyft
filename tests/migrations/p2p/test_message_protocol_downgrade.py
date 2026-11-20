@@ -133,7 +133,7 @@ def _raw_outbox_versions(ds_manager, do_email: str) -> list[str]:
     return [_wire_version(ds_manager, do_email, m.data) for m in received]
 
 
-def test_a_v1_proposal_for_a_protocol0_peer_downgrades_on_the_wire(
+def test_v1_proposal_downgrades_for_protocol0_peer(
     pair, v1_wire_envelopes, advertised_schemas
 ):
     ds_manager, do_manager = pair
@@ -152,7 +152,7 @@ def test_a_v1_proposal_for_a_protocol0_peer_downgrades_on_the_wire(
     )
 
 
-def test_a_v1_events_message_for_a_protocol0_peer_downgrades_on_the_wire(
+def test_v1_events_message_downgrades_for_protocol0_peer(
     pair, v1_wire_envelopes, advertised_schemas
 ):
     ds_manager, do_manager = pair

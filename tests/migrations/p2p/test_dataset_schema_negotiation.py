@@ -32,7 +32,7 @@ def _storage(tmp_path: Path, peer_schemas: dict) -> DatasetStorage:
     return DatasetStorage(config=config, peer_schema=peer_schemas.get)
 
 
-def test_all_current_audience_gets_the_current_layout(tmp_path):
+def test_all_current_audience_gets_current_layout(tmp_path):
     storage = _storage(tmp_path, {NEW_PEER: _dataset_schema(DATASET_PROTOCOL_VERSION)})
     assert storage.target_protocol_versions_for_peers([NEW_PEER]) == {
         DATASET_PROTOCOL_VERSION

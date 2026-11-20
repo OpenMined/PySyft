@@ -35,6 +35,18 @@ def _read_remote_version(
     return peer_info.version_info if peer_info else None
 
 
+def _delete_all_state(
+    email: str, token_path: Optional[Path], local_syftbox_path: Path
+) -> None:
+    """Delete the local and the Drive SyftBox, so the login starts fresh."""
+    print(f"Deleting all state and starting fresh with v{SYFT_VERSION}...")
+    delete_local_syftbox(
+        email=email, local_syftbox_path=local_syftbox_path, verbose=True
+    )
+    delete_remote_syftbox(email=email, token_path=token_path, verbose=True)
+    print("Done. Continuing login.\n")
+
+
 def _handle_version_incompatible(
     email: str,
     token_path: Optional[Path],
@@ -62,18 +74,7 @@ def _handle_version_incompatible(
         )
         return True
     if choice == "2":
-        print(f"Deleting all state and starting fresh with v{SYFT_VERSION}...")
-        delete_local_syftbox(
-            email=email,
-            local_syftbox_path=local_syftbox_path,
-            verbose=True,
-        )
-        delete_remote_syftbox(
-            email=email,
-            token_path=token_path,
-            verbose=True,
-        )
-        print("Done. Continuing login.\n")
+        _delete_all_state(email, token_path, local_syftbox_path)
         return False
     print("Exiting.")
     sys.exit(0)
@@ -116,12 +117,7 @@ def _handle_unsupported_state(
     if choice != "1":
         print("Exiting.")
         sys.exit(0)
-    print(f"Deleting all state and starting fresh with v{SYFT_VERSION}...")
-    delete_local_syftbox(
-        email=email, local_syftbox_path=local_syftbox_path, verbose=True
-    )
-    delete_remote_syftbox(email=email, token_path=token_path, verbose=True)
-    print("Done. Continuing login.\n")
+    _delete_all_state(email, token_path, local_syftbox_path)
 
 
 def handle_potential_version_mismatches_on_login(

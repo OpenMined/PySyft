@@ -69,7 +69,7 @@ def test_default_create_writes_the_current_protocol(tmp_path: Path):
     assert [p.name for p in got.private_files] == ["private.csv"]
 
 
-def test_create_for_a_current_peer_writes_the_current_layout(tmp_path: Path):
+def test_create_for_current_peer_writes_current_layout(tmp_path: Path):
     current_schema = dataset_registry.compute_protocol_schema()
     mgr = _dataset_manager(tmp_path, peer_schemas={DS: current_schema})
     mock, private, readme = _create_dataset_files(tmp_path)
@@ -117,7 +117,7 @@ def test_private_files_wire_private_metadata_in_protocol_format(tmp_path: Path):
     assert not Path(str(raw["data_dir"])).is_absolute()
 
 
-def test_delete_removes_the_dataset(tmp_path: Path):
+def test_delete_removes_dataset(tmp_path: Path):
     mgr = _dataset_manager(tmp_path)
     mock, private, readme = _create_dataset_files(tmp_path)
     mgr.create(name="demo", mock_path=mock, private_path=private, readme_path=readme)

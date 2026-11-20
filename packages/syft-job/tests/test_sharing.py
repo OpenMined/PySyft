@@ -767,7 +767,7 @@ def test_job_is_received_only_when_complete(tmp_path):
     assert reload_job(tmp_path).status == "pending"
 
 
-def test_job_without_a_declared_hash_is_not_received(tmp_path):
+def test_job_without_declared_hash_not_received(tmp_path):
     # The job an api call becomes declares no hash; its request receives it.
     inbox = submit_as_ds(tmp_path)
     set_declared_hash(inbox, None)

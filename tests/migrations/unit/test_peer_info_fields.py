@@ -23,13 +23,13 @@ def test_v0_fields_are_frozen():
     )
 
 
-def test_a_bare_version_info_is_not_a_peer_info():
+def test_bare_version_info_not_read_as_peer_info():
     # Only a PeerInfo is read as the version file of a peer.
     with pytest.raises(MigrationError):
         PeerInfo.from_json(VersionInfo.current().to_json())
 
 
-def test_a_peer_info_of_an_unknown_version_is_refused():
+def test_peer_info_of_unknown_version_refused():
     data = json.loads(
         PeerInfo(
             version_info=VersionInfo.current(),

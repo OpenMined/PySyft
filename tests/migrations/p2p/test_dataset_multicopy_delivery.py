@@ -19,6 +19,7 @@ from syft_rds.config import (
     dataset_variant,
 )
 
+from syft.sync.connections.base_connection import FileCollection
 from syft.sync.connections.drive.drive_collections import CollectionFolder
 from tests.unit.utils import create_tmp_dataset_files
 
@@ -66,7 +67,7 @@ def test_a_tag_with_an_underscore_still_round_trips():
     assert parsed.variant == "v2"
 
 
-def test_a_name_with_no_version_is_a_layout_this_client_does_not_read():
+def test_unversioned_collection_name_not_read():
     parsed = CollectionFolder.from_name(
         DATASET_COLLECTION_PREFIX, f"{DATASET_COLLECTION_PREFIX}_mytag_abc123"
     )
@@ -82,7 +83,7 @@ def test_a_damaged_name_raises():
 # -- local layout ----------------------------------------------------------
 
 
-def test_the_local_directory_of_a_collection_follows_its_protocol():
+def test_collection_local_dir_follows_protocol():
     # The peer writes the files where the metadata of that copy points: under
     # the v<n> segment of its protocol.
     assert (
@@ -94,7 +95,7 @@ def test_the_local_directory_of_a_collection_follows_its_protocol():
 # -- delivery --------------------------------------------------------------
 
 
-def test_a_dataset_arrives_in_its_layout_and_reads(pair):
+def test_dataset_arrives_in_layout_and_reads(pair):
     ds_manager, do_manager = pair
     mock_path, private_path, readme_path = create_tmp_dataset_files()
     do_manager.create_dataset(
@@ -140,6 +141,23 @@ def test_a_collection_of_an_unreadable_protocol_is_skipped(pair, caplog):
         assert cache._select_collections_to_sync(MOCK_DATASET_SPEC, remote) == []
     assert "future dataset" in caplog.text
     assert "v99" in caplog.text
+
+
+def test_owner_skips_own_unreadable_collection_with_warning(pair, caplog):
+    _, do_manager = pair
+    syncer = do_manager.sync_engine.datasite_owner_syncer
+
+    def own(tag: str, variant: str) -> FileCollection:
+        return FileCollection(
+            folder_id=tag, tag=tag, content_hash="abc123", variant=variant
+        )
+
+    current, earlier = own("current dataset", CURRENT_VARIANT), own("old dataset", "")
+    with caplog.at_level(logging.WARNING):
+        readable = syncer._readable_collections(MOCK_DATASET_SPEC, [current, earlier])
+    assert readable == [current]
+    assert "old dataset" in caplog.text
+    assert "current dataset" not in caplog.text
 
 
 # -- cleanup of local copies -----------------------------------------------

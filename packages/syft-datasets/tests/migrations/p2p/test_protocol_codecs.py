@@ -97,7 +97,7 @@ def test_every_known_protocol_version_is_covered_by_exactly_one_codec(tmp_path: 
 
 
 # -- behavior: on-disk format of the current protocol ---------------------------
-def test_the_current_protocol_nests_under_its_segment_with_identity(tmp_path: Path):
+def test_current_protocol_nests_under_segment_with_identity(tmp_path: Path):
     storage = _storage(tmp_path)
     ref = DatasetRef(DO_EMAIL, "nested", DATASET_PROTOCOL_VERSION)
     path = storage.write_dataset_metadata(ref, _mock_dataset(storage, ref))

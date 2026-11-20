@@ -4,6 +4,8 @@ Version-related exceptions for syft.
 
 from typing import TYPE_CHECKING, Optional
 
+from syft.version import SYFT_VERSION
+
 if TYPE_CHECKING:
     from syft.sync.version.version_info import VersionInfo
 
@@ -68,8 +70,6 @@ def unsupported_peer_reason(peer_email: str, error: str) -> str:
 
     Shared by VersionUnknownError and the sync skip log so both say the same.
     """
-    from syft.version import SYFT_VERSION
-
     return (
         f"{peer_email} runs a syft version this release does not support: "
         f"their version file could not be read ({error}). Ask them to install "

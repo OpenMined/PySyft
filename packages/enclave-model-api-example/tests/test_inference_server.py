@@ -192,7 +192,7 @@ def test_resolve_weights_dir_returns_the_newest_candidate_while_absent(tmp_path)
     assert not weights_ready(resolved)
 
 
-def test_the_service_sees_weights_that_land_after_startup(tmp_path):
+def test_service_sees_weights_landing_after_startup(tmp_path):
     # The poll exists so the enclave need not restart. It re-resolves the
     # layout, so weights arriving after startup are picked up.
     owner = "owner@test.org"

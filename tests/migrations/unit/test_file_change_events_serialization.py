@@ -55,7 +55,7 @@ def test_identity_fields_on_the_wire():
     assert data["version"] == "0"
 
 
-def test_a_blob_without_identity_fields_is_refused():
+def test_blob_without_identity_fields_refused():
     message = FileChangeEventsMessage(events=[_make_event("hello")])
     data = json.loads(message.model_dump_json())
     del data["canonical_name"], data["version"]
