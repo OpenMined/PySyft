@@ -469,12 +469,7 @@ def job_info_repr_html(job: "JobInfo") -> str:
     policy_details, policy_section = _policy_html(job)
 
     read_permission_details = "".join(
-        f"""
-                    <div class="syftjob-single-detail">
-                        <div class="syftjob-single-detail-label">{escape(label)}:</div>
-                        <div class="syftjob-single-detail-value">{escape(value)}</div>
-                    </div>"""
-        for label, value in job.read_permission_rows()
+        _detail_html(label, value) for label, value in job.read_permission_rows()
     )
 
     return f"""
@@ -736,7 +731,7 @@ def job_info_repr_html(job: "JobInfo") -> str:
                     </div>
                     <div class="syftjob-single-detail">
                         <div class="syftjob-single-detail-label">Approval:</div>
-                        <div class="syftjob-single-detail-value">{job._approval_label() or "—"}</div>
+                        <div class="syftjob-single-detail-value">{job.approval_method or "—"}</div>
                     </div>
                     <div class="syftjob-single-detail">
                         <div class="syftjob-single-detail-label">Review reason:</div>
@@ -753,10 +748,13 @@ def job_info_repr_html(job: "JobInfo") -> str:
 
 
 def _detail_html(label: str, value: str) -> str:
+    """One detail row. Each line of ``value``, such as one per data owner, shows
+    on its own line."""
+    value_html = "<br>".join(escape(line) for line in value.splitlines())
     return f"""
                     <div class="syftjob-single-detail">
                         <div class="syftjob-single-detail-label">{escape(label)}:</div>
-                        <div class="syftjob-single-detail-value">{escape(value)}</div>
+                        <div class="syftjob-single-detail-value">{value_html}</div>
                     </div>"""
 
 
@@ -847,7 +845,7 @@ def jobs_list_str(jobs: List["JobInfo"], hint_accessor: str | None = None) -> st
         for job in user_jobs:
             emoji = status_emojis.get(job.status, "❓")
             status_display = f"{emoji} {job.status}"
-            approval_display = job._approval_label() or "—"
+            approval_display = job.approval_method or "—"
             line = f"[{job_index:<4}] {job.name:<{name_width}} {job.submitted_by:<{submitted_width}} {status_display:<{status_width}} {approval_display:<{approval_width}}"
             lines.append(line)
             job_index += 1
@@ -1299,7 +1297,7 @@ def jobs_list_repr_html(jobs: List["JobInfo"], hint_accessor: str | None = None)
             style_info = status_styles.get(job.status, {"emoji": "❓"})
             row_class = "syftjob-row-even" if i % 2 == 0 else "syftjob-row-odd"
 
-            approval_display = job._approval_label() or "—"
+            approval_display = job.approval_method or "—"
             html += f"""
                         <tr class="{row_class} syftjob-row">
                             <td class="syftjob-td">

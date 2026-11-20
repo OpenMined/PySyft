@@ -307,10 +307,6 @@ class JobInfo:
     def approval_method(self) -> Optional[str]:
         return self._state.approval_method
 
-    def _approval_label(self) -> Optional[str]:
-        """How the job was approved, for display; None when it was not."""
-        return self.approval_method
-
     @property
     def review_reason(self) -> Optional[str]:
         """Reason recorded at review time (approval or rejection)."""
@@ -640,14 +636,15 @@ class JobInfo:
         }
         emoji = status_emojis.get(self.status, "❓")
         approval_info = ""
-        approval_label = self._approval_label()
-        if approval_label:
-            approval_info = f" [approved: {approval_label}]"
+        if self.approval_method:
+            approval_info = f" [approved: {self.approval_method}]"
         base = f"{emoji} {self.name} ({self.status}{approval_info}) -> {self.datasite_owner_email}"
         if self.review_reason:
             base += f" | Review reason: {self.review_reason}"
+        # A value with a line per data owner goes on one line here.
         rows = "; ".join(
-            f"{label}: {value}" for label, value in self.read_permission_rows()
+            f"{label}: {', '.join(value.splitlines())}"
+            for label, value in self.read_permission_rows()
         )
         return f"{base} | Read permissions: {rows}"
 
