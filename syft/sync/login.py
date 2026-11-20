@@ -112,8 +112,8 @@ def _resolve_login_target(
     """Resolve what a login connects to.
 
     Raises:
-        ValueError: ``webrtc`` is set and ``email`` is None, or ``webrtc`` is
-            True and a signaling setting is missing.
+        ValueError: ``webrtc`` is set and ``email`` is None or ``token_path``
+            is set, or ``webrtc`` is True and a signaling setting is missing.
     """
     if webrtc is False:
         email, token_path = _resolve_login_params(email, token_path)
@@ -121,6 +121,8 @@ def _resolve_login_target(
         return LoginTarget(email, token_path, repair_pending, None)
     if email is None:
         raise ValueError("Pass your email to log in with webrtc.")
+    if token_path is not None:
+        raise ValueError(f"A WebRTC login takes no token_path, got {token_path!r}")
     webrtc_config = _webrtc_config_from_settings() if webrtc is True else webrtc
     return LoginTarget(email, None, False, webrtc_config)
 

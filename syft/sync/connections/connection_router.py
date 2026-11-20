@@ -276,6 +276,11 @@ class ConnectionRouter(BaseModel):
         """Set the peers that this client may exchange messages with."""
         self.connections.p2p_con.set_peers(peer_emails)
 
+    def maybe_raise_background_errors(self) -> None:
+        """Raise the failures of the connections in the background since the
+        last call, if there are any."""
+        self.connections.p2p_con.maybe_raise_background_errors()
+
     def add_peer(self, peer_email: str, verbose: bool = True) -> Peer:
         platform = self.connections.platform
 

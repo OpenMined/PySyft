@@ -177,20 +177,22 @@ class ServerSignaling(Signaling):
             await self._send({**reply, "type": "answer", "sdp": sdp})
 
     def _handle_answer(self, message: dict) -> None:
-        self._resolve_reply(message["id"], message["sdp"])
+        self._maybe_resolve_reply(message["id"], message["sdp"])
 
     def _handle_ice_servers(self, message: dict) -> None:
-        self._resolve_reply(message["id"], message["ice_servers"])
+        self._maybe_resolve_reply(message["id"], message["ice_servers"])
 
     def _handle_refuse(self, message: dict) -> None:
-        self._reject_reply(message["id"], ConnectionRefusedError(message["reason"]))
+        self._maybe_reject_reply(
+            message["id"], ConnectionRefusedError(message["reason"])
+        )
 
     def _handle_error(self, message: dict) -> None:
         if "id" not in message:
             # A protocol error. The server closes the connection after it.
             self._server_error = message["reason"]
         else:
-            self._reject_reply(message["id"], ConnectionError(message["reason"]))
+            self._maybe_reject_reply(message["id"], ConnectionError(message["reason"]))
 
     def _handle_online(self, message: dict) -> None:
         self._on_online(message["email"])
@@ -199,13 +201,13 @@ class ServerSignaling(Signaling):
         """Ignore the message: the signaling has nothing to do for a peer that
         goes offline."""
 
-    def _resolve_reply(self, request_id: str, value: Any) -> None:
+    def _maybe_resolve_reply(self, request_id: str, value: Any) -> None:
         # A request removes its entry when it no longer waits. Then a late reply
         # finds no entry, and the client ignores it.
         if request_id in self._pending_replies:
             self._pending_replies.pop(request_id).set_result(value)
 
-    def _reject_reply(self, request_id: str, error: ConnectionError) -> None:
+    def _maybe_reject_reply(self, request_id: str, error: ConnectionError) -> None:
         # The client ignores a late error, as it ignores a late reply.
         if request_id in self._pending_replies:
             self._pending_replies.pop(request_id).set_exception(error)

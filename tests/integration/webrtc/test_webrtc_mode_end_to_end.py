@@ -2,6 +2,9 @@
 process, and messages over real WebRTC on this machine. No Google Drive, mock
 or real, takes part."""
 
+import asyncio
+import time
+
 import pytest
 
 from syft.sync.connections.config import ConnectionRouterConfig
@@ -12,6 +15,8 @@ from tests.unit.test_sync_manager import path_for_job
 from tests.unit.utils import grant_job_inbox_access
 from tests.unit.webrtc.signaling_server_thread import (
     ACCESS_KEY,
+    DELIVERY_SECONDS,
+    sign_in_and_leave,
     signaling_server_in_thread,
 )
 
@@ -89,3 +94,18 @@ def test_do_that_accepts_with_add_peer_gets_ds_job(server_url):
         assert (do_manager.syftbox_folder / job_path).read_text() == "Hello, world!"
     finally:
         close(ds_manager, do_manager)
+
+
+def test_sync_finishes_pass_before_it_reports_ended_session(webrtc_pair, server_url):
+    ds_manager, do_manager = webrtc_pair
+    grant_job_inbox_access(do_manager, ds_manager.email)
+    job_path = path_for_job(do_manager.email, ds_manager.email)
+    ds_manager._send_file_change(job_path, "Hello, world!")
+    flush(ds_manager)
+    asyncio.run(sign_in_and_leave(server_url, do_manager.email))
+    time.sleep(DELIVERY_SECONDS)
+
+    with pytest.raises(ConnectionError, match="signaling session ended"):
+        do_manager.sync()
+
+    assert (do_manager.syftbox_folder / job_path).read_text() == "Hello, world!"

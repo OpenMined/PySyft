@@ -40,6 +40,14 @@ def test_webrtc_login_without_signaling_url_raises(monkeypatch):
         login._resolve_login_target(EMAIL, None, webrtc=True)
 
 
+def test_webrtc_login_with_token_path_raises(monkeypatch):
+    monkeypatch.setattr(login.settings, "signaling_url", URL)
+    monkeypatch.setattr(login.settings, "signaling_access_key", KEY)
+
+    with pytest.raises(ValueError, match="token_path"):
+        login._resolve_login_target(EMAIL, "token.json", webrtc=True)
+
+
 def test_jupyter_config_with_webrtc_uses_it_for_every_connection():
     webrtc = WebRTCConfig(signaling_url=URL, access_key=KEY)
 

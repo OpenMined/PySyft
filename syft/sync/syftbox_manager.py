@@ -134,6 +134,31 @@ def default_collection_variants(
     return [layout.variant for layout in spec.layouts]
 
 
+def router_config_for_login(
+    email: str,
+    token_path: Path | None,
+    webrtc: WebRTCConfig | None,
+    collection_specs: list["CollectionSyncSpec"],
+) -> ConnectionRouterConfig:
+    """Return the connection router config of a login: one Google Drive login,
+    or one WebRTC config.
+
+    Raises:
+        ValueError: ``webrtc`` comes with collection specs or a token path.
+    """
+    if webrtc is None:
+        drive_login = GdriveConnectionConfig(email=email, token_path=token_path)
+        return ConnectionRouterConfig.one_connection(drive_login)
+    if collection_specs:
+        raise ValueError(
+            "Datasets do not go over WebRTC yet: pass no collection_specs with "
+            f"webrtc, got {collection_specs}"
+        )
+    if token_path is not None:
+        raise ValueError(f"A WebRTC login takes no token_path, got {token_path!r}")
+    return ConnectionRouterConfig.one_connection(webrtc)
+
+
 class SyftboxManagerConfig(BaseModel):
     email: str
     syftbox_folder: Path
@@ -179,21 +204,14 @@ class SyftboxManagerConfig(BaseModel):
         # about custom collections (eg: datasets or jobs).
         if collection_specs is None:
             collection_specs = []
-        if webrtc is not None and collection_specs:
-            raise ValueError(
-                "Datasets do not go over WebRTC yet: pass no collection_specs "
-                f"with webrtc, got {collection_specs}"
-            )
-
         syftbox_folder = get_colab_default_syftbox_folder(email)
         use_in_memory_cache = False
         collections_folder = default_collections_folder(
             syftbox_folder, email, collection_specs
         )
         collection_variants = default_collection_variants(collection_specs)
-        drive_login = GdriveConnectionConfig(email=email, token_path=None)
-        connection_router_config = ConnectionRouterConfig.one_connection(
-            drive_login if webrtc is None else webrtc
+        connection_router_config = router_config_for_login(
+            email, None, webrtc, collection_specs
         )
         datasite_owner_syncer_config = DatasiteOwnerSyncerConfig(
             email=email,
@@ -266,21 +284,14 @@ class SyftboxManagerConfig(BaseModel):
         # (see syft_rds.config.DATASET_COLLECTION_SPECS).
         if collection_specs is None:
             collection_specs = []
-        if webrtc is not None and collection_specs:
-            raise ValueError(
-                "Datasets do not go over WebRTC yet: pass no collection_specs "
-                f"with webrtc, got {collection_specs}"
-            )
-
         syftbox_folder = get_jupyter_default_syftbox_folder(email)
         collections_folder = default_collections_folder(
             syftbox_folder, email, collection_specs
         )
         collection_variants = default_collection_variants(collection_specs)
 
-        drive_login = GdriveConnectionConfig(email=email, token_path=token_path)
-        connection_router_config = ConnectionRouterConfig.one_connection(
-            drive_login if webrtc is None else webrtc
+        connection_router_config = router_config_for_login(
+            email, token_path, webrtc, collection_specs
         )
         datasite_owner_syncer_config = DatasiteOwnerSyncerConfig(
             email=email,
@@ -1048,9 +1059,10 @@ class SyftboxManager(BaseModelCallbackMixin):
         verbose: bool = True,
         sync: bool = True,
     ):
-        """Add a peer. Delegates to PeerManager."""
+        """Add a peer, and give the approved peers to the connections.
+        Delegates to PeerManager."""
         self.peer_manager.add_peer(peer_email, force=force, verbose=verbose)
-        self._set_approved_peers()
+        self._set_connection_peers()
         self._emit_peers_loaded()
         if self.has_do_role:
             self._post_approve_peer_do(peer_email)
@@ -1143,7 +1155,7 @@ class SyftboxManager(BaseModelCallbackMixin):
         ignore_peer_version: bool = False,
     ):
         """
-        Sync local state with Google Drive.
+        Sync local state with the peers.
 
         Args:
             auto_checkpoint: If True, automatically create checkpoint when
@@ -1161,6 +1173,10 @@ class SyftboxManager(BaseModelCallbackMixin):
                           from Drive instead of using the cached copy. Use
                           from background daemons (e.g. syft-bg) where a
                           separate process may have updated the file.
+
+        Raises:
+            ConnectionError: A WebRTC connection failed in the background since
+                the last sync. The sync pass is complete when it raises.
         """
         with self.sync_file_lock():
             self.peer_manager.check_encryption_policy()
@@ -1187,15 +1203,18 @@ class SyftboxManager(BaseModelCallbackMixin):
                 self.peer_manager.warn_if_all_peers_incompatible(peer_emails)
                 self.datasite_watcher_syncer.sync_down(peer_emails)
 
+            self._connection_router.maybe_raise_background_errors()
+
     def load_peers(self, force_download: bool = False):
-        """Load peers from connection router. Delegates to PeerManager.
+        """Load peers from the connection router, and give the approved peers
+        to the connections. Delegates to PeerManager.
 
         Args:
             force_download: If True, re-fetch SYFT_peers.json from Drive
                 instead of using the cached copy.
         """
         cast(PeerManager, self.peer_manager).load_peers(force_download=force_download)
-        self._set_approved_peers()
+        self._set_connection_peers()
         self._emit_peers_loaded()
 
     def _check_peer_request_exists(self, email: str) -> bool:
@@ -1208,11 +1227,12 @@ class SyftboxManager(BaseModelCallbackMixin):
         verbose: bool = True,
         peer_must_exist: bool = True,
     ):
-        """Approve a pending peer request. Delegates to PeerManager."""
+        """Approve a pending peer request, and give the approved peers to the
+        connections. Delegates to PeerManager."""
         self.peer_manager.approve_peer_request(
             email_or_peer, verbose=verbose, peer_must_exist=peer_must_exist
         )
-        self._set_approved_peers()
+        self._set_connection_peers()
         self._post_approve_peer_do(email_or_peer)
 
     def _post_approve_peer_do(self, email_or_peer: str | Peer):
@@ -1222,7 +1242,7 @@ class SyftboxManager(BaseModelCallbackMixin):
         self._emit_peers_loaded()
         self._emit("peer_approved", peer_email)
 
-    def _set_approved_peers(self) -> None:
+    def _set_connection_peers(self) -> None:
         """Give the connections the approved peers, the only peers this client
         exchanges messages with."""
         approved = [peer.email for peer in self.peer_manager.approved_peers]

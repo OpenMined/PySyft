@@ -1,6 +1,7 @@
 """A signaling server on its own loop thread, for clients that block."""
 
 import asyncio
+import json
 import threading
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -10,8 +11,11 @@ from syft.sync.connections.webrtc.signaling.server import (
     SignalingServerConfig,
 )
 from syft.sync.connections.webrtc.signaling.signaling import IceServers
+from websockets.asyncio.client import connect
 
 ACCESS_KEY = "test-key"
+# Time for a close or a refusal to reach a client.
+DELIVERY_SECONDS = 1
 
 
 async def no_ice_servers() -> IceServers:
@@ -36,3 +40,12 @@ def signaling_server_in_thread() -> Iterator[str]:
         loop.call_soon_threadsafe(loop.stop)
         thread.join()
         loop.close()
+
+
+async def sign_in_and_leave(url: str, email: str) -> None:
+    """Sign in as ``email`` and leave. The server ends the earlier session of
+    ``email``."""
+    async with connect(url) as client:
+        hello = {"type": "hello", "email": email, "access_key": ACCESS_KEY}
+        await client.send(json.dumps(hello))
+        await client.recv()

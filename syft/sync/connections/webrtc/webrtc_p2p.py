@@ -76,6 +76,9 @@ class WebRTCP2PConnection(P2PConnection):
     def set_peers(self, peers: list[str]) -> None:
         self._peer_connections.set_peers(peers)
 
+    def maybe_raise_background_errors(self) -> None:
+        self._peer_connections.maybe_raise_background_errors()
+
     def close(self) -> None:
         """Close the peer connections. Unconfirmed messages stay in the outgoing
         queues."""

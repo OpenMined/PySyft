@@ -66,6 +66,11 @@ class P2PConnection(RouterConnection, ABC):
         needs no channels, so here it does nothing.
         """
 
+    def maybe_raise_background_errors(self) -> None:
+        """Raise the failures in the background since the last call, if there
+        are any. Drive does no work in the background, so here it does
+        nothing."""
+
     @abstractmethod
     def send(
         self, peer: str, msg_id: str, data: bytes, kind: MessageKind

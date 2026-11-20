@@ -80,7 +80,7 @@ Handler = TypeVar("Handler")
 OK_ANSWER = {"type": "ok"}
 # relayed message type -> the field that the server copies to the peer
 RELAYED_FIELDS = {"offer": "sdp", "answer": "sdp", "refuse": "reason"}
-# A client that stays signed in longer than this loses its TURN relay.
+# A peer connection that stays open longer than this loses its TURN relay.
 CREDENTIALS_TTL_SECONDS = 24 * 3600
 
 # The close code for a connection that a newer sign-in replaced.

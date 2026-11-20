@@ -66,7 +66,7 @@ class AiortcPeerConnections(PeerConnections):
 
     A DS sends the offers. A DO only answers, and only the offers of its peers.
     A failure in the background, such as a connect that fails or a signaling
-    session that ends, makes the next ``set_peers`` raise.
+    session that ends, waits until ``maybe_raise_background_errors`` raises it.
 
     A frame can have any size. ``split_frame_into_chunks`` splits it into
     chunks of at most ``MAX_MESSAGE_BYTES``, and the peer joins the chunks
@@ -98,7 +98,7 @@ class AiortcPeerConnections(PeerConnections):
         # The sign-in to the signaling. None until the first set_peers or
         # connect, and again after the session ends.
         self._sign_in_task: asyncio.Task | None = None
-        # The failures in the background since the last set_peers.
+        # The failures in the background that no caller saw yet.
         self._background_errors: list[ConnectionError] = []
 
     def open(self, email: str, on_open: OnOpen, on_frame: OnFrame) -> None:
@@ -123,12 +123,18 @@ class AiortcPeerConnections(PeerConnections):
         online, now and each time the peer comes online again. A client that
         only answers refuses an offer from an email that is not in ``peers``.
         The channel to each email that is not in ``peers`` closes.
-
-        Raises:
-            ConnectionError: Something failed in the background since the last
-                call. This call then sets no peers, and the next call does.
         """
         self._run(self._set_peers(peers))
+
+    def maybe_raise_background_errors(self) -> None:
+        """Raise the failures in the background since the last call, if there
+        are any.
+
+        Raises:
+            ConnectionError: A connect failed, a peer refused an offer, or the
+                signaling session ended.
+        """
+        self._run(self._maybe_raise_background_errors())
 
     def send(self, peer: str, frame: bytes) -> None:
         """Works from any thread; the frame goes out on the loop thread."""
@@ -163,14 +169,13 @@ class AiortcPeerConnections(PeerConnections):
         return channel is not None and channel.readyState == "open"
 
     async def _set_peers(self, peers: list[str]) -> None:
-        self._raise_background_errors()
         self._peers = {peer.lower(): peer for peer in peers}
         await self._close_rtc_connections_of_other_emails()
         await self._maybe_sign_in()
         if self._sends_offers:
             await self.signaling.watch(self.email, peers)
 
-    def _raise_background_errors(self) -> None:
+    async def _maybe_raise_background_errors(self) -> None:
         if self._background_errors:
             errors, self._background_errors = self._background_errors, []
             reasons = "; ".join(str(error) for error in errors)

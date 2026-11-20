@@ -76,6 +76,9 @@ class FakePeerConnections(PeerConnections):
             ):
                 self.network.connect(self.email, peer)
 
+    def maybe_raise_background_errors(self) -> None:
+        """Do nothing: the fake network does no work in the background."""
+
     def send(self, peer: str, frame: bytes) -> None:
         self.network.send(self.email, peer, frame)
 
