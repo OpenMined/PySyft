@@ -1,6 +1,7 @@
 """The signaling server, run in this process with WebSocket clients."""
 
 import asyncio
+import itertools
 import json
 from collections.abc import Awaitable, Callable
 
@@ -30,12 +31,15 @@ async def fake_ice_servers() -> list[dict]:
     return ICE_SERVERS
 
 
-def run_with_server(scenario: Callable[[str], Awaitable[None]]) -> None:
+def run_with_server(
+    scenario: Callable[[str], Awaitable[None]],
+    ice_servers: Callable[[], Awaitable[list[dict]]] = fake_ice_servers,
+) -> None:
     """Run ``scenario`` with the URL of a server in this process."""
 
     async def main() -> None:
         config = SignalingServerConfig(host="127.0.0.1", port=0, access_key=ACCESS_KEY)
-        async with SignalingServer(config, fake_ice_servers).running() as port:
+        async with SignalingServer(config, ice_servers).running() as port:
             await asyncio.wait_for(scenario(f"ws://127.0.0.1:{port}"), TIMEOUT_SECONDS)
 
     asyncio.run(main())
@@ -65,14 +69,11 @@ async def close_code(client: ClientConnection) -> int:
     return received.code
 
 
-def test_hello_with_right_key_gets_ice_servers():
+def test_hello_with_right_key_gets_welcome():
     async def scenario(url: str) -> None:
         async with connect(url) as client:
             await client.send(hello(A))
-            assert await receive(client) == {
-                "type": "welcome",
-                "ice_servers": ICE_SERVERS,
-            }
+            assert await receive(client) == {"type": "welcome"}
 
     run_with_server(scenario)
 
@@ -266,3 +267,19 @@ def test_watch_replaces_earlier_watch_list():
         assert await receive(a) == {"type": "online", "email": A}
 
     run_with_server(scenario)
+
+
+def test_each_ice_server_request_gets_new_credentials():
+    numbers = itertools.count()
+
+    async def numbered_ice_servers() -> list[dict]:
+        return [{"urls": "turn:turn.example.com", "username": f"u{next(numbers)}"}]
+
+    async def scenario(url: str) -> None:
+        a = await sign_in(url, A)
+        for username in ("u0", "u1"):
+            await a.send(json.dumps({"type": "get_ice_servers", "id": username}))
+            reply = await receive(a)
+            assert reply["ice_servers"][0]["username"] == username
+
+    run_with_server(scenario, numbered_ice_servers)

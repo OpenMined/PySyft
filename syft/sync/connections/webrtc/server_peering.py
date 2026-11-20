@@ -68,13 +68,20 @@ class ServerPeeringConnection(PeeringConnection):
         self._send_request({"type": "request_peer", "peer": peer})
 
     def incoming_requests(self) -> list[str]:
+        """Return the emails that asked to peer, and have no decision yet.
+
+        An email that is in the peer list comes back as the peer list spells it.
+        """
         reply = self._send_request({"type": "list_peer_requests"})
-        decided = {
+        registry = dict(self._registry.items())
+        # email in lower case -> the email as the peer list spells it
+        spellings = {email.lower(): email for email in registry}
+        requests = [spellings.get(email.lower(), email) for email in reply["emails"]]
+        return [
             email
-            for email, entry in self._registry.items()
-            if entry["state"] in DECIDED_STATES
-        }
-        return [email for email in reply["emails"] if email not in decided]
+            for email in requests
+            if email not in registry or registry[email]["state"] not in DECIDED_STATES
+        ]
 
     def read_peer_registry(self, force_download: bool = False) -> dict:
         """Return the peer list on local disk.

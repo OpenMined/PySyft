@@ -1,6 +1,8 @@
 """Two WebRTCP2PConnections over a real aiortc channel on this machine."""
 
+import asyncio
 import os
+from typing import Any
 
 import pytest
 from aiortc import RTCDataChannel, RTCSctpTransport
@@ -16,6 +18,27 @@ DO = "do@example.com"
 DS = "ds@example.com"
 PROPOSAL = MessageKind.PROPOSED_CHANGES
 EVENTS = MessageKind.FILE_EVENTS
+SLOW_SIGN_IN_SECONDS = 1.0
+
+
+class SlowSignaling(LocalSignaling):
+    """LocalSignaling whose sign-in takes a while, as a slow server does."""
+
+    async def listen(self, *args: Any) -> None:
+        await asyncio.sleep(SLOW_SIGN_IN_SECONDS)
+        await super().listen(*args)
+
+
+class CountingSignaling(LocalSignaling):
+    """LocalSignaling that counts the requests for ICE servers."""
+
+    def __init__(self):
+        super().__init__()
+        self.ice_server_requests = 0
+
+    async def ice_servers(self, email: str) -> list[dict]:
+        self.ice_server_requests += 1
+        return await super().ice_servers(email)
 
 
 @pytest.fixture
@@ -116,3 +139,33 @@ def test_do_closes_channel_of_peer_it_no_longer_accepts(open_pair):
     with pytest.raises(TimeoutError):
         ds.wait_until_delivered(timeout=2)
     assert do.receive(DS, PROPOSAL) == []
+
+
+def test_timed_out_connect_does_not_break_later_set_peers():
+    ds = AiortcPeerConnections(SlowSignaling(), sends_offers=True)
+    ds.open(DS, lambda peer: None, lambda peer, frame: None)
+    try:
+        with pytest.raises(TimeoutError):
+            ds.connect(DO, timeout=SLOW_SIGN_IN_SECONDS / 10)
+
+        ds.set_peers([])
+    finally:
+        ds.close()
+
+
+def test_each_peer_connection_gets_new_ice_servers(tmp_path):
+    signaling = CountingSignaling()
+    do = WebRTCP2PConnection(DO, tmp_path / "do")
+    ds = WebRTCP2PConnection(DS, tmp_path / "ds")
+    do.open(AiortcPeerConnections(signaling, sends_offers=False))
+    ds.open(AiortcPeerConnections(signaling, sends_offers=True))
+    try:
+        do.set_peers([DS])
+        ds.connect(DO)
+        ds.connect(DO)
+
+        # Each connect makes a new peer connection on each side.
+        assert signaling.ice_server_requests == 4
+    finally:
+        do.close()
+        ds.close()

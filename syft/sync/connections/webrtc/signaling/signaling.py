@@ -8,6 +8,8 @@ from typing import Any
 OnOffer = Callable[[str, str], Awaitable[str]]
 # The signaling calls it with the email of a watched peer that is online.
 OnOnline = Callable[[str], None]
+# The signaling calls it with the reason when a session ends before ``close``.
+OnClosed = Callable[[ConnectionError], None]
 # Each item is an RTCIceServer as JSON: "urls", and "username" and
 # "credential" for a TURN server.
 IceServers = list[dict[str, Any]]
@@ -18,17 +20,19 @@ class Signaling(ABC):
 
     @abstractmethod
     async def listen(
-        self, email: str, on_offer: OnOffer, on_online: OnOnline
-    ) -> IceServers:
+        self, email: str, on_offer: OnOffer, on_online: OnOnline, on_closed: OnClosed
+    ) -> None:
         """Listen for offers and online peers as ``email``.
 
         ``on_offer`` answers each offer to ``email``. ``on_online`` gets the
-        email of each watched peer that is online. Both callbacks run on the
-        loop that called ``listen``.
-
-        Returns:
-            The ICE servers for the peer connections of ``email``.
+        email of each watched peer that is online. ``on_closed`` gets the reason
+        when the session ends before ``close``. The callbacks run on the loop
+        that called ``listen``.
         """
+
+    @abstractmethod
+    async def ice_servers(self, email: str) -> IceServers:
+        """Return the ICE servers for a new peer connection of ``email``."""
 
     @abstractmethod
     async def watch(self, email: str, peers: list[str]) -> None:

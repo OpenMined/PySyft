@@ -75,3 +75,12 @@ def test_unreachable_server_raises_connection_unavailable(tmp_path):
 
     with pytest.raises(ConnectionUnavailableError):
         peering.incoming_requests()
+
+
+def test_incoming_request_keeps_peer_list_spelling(server_url, tmp_path):
+    ds = server_peering(server_url, DS, tmp_path / "ds")
+    ds.update_peer_registry(DO.upper(), PeerState.REQUESTED_BY_ME.value)
+
+    server_peering(server_url, DO, tmp_path / "do").open_channels(DS)
+
+    assert ds.incoming_requests() == [DO.upper()]

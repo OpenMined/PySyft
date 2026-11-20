@@ -17,25 +17,35 @@ from tests.unit.webrtc.signaling_server_thread import (
 
 
 @pytest.fixture
-def webrtc_pair():
-    """(ds_manager, do_manager), built only from a WebRTCConfig, and peered."""
+def server_url():
     with signaling_server_in_thread() as url:
-        webrtc = WebRTCConfig(signaling_url=url, access_key=ACCESS_KEY)
-        router = ConnectionRouterConfig.one_connection(webrtc)
-        do_config, ds_config = SyftboxManager._mock_pair_configs(
-            use_in_memory_cache=False
-        )
-        do_config = do_config.model_copy(update={"connection_router_config": router})
-        ds_config = ds_config.model_copy(update={"connection_router_config": router})
-        ds_manager, do_manager = SyftboxManager._test_pair(
-            do_config,
-            SyftboxManager._connections_from_config(do_config),
-            ds_config,
-            SyftboxManager._connections_from_config(ds_config),
-            add_peers=True,
-        )
-        yield ds_manager, do_manager
-        close(ds_manager, do_manager)
+        yield url
+
+
+def build_webrtc_pair(
+    url: str, add_peers: bool
+) -> tuple[SyftboxManager, SyftboxManager]:
+    """(ds_manager, do_manager), built only from a WebRTCConfig."""
+    webrtc = WebRTCConfig(signaling_url=url, access_key=ACCESS_KEY)
+    router = ConnectionRouterConfig.one_connection(webrtc)
+    do_config, ds_config = SyftboxManager._mock_pair_configs(use_in_memory_cache=False)
+    do_config = do_config.model_copy(update={"connection_router_config": router})
+    ds_config = ds_config.model_copy(update={"connection_router_config": router})
+    return SyftboxManager._test_pair(
+        do_config,
+        SyftboxManager._connections_from_config(do_config),
+        ds_config,
+        SyftboxManager._connections_from_config(ds_config),
+        add_peers=add_peers,
+    )
+
+
+@pytest.fixture
+def webrtc_pair(server_url):
+    """(ds_manager, do_manager), peered."""
+    ds_manager, do_manager = build_webrtc_pair(server_url, add_peers=True)
+    yield ds_manager, do_manager
+    close(ds_manager, do_manager)
 
 
 def test_job_and_result_go_over_webrtc_with_no_drive(webrtc_pair):
@@ -60,3 +70,22 @@ def test_job_and_result_go_over_webrtc_with_no_drive(webrtc_pair):
 
     result_on_ds = ds_manager.syftbox_folder / do_manager.email / "results/result.txt"
     assert result_on_ds.read_text() == "I am a result"
+
+
+def test_do_that_accepts_with_add_peer_gets_ds_job(server_url):
+    ds_manager, do_manager = build_webrtc_pair(server_url, add_peers=False)
+    try:
+        ds_manager.add_peer(do_manager.email, sync=False)
+        do_manager.load_peers()
+        do_manager.add_peer(ds_manager.email, sync=False)
+        ds_manager.load_peers()
+        grant_job_inbox_access(do_manager, ds_manager.email)
+        job_path = path_for_job(do_manager.email, ds_manager.email)
+
+        ds_manager._send_file_change(job_path, "Hello, world!")
+        flush(ds_manager)
+        do_manager.sync()
+
+        assert (do_manager.syftbox_folder / job_path).read_text() == "Hello, world!"
+    finally:
+        close(ds_manager, do_manager)

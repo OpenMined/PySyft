@@ -179,10 +179,11 @@ class SyftboxManagerConfig(BaseModel):
         # about custom collections (eg: datasets or jobs).
         if collection_specs is None:
             collection_specs = []
-        # Datasets do not go over WebRTC yet. A WebRTC client syncs no
-        # collections, so a sync never removes local dataset copies.
-        if webrtc is not None:
-            collection_specs = []
+        if webrtc is not None and collection_specs:
+            raise ValueError(
+                "Datasets do not go over WebRTC yet: pass no collection_specs "
+                f"with webrtc, got {collection_specs}"
+            )
 
         syftbox_folder = get_colab_default_syftbox_folder(email)
         use_in_memory_cache = False
@@ -265,10 +266,11 @@ class SyftboxManagerConfig(BaseModel):
         # (see syft_rds.config.DATASET_COLLECTION_SPECS).
         if collection_specs is None:
             collection_specs = []
-        # Datasets do not go over WebRTC yet. A WebRTC client syncs no
-        # collections, so a sync never removes local dataset copies.
-        if webrtc is not None:
-            collection_specs = []
+        if webrtc is not None and collection_specs:
+            raise ValueError(
+                "Datasets do not go over WebRTC yet: pass no collection_specs "
+                f"with webrtc, got {collection_specs}"
+            )
 
         syftbox_folder = get_jupyter_default_syftbox_folder(email)
         collections_folder = default_collections_folder(
@@ -1048,6 +1050,7 @@ class SyftboxManager(BaseModelCallbackMixin):
     ):
         """Add a peer. Delegates to PeerManager."""
         self.peer_manager.add_peer(peer_email, force=force, verbose=verbose)
+        self._set_approved_peers()
         self._emit_peers_loaded()
         if self.has_do_role:
             self._post_approve_peer_do(peer_email)

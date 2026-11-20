@@ -3,30 +3,28 @@ WebSocket."""
 
 import asyncio
 import json
-import logging
 import uuid
 from collections.abc import Callable, Coroutine
 from typing import Any
 
 from websockets.asyncio.client import ClientConnection, connect
-from websockets.exceptions import ConnectionClosedError
 
 from syft.sync.connections.webrtc.signaling.signaling import (
     IceServers,
+    OnClosed,
     OnOffer,
     OnOnline,
     Signaling,
 )
 from syft.sync.connections.webrtc.webrtc_config import WebRTCConfig
 
-logger = logging.getLogger(__name__)
-
 
 class ServerSignaling(Signaling):
     """``Signaling`` for one email, through the signaling server.
 
     ``listen`` signs in to the server and keeps the WebSocket open until
-    ``close``.
+    ``close``. If the session ends before ``close``, ``on_closed`` gets the
+    reason.
     """
 
     # listen() sets these.
@@ -34,11 +32,18 @@ class ServerSignaling(Signaling):
     _reader: asyncio.Task
     _on_offer: OnOffer
     _on_online: OnOnline
+    _on_closed: OnClosed
 
     def __init__(self, config: WebRTCConfig):
         self._config = config
-        # request id -> the answer to an offer of this client
-        self._pending_answers: dict[str, asyncio.Future[str]] = {}
+        # True from the start of close(). The end of the session is then no
+        # error.
+        self._closing = False
+        # The reason in the last error with no request id, before the server
+        # closes the connection.
+        self._server_error: str | None = None
+        # request id -> the reply to a request of this client
+        self._pending_replies: dict[str, asyncio.Future[Any]] = {}
         # The tasks that answer offers, until they end. This set keeps a strong
         # reference to each task, because asyncio keeps only a weak one.
         self._answer_tasks: set[asyncio.Task] = set()
@@ -46,14 +51,16 @@ class ServerSignaling(Signaling):
         self._message_handlers: dict[str, Callable[[dict], None]] = {
             "offer": self._handle_offer,
             "answer": self._handle_answer,
+            "refuse": self._handle_refuse,
+            "ice_servers": self._handle_ice_servers,
             "error": self._handle_error,
             "online": self._handle_online,
             "offline": self._handle_offline,
         }
 
     async def listen(
-        self, email: str, on_offer: OnOffer, on_online: OnOnline
-    ) -> IceServers:
+        self, email: str, on_offer: OnOffer, on_online: OnOnline, on_closed: OnClosed
+    ) -> None:
         """Sign in to the server as ``email``.
 
         Raises:
@@ -61,6 +68,9 @@ class ServerSignaling(Signaling):
         """
         self._on_offer = on_offer
         self._on_online = on_online
+        self._on_closed = on_closed
+        self._closing = False
+        self._server_error = None
         connection = await connect(self._config.signaling_url)
         hello = {"type": "hello", "email": email, "access_key": self._config.access_key}
         await connection.send(json.dumps(hello))
@@ -70,7 +80,15 @@ class ServerSignaling(Signaling):
             raise ConnectionError(f"The signaling server refused {email}: {reply}")
         self._connection = connection
         self._reader = asyncio.create_task(self._read_messages(connection))
-        return reply["ice_servers"]
+        self._reader.add_done_callback(self._report_end_of_session)
+
+    async def ice_servers(self, email: str) -> IceServers:
+        """Ask the server for ICE servers with new short-lived TURN credentials.
+
+        Raises:
+            ConnectionError: The session ends before the reply comes.
+        """
+        return await self._request({"type": "get_ice_servers"})
 
     async def watch(self, email: str, peers: list[str]) -> None:
         await self._send({"type": "watch", "peers": peers})
@@ -79,34 +97,59 @@ class ServerSignaling(Signaling):
         """Send the offer, and wait for the answer of ``receiver``.
 
         Raises:
-            ConnectionError: ``receiver`` is offline, or the connection to the
-                server closes before the answer comes.
+            ConnectionRefusedError: ``receiver`` refuses the offer.
+            ConnectionError: ``receiver`` is offline, or the session ends
+                before the answer comes.
         """
-        request_id = uuid.uuid4().hex
-        answer = asyncio.get_running_loop().create_future()
-        self._pending_answers[request_id] = answer
-        try:
-            await self._send(
-                {"type": "offer", "to": receiver, "id": request_id, "sdp": sdp}
-            )
-            return await answer
-        finally:
-            self._pending_answers.pop(request_id, None)
+        return await self._request({"type": "offer", "to": receiver, "sdp": sdp})
 
     async def close(self, email: str) -> None:
+        self._closing = True
         for task in self._answer_tasks:
             task.cancel()
         await self._connection.close()
         await self._reader
 
-    async def _read_messages(self, connection: ClientConnection) -> None:
+    async def _request(self, message: dict) -> Any:
+        """Send ``message`` with a new request id, and return the value of the
+        reply."""
+        request_id = uuid.uuid4().hex
+        reply = asyncio.get_running_loop().create_future()
+        self._pending_replies[request_id] = reply
         try:
-            async for raw in connection:
-                self._handle_message(json.loads(raw))
-        except ConnectionClosedError as err:
-            logger.error(f"The signaling server closed the connection: {err}")
+            await self._send({**message, "id": request_id})
+            return await reply
         finally:
-            self._fail_pending_answers()
+            self._pending_replies.pop(request_id, None)
+
+    async def _read_messages(self, connection: ClientConnection) -> None:
+        async for raw in connection:
+            self._handle_message(json.loads(raw))
+
+    def _report_end_of_session(self, reader: asyncio.Task) -> None:
+        """Fail the requests that wait for a reply. If the session ended
+        before ``close``, give the reason to ``on_closed``."""
+        error = ConnectionError(
+            f"The signaling session ended: {self._end_reason(reader)}"
+        )
+        for reply in self._pending_replies.values():
+            if not reply.done():
+                reply.set_exception(error)
+        if not self._closing:
+            self._on_closed(error)
+
+    def _end_reason(self, reader: asyncio.Task) -> str:
+        if reader.cancelled():
+            return "the client stopped reading"
+        if reader.exception() is not None:
+            return str(reader.exception())
+        reason = (
+            f"the server closed the connection with code "
+            f"{self._connection.close_code} ({self._connection.close_reason})"
+        )
+        if self._server_error is not None:
+            reason += f" after the error: {self._server_error}"
+        return reason
 
     def _handle_message(self, message: dict) -> None:
         kind = message["type"]
@@ -124,21 +167,30 @@ class ServerSignaling(Signaling):
         self._start_answer_task(self._answer_offer(message))
 
     async def _answer_offer(self, message: dict) -> None:
+        reply = {"to": message["from"], "id": message["id"]}
         try:
             sdp = await self._on_offer(message["from"], message["sdp"])
         except ConnectionRefusedError as err:
-            # The offerer gets no answer, and its offer times out.
-            logger.warning(f"Refused an offer from {message['from']}: {err}")
-            return
-        await self._send(
-            {"type": "answer", "to": message["from"], "id": message["id"], "sdp": sdp}
-        )
+            # The server gives the reason to the offerer.
+            await self._send({**reply, "type": "refuse", "reason": str(err)})
+        else:
+            await self._send({**reply, "type": "answer", "sdp": sdp})
 
     def _handle_answer(self, message: dict) -> None:
-        # An offer removes its entry when it no longer waits. Then a late
-        # answer finds no entry, and the client ignores it.
-        if message["id"] in self._pending_answers:
-            self._pending_answers.pop(message["id"]).set_result(message["sdp"])
+        self._resolve_reply(message["id"], message["sdp"])
+
+    def _handle_ice_servers(self, message: dict) -> None:
+        self._resolve_reply(message["id"], message["ice_servers"])
+
+    def _handle_refuse(self, message: dict) -> None:
+        self._reject_reply(message["id"], ConnectionRefusedError(message["reason"]))
+
+    def _handle_error(self, message: dict) -> None:
+        if "id" not in message:
+            # A protocol error. The server closes the connection after it.
+            self._server_error = message["reason"]
+        else:
+            self._reject_reply(message["id"], ConnectionError(message["reason"]))
 
     def _handle_online(self, message: dict) -> None:
         self._on_online(message["email"])
@@ -147,22 +199,16 @@ class ServerSignaling(Signaling):
         """Ignore the message: the signaling has nothing to do for a peer that
         goes offline."""
 
-    def _handle_error(self, message: dict) -> None:
-        if "id" not in message:
-            # An error with no id is a protocol error. The server closes the
-            # connection after it.
-            logger.error(f"The signaling server reported: {message['reason']}")
-        # The client ignores a late error, as it ignores a late answer.
-        elif message["id"] in self._pending_answers:
-            error = ConnectionError(message["reason"])
-            self._pending_answers.pop(message["id"]).set_exception(error)
+    def _resolve_reply(self, request_id: str, value: Any) -> None:
+        # A request removes its entry when it no longer waits. Then a late reply
+        # finds no entry, and the client ignores it.
+        if request_id in self._pending_replies:
+            self._pending_replies.pop(request_id).set_result(value)
 
-    def _fail_pending_answers(self) -> None:
-        for answer in self._pending_answers.values():
-            if not answer.done():
-                answer.set_exception(
-                    ConnectionError("The connection to the signaling server closed")
-                )
+    def _reject_reply(self, request_id: str, error: ConnectionError) -> None:
+        # The client ignores a late error, as it ignores a late reply.
+        if request_id in self._pending_replies:
+            self._pending_replies.pop(request_id).set_exception(error)
 
     def _start_answer_task(self, coroutine: Coroutine[Any, Any, None]) -> None:
         task = asyncio.create_task(coroutine)

@@ -24,20 +24,22 @@ def ignore_online(peer: str) -> None:
     pass
 
 
+def ignore_closed(error: ConnectionError) -> None:
+    pass
+
+
 async def listen(
     url: str, email: str, on_online: OnOnline = ignore_online
 ) -> ServerSignaling:
     signaling = ServerSignaling(WebRTCConfig(signaling_url=url, access_key=ACCESS_KEY))
-    await signaling.listen(email, echo_answer, on_online)
+    await signaling.listen(email, echo_answer, on_online, ignore_closed)
     return signaling
 
 
-def test_listen_returns_server_ice_servers():
+def test_ice_servers_come_from_server():
     async def scenario(url: str) -> None:
-        signaling = ServerSignaling(
-            WebRTCConfig(signaling_url=url, access_key=ACCESS_KEY)
-        )
-        assert await signaling.listen(A, echo_answer, ignore_online) == ICE_SERVERS
+        signaling = await listen(url, A)
+        assert await signaling.ice_servers(A) == ICE_SERVERS
         await signaling.close(A)
 
     run_with_server(scenario)
@@ -47,7 +49,7 @@ def test_listen_with_wrong_key_raises():
     async def scenario(url: str) -> None:
         signaling = ServerSignaling(WebRTCConfig(signaling_url=url, access_key="wrong"))
         with pytest.raises(ConnectionError, match="The access key is wrong"):
-            await signaling.listen(A, echo_answer, ignore_online)
+            await signaling.listen(A, echo_answer, ignore_online, ignore_closed)
 
     run_with_server(scenario)
 

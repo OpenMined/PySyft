@@ -49,16 +49,11 @@ def test_jupyter_config_with_webrtc_uses_it_for_every_connection():
     assert config.connection_router_config == expected
 
 
-def test_webrtc_config_syncs_no_collections():
-    # Datasets do not go over WebRTC yet. A spec would make the DS sync list no
-    # collections and delete its local copies of the DO's datasets.
+def test_webrtc_config_with_collection_specs_raises():
     spec = CollectionSyncSpec.public("syft_datasets", Path("datasets"))
     webrtc = WebRTCConfig(signaling_url=URL, access_key=KEY)
 
-    config = SyftboxManagerConfig.for_jupyter(
-        EMAIL, has_ds_role=True, collection_specs=[spec], webrtc=webrtc
-    )
-
-    watcher_config = config.datasite_watcher_syncer_config.datasite_watcher_cache_config
-    assert watcher_config.collection_specs == []
-    assert config.datasite_owner_syncer_config.collection_specs == []
+    with pytest.raises(ValueError, match="Datasets do not go over WebRTC"):
+        SyftboxManagerConfig.for_jupyter(
+            EMAIL, has_ds_role=True, collection_specs=[spec], webrtc=webrtc
+        )

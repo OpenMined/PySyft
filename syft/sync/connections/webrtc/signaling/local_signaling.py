@@ -7,6 +7,7 @@ from dataclasses import dataclass
 
 from syft.sync.connections.webrtc.signaling.signaling import (
     IceServers,
+    OnClosed,
     OnOffer,
     OnOnline,
     Signaling,
@@ -35,13 +36,17 @@ class LocalSignaling(Signaling):
         self._watchers: dict[str, set[str]] = defaultdict(set)
 
     async def listen(
-        self, email: str, on_offer: OnOffer, on_online: OnOnline
-    ) -> IceServers:
+        self, email: str, on_offer: OnOffer, on_online: OnOnline, on_closed: OnClosed
+    ) -> None:
+        """A session in one process ends only at ``close``, so ``on_closed``
+        never runs."""
         self._listeners[email] = Listener(
             on_offer, on_online, asyncio.get_running_loop()
         )
         for watcher in self._watchers[email] & self._listeners.keys():
             self._report_online(watcher, email)
+
+    async def ice_servers(self, email: str) -> IceServers:
         # Peers in one process reach each other with no STUN or TURN server.
         return []
 

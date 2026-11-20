@@ -3,20 +3,23 @@
 A connection carries one signaling session or one peering request. In a
 session, the server relays offers and answers between two clients that are
 online. It tells a client when a watched peer comes online or goes offline, and
-it gives each client its ICE servers. A peering request stores or reads peer
-requests and the documents that clients publish for their peers. The server
-keeps all state in memory.
+it gives a client ICE servers for each new peer connection. A peering request
+stores or reads peer requests and the documents that clients publish for their
+peers. The server keeps all state in memory.
 
 Each message is one JSON object with a "type" field. A session starts with
-``hello {email, access_key}``, and the answer is ``welcome {ice_servers}``.
-Then the client sends these messages:
+``hello {email, access_key}``, and the answer is ``welcome``. Then the client
+sends these messages:
 
 - ``watch {peers}``: ``peers`` replaces the earlier watch list of the client.
   The server sends ``online {email}`` for each watched peer
   that is online. Later it sends ``online`` or ``offline`` when a watched peer
   connects or disconnects.
-- ``offer {to, id, sdp}`` and ``answer {to, id, sdp}``: the peer gets the
-  message with ``from`` in place of ``to``.
+- ``offer {to, id, sdp}``, ``answer {to, id, sdp}`` and ``refuse {to, id,
+  reason}``: the peer gets the message with ``from`` in place of ``to``. A
+  client refuses an offer from an email that is not its peer.
+- ``get_ice_servers {id}``: the answer is ``ice_servers {id, ice_servers}``,
+  with new short-lived TURN credentials.
 
 A peering request also has ``email`` and ``access_key``. It is one of these:
 
@@ -31,8 +34,8 @@ A peering request also has ``email`` and ``access_key``. It is one of these:
   is null if the document does not exist, or if the client may not read it.
 
 After a protocol error, the server sends ``error {reason}`` and closes the
-connection. An offer or answer to a peer that is offline gets ``error {id,
-reason}``, and the session continues.
+connection. A message to a peer that is offline gets ``error {id, reason}``,
+and the session continues.
 
 Emails are compared in lower case. The server reports each email as its owner
 spells it in a hello or a peering request. A second sign-in with the same email
@@ -75,6 +78,8 @@ SessionHandler = Callable[[str, ServerConnection, dict], Awaitable[None]]
 PeeringHandler = Callable[[str, dict], dict]
 Handler = TypeVar("Handler")
 OK_ANSWER = {"type": "ok"}
+# relayed message type -> the field that the server copies to the peer
+RELAYED_FIELDS = {"offer": "sdp", "answer": "sdp", "refuse": "reason"}
 # A client that stays signed in longer than this loses its TURN relay.
 CREDENTIALS_TTL_SECONDS = 24 * 3600
 
@@ -166,8 +171,10 @@ class SignalingServer:
         # message type -> the method that handles it in a session
         self._session_handlers: dict[str, SessionHandler] = {
             "watch": self._watch_peers,
-            "offer": self._relay_offer_or_answer,
-            "answer": self._relay_offer_or_answer,
+            "offer": self._relay_to_peer,
+            "answer": self._relay_to_peer,
+            "refuse": self._relay_to_peer,
+            "get_ice_servers": self._send_ice_servers,
         }
         # peering request type -> the method that runs it
         self._peering_handlers: dict[str, PeeringHandler] = {
@@ -215,10 +222,7 @@ class SignalingServer:
 
     async def _sign_in(self, connection: ServerConnection, hello: dict) -> str:
         email = self._authenticate(hello)
-        ice_servers = await self._ice_servers()
-        await connection.send(
-            json.dumps({"type": "welcome", "ice_servers": ice_servers})
-        )
+        await connection.send(json.dumps({"type": "welcome"}))
         replaced = self._clients.get(email.lower())
         self._clients[email.lower()] = SignedInClient(email, connection)
         logger.info(f"{email} signed in")
@@ -293,17 +297,26 @@ class SignalingServer:
                 online = {"type": "online", "email": self._clients[peer.lower()].email}
                 await connection.send(json.dumps(online))
 
-    async def _relay_offer_or_answer(
+    async def _send_ice_servers(
+        self, email: str, connection: ServerConnection, message: dict
+    ) -> None:
+        request_id = read_text_field(message, "id")
+        ice_servers = await self._ice_servers()
+        reply = {"type": "ice_servers", "id": request_id, "ice_servers": ice_servers}
+        await connection.send(json.dumps(reply))
+
+    async def _relay_to_peer(
         self, sender: str, connection: ServerConnection, message: dict
     ) -> None:
         receiver_email = read_text_field(message, "to")
         request_id = read_text_field(message, "id")
+        field = RELAYED_FIELDS[message["type"]]
         relayed = json.dumps(
             {
                 "type": message["type"],
                 "from": sender,
                 "id": request_id,
-                "sdp": read_text_field(message, "sdp"),
+                field: read_text_field(message, field),
             }
         )
         receiver = self._clients.get(receiver_email.lower())
