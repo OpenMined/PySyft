@@ -659,13 +659,17 @@ def test_data_owner_sees_every_owner_approval():
         f"{do2.email}: none",
     }
 
-    do2.jobs["j"].reject("too much data")
+    do2.jobs["j"].reject("too much\ndata")
     enclave.sync()
     do1.sync()
 
     job = do1.jobs["j"]
     rows = dict(job.read_permission_rows())
-    assert lines(rows["Job approved"]) == {f"{do1.email} ✓", f"{do2.email} ✗"}
+    # The reason stays on the line of the data owner that rejected.
+    assert lines(rows["Job approved"]) == {
+        f"{do1.email} ✓",
+        f"{do2.email} ✗ (too much data)",
+    }
     assert lines(rows["Output files approved"]) == {
         f"{do1.email}: returncode.txt ({ds.email})",
         f"{do2.email}: none",
@@ -673,7 +677,8 @@ def test_data_owner_sees_every_owner_approval():
     # A data owner's status stays its own decision.
     assert job.status == "approved"
     assert rows["Job approved"].replace("\n", "<br>") in job._repr_html_()
-    assert "Job approved: " in str(job) and "\n" not in str(job)
+    job_approved = " / ".join(rows["Job approved"].splitlines())
+    assert f"Job approved: {job_approved};" in str(job)
     # Each data owner reads every approval file, and writes only its own.
     do2_file = enclave_approval_file_name(do2.email)
     assert readers_of(enclave, do2_file, [do1, do2, ds]) == [do1, do2]

@@ -641,9 +641,10 @@ class JobInfo:
         base = f"{emoji} {self.name} ({self.status}{approval_info}) -> {self.datasite_owner_email}"
         if self.review_reason:
             base += f" | Review reason: {self.review_reason}"
-        # A value with a line per data owner goes on one line here.
+        # A value with a line per data owner goes on one line here. The lines
+        # are joined with " / ", because a line can list files with commas.
         rows = "; ".join(
-            f"{label}: {', '.join(value.splitlines())}"
+            f"{label}: {' / '.join(value.splitlines())}"
             for label, value in self.read_permission_rows()
         )
         return f"{base} | Read permissions: {rows}"

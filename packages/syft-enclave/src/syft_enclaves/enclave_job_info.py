@@ -230,7 +230,7 @@ class EnclaveJobInfo(JobInfo):
         if not self._holds_approval_files:
             return rows
         approvals = _party_approvals(self.job_review_path, self._required_approvers)
-        job_lines = [f"{party} {_approval_mark(a)}" for party, a in approvals]
+        job_lines = [_job_approval_line(party, a) for party, a in approvals]
         file_lines = [f"{party}: {_approved_output_files(a)}" for party, a in approvals]
         return rows + [
             ("Job approved", "\n".join(job_lines)),
@@ -393,10 +393,15 @@ class EnclaveJobInfo(JobInfo):
         print(f"Job '{self.name}' rejected by {self.current_user_email}.")
 
 
-def _approval_mark(approval: Optional[PartyApprovalStatus]) -> str:
-    """✓ when the party approved the job, ✗ when it rejected it, else pending."""
+def _job_approval_line(party: str, approval: Optional[PartyApprovalStatus]) -> str:
+    """The party, then ✓ when it approved the job, ✗ and its reason when it
+    rejected it, and pending otherwise."""
     status = approval.status if approval is not None else JobStatus.PENDING
-    return APPROVAL_MARKS.get(status, PENDING_MARK)
+    line = f"{party} {APPROVAL_MARKS.get(status, PENDING_MARK)}"
+    if status == JobStatus.REJECTED and approval.reason:
+        # On one line, so that each party keeps one line.
+        line += f" ({' '.join(approval.reason.split())})"
+    return line
 
 
 def _approved_output_files(approval: Optional[PartyApprovalStatus]) -> str:
