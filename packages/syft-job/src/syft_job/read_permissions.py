@@ -202,16 +202,14 @@ def warn_on_logs_release(approved: ReadPermissions, stacklevel: int = 3) -> None
 
 
 def warn_if_submitter_not_named(
-    share_files: ReadPermissions | None, submitter: str, stacklevel: int = 3
+    share_files: ReadPermissions, submitter: str, stacklevel: int = 3
 ) -> None:
     """Warn when the submitter's share_files names it as the reader of no file.
 
     Each file goes only to the readers listed for it. Call this only on the
     share_files that the user passed, not on one built from the share flags.
     """
-    if share_files and not any(
-        submitter in readers for readers in share_files.values()
-    ):
+    if not any(submitter in readers for readers in share_files.values()):
         warnings.warn(
             f"share_files doesn't name you ({submitter}) for any file, so you "
             "won't be able to read the files listed there. Add yourself as a "

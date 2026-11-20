@@ -1,6 +1,7 @@
 """Tests for the self-contained SyftRDSClient product."""
 
 import warnings
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -133,8 +134,6 @@ def test_encrypted_dataset_collection_syncs():
 
 def test_process_approved_jobs_holds_logs_back_by_default():
     """The DS reads a log only after the DO releases it."""
-    from unittest.mock import MagicMock
-
     _, do = SyftRDSClient.pair_with_mock_drive_service_connection()
     do.job_runner = MagicMock()
 
@@ -145,8 +144,6 @@ def test_process_approved_jobs_holds_logs_back_by_default():
 
 
 def test_submit_python_job_passes_share_args(tmp_path):
-    from unittest.mock import MagicMock, patch
-
     ds, do = SyftRDSClient.pair_with_mock_drive_service_connection()
     ds.job_client = MagicMock()
     code = tmp_path / "main.py"
@@ -169,8 +166,6 @@ def test_submit_python_job_passes_share_args(tmp_path):
 
 def test_submit_python_job_keeps_positional_order(tmp_path):
     """The sixth positional argument is still force_submission."""
-    from unittest.mock import MagicMock, patch
-
     ds, do = SyftRDSClient.pair_with_mock_drive_service_connection()
     ds.job_client = MagicMock()
     code = tmp_path / "main.py"
@@ -188,8 +183,6 @@ SUBMITTER_NOT_NAMED = "share_files doesn't name you"
 
 def submit_with_share_args(tmp_path, share_args):
     """The DS submits a job with ``share_args(ds, do)``; job client and push mocked."""
-    from unittest.mock import MagicMock, patch
-
     ds, do = SyftRDSClient.pair_with_mock_drive_service_connection()
     ds.job_client = MagicMock()
     code = tmp_path / "main.py"

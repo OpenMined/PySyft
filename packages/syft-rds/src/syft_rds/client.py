@@ -497,7 +497,8 @@ class SyftRDSClient(BaseModel):
             share_outputs_with_submitter=share_outputs_with_submitter,
             share_files=share_files,
         )
-        warn_if_submitter_not_named(share_files, self.email)
+        if share_files:
+            warn_if_submitter_not_named(share_files, self.email)
         self.sync_engine.push_job_files(job_dir)
 
         print("\n✅ Job submitted successfully!")

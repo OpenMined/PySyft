@@ -434,7 +434,8 @@ class SyftEnclaveClient:
             share_files=share_files,
             **kwargs,
         )
-        warn_if_submitter_not_named(share_files, self.email)
+        if share_files:
+            warn_if_submitter_not_named(share_files, self.email)
         self._rds.sync_engine.push_job_files(job_dir)
 
     def _check_can_submit_to(self, enclave_email: str, ignore_peer_version: bool):
