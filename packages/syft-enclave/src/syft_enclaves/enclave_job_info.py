@@ -32,11 +32,6 @@ from syft_enclaves.log_requests import (
 )
 
 
-# How a data owner's decision on a job shows. Any other status shows as pending.
-APPROVAL_MARKS = {JobStatus.APPROVED: "✓", JobStatus.REJECTED: "✗"}
-PENDING_MARK = "pending"
-
-
 class PartyApprovalStatus(BaseModel):
     """Tracks approval from a single party in a multi-party (enclave) job."""
 
@@ -228,11 +223,17 @@ class EnclaveJobInfo(JobInfo):
         approved the job and which output files it approved.
         """
         rows = [("Requested", format_read_permissions(self.requested_read_permissions))]
-        approvals = _party_approvals(self.job_review_path, self._required_approvers)
+        # A party without a valid approval file has not approved: it shows as pending.
+        approvals = [
+            approval or PartyApprovalStatus(party=party)
+            for party, approval in _party_approvals(
+                self.job_review_path, self._required_approvers
+            )
+        ]
         if not approvals:
             return rows
-        job_lines = [_job_approval_line(party, a) for party, a in approvals]
-        file_lines = [f"{party}: {_approved_output_files(a)}" for party, a in approvals]
+        job_lines = [_job_approval_line(a) for a in approvals]
+        file_lines = [f"{a.party}: {_approved_output_files(a)}" for a in approvals]
         return rows + [
             ("Job approved", "\n".join(job_lines)),
             ("Output files approved", "\n".join(file_lines)),
@@ -400,20 +401,22 @@ class EnclaveJobInfo(JobInfo):
         print(f"Job '{self.name}' rejected by {self.current_user_email}.")
 
 
-def _job_approval_line(party: str, approval: Optional[PartyApprovalStatus]) -> str:
+def _job_approval_line(approval: PartyApprovalStatus) -> str:
     """The party, then ✓ when it approved the job, ✗ and its reason when it
     rejected it, and pending otherwise."""
-    status = approval.status if approval is not None else JobStatus.PENDING
-    line = f"{party} {APPROVAL_MARKS.get(status, PENDING_MARK)}"
-    if status == JobStatus.REJECTED and approval.reason:
-        # On one line, so that each party keeps one line.
-        line += f" ({' '.join(approval.reason.split())})"
-    return line
+    party = approval.party
+    if approval.status == JobStatus.APPROVED:
+        return f"{party} ✓"
+    if approval.status != JobStatus.REJECTED:
+        return f"{party} pending"
+    # On one line, so that each party keeps one line.
+    reason = " ".join((approval.reason or "").split())
+    return f"{party} ✗ ({reason})" if reason else f"{party} ✗"
 
 
-def _approved_output_files(approval: Optional[PartyApprovalStatus]) -> str:
+def _approved_output_files(approval: PartyApprovalStatus) -> str:
     """The output files the party approved, for display; "none" until it approved."""
-    if approval is None or approval.status != JobStatus.APPROVED:
+    if approval.status != JobStatus.APPROVED:
         return format_read_permissions({})
     return format_read_permissions(approval.approved_read_permissions)
 
