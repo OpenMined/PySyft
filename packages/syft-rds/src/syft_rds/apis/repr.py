@@ -58,6 +58,13 @@ def _args_html(api: Api) -> str:
     )
 
 
+def _policy_kinds(api: Api) -> str:
+    """The policies the api has, e.g. "input, output", or "-"."""
+    definition = api.definition
+    kinds = [k for k in ("input", "output") if getattr(definition, f"{k}_policy")]
+    return ", ".join(kinds) or "-"
+
+
 def _row_html(index: int, api: Api) -> str:
     call = escape(api.call_signature)
     code = escape(api.python_file or "-")
@@ -67,6 +74,7 @@ def _row_html(index: int, api: Api) -> str:
         f'<td class="syftapi-td syftapi-name">{escape(api.name)}</td>'
         f'<td class="syftapi-td">{escape(api.datasite)}</td>'
         f'<td class="syftapi-td">{_args_html(api)}</td>'
+        f'<td class="syftapi-td">{escape(_policy_kinds(api))}</td>'
         f'<td class="syftapi-td syftapi-code">{code}</td>'
         f'<td class="syftapi-td syftapi-code">{call}</td>'
         "</tr>"
@@ -76,7 +84,7 @@ def _row_html(index: int, api: Api) -> str:
 def api_collection_repr_html(apis: Sequence[Api]) -> str:
     if not apis:
         return _EMPTY_HTML
-    headers = ["#", "Name", "Datasite", "Args", "Code", "Call"]
+    headers = ["#", "Name", "Datasite", "Args", "Policies", "Code", "Call"]
     head = "".join(f'<th class="syftapi-th">{h}</th>' for h in headers)
     rows = "".join(_row_html(i, api) for i, api in enumerate(apis))
     return f"""{_STYLE}
@@ -97,7 +105,10 @@ def api_collection_repr_str(apis: Sequence[Api]) -> str:
     lines = [f"Apis ({len(apis)}):"]
     for i, api in enumerate(apis):
         call = api.call_signature
-        lines.append(f"  [{i}] {api.name} (from {api.datasite}) -> {call}")
+        policies = _policy_kinds(api)
+        lines.append(
+            f"  [{i}] {api.name} (from {api.datasite}) -> {call} | policies: {policies}"
+        )
     return "\n".join(lines)
 
 
