@@ -223,25 +223,20 @@ class EnclaveJobInfo(JobInfo):
     def read_permission_rows(self) -> list[tuple[str, str]]:
         """The read permission state as (label, value) rows, for display.
 
-        The enclave and each data owner also show, with a line per data owner,
-        whether it approved the job and which output files it approved.
+        Once the enclave has distributed the job, the enclave, each data owner
+        and the submitter also show, with a line per data owner, whether it
+        approved the job and which output files it approved.
         """
         rows = [("Requested", format_read_permissions(self.requested_read_permissions))]
-        if not self._holds_approval_files:
-            return rows
         approvals = _party_approvals(self.job_review_path, self._required_approvers)
+        if not approvals:
+            return rows
         job_lines = [_job_approval_line(party, a) for party, a in approvals]
         file_lines = [f"{party}: {_approved_output_files(a)}" for party, a in approvals]
         return rows + [
             ("Job approved", "\n".join(job_lines)),
             ("Output files approved", "\n".join(file_lines)),
         ]
-
-    @property
-    def _holds_approval_files(self) -> bool:
-        """Whether this client holds the approval files: the enclave or a data owner."""
-        is_enclave = self.current_user_email == self.datasite_owner_email
-        return is_enclave or self._approval_file.exists()
 
     def _restrict_to_request(
         self, read_permissions: Optional[ReadPermissions]

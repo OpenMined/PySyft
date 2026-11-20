@@ -689,7 +689,7 @@ def test_display_on_enclave_shows_every_party():
     }
 
 
-def test_data_owner_sees_every_owner_approval():
+def test_owners_and_submitter_see_every_approval():
     enclave, do1, do2, ds = build_quad()
     return_code = readable(RETURN_CODE, ds.email)
     submit(ds, enclave, do1, do2, OK_CODE, return_code)
@@ -725,14 +725,15 @@ def test_data_owner_sees_every_owner_approval():
     assert rows["Job approved"].replace("\n", "<br>") in job._repr_html_()
     job_approved = " / ".join(rows["Job approved"].splitlines())
     assert f"Job approved: {job_approved};" in str(job)
-    # Each data owner reads every approval file, and writes only its own.
+    # The submitter sees the same rows as the data owners.
+    ds.sync()
+    assert ds.jobs["j"].read_permission_rows() == job.read_permission_rows()
+    # Every party reads every approval file, and a data owner writes only its own.
     do2_file = enclave_approval_file_name(do2.email)
-    assert readers_of(enclave, do2_file, [do1, do2, ds]) == [do1, do2]
+    assert readers_of(enclave, do2_file, [do1, do2, ds]) == [do1, do2, ds]
     assert enclave_accepts_write(enclave, do2, do2_file)
     assert not enclave_accepts_write(enclave, do1, do2_file)
-    # The submitter does not get the approval files.
-    assert not has_file(ds, enclave_approval_file_name(do1.email))
-    assert dict(ds.jobs["j"].read_permission_rows()).keys() == {"Requested"}
+    assert not enclave_accepts_write(enclave, ds, do2_file)
 
 
 # -- the request is DS-writable after the approval ------------------------------

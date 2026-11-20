@@ -789,8 +789,8 @@ class SyftEnclaveClient:
     ):
         """Grant inbox read to everyone who needs to see the job (referenced +
         approving DOs), state read to them and the submitter, write to each
-        approving DO on its own approval and log request files, and read to every
-        approving DO on every approval file."""
+        approving DO on its own approval and log request files, and read to the
+        submitter and every approving DO on every approval file."""
         job_manager = self._rds.job_client.manager
         datasite = self._rds.syftbox_folder / self._rds.email
         ctx = SyftPermContext(datasite=datasite)
@@ -812,12 +812,12 @@ class SyftEnclaveClient:
             ):
                 ctx.open(review_rel / name).grant_write_access(do_email)
 
-        # Each DO shows who approved the job, and which files. The submitter
-        # does not read the approval files.
+        # Each DO and the submitter show who approved the job, and which files.
+        approval_readers = list(dict.fromkeys([ref.ds_email, *approval_dos]))
         for party in approval_dos:
             approval_file = ctx.open(review_rel / enclave_approval_file_name(party))
-            for do_email in approval_dos:
-                approval_file.grant_read_access(do_email)
+            for email in approval_readers:
+                approval_file.grant_read_access(email)
 
     @classmethod
     def from_config(
