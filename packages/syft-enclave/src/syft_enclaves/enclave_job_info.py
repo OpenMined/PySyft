@@ -215,7 +215,7 @@ class EnclaveJobInfo(JobInfo):
             return JobStatus.APPROVED.value
         return JobStatus.PENDING.value
 
-    def read_permission_rows(self) -> list[tuple[str, str]]:
+    def read_permissions_repr_rows(self) -> list[tuple[str, str]]:
         """The read permission state as (label, value) rows, for display.
 
         Once the enclave has distributed the job, the enclave, each data owner

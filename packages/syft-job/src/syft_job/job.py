@@ -122,7 +122,7 @@ class JobInfo:
         self._state.approved_read_permissions = approved
         return approved
 
-    def read_permission_rows(self) -> list[tuple[str, str]]:
+    def read_permissions_repr_rows(self) -> list[tuple[str, str]]:
         """The read permission state as (label, value) rows, for display."""
         return [
             ("Requested", format_read_permissions(self.requested_read_permissions)),
@@ -645,7 +645,7 @@ class JobInfo:
         # are joined with " / ", because a line can list files with commas.
         rows = "; ".join(
             f"{label}: {' / '.join(value.splitlines())}"
-            for label, value in self.read_permission_rows()
+            for label, value in self.read_permissions_repr_rows()
         )
         return f"{base} | Read permissions: {rows}"
 

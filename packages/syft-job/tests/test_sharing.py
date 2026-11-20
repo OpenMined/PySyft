@@ -656,7 +656,7 @@ def test_display_shows_read_permissions(tmp_path):
     # Only the requested file is kept, so outputs is not approved.
     return_code = f"returncode.txt ({DS_EMAIL})"
     requested = f"{return_code}, stderr.txt ({DS_EMAIL}), stdout.txt ({DS_EMAIL})"
-    assert job.read_permission_rows() == [
+    assert job.read_permissions_repr_rows() == [
         ("Requested", requested),
         ("Approved", return_code),
     ]
