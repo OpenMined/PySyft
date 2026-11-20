@@ -31,12 +31,8 @@ def test_bad_source_copies_nothing_and_retry_works(
     manager = SyftDatasetManager(syftbox, "owner@test.org")
 
     with pytest.raises(error):
-        manager.create(
-            name="demo",
-            protocol_versions=["0", "1"],
-            **{**paths, key: source / bad_name},
-        )
+        manager.create(name="demo", **{**paths, key: source / bad_name})
     assert not syftbox.exists()
 
-    dataset = manager.create(name="demo", protocol_versions=["0", "1"], **paths)
+    dataset = manager.create(name="demo", **paths)
     assert [f.name for f in dataset.private_files] == ["private.csv"]
