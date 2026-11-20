@@ -700,6 +700,8 @@ def test_owners_and_submitter_see_every_approval():
 
     rows = dict(do2.jobs["j"].read_permissions_repr_rows())
     assert lines(rows["Job approved"]) == {f"{do1.email} ✓", f"{do2.email} pending"}
+    # A data owner shows the job's status, not its own decision.
+    assert do1.jobs["j"].status == "pending"
     assert lines(rows["Output files approved"]) == {
         f"{do1.email}: returncode.txt ({ds.email})",
         f"{do2.email}: none",
@@ -720,14 +722,15 @@ def test_owners_and_submitter_see_every_approval():
         f"{do1.email}: returncode.txt ({ds.email})",
         f"{do2.email}: none",
     }
-    # A data owner's status stays its own decision.
-    assert job.status == "approved"
     assert rows["Job approved"].replace("\n", "<br>") in job._repr_html_()
     job_approved = " / ".join(rows["Job approved"].splitlines())
     assert f"Job approved: {job_approved};" in str(job)
     # The submitter sees the same rows as the data owners.
     ds.sync()
     assert ds.jobs["j"].read_permissions_repr_rows() == job.read_permissions_repr_rows()
+    # One rejection rejects the job, for every party.
+    for client in (enclave, do1, do2, ds):
+        assert client.jobs["j"].status == "rejected"
     # Every party reads every approval file, and a data owner writes only its own.
     do2_file = enclave_approval_file_name(do2.email)
     assert readers_of(enclave, do2_file, [do1, do2, ds]) == [do1, do2, ds]

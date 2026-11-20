@@ -97,9 +97,9 @@ class EnclaveJobInfo(JobInfo):
     """Enclave-specific JobInfo with multi-party approval logic.
 
     ``_required_approvers`` is set only on the enclave, which runs the job:
-    there every configured data owner must approve this exact submission. A
-    data owner's client holds only its own approval file, so it keeps showing
-    the status of the files it has.
+    there every configured data owner must approve this exact submission. Each
+    data owner and the submitter hold every approval file, and read the status
+    from the files they hold.
     """
 
     _required_approvers: Optional[list[str]] = None
@@ -181,14 +181,19 @@ class EnclaveJobInfo(JobInfo):
 
     @property
     def status(self) -> str:
+        """The job's status, the same on the enclave, each data owner and the submitter.
+
+        The runner records running, done and failed in the state. Before that,
+        the status comes from the approval files, as ``_party_approvals`` picks
+        them: on the enclave, of every data owner it is configured with.
+        """
         if self._state.status in (JobStatus.DONE, JobStatus.FAILED, JobStatus.RUNNING):
             return self._state.status.value
-        if self._required_approvers is not None:
-            return self._status_from_required_approvers(self._required_approvers)
-        if not self._approval_file.exists():
+        approvals = _party_approvals(self.job_review_path, self._required_approvers)
+        if not approvals and self._required_approvers is None:
+            # Off the enclave, before it distributed the job: its state is pending.
             return self._state.status.value
-        # A data owner holds every party's approval file, and shows its own.
-        return self._load_own_approval().status.value
+        return self._status_from_approvals([a for _, a in approvals])
 
     @property
     def can_approve(self) -> bool:
@@ -199,15 +204,18 @@ class EnclaveJobInfo(JobInfo):
         """
         return self._approval_file.exists()
 
-    def _status_from_required_approvers(self, required: list[str]) -> str:
-        """Approved only when every required party approved this exact submission.
+    def _status_from_approvals(
+        self, approvals: list[Optional[PartyApprovalStatus]]
+    ) -> str:
+        """Approved only when every party approved this exact submission.
 
         A missing or unreadable approval file counts as no approval, so removing
         a file never stands in for consent. A rejection from any party wins.
+        With no party to approve, as on an enclave with no data owners
+        configured, the job is never approved.
         """
-        if not required:
+        if not approvals:
             return JobStatus.PENDING.value
-        approvals = [load_party_approval(self.job_review_path, p) for p in required]
         if any(a is not None and a.status == JobStatus.REJECTED for a in approvals):
             return JobStatus.REJECTED.value
         current = submission_hash(self.job_submission_path)
