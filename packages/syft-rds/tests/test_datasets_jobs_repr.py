@@ -1,10 +1,10 @@
 """Tests for SyftDatasetManager and JobsList repr and indexing."""
 
 import pytest
-
 from syft_rds import SyftRDSClient
 from syft_job.migrations.registry import JOB_PROTOCOL_VERSION
 from syft_job.job import JobInfo, JobsList
+
 from dataset_test_utils import create_tmp_dataset_files
 
 
