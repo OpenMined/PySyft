@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import warnings
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable, Iterable, Optional
@@ -24,7 +25,9 @@ from syft_enclaves.log_requests import (
     LogRequest,
     RequestedPermissionsUpdate,
     load_log_request,
+    log_head_length,
     log_request_file_name,
+    log_request_warning,
     longest_log_head,
 )
 
@@ -321,8 +324,9 @@ class EnclaveJobInfo(JobInfo):
     ) -> None:
         """Ask the enclave to share ``log_file``, or only its first ``n_chars`` chars.
 
-        The enclave shares it once every data owner made the same request.
-        ``readers`` None means the data owners the enclave is configured with.
+        The enclave shares it once every data owner made the same request: the
+        same readers and the same ``n_chars``. ``readers`` None means the data
+        owners the enclave is configured with.
 
         Raises:
             PermissionError: If the caller is not a data owner of this job.
@@ -335,10 +339,23 @@ class EnclaveJobInfo(JobInfo):
         if log_file not in REQUESTABLE_LOGS:
             raise ValueError(f"Request one of {REQUESTABLE_LOGS}, not {log_file!r}.")
         request = LogRequest(readers=readers, n_chars=n_chars)
-        warn_on_logs_release({log_file: request.readers or []})
+        warnings.warn(
+            log_request_warning(log_file, request.readers), UserWarning, stacklevel=2
+        )
         self._save_own_log_request(log_file, request)
-        who = request.readers or "the enclave's data owners"
-        print(f"Requested {log_file} of job '{self.name}' for {who}.")
+        if request.n_chars is None:
+            what = f"all of {log_file} (n_chars=None)"
+        else:
+            what = (
+                f"the first {request.n_chars:,} characters of {log_file} "
+                f"(n_chars={request.n_chars})"
+            )
+        who = ", ".join(request.readers or []) or "the enclave's data owners"
+        print(f"Requested {what} of job '{self.name}' for {who}.")
+        print(
+            "   The enclave shares it once every data owner makes the same "
+            "request: the same readers and the same n_chars."
+        )
 
     def _save_own_log_request(self, log_file: str, request: LogRequest) -> None:
         """Replace this party's request for ``log_file``, and push the file."""
@@ -356,6 +373,18 @@ class EnclaveJobInfo(JobInfo):
             return full
         # The data owners may have shared only the first chars of the log.
         return longest_log_head(self.job_review_path, log_file) or full
+
+    def log_is_truncated(self, log_file: str) -> bool:
+        """Whether the viewers show only the first chars of ``log_file``.
+
+        True when the data owners shared a copy of the first ``n_chars`` chars
+        that is ``n_chars`` long. A shorter copy holds the whole log.
+        """
+        path = self._log_path(log_file)
+        n_chars = log_head_length(path, log_file)
+        if n_chars is None:
+            return False
+        return len(path.read_text(errors="replace")) >= n_chars
 
     def reject(self, reason: Optional[str] = None) -> None:
         """Reject this job in the DO's own approval file.

@@ -13,6 +13,7 @@ from syft_enclaves.enclave_job_info import (
     PartyApprovalStatus,
     enclave_approval_file_name,
 )
+from syft_job.migrations.registry import JOB_PROTOCOL_VERSION
 from syft_job.client import JobClient
 from syft_job.config import SyftJobConfig
 from syft_job.job import JobInfo
@@ -36,7 +37,7 @@ def _make_enclave_job(
         datasite_email=DO_EMAIL,
         ds_email=DS_EMAIL,
         job_name=job_name,
-        protocol_version="1",
+        protocol_version=JOB_PROTOCOL_VERSION,
     )
     job = JobInfo(
         job_metadata=JobSubmissionMetadata(

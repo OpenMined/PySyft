@@ -4,7 +4,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
-from syft_migration import ProtocolSchema
 from syft_perms import SyftPermContext
 
 from syft_job.client import JobClient
@@ -182,14 +181,3 @@ def test_request_waits_for_client_that_loads_apis(env):
     [request] = do.requests
 
     assert len(do.jobs) == 0 and request.status == "received"
-
-
-def test_client_refuses_request_to_do_without_api_calls(tmp_path: Path):
-    """A DO that speaks job protocol 1 has no requests/ to receive the call."""
-    syftbox = tmp_path / "SyftBox"
-    config = SyftJobConfig(syftbox_folder=syftbox, current_user_email=DS_EMAIL)
-    old_do = ProtocolSchema(protocol_name="syft-job", version="1")
-    ds = JobClient(config, peer_schema={DO_EMAIL: old_do}.get)
-
-    with pytest.raises(ValueError, match="job protocol 1"):
-        ds.submit_api_request(DO_EMAIL, "call.job", API_NAME, PARAMS)
