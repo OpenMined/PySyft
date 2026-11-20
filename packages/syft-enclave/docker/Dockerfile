@@ -65,8 +65,9 @@ SYFT_BOOTSTRAP_WIF_SECRET,\
 SYFT_BOOTSTRAP_SA_SECRET,\
 SYFT_ENCLAVE_TOKEN_CONTENT"
 
-
-LABEL "tee.launch_policy.log_redirect"="always"
+# Forward container logs only on the debug VM image. Production refuses
+# tee-container-log-redirect, so job output can't reach the operator's logs.
+LABEL "tee.launch_policy.log_redirect"="debugonly"
 
 # Confidential Spaces expects port 8080
 # Note: runs as root because the TEE attestation socket

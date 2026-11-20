@@ -28,10 +28,10 @@ jobs:
       contents: write
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: '3.12'
 
@@ -54,14 +54,8 @@ jobs:
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "Releasing syft-dataset $VERSION"
 
-      # Artifacts live inside the package, so they must be committed before the
-      # build. Re-running the export writes nothing when they already exist.
-      - name: Freeze release artifacts
-        run: |
-          uv run python packages/syft-datasets/scripts/export_release_artifact.py
-          git add packages/syft-datasets/src/syft_datasets/migrations/history
-          git diff --cached --quiet || \
-            git commit -m "Freeze syft-dataset v${{ env.VERSION }} release artifacts"
+      # No release artifacts before 1.0.0: protocol 0 stays open. See
+      # "Release artifacts" in docs/release.md.
 
       - name: Build package
         working-directory: packages/syft-datasets

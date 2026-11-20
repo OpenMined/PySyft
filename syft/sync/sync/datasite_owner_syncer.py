@@ -509,14 +509,15 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
 
         Iterates every registered spec (public, private, or any future kind). For
         each it lists the owner's collections, refreshes the _any_shared_collections
-        cache, filters by the spec's download policy, and restores to disk.
+        cache, filters by the spec's download policy, and restores to disk. A
+        collection in a layout this client does not read was written by an
+        unsupported release; it is not restored, and a warning says so.
         """
         for spec in self.collection_specs:
-            collections = (
-                self.connection_router.owner_list_all_collections_with_permissions(
-                    spec.prefix
-                )
+            listed = self.connection_router.owner_list_all_collections_with_permissions(
+                spec.prefix
             )
+            collections = self._readable_collections(spec, listed)
             if not collections:
                 continue
 
@@ -526,6 +527,24 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
                 collections, spec
             )
             self._download_collections_parallel(collections_to_download, spec)
+
+    def _readable_collections(
+        self, spec: CollectionSyncSpec, collections: List[FileCollection]
+    ) -> List[FileCollection]:
+        """The collections in a layout this client reads; warns about the rest."""
+        readable = []
+        for collection in collections:
+            if spec.rank_of(collection.variant) < 0:
+                logger.warning(
+                    "Not restoring your '%s': it uses the %r layout of %s, which "
+                    "this client does not read.",
+                    collection.tag,
+                    collection.variant,
+                    spec.prefix,
+                )
+                continue
+            readable.append(collection)
+        return readable
 
     @property
     def any_shared_collections(self) -> List[tuple]:

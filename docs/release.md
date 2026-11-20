@@ -37,25 +37,14 @@ Each package uploads with its own PyPI token, stored as a repository secret: `PY
 
 ## Release artifacts
 
-`syft`, `syft-job`, and `syft-dataset` each write a release artifact. The artifact records the object versions of that release. It also records the exact schema of each object version.
+> ⚠️ **Warning: nothing is frozen before 1.0.0.** Until the 1.0.0 release, protocol 0 stays open and is the only protocol of `syft`, `syft-job` and `syft-dataset`, so a change to a version-0 object needs no new object version and no protocol bump. A release that froze protocol 0 would turn every later change into a bump to protocol 1, even before 1.0.0. The release job therefore writes no release artifacts and no release fixtures, and the export scripts that wrote the artifacts are removed. Do not freeze protocol 0, by hand or in CD, until the team decides to for 1.0.0.
 
-The drift check compares the current models against these files. If an artifact is absent, the drift check has nothing to compare for that version.
+A release artifact records the object versions of one release, and the exact schema of each object version. The drift check compares the current models against the artifacts, so an object version cannot change after its release. A release fixture is data exactly as one release wrote it, and later releases test that they still read it (`test_older_protocol_compatibility.py`). Before 1.0.0 there are neither.
 
-The artifacts are inside the package, so the release job runs the export before the build:
+To freeze protocol 0 for 1.0.0:
 
-```
-uv run python scripts/export_release_artifact.py                        # syft
-uv run python packages/syft-job/scripts/export_release_artifact.py      # syft-job
-uv run python packages/syft-datasets/scripts/export_release_artifact.py # syft-dataset
-```
-
-A developer can also run an export in a pull request. The version on the branch is the version that the next release publishes. The artifact is therefore available for review before the release.
-
-An artifact is permanent. If an artifact for a version exists, a second export writes nothing and reports success.
-
-An export stops with an error if the protocol changed but the protocol version constant did not change. The error message gives the name of the constant to bump.
-
-The drift check has one known limit. A new protocol generation adds object versions, and no artifact freezes those versions until the release of that generation. The drift check therefore cannot see a change to them. Frequent releases keep this period short.
+1. Restore the three `export_release_artifact.py` scripts (in `scripts/`, `packages/syft-job/scripts/` and `packages/syft-datasets/scripts/`), the `export-release-artifacts` recipe of the `Justfile`, and the "Freeze release artifacts" step of `cd-monorepo.yml`, `cd-syft-job.yml` and `cd-syft-dataset.yml`. `git log --diff-filter=D --oneline -- scripts/export_release_artifact.py` names the commit that removed them; restore them from its parent.
+2. From that release on, generate the release fixtures after each release, each at its own tag, and commit them to `dev` in a PR: `scripts/generate_release_fixture.py` at `vX.Y.Z`, `packages/syft-job/scripts/generate_release_fixture.py` at `syft-job/vX.Y.Z`, `packages/syft-datasets/scripts/generate_release_fixture.py` at `syft-dataset/vX.Y.Z`. Do not run all three at `vX.Y.Z`: syft-job and syft-dataset were bumped earlier in the same run, so at that tag they name the next version.
 
 ## Hotfixes
 

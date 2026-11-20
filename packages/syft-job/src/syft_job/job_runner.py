@@ -4,7 +4,6 @@ import shutil
 import subprocess
 import tempfile
 import time
-import warnings
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import List, Set
@@ -38,7 +37,6 @@ from .read_permissions import (
     merge_read_permissions,
     validate_read_permissions,
 )
-from .review_grants import replace_ds_folder_read
 from .submission import (
     InvalidSubmissionError,
     copy_submission,
@@ -534,9 +532,8 @@ class SyftJobRunner:
     def _approved_run_dir(self, ref: JobRef) -> Path | None:
         """A fresh copy of the approved submission to run from, or None.
 
-        No approved hash: the job was approved before hashes were recorded, or
-        never approved (a deposited result that was rerun). It goes back to
-        pending, to be approved again. A copy that does not match the approved
+        No approved hash: the job was never approved (a deposited result that
+        was rerun). It goes back to pending, to be approved again. A copy that does not match the approved
         hash fails the job. A local error while copying (disk, permissions,
         temp folder) leaves the job approved, so the next cycle retries it.
         """
@@ -842,19 +839,6 @@ class SyftJobRunner:
         (run_dir / "code" / "outputs").mkdir(parents=True, exist_ok=True)
         self.manager.reset_run(ref)
 
-    def _replace_ds_folder_reads(self) -> None:
-        """Replace the read grant on a whole DS review folder with the named files.
-
-        Earlier versions wrote that grant. A job can write any file into its
-        review directory, so this runs before any job does.
-        """
-        review_root = self.config.get_review_dir(self.config.current_user_email)
-        if not review_root.is_dir():
-            return
-        datasite = self.config.syftbox_folder / self.config.current_user_email
-        for ds_dir in sorted(p for p in review_root.iterdir() if p.is_dir()):
-            replace_ds_folder_read(datasite, ds_dir, ds_dir.name)
-
     def _get_job_metadata(self, ref: JobRef) -> JobSubmissionMetadata | None:
         try:
             return self.manager.read_submission(ref)
@@ -883,44 +867,6 @@ class SyftJobRunner:
             ref=ref,
         )
 
-    @staticmethod
-    def _resolve_skip_jobs(
-        approved_jobs: List[JobRef],
-        skip_jobs: list[tuple[str, str]] | None,
-        skip_job_names: list[str] | None,
-    ) -> Set[tuple[str, str]]:
-        """The (job_name, ds_email) pairs to skip, accepting the old name-only form.
-
-        A bare name expands to every submitter who used it, which is what
-        ``skip_job_names`` did. Bare names in ``skip_jobs`` are read the same
-        way, so a caller who passed the old third positional argument keeps the
-        behaviour it had.
-        """
-        pairs: Set[tuple[str, str]] = set()
-        names: List[str] = list(skip_job_names or [])
-        for entry in skip_jobs or []:
-            if isinstance(entry, str):
-                names.append(entry)
-            else:
-                pairs.add((entry[0], entry[1]))
-
-        if names:
-            warnings.warn(
-                "Skipping jobs by name alone is deprecated: a name is unique "
-                "per datasite and submitter, so it also drops other "
-                "submitters' jobs of the same name. Pass "
-                "skip_jobs=[(job_name, ds_email), ...] instead.",
-                DeprecationWarning,
-                stacklevel=3,
-            )
-            wanted = set(names)
-            pairs.update(
-                (ref.job_name, ref.ds_email)
-                for ref in approved_jobs
-                if ref.job_name in wanted
-            )
-        return pairs
-
     def process_approved_jobs(
         self,
         stream_output: bool = True,
@@ -928,7 +874,6 @@ class SyftJobRunner:
         skip_jobs: list[tuple[str, str]] | None = None,
         share_logs_with_submitter: bool = False,
         share_outputs_with_submitter: bool = False,
-        skip_job_names: list[str] | None = None,
         approved_peers: list[str] | None = None,
         share_requested_files: bool = False,
     ) -> None:
@@ -951,19 +896,17 @@ class SyftJobRunner:
                 approval granted. Only the DO reads the rest.
             share_outputs_with_submitter: If True, approve the outputs for the
                 submitter.
-            skip_job_names: Deprecated. The name-only form of ``skip_jobs``.
             approved_peers: The peers an output policy may give read
                 permissions. None allows the submitter only.
             share_requested_files: If True, approve everything each job's
                 submitter requested.
         """
-        self._replace_ds_folder_reads()
         approved_jobs = self._get_jobs_in_approved()
 
         if not approved_jobs:
             return
 
-        skip_set = self._resolve_skip_jobs(approved_jobs, skip_jobs, skip_job_names)
+        skip_set = {(name, ds_email) for name, ds_email in skip_jobs or []}
         if skip_set:
             approved_jobs = [
                 j for j in approved_jobs if (j.job_name, j.ds_email) not in skip_set
@@ -1010,7 +953,6 @@ class SyftJobRunner:
             raise ValueError(
                 f"Job '{job_name}' from {ds_email} is {status.value}, not approved"
             )
-        self._replace_ds_folder_reads()
         self._run_full_job_lifecycle(
             ref,
             stream_output,

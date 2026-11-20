@@ -321,6 +321,18 @@ def test_nested_generic_annotation_is_not_flagged(verify_all):
     assert _ok(verify_all(src))[0]
 
 
+def test_imported_annotation_is_not_flagged(policy):
+    """An imported type in an annotation with no call cannot run, so the allow-list does not apply."""
+    src = normalize_source("""
+    from typing import Optional
+
+    def f(x: Optional[int]) -> Optional[int]:
+        return x
+    """)
+    result = verify(src, [[3, 4]], policy)
+    assert _ok(result)[0]
+
+
 def test_future_annotations_import_does_not_change_annotation_handling(policy):
     """``from __future__ import annotations`` does not change the AST shape of annotations."""
     src = normalize_source("""

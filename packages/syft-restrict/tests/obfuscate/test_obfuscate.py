@@ -4,8 +4,9 @@ import ast
 import shutil
 from pathlib import Path
 
+import pytest
 from syft_restrict import obfuscate
-from syft_restrict.astutil import scan_file
+from syft_restrict.astutil import row_in_ranges, scan_file
 from syft_restrict.runner import _run
 
 FIXTURES = Path(__file__).parents[1] / "fixtures"
@@ -101,6 +102,67 @@ def test_fstring_literal_text_is_blanked():
     obf = obfuscate(source, [[1, 2]], [], scan)
     assert "secret literal text" not in obf
     assert "■" in obf
+
+
+def _assert_rows_aligned(source: str, obf: str, obfuscate_ranges, hide_ranges):
+    """Assert that public rows print unchanged and hidden code rows print as the hide marker."""
+    src_rows, obf_rows = source.split("\n"), obf.split("\n")
+    assert len(obf_rows) == len(src_rows), obf
+    for row, (src_row, obf_row) in enumerate(zip(src_rows, obf_rows), 1):
+        if row_in_ranges(row, hide_ranges) and src_row.strip():
+            assert obf_row.lstrip().startswith("■■■■■■■■"), (row, obf)
+        elif not row_in_ranges(row, [*obfuscate_ranges, *hide_ranges]):
+            assert obf_row == src_row, (row, obf)
+
+
+@pytest.mark.parametrize(
+    "obfuscate_ranges, hide_ranges",
+    [([[3, 6]], []), ([[3, 3]], [[4, 6]])],
+    ids=["obfuscate", "obfuscate-then-hide"],
+)
+def test_formfeed_keeps_row_count(obfuscate_ranges, hide_ranges):
+    # A form feed must stay part of its row, the way tokenize counts rows.
+    source = (
+        "import jax.numpy as jnp\n"
+        "# page\x0cbreak\n"
+        "def scale(x):\n"
+        "    y = x * 2\n"
+        "    z = y + 1\n"
+        "    return z\n"
+        "\n"
+        "def main(x):\n"
+        "    return scale(x)\n"
+    )
+    private = [*obfuscate_ranges, *hide_ranges]
+    scan = scan_file(ast.parse(source), private)
+    obf = obfuscate(source, obfuscate_ranges, hide_ranges, scan)
+    _assert_rows_aligned(source, obf, obfuscate_ranges, hide_ranges)
+
+
+@pytest.mark.parametrize(
+    "obfuscate_ranges, hide_ranges",
+    [([[3, 6]], []), ([[3, 6]], [[7, 7]])],
+    ids=["obfuscate", "obfuscate-then-hide"],
+)
+def test_multiline_docstring_keeps_row_count(obfuscate_ranges, hide_ranges):
+    # A string that spans several rows must keep all of them when it is blanked.
+    source = (
+        "import jax.numpy as jnp\n"
+        "\n"
+        "class Model:\n"
+        '    """Line one.\n'
+        "    Line two.\n"
+        '    Line three."""\n'
+        "SECRET = 1\n"
+        'PUBLIC = "public"\n'
+        "\n"
+        "def main():\n"
+        "    return PUBLIC\n"
+    )
+    private = [*obfuscate_ranges, *hide_ranges]
+    scan = scan_file(ast.parse(source), private)
+    obf = obfuscate(source, obfuscate_ranges, hide_ranges, scan)
+    _assert_rows_aligned(source, obf, obfuscate_ranges, hide_ranges)
 
 
 def test_obfuscation_is_deterministic(tmp_path):
