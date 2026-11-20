@@ -9,6 +9,7 @@ from syft_job.read_permissions import (
     OUTPUTS,
     ReadPermissions,
     merge_read_permissions,
+    warn_if_submitter_not_named,
 )
 from syft_job.job import JobInfo, JobsList
 from syft_job.job_storage import JobRef
@@ -433,6 +434,8 @@ class SyftEnclaveClient:
             share_files=share_files,
             **kwargs,
         )
+        if share_files:
+            warn_if_submitter_not_named(share_files, self.email)
         self._rds.sync_engine.push_job_files(job_dir)
 
     def _check_can_submit_to(self, enclave_email: str, ignore_peer_version: bool):
@@ -641,8 +644,8 @@ class SyftEnclaveClient:
         """Ask the enclave to share the job's stderr, or only its first ``n_chars`` chars.
 
         Only a data owner can ask. The enclave shares it once every data owner
-        made the same request. ``readers`` None means the data owners this
-        enclave is configured with.
+        made the same request: the same readers and the same ``n_chars``.
+        ``readers`` None means the data owners this enclave is configured with.
         """
         self._request_log(job, "stderr.txt", readers, n_chars)
 

@@ -79,6 +79,11 @@ high-level, mid-level and low-level sections below, and so does the `syft-pr-rev
 - Keep one source of truth for each piece of state. A cache is the exception.
 - Do not use old names, the names of things that are no longer used.
 - Do not give a new name to something that already has one.
+- A field, name or label means one thing, in data structures and in what users see:
+  - Not something else in another case. The "Approval" row of a job says how it was approved:
+    manual or auto. An enclave job should not use that row to say "every data owner".
+  - Not two things at once. A row that says "every data owner approved; nothing was requested"
+    mixes whether the job was approved with which files were requested.
 
 ### Drive API calls
 

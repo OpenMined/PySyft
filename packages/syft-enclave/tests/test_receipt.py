@@ -60,20 +60,28 @@ def _signed_receipt(key=None):
 def test_signed_receipt_verifies_and_rejects_tampering():
     envelope = _signed_receipt()
     assert envelope["payloadType"] == "application/vnd.in-toto+json"
-    assert verify_receipt(envelope)["predicate"]["job"]["name"] == "j"
+    assert (
+        verify_receipt(envelope, allow_unattested=True)["predicate"]["job"]["name"]
+        == "j"
+    )
 
     tampered = json.loads(base64.b64decode(envelope["payload"]))
     tampered["predicate"]["job"]["name"] = "other"
     envelope["payload"] = base64.b64encode(json.dumps(tampered).encode()).decode()
     with pytest.raises(ReceiptVerificationError):
-        verify_receipt(envelope)
+        verify_receipt(envelope, allow_unattested=True)
 
 
 def test_receipt_without_a_key_binding_is_rejected():
     key = Ed25519PrivateKey.generate()
     envelope = sign_receipt(build_receipt({}, job={"name": "j"}), key)
     with pytest.raises(ReceiptVerificationError, match="no key binding"):
-        verify_receipt(envelope)
+        verify_receipt(envelope, allow_unattested=True)
+
+
+def test_receipt_refused_without_allow_unattested():
+    with pytest.raises(ReceiptVerificationError, match="allow_unattested=True"):
+        verify_receipt(_signed_receipt())
 
 
 class _Response(io.BytesIO):
@@ -233,7 +241,9 @@ def test_finished_job_ships_a_signed_receipt(mock_tinfoil):
     by_name = {p.name: p for p in job.output_paths}
     assert RECEIPT_FILE_NAME in by_name
 
-    receipt = verify_receipt(json.loads(by_name[RECEIPT_FILE_NAME].read_text()))
+    receipt = verify_receipt(
+        json.loads(by_name[RECEIPT_FILE_NAME].read_text()), allow_unattested=True
+    )
 
     assert receipt["_type"] == "https://in-toto.io/Statement/v1"
     assert receipt["subject"] == CLAIMS["subject"]
@@ -349,7 +359,9 @@ def test_receipt_lists_only_approvals_of_the_submission_that_ran(mock_tinfoil):
         before_distribute=mark_second_approval_stale
     )
     by_name = {p.name: p for p in ds.jobs["test_job"].output_paths}
-    receipt = verify_receipt(json.loads(by_name[RECEIPT_FILE_NAME].read_text()))
+    receipt = verify_receipt(
+        json.loads(by_name[RECEIPT_FILE_NAME].read_text()), allow_unattested=True
+    )
 
     approvals = receipt["predicate"]["consent"]["approvals"]
     assert [a["party"] for a in approvals] == [enclave.data_owners[0]]
@@ -409,7 +421,9 @@ def test_receipt_signed_by_another_key_is_rejected():
     document = _attested_document(key.public_key())
     forger = Ed25519PrivateKey.generate()
     with pytest.raises(ReceiptVerificationError, match="no signature"):
-        verify_receipt(sign_receipt(_bound_receipt(document), forger))
+        verify_receipt(
+            sign_receipt(_bound_receipt(document), forger), allow_unattested=True
+        )
 
 
 def test_key_binding_that_does_not_list_the_receipt_key_is_rejected():
@@ -417,12 +431,16 @@ def test_key_binding_that_does_not_list_the_receipt_key_is_rejected():
 
     other_id = _attested_document(key.public_key(), key_id="other-key")
     with pytest.raises(ReceiptVerificationError, match="no attested key"):
-        verify_receipt(sign_receipt(_bound_receipt(other_id), key))
+        verify_receipt(
+            sign_receipt(_bound_receipt(other_id), key), allow_unattested=True
+        )
 
     tampered = _attested_document(key.public_key())
     tampered["challenge"]["report_data"] = "00" * 64
     with pytest.raises(ReceiptVerificationError, match="report data"):
-        verify_receipt(sign_receipt(_bound_receipt(tampered), key))
+        verify_receipt(
+            sign_receipt(_bound_receipt(tampered), key), allow_unattested=True
+        )
 
 
 def test_receipts_are_signed_with_the_attested_key(tmp_path, monkeypatch):

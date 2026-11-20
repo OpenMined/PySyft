@@ -28,7 +28,7 @@ receipt.
 identity key: its report data holds the shim's TLS key. So this binding goes through that TLS key.
 A verifier fetches the enclave's key bundle and claims over a connection pinned to the TLS key,
 and the enclave signs them with the identity key. `attest_peer` returns that bundle as
-`verified_key_bundle`, and `verify_receipt` checks the receipt against it.
+`verified_key_bundle`. `verify_receipt` does not check the receipt against it.
 
 **In the receipt.** This one can be checked without reaching the enclave. Once per boot, the
 enclave asks `/tinfoil/attestation.sock` for a second report whose nonce is the
