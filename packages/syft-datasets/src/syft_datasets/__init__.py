@@ -6,7 +6,7 @@ from .dataset_ref import DatasetRef
 from .dataset_storage import DatasetStorage
 from .migrations import dataset_registry
 from .migrations.history import register_historic_schemas
-from .models import Dataset, DatasetV1, PrivateDatasetConfig, PrivateDatasetConfigV1
+from .models import Dataset, DatasetV0, PrivateDatasetConfig, PrivateDatasetConfigV0
 
 # Historic schemas list object versions that must already be registered, which
 # happens when the models above are imported.
@@ -20,7 +20,7 @@ __all__ = [
     "dataset_registry",
     # Models
     "Dataset",
-    "DatasetV1",
+    "DatasetV0",
     "PrivateDatasetConfig",
-    "PrivateDatasetConfigV1",
+    "PrivateDatasetConfigV0",
 ]

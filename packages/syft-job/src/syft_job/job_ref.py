@@ -26,7 +26,7 @@ class RequestRef:
     datasite_email: str  # DO whose datasite holds the request
     ds_email: str  # caller
     job_name: str  # the name of the job the request becomes
-    protocol_version: str  # "1"+; requests have no protocol 0 layout
+    protocol_version: str  # names the v<n> path segment
 
     @property
     def job_ref(self) -> JobRef:

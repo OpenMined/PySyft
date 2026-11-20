@@ -244,14 +244,8 @@ jobs:
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "Releasing syft $VERSION"
 
-      # Artifacts live inside the package, so they must be committed before the
-      # build. Re-running the export writes nothing when they already exist.
-      - name: Freeze release artifacts
-        run: |
-          just export-release-artifacts
-          git add syft/migrations/history
-          git diff --cached --quiet || \
-            git commit -m "Freeze syft v${{ env.VERSION }} release artifacts"
+      # No release artifacts before 1.0.0: protocol 0 stays open. See
+      # "Release artifacts" in docs/release.md.
 
       - name: Build
         run: just build
