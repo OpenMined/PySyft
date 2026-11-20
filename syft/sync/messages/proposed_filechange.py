@@ -9,7 +9,7 @@ from pydantic import Field, model_validator, field_serializer, computed_field
 from pydantic.main import BaseModel
 from syft_migration import MigratableObject
 
-from syft.migrations import client_registry, load_as_latest
+from syft.migrations import client_registry, load_current
 from syft.sync.utils.syftbox_utils import compress_data, uncompress_data
 from syft.sync.utils.syftbox_utils import create_event_timestamp
 from syft.sync.utils.syftbox_utils import get_event_hash_from_content
@@ -19,7 +19,7 @@ MESSAGE_FILENAME_PREFIX = "msgv2"
 MESSAGE_FILENAME_EXTENSION = ".tar.gz"
 
 
-class ProposedFileChangeV1(BaseModel):
+class ProposedFileChangeV0(BaseModel):
     id: UUID = Field(default_factory=lambda: uuid4())
     old_hash: str | None = None
     new_hash: str | None = None  # None for deletions
@@ -98,32 +98,26 @@ class MessageFileName(BaseModel):
         return cls(submitted_timestamp=submitted_timestamp, uid=uid)
 
 
-class ProposedFileChangesMessageV1(MigratableObject, registry=client_registry):
+class ProposedFileChangesMessageV0(MigratableObject, registry=client_registry):
     """The msgv2 wire envelope (DS -> DO). The envelope is the migratable unit;
     its items are pinned to the exact version class, never a floating alias."""
 
     canonical_name: str = "ProposedFileChangesMessage"
-    version: str = "1"
+    version: str = "0"
 
     id: UUID = Field(default_factory=lambda: uuid4())
     sender_email: str
     message_filename: MessageFileName = Field(default_factory=lambda: MessageFileName())
-    proposed_file_changes: List[ProposedFileChangeV1]
+    proposed_file_changes: List[ProposedFileChangeV0]
     # Platform-specific ID (e.g., Google Drive file ID) - set when retrieving message
     # Used to avoid re-querying the platform when removing the message
     platform_id: str | None = Field(default=None, exclude=True)
 
     @classmethod
     def from_compressed_data(cls, data: bytes) -> "ProposedFileChangesMessage":
-        """Decompress and load, upgraded to the latest version.
-
-        Blobs written by protocol-0 clients (<= 0.1.117) predate the identity
-        fields; they are all version 1.
-        """
+        """Decompress and load, upgraded to the latest version."""
         uncompressed_data = uncompress_data(data)
-        return load_as_latest(
-            json.loads(uncompressed_data), "ProposedFileChangesMessage"
-        )
+        return load_current(json.loads(uncompressed_data), "ProposedFileChangesMessage")
 
     def as_compressed_data(self) -> bytes:
         data = self.model_dump_json(indent=2).encode("utf-8")
@@ -131,5 +125,5 @@ class ProposedFileChangesMessageV1(MigratableObject, registry=client_registry):
 
 
 # Current-version aliases: callers always work with the latest versions.
-ProposedFileChange = ProposedFileChangeV1
-ProposedFileChangesMessage = ProposedFileChangesMessageV1
+ProposedFileChange = ProposedFileChangeV0
+ProposedFileChangesMessage = ProposedFileChangesMessageV0

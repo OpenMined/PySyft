@@ -153,11 +153,6 @@ publish: build
     uvx twine upload dist/*
     @echo "{{ _green }}Publish complete!{{ _nc }}"
 
-# Export the frozen release artifacts for the current version
-[group('publish')]
-export-release-artifacts:
-    uv run python scripts/export_release_artifact.py
-
 # Launch Jupyter Lab
 jupyter:
     uv run jupyter lab --notebook-dir={{ justfile_dir }}

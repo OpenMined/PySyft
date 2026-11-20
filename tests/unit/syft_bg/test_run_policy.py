@@ -70,7 +70,7 @@ def test_output_policy_builds_outputs_from_candidates(temp_dir):
     result = run_policy(policy, candidates_dir=candidates, submitter=DS_EMAIL)
 
     assert result.passed is True
-    assert result.recipients == [DS_EMAIL]
+    assert result.read_permissions == {"outputs": [DS_EMAIL]}
     assert (result.outputs_dir / "result.txt").read_text() == "the [REDACTED] word"
 
 

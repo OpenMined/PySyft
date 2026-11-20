@@ -32,8 +32,7 @@ from uuid import uuid4
 import portalocker
 
 # Format of the persisted file: {"version": N, "entries": {...}}. Raise it when
-# the layout of an entry changes. A file with no version holds the entries at the
-# top level, was written before the field, and is version 0.
+# the layout of an entry changes.
 PERSISTED_DICT_VERSION = 1
 
 
@@ -131,15 +130,12 @@ class PersistedDict(dict):
         """The entries to load from a parsed file, empty when it cannot be read.
 
         The client rebuilds every cache that uses this class, so an unreadable
-        file costs a re-scan and nothing else. A file from a later version
+        file costs a re-scan and nothing else. A file of another version
         therefore starts empty instead of stopping the client.
         """
-        if not isinstance(data, dict):
+        if not isinstance(data, dict) or "entries" not in data:
             return {}
-        if "version" not in data or "entries" not in data:
-            # Written before the version field existed: entries at the top level.
-            return data
-        if data["version"] > PERSISTED_DICT_VERSION:
+        if data.get("version") != PERSISTED_DICT_VERSION:
             return {}
         return data["entries"]
 

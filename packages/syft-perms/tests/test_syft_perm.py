@@ -631,3 +631,48 @@ def test_syft_pub_yaml_requires_admin_to_write(datasite):
 
     # USER2 has admin → can write syft.pub.yaml
     assert perm_file.has_write_access(USER2)
+
+
+def test_glob_character_in_path_grants_only_that_path(datasite):
+    """A name such as '*' in a path must not turn the grant into a wildcard."""
+    for name in ("*", "secret"):
+        (datasite / "jobs" / name / "outputs").mkdir(parents=True)
+    # A yaml above the jobs, so the grant pattern holds the name.
+    yaml_data = {
+        "rules": [
+            {
+                "pattern": "other/**",
+                "access": {"read": [USER2], "write": [], "admin": []},
+            }
+        ],
+        "terminal": False,
+    }
+    with open(datasite / "jobs" / "syft.pub.yaml", "w") as f:
+        yaml.safe_dump(yaml_data, f)
+
+    sp = SyftPermContext(datasite=datasite)
+    sp.open("jobs/*/outputs/").grant_read_access(USER)
+    sp.open("jobs/*/stdout.txt").grant_read_access(USER)
+
+    assert sp.can_read("jobs/*/outputs/result.txt", USER)
+    assert sp.can_read("jobs/*/stdout.txt", USER)
+    assert not sp.can_read("jobs/secret/outputs/result.txt", USER)
+    assert not sp.can_read("jobs/secret/stdout.txt", USER)
+
+
+def test_pattern_grant_reads_each_match_at_its_depth(sp):
+    sp.modifier.add_permission_for_pattern("jobs", "*/state.yaml", "read", USER)
+
+    assert sp.can_read("jobs/a/state.yaml", USER)
+    assert sp.can_read("jobs/b/state.yaml", USER)
+    assert not sp.can_read("jobs/a/stdout.txt", USER)
+    assert not sp.can_read("jobs/a/nested/state.yaml", USER)
+
+
+def test_remove_all_rules_updates_same_context(sp):
+    sp.open("jobs/a/stdout.txt").grant_read_access(USER)
+    assert sp.can_read("jobs/a/stdout.txt", USER)
+
+    sp.modifier.remove_all_rules("jobs/a/stdout.txt")
+
+    assert not sp.can_read("jobs/a/stdout.txt", USER)

@@ -9,12 +9,14 @@ Bump these versions on each release (via `bump2version patch/minor/major`).
 # Must stay a plain X.Y.Z: peers compare it with _parse_semver and Drive folder
 # names embed it (see sync/version/version_info.py, and drive_cached_client.py and
 # drive_owner_store.py in sync/connections/drive/).
-SYFT_VERSION = "0.10.1"
+# The `: str` is the anchor .bumpversion.cfg searches for, so a bump never also
+# rewrites MIN_SUPPORTED_SYFT_VERSION.
+SYFT_VERSION: str = "0.10.2"
 
 # Minimum client version we support communicating with.
-# 0.10.0 is the first release published as `syft` (formerly `syft-client`
-# 0.1.x); compatibility is same major.minor, so nothing older can talk to us.
-MIN_SUPPORTED_SYFT_VERSION = "0.10.0"
+# 0.10.2 resets every migration protocol and object version to 0, so no
+# earlier release can talk to us.
+MIN_SUPPORTED_SYFT_VERSION = "0.10.2"
 
 # Protocol version - bump when making breaking changes to the sync protocol
 PROTOCOL_VERSION = "1.0.0"

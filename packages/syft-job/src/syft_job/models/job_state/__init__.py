@@ -1,10 +1,10 @@
-from .v1 import JobStateV1, JobStatus
+from .v0 import JobStateV0, JobStatus
 
 # The current version of the job state object.
-JobState = JobStateV1
+JobState = JobStateV0
 
 __all__ = [
     "JobState",
-    "JobStateV1",
+    "JobStateV0",
     "JobStatus",
 ]

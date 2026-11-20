@@ -301,9 +301,7 @@ with open("outputs/result.json", "w") as f:
     job.approve()
 
     do_manager.job_runner.process_approved_jobs()
-    do_manager.job_runner.share_job_results(
-        "test.job", share_outputs=True, share_logs=False
-    )
+    do_manager.share_job_results(job, share_outputs_with_submitter=True)
 
     do_manager.sync()
 
@@ -400,9 +398,7 @@ with open("outputs/result.json", "w") as f:
     job.approve()
 
     do_manager.job_runner.process_approved_jobs()
-    do_manager.job_runner.share_job_results(
-        "test.job", share_outputs=True, share_logs=False
-    )
+    do_manager.share_job_results(job, share_outputs_with_submitter=True)
 
     do_manager.sync()
 
@@ -799,9 +795,7 @@ with open("outputs/result.json", "w") as f:
     assert len(ds_manager.job_client.jobs[-1].output_paths) == 0
 
     # After sharing: DS should see outputs
-    do_manager.job_runner.share_job_results(
-        "test.job", share_outputs=True, share_logs=False
-    )
+    do_manager.share_job_results(job, share_outputs_with_submitter=True)
     do_manager.sync()
     ds_manager.sync()
 
@@ -870,9 +864,7 @@ def test_folder_job_flow_with_dataset():
         assert len(ds_manager.job_client.jobs[-1].output_paths) == 0
 
         # After sharing: DS should see outputs
-        do_manager.job_runner.share_job_results(
-            "test.folder.job", share_outputs=True, share_logs=False
-        )
+        do_manager.share_job_results(job, share_outputs_with_submitter=True)
         do_manager.sync()
         ds_manager.sync()
 
@@ -974,9 +966,7 @@ def test_pyproject_folder_job_flow_with_dataset():
         assert len(ds_manager.job_client.jobs[-1].output_paths) == 0
 
         # After sharing: DS should see outputs
-        do_manager.job_runner.share_job_results(
-            "test.pyproject.job", share_outputs=True, share_logs=False
-        )
+        do_manager.share_job_results(job, share_outputs_with_submitter=True)
         do_manager.sync()
         ds_manager.sync()
 

@@ -19,14 +19,14 @@ class JobRef:
 class RequestRef:
     """One api call on disk, in requests/: who it is for, and who sent it.
 
-    A request becomes a job of the same name in inbox/. That job's folders in
-    review/ and staging/ also hold the request's state while it waits.
+    A request becomes a job of the same name in inbox/. That job's folder in
+    review/ also holds the request's state while it waits.
     """
 
     datasite_email: str  # DO whose datasite holds the request
     ds_email: str  # caller
     job_name: str  # the name of the job the request becomes
-    protocol_version: str  # "1"+; requests have no protocol 0 layout
+    protocol_version: str  # names the v<n> path segment
 
     @property
     def job_ref(self) -> JobRef:

@@ -5,7 +5,6 @@ See env.py for what a policy script gets and the conventions it follows.
 
 from .bash_wrapper import PYTHON_POLICY_NAME, RUN_SCRIPT_NAME, python_run_script
 from .models import (
-    OUTPUT_RECIPIENTS_FILENAME,
     OUTPUTS_WITHHELD_FILENAME,
     POLICY_ERROR_FILENAME,
     ApiResolver,
@@ -24,7 +23,6 @@ __all__ = [
     "ApiResolver",
     "DEFAULT_POLICY_TIMEOUT_SECONDS",
     "JobPolicies",
-    "OUTPUT_RECIPIENTS_FILENAME",
     "OUTPUTS_WITHHELD_FILENAME",
     "POLICY_ERROR_FILENAME",
     "PYTHON_POLICY_NAME",

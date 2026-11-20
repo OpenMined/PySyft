@@ -295,7 +295,7 @@ def test_enclave_gemma_safety_eval_full_flow():
             model_owner.email: ["gemma3_model"],
             benchmark_owner.email: ["safety_prompts"],
         },
-        share_results_with_do=True,
+        share_outputs_with_owners=True,
         dependencies=["jax[cpu]", "flax", "orbax-checkpoint", "sentencepiece"],
     )
 

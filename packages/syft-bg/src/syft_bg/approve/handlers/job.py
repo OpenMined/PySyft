@@ -74,9 +74,8 @@ class ApprovedJobHandler:
     def _run(self, job: JobInfo) -> None:
         """Run one api call; a submitter on an incompatible version is skipped."""
         try:
-            self.client.run_job(
-                job, stream_output=self.verbose, share_outputs_with_submitter=True
-            )
+            # An api call's api and output policy decide what is shared.
+            self.client.run_job(job, stream_output=self.verbose)
         except VersionError as e:
             print(f"Skipped: {job.name} from {job.submitted_by}: {e}")
 

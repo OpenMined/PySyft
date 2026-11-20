@@ -23,6 +23,7 @@ from .astutil import (
     node_in_ranges,
     normalize_ranges,
     row_in_ranges,
+    source_rows,
 )
 from .policy import DEFAULT_KEEP
 
@@ -112,13 +113,16 @@ def obfuscate(source: str, obfuscate_ranges, hide_ranges, scan: FileScan) -> str
             if new is not None:
                 edits.append((srow, scol, erow, ecol, new))
         elif tok.type == tokenize.STRING:
-            edits.append((srow, scol, erow, ecol, f'"{_BLANK}"'))
+            # A string that spans rows keeps all of them, so every later row stays where it was.
+            gap = "\n" * (erow - srow)
+            new = f'"""{_BLANK}{gap}"""' if gap else f'"{_BLANK}"'
+            edits.append((srow, scol, erow, ecol, new))
         elif tok.type == _FSTRING_MIDDLE:
             # The f-string's literal text between `{...}` parts; FSTRING_START/END (the f"/" quote
             # delimiters) are left as-is, and any interpolated expression's own tokens (NAME, etc.)
             # still flow through the normal token handling above/below like any other reference.
             if tok.string:
-                edits.append((srow, scol, erow, ecol, _BLANK))
+                edits.append((srow, scol, erow, ecol, _BLANK + "\n" * (erow - srow)))
         elif tok.type == tokenize.NUMBER:
             edits.append((srow, scol, erow, ecol, _BLANK))
         elif tok.type == tokenize.COMMENT:
@@ -225,7 +229,7 @@ def _names_of(tree, node_type, ranges) -> set[str]:
 
 # ── apply position edits to the source, preserving non-private lines verbatim ─────────────
 def _apply_edits(source: str, edits) -> str:
-    lines = source.splitlines(keepends=True)
+    lines = source_rows(source)
     # apply bottom-up so earlier edits don't shift later line indices / columns
     for srow, scol, erow, ecol, new in sorted(edits, reverse=True):
         if srow == erow:
@@ -239,7 +243,7 @@ def _apply_edits(source: str, edits) -> str:
 
 # ── blank whole hidden lines, keeping indentation; leave blank lines untouched ────────────
 def _apply_hides(text: str, hide_ranges) -> str:
-    lines = text.splitlines(keepends=True)
+    lines = source_rows(text)
     in_block = False  # inside a run of consecutive hidden line numbers
     noted = False  # has the explanatory note been added for the current block yet
     for i, line in enumerate(lines, 1):

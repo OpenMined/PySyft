@@ -5,7 +5,7 @@ in any number of batches. A job counts as received only when its files hash to
 the value the submitter declared in config.yaml. The data owner then records
 the hash of what it received, later the hash of what it approved, and the
 runner executes a fresh copy only after checking it against the approved hash.
-The record lives in the owner's staging/, which no submitter can write.
+The record lives in the owner's review/, where the submitter holds no grant on it.
 """
 
 import hashlib
@@ -13,7 +13,7 @@ import os
 import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import Iterable, Optional
+from typing import Optional
 from uuid import uuid4
 
 from pydantic import BaseModel
@@ -55,7 +55,7 @@ SYNC_EXCLUDED_NAMES = frozenset(
 # config.yaml header where the submitter declares code_hash() of its job.
 SUBMISSION_HASH_HEADER = "submission_hash"
 
-# The data owner's record of a job, in staging/.
+# The data owner's record of a job, in review/.
 OWNER_RECORD_FILENAME = "owner_record.json"
 
 
@@ -169,20 +169,6 @@ def _no_symlinks(folder: Path) -> tuple[bool, str]:
         if path.is_symlink():
             return False, f"'{path.relative_to(folder).as_posix()}' is a symlink"
     return True, ""
-
-
-def has_listed_files(submission_dir: Path, files: Iterable[str]) -> bool:
-    """Whether run.sh and every code/ file in the manifest are present.
-
-    The completeness check for a submitter that declares no hash.
-    """
-    if not (submission_dir / "run.sh").is_file():
-        return False
-    return all(
-        (submission_dir / "code" / name).is_file()
-        for name in files
-        if not _is_skipped(Path(name))
-    )
 
 
 def copy_submission(source: Path, target: Path) -> None:

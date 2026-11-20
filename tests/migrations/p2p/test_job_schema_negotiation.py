@@ -5,20 +5,24 @@ from pathlib import Path
 from syft_job import SyftJobConfig
 from syft_job.client import JobClient
 from syft_job.job_storage import JobStorage
+import pytest
 from syft_job.migrations.registry import JOB_PROTOCOL_VERSION
-from syft_migration import ProtocolSchema
+from syft_migration import MigrationError, ProtocolSchema
 
 DO_EMAIL = "do@test.org"
 DS_EMAIL = "ds@test.org"
 
 
-def _job_schema(protocol_version: str) -> ProtocolSchema:
+def _job_schema(
+    protocol_version: str, min_supported_version: str = "0"
+) -> ProtocolSchema:
     # The slim form a peer advertises in its VersionInfo (see
     # version_info._slim_schema_of): no embedded object schemas.
     return ProtocolSchema(
         protocol_name="syft-job",
         version=protocol_version,
-        supported_versions={"JobState": ["1"], "JobSubmissionMetadata": ["1"]},
+        min_supported_version=min_supported_version,
+        supported_versions={"JobState": ["0"], "JobSubmissionMetadata": ["0"]},
     )
 
 
@@ -28,15 +32,6 @@ def _storage(tmp_path: Path, peer_schemas: dict) -> JobStorage:
     )
     (tmp_path / "SyftBox" / DS_EMAIL).mkdir(parents=True, exist_ok=True)
     return JobStorage(config=config, peer_schema=peer_schemas.get)
-
-
-def test_protocol0_peer_negotiates_down(tmp_path):
-    storage = _storage(tmp_path, {DO_EMAIL: _job_schema("0")})
-    assert storage.negotiated_protocol_version_for_peer(DO_EMAIL) == "0"
-    ref = storage.new_submission_ref(DO_EMAIL, "legacy.job")
-    assert ref.protocol_version == "0"
-    # Protocol 0 = flat pre-versioning layout: no v<n> path segment.
-    assert f"v{JOB_PROTOCOL_VERSION}" not in storage.submission_dir(ref).parts
 
 
 def test_current_peer_negotiates_current(tmp_path):
@@ -64,8 +59,10 @@ def test_live_map_updates_are_seen_by_storage(tmp_path):
         storage.new_submission_ref(DO_EMAIL, "before.job").protocol_version
         == JOB_PROTOCOL_VERSION
     )
-    live[DO_EMAIL] = _job_schema("0")
-    assert storage.new_submission_ref(DO_EMAIL, "after.job").protocol_version == "0"
+    # A peer that no longer reads our protocol is refused.
+    live[DO_EMAIL] = _job_schema("1", min_supported_version="1")
+    with pytest.raises(MigrationError):
+        storage.new_submission_ref(DO_EMAIL, "after.job")
 
 
 def test_job_client_from_config_passes_schema_lookup_through(tmp_path):
@@ -73,7 +70,7 @@ def test_job_client_from_config_passes_schema_lookup_through(tmp_path):
         syftbox_folder=tmp_path / "SyftBox", current_user_email=DS_EMAIL
     )
     (tmp_path / "SyftBox" / DS_EMAIL).mkdir(parents=True, exist_ok=True)
-    lookup = {DO_EMAIL: _job_schema("0")}.get
+    lookup = {DO_EMAIL: _job_schema(JOB_PROTOCOL_VERSION)}.get
     client = JobClient.from_config(config, peer_schema=lookup)
     assert client.manager.peer_schema is lookup
 
@@ -89,17 +86,17 @@ def test_newer_peer_clamps_to_our_protocol(tmp_path):
 def test_downgrade_write_uses_slim_peer_schema(tmp_path):
     # The write path's downgrade target comes from the slim advertised schema
     # (supported_versions only) — no dependency on current_object_schemas.
-    from syft_job.models import JobSubmissionMetadataV1
+    from syft_job.models import JobSubmissionMetadataV0
     from datetime import datetime, timezone
 
-    storage = _storage(tmp_path, {DO_EMAIL: _job_schema("0")})
-    ref = storage.new_submission_ref(DO_EMAIL, "legacy.job")
-    metadata = JobSubmissionMetadataV1(
-        name="legacy.job",
+    storage = _storage(tmp_path, {DO_EMAIL: _job_schema(JOB_PROTOCOL_VERSION)})
+    ref = storage.new_submission_ref(DO_EMAIL, "slim.job")
+    metadata = JobSubmissionMetadataV0(
+        name="slim.job",
         submitted_by=DS_EMAIL,
         datasite_email=DO_EMAIL,
         submitted_at=datetime.now(tz=timezone.utc),
     )
     path = storage.write_submission(ref, metadata)
     assert path.exists()
-    assert storage.read_submission(ref).name == "legacy.job"
+    assert storage.read_submission(ref).name == "slim.job"

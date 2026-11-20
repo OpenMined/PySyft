@@ -33,9 +33,6 @@ class ProtocolCodec(ABC):
     def review_dir(self, ref: JobRef) -> Path: ...
 
     @abstractmethod
-    def staging_dir(self, ref: JobRef) -> Path: ...
-
-    @abstractmethod
     def submission_metadata_path(self, ref: JobRef) -> Path: ...
 
     @abstractmethod
@@ -47,13 +44,11 @@ class ProtocolCodec(ABC):
     @abstractmethod
     def iter_review_refs(self, datasite_email: str) -> Iterator[JobRef]: ...
 
-    def request_dir(self, ref: RequestRef) -> Path:
-        """Where a request lives. Layouts without requests have none."""
-        raise NotImplementedError(f"protocol {self.version} has no requests")
+    @abstractmethod
+    def request_dir(self, ref: RequestRef) -> Path: ...
 
-    def iter_request_refs(self, datasite_email: str) -> Iterator[RequestRef]:
-        """Requests in requests/; none for a layout without requests."""
-        return iter(())
+    @abstractmethod
+    def iter_request_refs(self, datasite_email: str) -> Iterator[RequestRef]: ...
 
     @abstractmethod
     def read(self, path: Path, canonical_name: str) -> dict: ...

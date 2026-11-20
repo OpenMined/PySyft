@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import io
 
 from pydantic import BaseModel
 
@@ -20,6 +21,15 @@ def normalize_ranges(private) -> list[tuple[int, int]]:
         if hi < lo:
             raise ValueError(f"invalid range [{lo}, {hi}]: end must be >= start")
     return ranges
+
+
+def source_rows(text: str) -> list[str]:
+    """Split ``text`` into rows on ``\\n`` only, as ``tokenize`` counts them.
+
+    Each row keeps its ``\\n``. Unlike ``str.splitlines()``, a form feed or another separator
+    character does not end a row.
+    """
+    return io.StringIO(text).readlines()
 
 
 def row_in_ranges(row: int, ranges) -> bool:

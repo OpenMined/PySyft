@@ -12,17 +12,23 @@ from syft_migration import MigrationError, ProtocolSchema
 from syft_perms.syftperm_context import SyftPermContext
 
 from .config import SyftJobConfig
-from .disclosures import normalize_disclosures
+from .read_permissions import (
+    REQUESTED_READ_PERMISSIONS_HEADER,
+    ReadPermissions,
+    normalize_file_names,
+    validate_read_permissions,
+    job_read_permissions_for,
+    validate_read_permissions_as_do,
+)
 from .install_source import get_syft_install_source
 from .job import JobInfo, JobsList
 from .job_ref import RequestRef
 from .request_info import RequestInfo
-from .migrations.registry import FIRST_PROTOCOL_WITH_REQUESTS
 from .job_storage import JobRef, JobStorage
 from .models import JobState, JobStatus, JobSubmissionMetadata, RequestMetadata
 from .api_requests import receive_request
 from .policies import ApiResolver
-from .review_grants import grant_ds_review_read
+from .review_grants import grant_ds_state_read
 from .submission import (
     RESERVED_CALL_FILES,
     SUBMISSION_ENTRIES,
@@ -30,7 +36,6 @@ from .submission import (
     InvalidSubmissionError,
     OwnerJobRecord,
     code_hash,
-    has_listed_files,
     request_hash,
     lock_for_submitter,
     submission_hash,
@@ -166,16 +171,12 @@ class JobClient(BaseJobClient):
         # until a release grants more.
         ds_review_dir = self.config.get_review_dir(self.current_user_email) / ds_email
         ds_review_dir.mkdir(parents=True, exist_ok=True)
-        grant_ds_review_read(ds_review_dir, ds_email)
+        grant_ds_state_read(ctx, ds_review_dir, ds_email)
 
         return ds_inbox_dir
 
     def setup_ds_request_folder_as_do(self, ds_email: str) -> Path:
-        """Create requests/<ds_email>/ and let the DS write api calls there.
-
-        Safe to call again: a peer approved before requests existed gets the
-        folder when its peers load.
-        """
+        """Create requests/<ds_email>/ and let the DS write api calls there."""
         datasite = self.config.syftbox_folder / self.current_user_email
         ds_requests_dir = (
             self.config.get_requests_dir(self.current_user_email) / ds_email
@@ -233,7 +234,7 @@ class JobClient(BaseJobClient):
     def _new_submission_dir(
         self, submitting_to_email: str, job_name: str
     ) -> tuple[JobRef, Path]:
-        """Resolve inbox/<ds_email>/[v<n>/]<job_name>/ for a new job.
+        """Resolve inbox/<ds_email>/v<n>/<job_name>/ for a new job.
 
         Creates the parent folders, not the job dir itself.
         """
@@ -278,11 +279,6 @@ class JobClient(BaseJobClient):
         if reserved:
             raise ValueError(f"A call can't send {reserved}; they are written for it")
         ref = self.manager.new_request_ref(user, job_name)
-        if int(ref.protocol_version) < int(FIRST_PROTOCOL_WITH_REQUESTS):
-            raise ValueError(
-                f"{user} runs a syft-job release without api calls (job protocol "
-                f"{ref.protocol_version}). Ask them to upgrade."
-            )
         request_dir = self.manager.request_dir(ref)
         # The call becomes a job of the same name in inbox/.
         job_dir = self.manager.submission_dir(ref.job_ref)
@@ -482,7 +478,9 @@ python {entrypoint_path}
         job_name: Optional[str] = "",
         dependencies: Optional[List[str]] = None,
         entrypoint: Optional[str] = None,
-        request_disclosures: Optional[List[str]] = None,
+        share_logs_with_submitter: bool = False,
+        share_outputs_with_submitter: Optional[bool] = None,
+        share_files: Optional[ReadPermissions] = None,
     ) -> Path:
         """
         Submit a Python job for a user (supports both files and folders).
@@ -493,17 +491,32 @@ python {entrypoint_path}
             job_name: Name of the job (directory name). If empty, auto-generated.
             dependencies: List of Python packages to install
             entrypoint: Entry point file name (auto-detected if not provided)
-            request_disclosures: The items in ``DisclosureItem`` to ask the
-                data owner for. The data owner releases none, some, or all.
+            share_logs_with_submitter: Ask the data owner to let you read
+                stdout and stderr.
+            share_outputs_with_submitter: Ask the data owner to let you read
+                the outputs. None (default) means True unless share_files is given.
+            share_files: Instead of the two flags, who should read which run
+                file, as {file: [emails]}, e.g. {"stdout.txt": [me]}. The data
+                owner approves none, some, or all of the request.
 
         Returns:
             Path to the created job directory in inbox/
 
         Raises:
             FileExistsError: If job with same name already exists
-            ValueError: If code_path validation fails
+            ValueError: If code_path validation fails, or share_files comes
+                with a share flag
             FileNotFoundError: If code_path doesn't exist
+            TypeError: If share_files is not {file: [emails]}
         """
+        if share_outputs_with_submitter is None:
+            share_outputs_with_submitter = share_files is None
+        self._check_share_args(
+            share_logs_with_submitter, share_outputs_with_submitter, share_files
+        )
+        requested_read_permissions = self._requested_read_permissions(
+            share_logs_with_submitter, share_outputs_with_submitter, share_files
+        )
         submitting_to_email = user
         # Generate default job name if not provided
         if not job_name:
@@ -569,9 +582,7 @@ python {entrypoint_path}
             is_folder_submission=is_folder_submission,
             code_path=str(code_path_resolved),
             headers={
-                "requested_disclosures": sorted(
-                    normalize_disclosures(request_disclosures)
-                ),
+                REQUESTED_READ_PERMISSIONS_HEADER: requested_read_permissions,
                 SUBMISSION_HASH_HEADER: code_hash(job_dir),
             },
         )
@@ -630,9 +641,50 @@ python {entrypoint_path}
                 return None
 
         self._lock_submission(ref)
-        state = JobState(status=JobStatus.PENDING, received_at=record.received_at)
+        state = JobState(
+            status=JobStatus.PENDING,
+            received_at=record.received_at,
+            requested_read_permissions=self._request_from_submission(ref),
+        )
         self.manager.write_state(ref, state)
         return state
+
+    @staticmethod
+    def _check_share_args(
+        share_logs_with_submitter: bool,
+        share_outputs_with_submitter: bool,
+        share_files: object,
+    ) -> None:
+        """Refuse share_files with a flag, or a share_files that isn't {file: [emails]}."""
+        if share_files is not None and (
+            share_logs_with_submitter or share_outputs_with_submitter
+        ):
+            raise ValueError("Give share_files or the share flags, not both.")
+        validate_read_permissions(normalize_file_names(share_files))
+
+    def _requested_read_permissions(
+        self,
+        share_logs_with_submitter: bool,
+        share_outputs_with_submitter: bool,
+        share_files: object,
+    ) -> ReadPermissions:
+        """The read permissions a submission asks for: share_files, or the flags.
+
+        The file names in share_files are made plain, e.g. "./stderr.txt" -> "stderr.txt".
+        """
+        if share_files is not None:
+            return validate_read_permissions(normalize_file_names(share_files))
+        return job_read_permissions_for(
+            [self.current_user_email],
+            share_logs_with_submitter,
+            share_outputs_with_submitter,
+        )
+
+    def _request_from_submission(self, ref: JobRef) -> ReadPermissions:
+        """The valid part of the submitter's request. Nothing it wrote is approved."""
+        headers = self.manager.read_submission(ref).headers
+        requested_read_permissions = headers.get(REQUESTED_READ_PERMISSIONS_HEADER)
+        return validate_read_permissions_as_do(requested_read_permissions)
 
     def _claim_receipt(self, ref: JobRef) -> Optional[OwnerJobRecord]:
         """Record the received hash once every file arrived, and return the record.
@@ -660,17 +712,17 @@ python {entrypoint_path}
         """Whether every file of the job arrived.
 
         The submitter declares the hash of run.sh and code/ in config.yaml. A
-        submitter from before that header is checked against the file manifest.
+        job without that header is not received here: the job an api call
+        becomes declares none, and its request receives it.
         """
         try:
             metadata = self.manager.read_submission(ref)
         except METADATA_ERRORS:
             return False  # config.yaml is still arriving
-        submission_dir = self.manager.submission_dir(ref)
         declared = metadata.headers.get(SUBMISSION_HASH_HEADER)
-        if declared:
-            return code_hash(submission_dir) == declared
-        return has_listed_files(submission_dir, metadata.files)
+        if not declared:
+            return False
+        return code_hash(self.manager.submission_dir(ref)) == declared
 
     def _request_has_all_files(self, ref: RequestRef) -> bool:
         """Whether every file of the request arrived.
@@ -707,37 +759,14 @@ python {entrypoint_path}
 
         For each job in inbox/ (any protocol layout) that doesn't have a
         corresponding state.yaml in review/, receives it once all its files
-        arrived. A pending job received before submission hashes existed gets
-        its record here, once. A request (an api call) becomes an approved job
-        in inbox/, or is rejected.
+        arrived. A request (an api call) becomes an approved job in inbox/, or
+        is rejected.
         """
         for ref in self.manager.iter_submission_refs(self.current_user_email):
-            if (self.manager.review_dir(ref) / "state.yaml").exists():
-                self._record_received_hash(ref)
-            else:
+            if not (self.manager.review_dir(ref) / "state.yaml").exists():
                 self.receive_job(ref.ds_email, ref.job_name, ref.protocol_version)
         for request_ref in self.manager.iter_request_refs(self.current_user_email):
             receive_request(self, request_ref)
-
-    def _record_received_hash(self, ref: JobRef) -> None:
-        """Record the received hash of a pending job that has no record yet.
-
-        Such a job was received before submission hashes existed, or was sent
-        back to pending because it was approved before them. It gets the lock
-        a new job gets at receipt, once: only the process that creates the
-        record writes it.
-        """
-        if self.manager.owner_record_path(ref).exists():
-            return
-        state = self.manager.read_state(ref)
-        if state.status != JobStatus.PENDING:
-            return
-        record = OwnerJobRecord(
-            received_hash=submission_hash(self.manager.submission_dir(ref)),
-            received_at=state.received_at or datetime.now(timezone.utc),
-        )
-        if self.manager.claim_owner_record(ref, record):
-            self._lock_submission(ref)
 
     # ──────────────────────────────────────────────
     # Listing
