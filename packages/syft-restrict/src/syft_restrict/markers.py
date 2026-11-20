@@ -24,6 +24,7 @@ import io
 import re
 import tokenize
 
+from .astutil import source_rows
 from .errors import MarkerError
 
 __all__ = ["parse_markers"]
@@ -116,7 +117,7 @@ class _MarkerParser:
 
     def feed(self, source: str) -> None:
         markers = _scan_markers(source)
-        for line in range(1, len(source.splitlines()) + 1):
+        for line in range(1, len(source_rows(source)) + 1):
             marker = markers.get(line)
             if marker is None:
                 if self.stack:

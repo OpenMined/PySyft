@@ -40,9 +40,8 @@ PRIVATE_COLLECTION_SUBPATH = Path("private/syft_datasets")
 #   * public (mock)  – mirror + shareable  → peers' watchers pull it.
 #   * private (real) – restore-only + owner-only → the owner restores it for itself;
 #                      peer-facing watchers skip it; it is never shared.
-# Every dataset protocol version this release reads, oldest first. Protocol 0
-# has no path segment and no name infix, so its layout is unchanged byte for
-# byte; protocol n lives under a v<n> segment and writes a v<n> name infix.
+# Every dataset protocol version this release reads, oldest first. Protocol n
+# lives under a v<n> segment and writes a v<n> name infix.
 READABLE_DATASET_PROTOCOL_VERSIONS = [
     version
     for codec_cls in CODECS
@@ -56,10 +55,7 @@ def dataset_layouts(subpath: Path) -> list[CollectionLayout]:
     for version in READABLE_DATASET_PROTOCOL_VERSIONS:
         segment = protocol_dir_name(version)
         layouts.append(
-            CollectionLayout(
-                variant=segment or "",
-                local_subpath=subpath / segment if segment else subpath,
-            )
+            CollectionLayout(variant=segment, local_subpath=subpath / segment)
         )
     return layouts
 
@@ -79,8 +75,15 @@ DATASET_COLLECTION_SPECS = [MOCK_DATASET_SPEC, PRIVATE_DATASET_SPEC]
 
 
 def dataset_variant(protocol_version: str) -> str:
-    """The wire variant of a dataset protocol version. Protocol 0 has none."""
-    return protocol_dir_name(protocol_version) or ""
+    """The wire variant of a dataset protocol version."""
+    return protocol_dir_name(protocol_version)
+
+
+# The wire variants of the protocol versions this release reads. A collection
+# of any other variant was written by a release this one does not support.
+READABLE_DATASET_VARIANTS = frozenset(
+    dataset_variant(version) for version in READABLE_DATASET_PROTOCOL_VERSIONS
+)
 
 
 class SyftRDSClientConfig(BaseModel):
