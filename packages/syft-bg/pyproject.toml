@@ -16,7 +16,7 @@ dependencies = [
     "google-auth-oauthlib>=1.0.0",
     "pydantic>=2.0.0",
     "google-cloud-pubsub>=2.18.0",
-    "syft-job>=0.1.41",
+    "syft-job>=0.1.42",
     "syft-permissions>=0.1.17",
     "syft-rds>=0.6.2",
 ]
