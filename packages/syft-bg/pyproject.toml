@@ -1,6 +1,6 @@
 [project]
 name = "syft-bg"
-version = "0.3.14"
+version = "0.3.15"
 description = "Background services TUI dashboard for SyftBox"
 readme = "README.md"
 authors = [{ name = "OpenMined", email = "info@openmined.org" }]
