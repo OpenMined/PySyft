@@ -10,7 +10,7 @@ dependencies = [
     "pandas",
     "psutil",
     "syft-perms==0.1.17",
-    "syft-migration>=0.1.2",
+    "syft-migration>=0.1.3",
 ]
 
 [project.scripts]
