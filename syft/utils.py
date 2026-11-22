@@ -655,12 +655,13 @@ def bug_report(
     OS details, Python configuration, virtual environments, package managers,
     installed packages, and Jupyter/Colab environment detection.
 
-    The output is safe to share: it prints only versions, paths, and config
-    metadata. No tokens, secrets, or sensitive credentials are included.
+    The output is safe to share: it prints only versions and config
+    metadata. No tokens, secrets, paths, or PII are included.
 
     Args:
         as_dict: If True, return the report as a dictionary instead of printing.
-        redact_paths: If True, redact user-specific paths in the output.
+        redact_paths: Kept for forward and backward compatibility. By design,
+            the generated report contains no user-specific paths or PII to redact.
 
     Returns:
         If as_dict is True, returns a dictionary containing all collected info.
