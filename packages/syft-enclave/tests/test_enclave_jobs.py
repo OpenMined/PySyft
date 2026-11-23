@@ -496,6 +496,29 @@ def test_missing_or_foreign_approval_file_does_not_count(spoil):
     assert enclave.jobs["test_job"].status == "pending"
 
 
+def test_run_jobs_waits_for_every_data_owner():
+    """``run_jobs`` starts a job only once every configured data owner approved
+    it. No other party can write the state or owner record that start a run."""
+    enclave, do1, do2 = _job_distributed_to_both_data_owners()
+    job = enclave.jobs["test_job"]
+    datasite = enclave._rds.syftbox_folder / enclave.email
+    syncer = enclave._rds.sync_engine.datasite_owner_syncer
+    for name in ("state.yaml", "owner_record.json"):
+        path = str((job.job_review_path / name).relative_to(datasite))
+        for party in (do1.email, do2.email, job.submitted_by):
+            assert not syncer.check_write_permission(party, path)
+
+    do1.approve_job(do1.jobs["test_job"])
+    enclave.sync()
+    enclave.run_jobs()
+    assert enclave.jobs["test_job"].status == "pending"
+
+    do2.approve_job(do2.jobs["test_job"])
+    enclave.sync()
+    enclave.run_jobs()
+    assert enclave.jobs["test_job"].status == "done"
+
+
 def test_rejection_rejects_job_and_withdraws_approval():
     enclave, do1, do2 = _job_distributed_to_both_data_owners()
     do1.approve_job(do1.jobs["test_job"])

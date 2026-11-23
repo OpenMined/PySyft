@@ -4,6 +4,8 @@ import re
 from html import escape
 from typing import TYPE_CHECKING, List
 
+from .job_stdout import LOG_TRUNCATION_MESSAGE
+
 if TYPE_CHECKING:
     from .job import JobInfo
 
@@ -81,9 +83,12 @@ class StderrViewer:
 
         lines = content.split("\n")
         if len(lines) <= 3:
-            return content
+            text = content
         else:
-            return f"StderrViewer({len(lines)} lines, {len(content)} chars)"
+            text = f"StderrViewer({len(lines)} lines, {len(content)} chars)"
+        if self.job_info.log_is_truncated("stderr.txt"):
+            text += f"\n{LOG_TRUNCATION_MESSAGE}"
+        return text
 
     def _repr_html_(self) -> str:
         """HTML representation for Jupyter notebooks with scrollable view."""
@@ -121,17 +126,15 @@ class StderrViewer:
             </div>
             """
 
-        html_content = self._convert_ansi_to_html(raw_content)
-        html_content = (
-            html_content.replace("&", "&amp;")
-            .replace('"', "&quot;")
-            .replace("'", "&#x27;")
-        )
+        # Escape the job output first, then convert ANSI codes to HTML spans.
+        html_content = self._convert_ansi_to_html(escape(raw_content))
 
         clean_content = self._strip_ansi_codes(raw_content)
         lines = clean_content.split("\n")
         char_count = len(clean_content)
         line_count = len(lines)
+        if self.job_info.log_is_truncated("stderr.txt"):
+            html_content += f"\n{escape(LOG_TRUNCATION_MESSAGE)}"
 
         return f"""
         <style>
@@ -466,12 +469,7 @@ def job_info_repr_html(job: "JobInfo") -> str:
     policy_details, policy_section = _policy_html(job)
 
     read_permission_details = "".join(
-        f"""
-                    <div class="syftjob-single-detail">
-                        <div class="syftjob-single-detail-label">{escape(label)}:</div>
-                        <div class="syftjob-single-detail-value">{escape(value)}</div>
-                    </div>"""
-        for label, value in job.read_permission_rows()
+        _detail_html(label, value) for label, value in job.read_permissions_repr_rows()
     )
 
     return f"""
@@ -750,10 +748,13 @@ def job_info_repr_html(job: "JobInfo") -> str:
 
 
 def _detail_html(label: str, value: str) -> str:
+    """One detail row. Each line of ``value``, such as one per data owner, shows
+    on its own line."""
+    value_html = "<br>".join(escape(line) for line in value.splitlines())
     return f"""
                     <div class="syftjob-single-detail">
                         <div class="syftjob-single-detail-label">{escape(label)}:</div>
-                        <div class="syftjob-single-detail-value">{escape(value)}</div>
+                        <div class="syftjob-single-detail-value">{value_html}</div>
                     </div>"""
 
 

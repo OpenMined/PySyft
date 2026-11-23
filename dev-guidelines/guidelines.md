@@ -29,6 +29,21 @@ high-level, mid-level and low-level sections below, and so does the `syft-pr-rev
 
 - Keep the condition for doing something in the caller, not inside the function. When the function
   really must check the condition itself, prefix its name with `maybe_`, as in `maybe_do_x()`.
+
+  This also covers a function that returns a value or None, where None means "skip this". Ask the
+  question with a separate function instead:
+
+  ```python
+  # not this
+  note = job._log_note(log_file)
+  if note:
+      text += note
+
+  # but this
+  if job.log_is_truncated(log_file):
+      text += LOG_TRUNCATION_MESSAGE
+  ```
+
 - Aim for 20 lines. A reviewer flags a function or method over 40 lines, unless it:
 
   - makes many calls to other functions,
@@ -64,6 +79,11 @@ high-level, mid-level and low-level sections below, and so does the `syft-pr-rev
 - Keep one source of truth for each piece of state. A cache is the exception.
 - Do not use old names, the names of things that are no longer used.
 - Do not give a new name to something that already has one.
+- A field, name or label means one thing, in data structures and in what users see:
+  - Not something else in another case. The "Approval" row of a job says how it was approved:
+    manual or auto. An enclave job should not use that row to say "every data owner".
+  - Not two things at once. A row that says "every data owner approved; nothing was requested"
+    mixes whether the job was approved with which files were requested.
 
 ### Drive API calls
 

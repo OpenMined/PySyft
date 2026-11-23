@@ -6,16 +6,9 @@ from ..version import PACKAGE_NAME, __version__
 # intentionally distinct from the package name.
 PROTOCOL_NAME = "syft-job"
 
-# Incrementing version of the job protocol. Protocol 0 is the last release
-# without versioning (<= 0.1.38, no v<n> path segment); protocol >= 1 stores
-# jobs under a v<n> segment after the peer email (see config.protocol_dir_name).
-# Protocol 2 adds api calls: requests/ and RequestMetadata.
-# Protocol 3 adds read permissions to JobState (JobStateV2).
-JOB_PROTOCOL_VERSION = "3"
-
-# The first job protocol with api calls. A DS can call an api of a DO only
-# when the two negotiate at least this protocol.
-FIRST_PROTOCOL_WITH_REQUESTS = "2"
+# Incrementing version of the job protocol. Jobs are stored under a v<n>
+# segment after the peer email (see config.protocol_dir_name).
+JOB_PROTOCOL_VERSION = "0"
 
 # Oldest job protocol this release still reads. "0" refuses no peer. Raise it
 # only when the code drops support for a released protocol, because a peer below

@@ -1,4 +1,9 @@
-from syft_migration import MigrationRegistry, MigrationService
+from syft_migration import (
+    MigratableObject,
+    MigrationError,
+    MigrationRegistry,
+    MigrationService,
+)
 
 from syft.version import SYFT_VERSION
 
@@ -9,11 +14,8 @@ PACKAGE_NAME = "syft"
 # that carry it (history/).
 PROTOCOL_NAME = "syft"
 
-# Incrementing version of the syft protocol. Protocol 0 is the last
-# release without per-object versioning (<= 0.1.117, files carry no
-# canonical_name/version identity fields); protocol >= 1 serializes identity
-# fields on every versioned object.
-SYFT_CLIENT_PROTOCOL_VERSION = "1"
+# Incrementing version of the syft protocol.
+SYFT_CLIENT_PROTOCOL_VERSION = "0"
 
 # Oldest syft protocol this release still reads. "0" refuses no peer.
 # Raise it only when the code drops support for a released protocol, because a
@@ -34,11 +36,19 @@ client_registry = MigrationRegistry(
 client_migration_service = MigrationService(registry=client_registry)
 
 
-def load_as_latest(data: dict, canonical_name: str) -> object:
-    """Load ``data`` (defaulting identity fields for protocol-0 files, which
-    predate them and are all version 1) and migrate to the latest version."""
-    data.setdefault("canonical_name", canonical_name)
-    data.setdefault("version", "1")
+def load_current(data: dict, canonical_name: str) -> MigratableObject:
+    """Load ``data`` as a ``canonical_name`` and migrate it to the latest version.
+
+    Raises:
+        MigrationError: when ``data`` is not a ``canonical_name`` of a version this
+            release knows, such as a file written by an unsupported syft release.
+    """
+    found = data.get("canonical_name")
+    if found != canonical_name:
+        raise MigrationError(
+            f"Expected a {canonical_name}, found "
+            f"{found if found else 'data without identity fields'}"
+        )
     obj = client_migration_service.load(data)
     return client_migration_service.migrate(
         obj, client_registry.latest_version(canonical_name)

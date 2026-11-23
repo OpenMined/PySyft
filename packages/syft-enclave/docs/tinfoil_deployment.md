@@ -162,6 +162,9 @@ Prefer `--tag` over the default "latest release" where you can. Unpinned, the re
 
 ## Receipts
 
+> [!NOTE]
+> Receipts are a beta feature. They may still change between releases.
+
 A release of `tinfoil-config-receipts.yml` writes a signed `receipt.dsse.json` into every finished
 job's outputs. The receipt names the code, the dataset file hashes, who took part and approved, the outputs and
 the run, plus what the job itself claims about the model, the eval and its results. The enclave signs it with a Tinfoil attested key, and the submitter can log it on Rekor

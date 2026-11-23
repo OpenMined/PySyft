@@ -14,6 +14,7 @@ import yaml
 os.environ["PRE_SYNC"] = "false"
 
 from syft_job.job import JobInfo  # noqa: E402
+from syft_job.job_stdout import LOG_TRUNCATION_MESSAGE  # noqa: E402
 from syft_job.models import JobState, JobStatus  # noqa: E402
 from syft_job.read_permissions import (  # noqa: E402
     LOGS_WARNING,
@@ -256,13 +257,24 @@ def has_file(client, name):
     return (Path(client.jobs["j"].job_review_path) / name).exists()
 
 
-def readers_of(enclave, name, parties):
-    """The parties that may read ``name`` in the enclave's review folder."""
+def review_file_path(enclave, name):
+    """The path of ``name`` in the enclave's review folder, relative to its datasite."""
     datasite = enclave._rds.syftbox_folder / enclave.email
     review = Path(enclave._rds.job_client.jobs["j"].job_review_path)
-    path = str((review / name).relative_to(datasite))
-    ctx = SyftPermContext(datasite=datasite)
+    return str((review / name).relative_to(datasite))
+
+
+def readers_of(enclave, name, parties):
+    """The parties that may read ``name`` in the enclave's review folder."""
+    ctx = SyftPermContext(datasite=enclave._rds.syftbox_folder / enclave.email)
+    path = review_file_path(enclave, name)
     return [p for p in parties if ctx.can_read(path, p.email)]
+
+
+def enclave_accepts_write(enclave, party, name):
+    """Whether the enclave accepts a change from ``party`` to ``name`` in its review folder."""
+    syncer = enclave._rds.sync_engine.datasite_owner_syncer
+    return syncer.check_write_permission(party.email, review_file_path(enclave, name))
 
 
 def test_submitter_gets_no_logs_without_approval():
@@ -567,6 +579,52 @@ def test_outputs_reach_owner_only_after_every_party_approved():
     assert not has_file(do1, RESULT)
 
 
+def test_output_file_shared_with_owner_and_submitter_reaches_both():
+    """A file under outputs/ named in share_files goes only to its listed readers.
+
+    The submitter names itself too, as documented, to keep the file.
+    """
+    enclave, do1, do2, ds = build_quad()
+    submit(ds, enclave, do1, do2, OK_CODE, {RESULT: [ds.email, do1.email]})
+    distribute(enclave, do1, do2)
+    approve(do1, None)
+    approve(do2, None)
+    run_and_share(enclave, ds, do1, do2)
+
+    assert readers_of(enclave, RESULT, (ds, do1, do2)) == [ds, do1]
+    assert has_file(ds, RESULT)
+    assert has_file(do1, RESULT)
+    assert not has_file(do2, RESULT)
+
+
+SUBMITTER_NOT_NAMED = "share_files doesn't name you"
+
+
+def test_share_files_without_submitter_warns():
+    enclave, do1, do2, ds = build_quad()
+    with pytest.warns(UserWarning, match=SUBMITTER_NOT_NAMED):
+        submit(ds, enclave, do1, do2, OK_CODE, {RESULT: [do1.email]})
+
+
+@pytest.mark.parametrize(
+    "share_args",
+    [
+        lambda ds, do1: {"requested": {RESULT: [ds.email, do1.email]}},
+        lambda ds, do1: {},
+        # The flags build a share_files that names only the data owners.
+        lambda ds, do1: {"share_outputs_with_owners": True},
+    ],
+    ids=["submitter_named", "no_share_files", "owner_flag_only"],
+)
+def test_submission_naming_submitter_or_using_flags_does_not_warn(share_args):
+    enclave, do1, do2, ds = build_quad()
+    with warnings.catch_warnings(record=True) as record:
+        warnings.simplefilter("always")
+        submit(ds, enclave, do1, do2, OK_CODE, **share_args(ds, do1))
+
+    assert not [w for w in record if SUBMITTER_NOT_NAMED in str(w.message)]
+
+
 # -- the job-level calls, same as on a datasite ---------------------------------
 
 
@@ -605,6 +663,11 @@ def test_owner_logs_approval_warns():
         do1.jobs["j"].approve(share_files=logs)
 
 
+def lines(value):
+    """The lines of a row value, in any order."""
+    return set(value.splitlines())
+
+
 def test_display_on_enclave_shows_every_party():
     enclave, do1, do2, ds = build_quad()
     submit(
@@ -614,30 +677,66 @@ def test_display_on_enclave_shows_every_party():
     do1.jobs["j"].approve(share_files=readable(RETURN_CODE, ds.email))
     enclave.sync()
 
-    rows = dict(enclave.jobs["j"].read_permission_rows())
+    rows = dict(enclave.jobs["j"].read_permissions_repr_rows())
     # The request survives the distribution, which writes the approval files.
     assert rows["Requested"] == (
         f"returncode.txt ({ds.email}), stdout.txt ({ds.email})"
     )
-    assert rows[f"Approved by {do1.email}"] == f"returncode.txt ({ds.email})"
-    assert rows[f"Approved by {do2.email}"] == "(pending)"
-    assert rows["Approved by all"] == "none"
+    assert lines(rows["Job approved"]) == {f"{do1.email} ✓", f"{do2.email} pending"}
+    assert lines(rows["Output files approved"]) == {
+        f"{do1.email}: returncode.txt ({ds.email})",
+        f"{do2.email}: none",
+    }
 
 
-def test_display_on_data_owner_shows_own_approval():
+def test_owners_and_submitter_see_every_approval():
     enclave, do1, do2, ds = build_quad()
     return_code = readable(RETURN_CODE, ds.email)
     submit(ds, enclave, do1, do2, OK_CODE, return_code)
-    distribute(enclave, do1)
+    distribute(enclave, do1, do2)
     do1.jobs["j"].approve(share_files=return_code)
+    enclave.sync()
+    do2.sync()
+
+    rows = dict(do2.jobs["j"].read_permissions_repr_rows())
+    assert lines(rows["Job approved"]) == {f"{do1.email} ✓", f"{do2.email} pending"}
+    # A data owner shows the job's status, not its own decision.
+    assert do1.jobs["j"].status == "pending"
+    assert lines(rows["Output files approved"]) == {
+        f"{do1.email}: returncode.txt ({ds.email})",
+        f"{do2.email}: none",
+    }
+
+    do2.jobs["j"].reject("too much\ndata")
+    enclave.sync()
+    do1.sync()
 
     job = do1.jobs["j"]
-    assert job.read_permission_rows() == [
-        ("Requested", f"returncode.txt ({ds.email})"),
-        ("Approved by you", f"returncode.txt ({ds.email})"),
-        ("Approved by all", "needs the approval of every party"),
-    ]
-    assert "Approved by you:" in job._repr_html_()
+    rows = dict(job.read_permissions_repr_rows())
+    # The reason stays on the line of the data owner that rejected.
+    assert lines(rows["Job approved"]) == {
+        f"{do1.email} ✓",
+        f"{do2.email} ✗ (too much data)",
+    }
+    assert lines(rows["Output files approved"]) == {
+        f"{do1.email}: returncode.txt ({ds.email})",
+        f"{do2.email}: none",
+    }
+    assert rows["Job approved"].replace("\n", "<br>") in job._repr_html_()
+    job_approved = " / ".join(rows["Job approved"].splitlines())
+    assert f"Job approved: {job_approved};" in str(job)
+    # The submitter sees the same rows as the data owners.
+    ds.sync()
+    assert ds.jobs["j"].read_permissions_repr_rows() == job.read_permissions_repr_rows()
+    # One rejection rejects the job, for every party.
+    for client in (enclave, do1, do2, ds):
+        assert client.jobs["j"].status == "rejected"
+    # Every party reads every approval file, and a data owner writes only its own.
+    do2_file = enclave_approval_file_name(do2.email)
+    assert readers_of(enclave, do2_file, [do1, do2, ds]) == [do1, do2, ds]
+    assert enclave_accepts_write(enclave, do2, do2_file)
+    assert not enclave_accepts_write(enclave, do1, do2_file)
+    assert not enclave_accepts_write(enclave, ds, do2_file)
 
 
 # -- the request is DS-writable after the approval ------------------------------
@@ -711,9 +810,11 @@ def test_display_lists_party_without_file():
     review = Path(enclave._rds.job_client.jobs["j"].job_review_path)
     (review / enclave_approval_file_name(do2.email)).unlink()
 
-    rows = dict(enclave.jobs["j"].read_permission_rows())
-    assert rows[f"Approved by {do1.email}"] == "(pending)"
-    assert rows[f"Approved by {do2.email}"] == "(no approval file)"
+    rows = dict(enclave.jobs["j"].read_permissions_repr_rows())
+    assert lines(rows["Job approved"]) == {
+        f"{do1.email} pending",
+        f"{do2.email} pending",
+    }
 
 
 def test_job_reject_reaches_enclave():
@@ -786,8 +887,32 @@ def run_crash_sharing_nothing():
 
 
 def request_stderr(do, **request):
-    with pytest.warns(UserWarning, match="stdout or stderr"):
+    with pytest.warns(UserWarning, match="read stderr.txt, as the job wrote it"):
         do.request_stderr(do.jobs["j"], **request)
+
+
+def _log_request_warnings(record):
+    return [str(w.message) for w in record if "This request lets" in str(w.message)]
+
+
+def test_log_request_warning_names_readers():
+    enclave, do1, do2, ds = run_crash_sharing_nothing()
+
+    with pytest.warns(UserWarning) as record:
+        do1.request_stderr(do1.jobs["j"], readers=ds.email, n_chars=1000)
+    assert _log_request_warnings(record) == [
+        f"This request lets {ds.email} read stderr.txt, as the job wrote it. "
+        "The job code can print private data into it. To read it first, "
+        "request it with no readers: the enclave then releases it to the "
+        "data owners only."
+    ]
+
+    with pytest.warns(UserWarning) as record:
+        do1.request_stdout(do1.jobs["j"])
+    assert _log_request_warnings(record) == [
+        "This request lets the enclave's data owners read stdout.txt, as the "
+        "job wrote it. The job code can print private data into it."
+    ]
 
 
 def test_requested_stderr_head_reaches_submitter():
@@ -804,6 +929,24 @@ def test_requested_stderr_head_reaches_submitter():
     assert not has_file(ds, "stderr.txt")
     assert str(ds.jobs["j"].stderr) == full[:10]
     assert ds.jobs["j"].approved_read_permissions == {"stderr_10.txt": [ds.email]}
+    # The viewer says it shows only the first chars.
+    assert ds.jobs["j"].log_is_truncated("stderr.txt")
+    assert repr(ds.jobs["j"].stderr) == f"{full[:10]}\n{LOG_TRUNCATION_MESSAGE}"
+    assert LOG_TRUNCATION_MESSAGE in ds.jobs["j"].stderr._repr_html_()
+
+
+def test_log_head_longer_than_log_not_truncated():
+    enclave, do1, do2, ds = run_crash_sharing_nothing()
+    for do in (do1, do2):
+        request_stderr(do, readers=ds.email, n_chars=100_000)
+    run_and_share(enclave, ds)
+
+    enclave_review = Path(enclave._rds.job_client.jobs["j"].job_review_path)
+    full = (enclave_review / "stderr.txt").read_text()
+    assert has_file(ds, "stderr_100000.txt")
+    assert str(ds.jobs["j"].stderr) == full
+    assert not ds.jobs["j"].log_is_truncated("stderr.txt")
+    assert LOG_TRUNCATION_MESSAGE not in repr(ds.jobs["j"].stderr)
 
 
 def test_one_owner_requesting_log_shares_nothing():
@@ -822,6 +965,7 @@ def test_log_request_defaults_to_data_owners():
     assert readers_of(enclave, "stderr.txt", (ds, do1, do2)) == [do1, do2]
     assert has_file(do1, "stderr.txt")
     assert not has_file(ds, "stderr.txt")
+    assert not do1.jobs["j"].log_is_truncated("stderr.txt")
 
 
 def test_default_log_readers_ignore_owners_named_by_submitter():
@@ -842,3 +986,24 @@ def test_submitter_cannot_request_logs():
     enclave, do1, do2, ds = run_crash_sharing_nothing()
     with pytest.raises(PermissionError, match="Only a data owner"):
         ds.request_stderr(ds.jobs["j"])
+
+
+def test_log_request_says_length_and_rule(capsys):
+    enclave, do1, do2, ds = run_crash_sharing_nothing()
+    capsys.readouterr()
+
+    with pytest.warns(UserWarning):
+        do1.request_stderr(do1.jobs["j"], readers=ds.email, n_chars=1000)
+    assert (
+        "Requested the first 1,000 characters of stderr.txt (n_chars=1000) "
+        f"of job 'j' for {ds.email}.\n"
+        "   The enclave shares it once every data owner makes the same "
+        "request: the same readers and the same n_chars.\n"
+    ) in capsys.readouterr().out
+
+    with pytest.warns(UserWarning):
+        do1.request_stdout(do1.jobs["j"])
+    assert (
+        "Requested all of stdout.txt (n_chars=None) of job 'j' for the "
+        "enclave's data owners."
+    ) in capsys.readouterr().out
