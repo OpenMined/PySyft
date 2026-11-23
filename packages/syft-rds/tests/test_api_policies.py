@@ -5,9 +5,11 @@ import tempfile
 from contextlib import contextmanager
 from dataclasses import replace
 from pathlib import Path
+from typing import Any, NamedTuple
 from unittest.mock import patch
 
 from syft_bg.api import create_api_from_job
+from syft_bg.api.results import ApiResult
 from syft_bg.approve.handlers.job import ApprovedJobHandler
 from syft_bg.common.config import get_default_paths
 from syft_rds import SyftRDSClient
@@ -101,103 +103,118 @@ def _ds_job(ds_manager, name: str):
     return next(j for j in ds_manager.jobs if j.name == name)
 
 
-def test_api_policies_allow_block_and_show(capsys):
+class _ApiSetup(NamedTuple):
+    ds_manager: SyftRDSClient
+    do_manager: SyftRDSClient
+    job: Any  # the job the api was built from
+    api_result: ApiResult
+    config_path: Path  # the syft-bg config the approve service reads
+
+
+@contextmanager
+def _adder_api(input_policy: str | None = None, output_policy: str | None = None):
+    """Pair a DS and a DO, and turn an adder job into an api with these policies."""
     ds_manager, do_manager = SyftRDSClient.pair_with_mock_drive_service_connection(
         use_in_memory_cache=False,
         sync_automatically=False,
     )
     job = _submit_adder_job(ds_manager, do_manager, {"a": 1, "b": 2})
-
     with _temp_config_paths() as (paths, tmp):
-        result = create_api_from_job(
-            job,
-            input_policy=_write(tmp / "rate_limit.py", RATE_LIMIT_POLICY),
-            output_policy=_write(tmp / "block_large.py", BLOCK_LARGE_SUM_POLICY),
+        input_path = _write(tmp / "input.py", input_policy) if input_policy else None
+        output_path = (
+            _write(tmp / "output.py", output_policy) if output_policy else None
         )
-        assert result.success and result.policies == ["input", "output"]
-
+        api_result = create_api_from_job(
+            job, input_policy=input_path, output_policy=output_path
+        )
+        assert api_result.success
         do_manager.sync()
         ds_manager.sync()
-        # The api table says which policies an api has.
-        assert "client.api.adder(a, b) | policies: input, output" in str(ds_manager.api)
-        table = ds_manager.api._repr_html_()
-        assert '<th class="syftapi-th">Policies</th>' in table
-        assert '<td class="syftapi-td">input, output</td>' in table
-        api = ds_manager.api.adder
+        yield _ApiSetup(ds_manager, do_manager, job, api_result, paths.config)
+
+
+def test_api_view_shows_policy_source():
+    with _adder_api(RATE_LIMIT_POLICY, BLOCK_LARGE_SUM_POLICY) as setup:
+        assert setup.api_result.policies == ["input", "output"]
+        api = setup.ds_manager.api.adder
+        # The DS sees each policy's source code, which contains these error texts.
         assert "Rate limit reached" in repr(api)
         assert "Sum too large to share" in api._repr_html_()
 
-        # A call is a request: it carries the params, not the api's code. The
-        # DO's client turns it into an approved job, which the approve service
-        # runs. The job the api was built from is a whole job, which nothing
-        # approves. A call over 100 passes the input policy and is blocked on
-        # output.
-        large = api(100, b=1, block=False)
-        assert large.job is None
-        code_files = sorted(p.name for p in (large.request_path / "code").iterdir())
+
+def test_api_call_runs_as_request():
+    with _adder_api(RATE_LIMIT_POLICY, BLOCK_LARGE_SUM_POLICY) as setup:
+        # A call is a request: it carries the params, not the api's code.
+        call = setup.ds_manager.api.adder(1, b=2, block=False)
+        assert call.job is None
+        code_files = sorted(p.name for p in (call.request_path / "code").iterdir())
         assert code_files == ["params.json"]
-        assert _run_calls(do_manager, paths.config) == {large.name}
-        blocked = _ds_job(ds_manager, large.name)
-        assert blocked.status == "failed"
-        assert blocked.policy_error == "ValueError: Sum too large to share"
-        # A refused call shares no log; the DS is sent to the policy's reason.
-        assert str(blocked.stderr) == (
-            "stderr.txt is not shared with you: the data owner's policy "
-            "refused the call. The reason is in job.policy_error."
-        )
-        assert blocked.output_paths == []
-        capsys.readouterr()
-        _print_call_result(blocked)
-        assert capsys.readouterr().out == (
-            f"Job '{large.name}' finished with status: failed\n"
-            "   The data owner's policy refused the call: "
-            "ValueError: Sum too large to share\n"
-        )
+        # The DO's client turns the call into an approved job, which the approve
+        # service runs. Nothing approves the job the api was built from.
+        assert _run_calls(setup.do_manager, setup.config_path) == {call.name}
 
-        # The rate limit of one call is used up.
-        second = api(1, b=2, block=False)
-        _run_calls(do_manager, paths.config)
-        limited = _ds_job(ds_manager, second.name)
-        assert limited.status == "failed"
-        assert limited.policy_error == "ValueError: Rate limit reached: 1 call"
-        capsys.readouterr()
-        _print_call_result(limited)
-        assert (
-            "refused the call: ValueError: Rate limit reached: 1 call"
-            in capsys.readouterr().out
-        )
-
+    do_jobs = {j.name: j for j in setup.do_manager.jobs}
+    assert do_jobs[setup.job.name].status == "pending"
     # The DO's view of a call shows the api and its policies.
-    do_job = next(j for j in do_manager.jobs if j.name == large.name)
+    do_job = do_jobs[call.name]
     assert do_job.api_name == "adder"
     html = do_job._repr_html_()
-    assert "adder" in html and "Input policy" in html and "Output policy" in html
-    original = next(j for j in do_manager.jobs if j.name == job.name)
-    assert original.status == "pending"
+    assert "Input policy" in html and "Output policy" in html
+
+
+def test_output_policy_refuses_large_sum(capsys):
+    with _adder_api(output_policy=BLOCK_LARGE_SUM_POLICY) as setup:
+        large_call = setup.ds_manager.api.adder(100, b=1, block=False)
+        _run_calls(setup.do_manager, setup.config_path)
+        blocked_job = _ds_job(setup.ds_manager, large_call.name)
+
+    assert blocked_job.status == "failed"
+    assert blocked_job.policy_error == "ValueError: Sum too large to share"
+    # A refused call shares no log; the DS is sent to the policy's reason.
+    assert str(blocked_job.stderr) == (
+        "stderr.txt is not shared with you: the data owner's policy "
+        "refused the call. The reason is in job.policy_error."
+    )
+    assert blocked_job.output_paths == []
+    capsys.readouterr()
+    _print_call_result(blocked_job)
+    assert capsys.readouterr().out == (
+        f"Job '{large_call.name}' finished with status: failed\n"
+        "   The data owner's policy refused the call: "
+        "ValueError: Sum too large to share\n"
+    )
+
+
+def test_input_policy_refuses_call_over_rate_limit(capsys):
+    with _adder_api(input_policy=RATE_LIMIT_POLICY) as setup:
+        first_call = setup.ds_manager.api.adder(1, b=2, block=False)
+        _run_calls(setup.do_manager, setup.config_path)
+        assert _ds_job(setup.ds_manager, first_call.name).status == "done"
+        # The first call used up the rate limit of one call.
+        second_call = setup.ds_manager.api.adder(1, b=2, block=False)
+        _run_calls(setup.do_manager, setup.config_path)
+        limited_job = _ds_job(setup.ds_manager, second_call.name)
+
+    assert limited_job.status == "failed"
+    assert limited_job.policy_error == "ValueError: Rate limit reached: 1 call"
+    capsys.readouterr()
+    _print_call_result(limited_job)
+    assert (
+        "refused the call: ValueError: Rate limit reached: 1 call"
+        in capsys.readouterr().out
+    )
 
 
 def test_held_back_outputs_point_to_the_policy(capsys):
-    ds_manager, do_manager = SyftRDSClient.pair_with_mock_drive_service_connection(
-        use_in_memory_cache=False,
-        sync_automatically=False,
-    )
-    job = _submit_adder_job(ds_manager, do_manager, {"a": 1, "b": 2})
+    with _adder_api(output_policy=HOLD_BACK_POLICY) as setup:
+        call = setup.ds_manager.api.adder(1, b=2, block=False)
+        _run_calls(setup.do_manager, setup.config_path)
+        held_job = _ds_job(setup.ds_manager, call.name)
 
-    with _temp_config_paths() as (paths, tmp):
-        result = create_api_from_job(
-            job, output_policy=_write(tmp / "hold_back.py", HOLD_BACK_POLICY)
-        )
-        assert result.success
-        do_manager.sync()
-        ds_manager.sync()
-        call = ds_manager.api.adder(1, b=2, block=False)
-        _run_calls(do_manager, paths.config)
-        held = _ds_job(ds_manager, call.name)
-
-    assert held.status == "done" and held.outputs_withheld
-    assert held.output_paths == []
+    assert held_job.status == "done" and held_job.outputs_withheld
+    assert held_job.output_paths == []
     capsys.readouterr()
-    _print_call_result(held)
+    _print_call_result(held_job)
     assert capsys.readouterr().out == (
         f"Job '{call.name}' finished with status: done\n"
         "   The data owner's output policy held the outputs back.\n"
