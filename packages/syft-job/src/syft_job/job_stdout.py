@@ -1,11 +1,16 @@
 from __future__ import annotations
 
+import html
 import re
 from html import escape
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .job import JobInfo
+
+LOG_TRUNCATION_MESSAGE = (
+    "[truncated: the data owners shared only the start of this log]"
+)
 
 
 class StdoutViewer:
@@ -88,9 +93,12 @@ class StdoutViewer:
 
         lines = content.split("\n")
         if len(lines) <= 3:
-            return content
+            text = content
         else:
-            return f"StdoutViewer({len(lines)} lines, {len(content)} chars)"
+            text = f"StdoutViewer({len(lines)} lines, {len(content)} chars)"
+        if self.job_info.log_is_truncated("stdout.txt"):
+            text += f"\n{LOG_TRUNCATION_MESSAGE}"
+        return text
 
     def _repr_html_(self) -> str:
         """HTML representation for Jupyter notebooks with scrollable view."""
@@ -130,23 +138,18 @@ class StdoutViewer:
             </div>
             """
 
-        # Convert ANSI codes to HTML for display
-        html_content = self._convert_ansi_to_html(raw_content)
-
-        # Escape any remaining HTML characters that aren't our color spans
-        # We need to be careful not to escape our intentional HTML
-        html_content = (
-            html_content.replace("&", "&amp;")
-            .replace('"', "&quot;")
-            .replace("'", "&#x27;")
-        )
-        # Don't escape < and > since we want our HTML spans to work
+        # Escape the job output first, then convert ANSI codes to HTML spans.
+        # ANSI escape sequences contain no HTML special characters, so they
+        # survive escaping and the generated spans stay intact.
+        html_content = self._convert_ansi_to_html(html.escape(raw_content))
 
         # Count lines and characters (use clean content for stats)
         clean_content = self._strip_ansi_codes(raw_content)
         lines = clean_content.split("\n")
         char_count = len(clean_content)
         line_count = len(lines)
+        if self.job_info.log_is_truncated("stdout.txt"):
+            html_content += f"\n{html.escape(LOG_TRUNCATION_MESSAGE)}"
 
         return f"""
         <style>

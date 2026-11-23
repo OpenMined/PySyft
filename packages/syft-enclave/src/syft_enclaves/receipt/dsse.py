@@ -25,9 +25,18 @@ from syft_enclaves.receipt.key_binding import KeyBindingError, bound_key
 #: The payload is an in-toto statement, so it carries in-toto's payload type.
 PAYLOAD_TYPE = "application/vnd.in-toto+json"
 
+#: Why verify_receipt refuses a receipt unless the caller allows unattested ones.
+UNATTESTED_RECEIPT_MESSAGE = (
+    "verify_receipt cannot check yet that an enclave made this receipt: it does "
+    "not check the hardware signature on the receipt's report, or which enclave "
+    "image made it, so anyone can make a receipt that passes. Pass "
+    "allow_unattested=True to check only that the receipt is signed by the key "
+    "its own report lists."
+)
+
 
 class ReceiptVerificationError(Exception):
-    """The receipt was not signed by the key it was checked against."""
+    """The receipt failed a check, or the caller did not allow an unattested one."""
 
 
 def pae(payload_type: str, payload: bytes) -> bytes:
@@ -58,8 +67,27 @@ def sign_receipt(receipt: dict[str, Any], private_key: Ed25519PrivateKey) -> dic
     }
 
 
-def verify_receipt(envelope: dict[str, Any]) -> dict:
-    """Check *envelope* was signed by the key its report lists; return the receipt."""
+def verify_receipt(envelope: dict[str, Any], *, allow_unattested: bool = False) -> dict:
+    """Check *envelope* was signed by the key its report lists; return the receipt.
+
+    This does not check the hardware signature on the report, or which enclave
+    image made the receipt, so it does not prove an enclave made it: anyone can
+    sign a receipt with their own key and a report they wrote.
+
+    Args:
+        envelope: The DSSE envelope from ``receipt.dsse.json``.
+        allow_unattested: Accept a receipt whose report is not checked against
+            the hardware. ``verify_receipt`` refuses without it.
+
+    Returns:
+        The receipt, an in-toto statement.
+
+    Raises:
+        ReceiptVerificationError: ``allow_unattested`` is False, or the receipt
+            is not signed by the key its report lists.
+    """
+    if not allow_unattested:
+        raise ReceiptVerificationError(UNATTESTED_RECEIPT_MESSAGE)
     if envelope.get("payloadType") != PAYLOAD_TYPE:
         raise ReceiptVerificationError(
             f"not a receipt: {envelope.get('payloadType')!r}"

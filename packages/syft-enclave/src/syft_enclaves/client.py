@@ -9,6 +9,7 @@ from syft_job.read_permissions import (
     OUTPUTS,
     ReadPermissions,
     merge_read_permissions,
+    warn_if_submitter_not_named,
 )
 from syft_job.job import JobInfo, JobsList
 from syft_job.job_storage import JobRef
@@ -433,6 +434,8 @@ class SyftEnclaveClient:
             share_files=share_files,
             **kwargs,
         )
+        if share_files:
+            warn_if_submitter_not_named(share_files, self.email)
         self._rds.sync_engine.push_job_files(job_dir)
 
     def _check_can_submit_to(self, enclave_email: str, ignore_peer_version: bool):
@@ -641,8 +644,8 @@ class SyftEnclaveClient:
         """Ask the enclave to share the job's stderr, or only its first ``n_chars`` chars.
 
         Only a data owner can ask. The enclave shares it once every data owner
-        made the same request. ``readers`` None means the data owners this
-        enclave is configured with.
+        made the same request: the same readers and the same ``n_chars``.
+        ``readers`` None means the data owners this enclave is configured with.
         """
         self._request_log(job, "stderr.txt", readers, n_chars)
 
@@ -729,26 +732,26 @@ class SyftEnclaveClient:
         )
 
     def _forward_review_files_to_dos(self, review_dir: Path, do_emails: list[str]):
-        """Forward each DO its approval state file, with the job's state.
+        """Forward each DO the approval state file of every DO, with the job's state.
 
-        The state holds the submitter's request, which a DO approves within.
+        The state holds the submitter's request, which a DO approves within. The
+        approval files of the other DOs show a DO who approved the job, and which
+        files.
         """
         datasite_dir = self._rds.syftbox_folder / self._rds.email
         syncer = self._rds.sync_engine.datasite_owner_syncer
-        state_file = review_dir / "state.yaml"
-        for do_email in do_emails:
-            approval_file = review_dir / enclave_approval_file_name(do_email)
-            files_by_datasite_path = {
-                f.relative_to(datasite_dir): f.read_bytes()
-                for f in (approval_file, state_file)
-            }
-            events_message = syncer.event_cache.create_events_for_files(
-                files_by_datasite_path
-            )
-            syncer.process_events_for_own_state_and_peers(
-                recipients=[do_email],
-                file_change_events_message=events_message,
-            )
+        approval_files = [review_dir / enclave_approval_file_name(e) for e in do_emails]
+        files_by_datasite_path = {
+            f.relative_to(datasite_dir): f.read_bytes()
+            for f in (*approval_files, review_dir / "state.yaml")
+        }
+        events_message = syncer.event_cache.create_events_for_files(
+            files_by_datasite_path
+        )
+        syncer.process_events_for_own_state_and_peers(
+            recipients=do_emails,
+            file_change_events_message=events_message,
+        )
 
     def _get_files_in_dir(self, directory: Path) -> dict[Path, bytes]:
         """Read all files under directory, keyed by path relative to the datasite root."""
@@ -785,8 +788,9 @@ class SyftEnclaveClient:
         approval_dos: list[str],
     ):
         """Grant inbox read to everyone who needs to see the job (referenced +
-        approving DOs), state read to them and the submitter, and write to each
-        approving DO on its own approval and log request files."""
+        approving DOs), state read to them and the submitter, write to each
+        approving DO on its own approval and log request files, and read to the
+        submitter and every approving DO on every approval file."""
         job_manager = self._rds.job_client.manager
         datasite = self._rds.syftbox_folder / self._rds.email
         ctx = SyftPermContext(datasite=datasite)
@@ -807,6 +811,13 @@ class SyftEnclaveClient:
                 log_request_file_name(do_email),
             ):
                 ctx.open(review_rel / name).grant_write_access(do_email)
+
+        # Each DO and the submitter show who approved the job, and which files.
+        approval_readers = list(dict.fromkeys([ref.ds_email, *approval_dos]))
+        for party in approval_dos:
+            approval_file = ctx.open(review_rel / enclave_approval_file_name(party))
+            for email in approval_readers:
+                approval_file.grant_read_access(email)
 
     @classmethod
     def from_config(

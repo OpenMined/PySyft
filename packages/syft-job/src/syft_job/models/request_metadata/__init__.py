@@ -1,9 +1,9 @@
-from .v1 import RequestMetadataV1
+from .v0 import RequestMetadataV0
 
 # The current version of the request metadata object.
-RequestMetadata = RequestMetadataV1
+RequestMetadata = RequestMetadataV0
 
 __all__ = [
     "RequestMetadata",
-    "RequestMetadataV1",
+    "RequestMetadataV0",
 ]

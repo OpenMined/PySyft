@@ -20,4 +20,4 @@ class DatasetRef:
 
     owner: str  # datasite email of the DO who owns the dataset
     name: str
-    protocol_version: str  # "0" (no path segment) or "1"+ (v<n> segment)
+    protocol_version: str  # names the v<n> path segment

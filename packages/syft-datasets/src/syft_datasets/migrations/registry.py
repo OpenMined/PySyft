@@ -6,11 +6,9 @@ from ..version import PACKAGE_NAME, __version__
 # intentionally distinct from the package name.
 PROTOCOL_NAME = "syft-dataset"
 
-# Incrementing version of the dataset protocol. Protocol 0 is the last release
-# without versioning (syft-client 0.1.117 / syft-dataset 0.1.20, no v<n> path
-# segment); protocol >= 1 stores datasets under a v<n> segment after the
-# syft_datasets folder (see config.protocol_dir_name).
-DATASET_PROTOCOL_VERSION = "1"
+# Incrementing version of the dataset protocol. Datasets are stored under a
+# v<n> segment after the syft_datasets folder (see config.protocol_dir_name).
+DATASET_PROTOCOL_VERSION = "0"
 
 # Oldest dataset protocol this release still reads. "0" refuses no peer. Raise it
 # only when the code drops support for a released protocol, because a peer below

@@ -1,10 +1,9 @@
 """Tests for SyftDatasetManager and JobsList repr and indexing."""
 
-import warnings
-
 import pytest
 
 from syft_rds import SyftRDSClient
+from syft_job.migrations.registry import JOB_PROTOCOL_VERSION
 from syft_job.job import JobInfo, JobsList
 from dataset_test_utils import create_tmp_dataset_files
 
@@ -168,7 +167,7 @@ def _make_job_info(
         datasite_email=owner_email,
         ds_email=ds_email,
         job_name=name,
-        protocol_version="1",
+        protocol_version=JOB_PROTOCOL_VERSION,
     )
     return JobInfo(
         job_metadata=submission_config,
@@ -296,30 +295,6 @@ def test_jobs_list_getitem_submitter_narrows_one_datasite():
 
     job = jobs["test@test.com"]["ds2@test.com"]["analysis"]
     assert job.submitted_by == "ds2@test.com"
-
-
-def test_jobs_list_getitem_legacy_name_with_at_warns():
-    """A job named before the '@' ban must stay readable, and say it is on notice.
-
-    Nothing warned the submitter at the time, so the name is already on disk.
-    The email key answers first; only a key no party answers to falls back.
-    """
-    jobs = JobsList(
-        [
-            _make_job_info(
-                "report@2026-09", owner_email="do@test.com", ds_email="ds@test.com"
-            )
-        ],
-        root_email="do@test.com",
-    )
-    with pytest.warns(DeprecationWarning, match="deprecated"):
-        job = jobs["report@2026-09"]
-    assert job.name == "report@2026-09"
-
-    # A real party still wins the key, and warns about nothing.
-    with warnings.catch_warnings():
-        warnings.simplefilter("error")
-        assert len(jobs["do@test.com"]) == 1
 
 
 def test_hint_prefers_pending_job_over_unique_name():

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import warnings
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable, Iterable, Optional
@@ -24,7 +25,9 @@ from syft_enclaves.log_requests import (
     LogRequest,
     RequestedPermissionsUpdate,
     load_log_request,
+    log_head_length,
     log_request_file_name,
+    log_request_warning,
     longest_log_head,
 )
 
@@ -94,9 +97,9 @@ class EnclaveJobInfo(JobInfo):
     """Enclave-specific JobInfo with multi-party approval logic.
 
     ``_required_approvers`` is set only on the enclave, which runs the job:
-    there every configured data owner must approve this exact submission. A
-    data owner's client holds only its own approval file, so it keeps showing
-    the status of the files it has.
+    there every configured data owner must approve this exact submission. Each
+    data owner and the submitter hold every approval file, and read the status
+    from the files they hold.
     """
 
     _required_approvers: Optional[list[str]] = None
@@ -178,18 +181,19 @@ class EnclaveJobInfo(JobInfo):
 
     @property
     def status(self) -> str:
+        """The job's status, the same on the enclave, each data owner and the submitter.
+
+        The runner records running, done and failed in the state. Before that,
+        the status comes from the approval files, as ``_party_approvals`` picks
+        them: on the enclave, of every data owner it is configured with.
+        """
         if self._state.status in (JobStatus.DONE, JobStatus.FAILED, JobStatus.RUNNING):
             return self._state.status.value
-        if self._required_approvers is not None:
-            return self._status_from_required_approvers(self._required_approvers)
-        approvals = load_enclave_approval_files(self.job_review_path)
-        if not approvals:
+        approvals = _party_approvals(self.job_review_path, self._required_approvers)
+        if not approvals and self._required_approvers is None:
+            # Off the enclave, before it distributed the job: its state is pending.
             return self._state.status.value
-        if any(a.status == JobStatus.REJECTED for a in approvals):
-            return JobStatus.REJECTED.value
-        if all(a.status == JobStatus.APPROVED for a in approvals):
-            return JobStatus.APPROVED.value
-        return JobStatus.PENDING.value
+        return self._status_from_approvals([a for _, a in approvals])
 
     @property
     def can_approve(self) -> bool:
@@ -200,15 +204,18 @@ class EnclaveJobInfo(JobInfo):
         """
         return self._approval_file.exists()
 
-    def _status_from_required_approvers(self, required: list[str]) -> str:
-        """Approved only when every required party approved this exact submission.
+    def _status_from_approvals(
+        self, approvals: list[Optional[PartyApprovalStatus]]
+    ) -> str:
+        """Approved only when every party approved this exact submission.
 
         A missing or unreadable approval file counts as no approval, so removing
         a file never stands in for consent. A rejection from any party wins.
+        With no party to approve, as on an enclave with no data owners
+        configured, the job is never approved.
         """
-        if not required:
+        if not approvals:
             return JobStatus.PENDING.value
-        approvals = [load_party_approval(self.job_review_path, p) for p in required]
         if any(a is not None and a.status == JobStatus.REJECTED for a in approvals):
             return JobStatus.REJECTED.value
         current = submission_hash(self.job_submission_path)
@@ -216,27 +223,29 @@ class EnclaveJobInfo(JobInfo):
             return JobStatus.APPROVED.value
         return JobStatus.PENDING.value
 
-    def read_permission_rows(self) -> list[tuple[str, str]]:
+    def read_permissions_repr_rows(self) -> list[tuple[str, str]]:
         """The read permission state as (label, value) rows, for display.
 
-        The enclave shows the approval of every party and what all approved.
-        A data owner shows its own approval.
+        Once the enclave has distributed the job, the enclave, each data owner
+        and the submitter also show, with a line per data owner, whether it
+        approved the job and which output files it approved.
         """
         rows = [("Requested", format_read_permissions(self.requested_read_permissions))]
-        if self.current_user_email == self.datasite_owner_email:
-            return rows + self._party_rows()
-        if self._approval_file.exists():
-            own = format_read_permissions(self.approved_read_permissions)
-            rows.append(("Approved by you", own))
-            rows.append(("Approved by all", "needs the approval of every party"))
-        return rows
-
-    def _party_rows(self) -> list[tuple[str, str]]:
-        """Each party's approval, then what every party approved."""
-        approvals = _party_approvals(self.job_review_path, self._required_approvers)
-        rows = [(f"Approved by {p}", _approval_summary(a)) for p, a in approvals]
-        shared = format_read_permissions(self.read_permissions_to_share)
-        return [*rows, ("Approved by all", shared)]
+        # A party without a valid approval file has not approved: it shows as pending.
+        approvals = [
+            approval or PartyApprovalStatus(party=party)
+            for party, approval in _party_approvals(
+                self.job_review_path, self._required_approvers
+            )
+        ]
+        if not approvals:
+            return rows
+        job_lines = [_job_approval_line(a) for a in approvals]
+        file_lines = [f"{a.party}: {_approved_output_files(a)}" for a in approvals]
+        return rows + [
+            ("Job approved", "\n".join(job_lines)),
+            ("Output files approved", "\n".join(file_lines)),
+        ]
 
     def _restrict_to_request(
         self, read_permissions: Optional[ReadPermissions]
@@ -326,8 +335,9 @@ class EnclaveJobInfo(JobInfo):
     ) -> None:
         """Ask the enclave to share ``log_file``, or only its first ``n_chars`` chars.
 
-        The enclave shares it once every data owner made the same request.
-        ``readers`` None means the data owners the enclave is configured with.
+        The enclave shares it once every data owner made the same request: the
+        same readers and the same ``n_chars``. ``readers`` None means the data
+        owners the enclave is configured with.
 
         Raises:
             PermissionError: If the caller is not a data owner of this job.
@@ -340,10 +350,23 @@ class EnclaveJobInfo(JobInfo):
         if log_file not in REQUESTABLE_LOGS:
             raise ValueError(f"Request one of {REQUESTABLE_LOGS}, not {log_file!r}.")
         request = LogRequest(readers=readers, n_chars=n_chars)
-        warn_on_logs_release({log_file: request.readers or []})
+        warnings.warn(
+            log_request_warning(log_file, request.readers), UserWarning, stacklevel=2
+        )
         self._save_own_log_request(log_file, request)
-        who = request.readers or "the enclave's data owners"
-        print(f"Requested {log_file} of job '{self.name}' for {who}.")
+        if request.n_chars is None:
+            what = f"all of {log_file} (n_chars=None)"
+        else:
+            what = (
+                f"the first {request.n_chars:,} characters of {log_file} "
+                f"(n_chars={request.n_chars})"
+            )
+        who = ", ".join(request.readers or []) or "the enclave's data owners"
+        print(f"Requested {what} of job '{self.name}' for {who}.")
+        print(
+            "   The enclave shares it once every data owner makes the same "
+            "request: the same readers and the same n_chars."
+        )
 
     def _save_own_log_request(self, log_file: str, request: LogRequest) -> None:
         """Replace this party's request for ``log_file``, and push the file."""
@@ -362,6 +385,18 @@ class EnclaveJobInfo(JobInfo):
         # The data owners may have shared only the first chars of the log.
         return longest_log_head(self.job_review_path, log_file) or full
 
+    def log_is_truncated(self, log_file: str) -> bool:
+        """Whether the viewers show only the first chars of ``log_file``.
+
+        True when the data owners shared a copy of the first ``n_chars`` chars
+        that is ``n_chars`` long. A shorter copy holds the whole log.
+        """
+        path = self._log_path(log_file)
+        n_chars = log_head_length(path, log_file)
+        if n_chars is None:
+            return False
+        return len(path.read_text(errors="replace")) >= n_chars
+
     def reject(self, reason: Optional[str] = None) -> None:
         """Reject this job in the DO's own approval file.
 
@@ -379,12 +414,23 @@ class EnclaveJobInfo(JobInfo):
         print(f"Job '{self.name}' rejected by {self.current_user_email}.")
 
 
-def _approval_summary(approval: Optional[PartyApprovalStatus]) -> str:
-    """One party's approval for display, or why it has none."""
-    if approval is None:
-        return "(no approval file)"
+def _job_approval_line(approval: PartyApprovalStatus) -> str:
+    """The party, then ✓ when it approved the job, ✗ and its reason when it
+    rejected it, and pending otherwise."""
+    party = approval.party
+    if approval.status == JobStatus.APPROVED:
+        return f"{party} ✓"
+    if approval.status != JobStatus.REJECTED:
+        return f"{party} pending"
+    # On one line, so that each party keeps one line.
+    reason = " ".join((approval.reason or "").split())
+    return f"{party} ✗ ({reason})" if reason else f"{party} ✗"
+
+
+def _approved_output_files(approval: PartyApprovalStatus) -> str:
+    """The output files the party approved, for display; "none" until it approved."""
     if approval.status != JobStatus.APPROVED:
-        return f"({approval.status.value})"
+        return format_read_permissions({})
     return format_read_permissions(approval.approved_read_permissions)
 
 
