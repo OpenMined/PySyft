@@ -11,6 +11,7 @@ from typing import Any, Callable, List, Optional, cast
 from pydantic import BaseModel, ConfigDict, PrivateAttr
 
 from syft.sync.callback_mixin import BaseModelCallbackMixin
+from syft.sync.connections.config import ConnectionRouterConfig
 from syft.sync.connections.connection_router import ConnectionRouter
 from syft.sync.connections.drive import mock_drive_service
 from syft.sync.connections.drive.drive_cached_client import DriveCachedClient
@@ -23,6 +24,37 @@ from syft.sync.connections.drive.drive_owner_store import DriveOwnerStoreConnect
 from syft.sync.connections.drive.drive_p2p import DriveP2PConnection
 from syft.sync.connections.drive.drive_peering import DrivePeeringConnection
 from syft.sync.connections.drive.grdrive_config import GdriveConnectionConfig
+from syft.sync.connections.protocols import Connections
+from syft.sync.connections.webrtc.firebase.auth import (
+    FirebaseSession,
+    firebase_session_path,
+    load_refresh_token,
+)
+from syft.sync.connections.webrtc.firebase.firestore import FirestoreClient
+from syft.sync.connections.webrtc.firebase.firestore_peering import (
+    FirestorePeeringConfig,
+    FirestorePeeringConnection,
+)
+from syft.sync.connections.webrtc.firebase.firestore_signaling import (
+    FirestoreSignaling,
+)
+from syft.sync.connections.webrtc.firebase.project import FirebaseProject
+from syft.sync.connections.webrtc.firebase.turn import TurnFunction, no_ice_servers
+from syft.sync.connections.webrtc.local_owner_store import (
+    OWNER_STORE_PATH,
+    LocalOwnerStoreConnection,
+)
+from syft.sync.connections.webrtc.mock.fake_peer_connections import (
+    FakeNetwork,
+    FakePeerConnections,
+)
+from syft.sync.connections.webrtc.peer_connections import PeerConnections
+from syft.sync.connections.webrtc.signaling.local_signaling import LocalSignaling
+from syft.sync.connections.webrtc.signaling.signaling import IceServerSource
+from syft.sync.connections.webrtc.webrtc_collections import WebRTCCollectionsConnection
+from syft.sync.connections.webrtc.webrtc_config import WebRTCConfig
+from syft.sync.connections.webrtc.webrtc_p2p import WebRTCP2PConnection
+from syft.sync.encryption_policy import EncryptionPolicy
 from syft.sync.events.file_change_event import (
     FileChangeEvent,
     FileChangeEventsMessage,
@@ -31,8 +63,10 @@ from syft.sync.file_writer import FileWriter
 from syft.sync.job_file_change_handler import JobFileChangeHandler
 from syft.sync.peers.peer import Peer, PeerNotReadyError
 from syft.sync.peers.peer_list import PeerList
-from syft.sync.encryption_policy import EncryptionPolicy
+from syft.sync.peers.peer_store import PeerStore
 from syft.sync.platforms.base_platform import BasePlatform
+from syft.sync.platforms.gdrive_files_platform import GdriveFilesPlatform
+from syft.sync.platforms.webrtc_platform import WebRTCPlatform
 from syft.sync.sync.caches.datasite_owner_cache import (
     DataSiteOwnerEventCacheConfig,
 )
@@ -50,33 +84,15 @@ from syft.sync.sync.datasite_watcher_syncer import (
     DatasiteWatcherSyncerConfig,
 )
 from syft.sync.utils.path_filters import is_normal_syncable_path
+from syft.sync.utils.syftbox_utils import (
+    random_email,
+    random_syftbox_folder_for_testing,
+)
 from syft.sync.utils.waiting import (
     DEFAULT_POLL_INTERVAL,
     DEFAULT_WAIT_TIMEOUT,
     poll_until,
 )
-from syft.sync.utils.syftbox_utils import (
-    random_email,
-    random_syftbox_folder_for_testing,
-)
-from syft.sync.peers.peer_store import PeerStore
-from syft.sync.connections.config import ConnectionRouterConfig
-from syft.sync.platforms.gdrive_files_platform import GdriveFilesPlatform
-from syft.sync.connections.protocols import Connections
-from syft.sync.connections.webrtc.mock.fake_peer_connections import (
-    FakeNetwork,
-    FakePeerConnections,
-)
-from syft.sync.connections.webrtc.signaling.local_signaling import LocalSignaling
-from syft.sync.connections.webrtc.peer_connections import PeerConnections
-from syft.sync.connections.webrtc.local_owner_store import (
-    OWNER_STORE_PATH,
-    LocalOwnerStoreConnection,
-)
-from syft.sync.connections.webrtc.webrtc_collections import WebRTCCollectionsConnection
-from syft.sync.connections.webrtc.webrtc_config import WebRTCConfig
-from syft.sync.connections.webrtc.webrtc_p2p import WebRTCP2PConnection
-from syft.sync.platforms.webrtc_platform import WebRTCPlatform
 from syft.sync.version.peer_manager import (
     PeerManager,
     PeerManagerConfig,
@@ -665,25 +681,29 @@ class SyftboxManager(BaseModelCallbackMixin):
     def _webrtc_connections(
         config: SyftboxManagerConfig, webrtc: WebRTCConfig
     ) -> Connections:
-        """Every connection of the router in WebRTC mode, with no Google Drive."""
-        # Imported here: aiortc and websockets are in the optional webrtc extra.
+        """Every connection of the router in WebRTC mode, with no Google Drive.
+
+        The login saved a Firebase session for the project of ``webrtc``.
+        """
+        # Imported here: aiortc is in the optional webrtc extra.
         from syft.sync.connections.webrtc.real.aiortc_peer_connections import (
             AiortcPeerConnections,
         )
-        from syft.sync.connections.webrtc.server_peering import (
-            ServerPeeringConfig,
-            ServerPeeringConnection,
-        )
-        from syft.sync.connections.webrtc.signaling.server_signaling import (
-            ServerSignaling,
-        )
 
-        p2p = WebRTCP2PConnection(config.email, config.syftbox_folder)
-        signaling = ServerSignaling(webrtc)
-        p2p.open(AiortcPeerConnections(signaling, sends_offers=config.has_ds_role))
-        peering_config = ServerPeeringConfig(
-            webrtc, config.email, config.syftbox_folder
+        project = FirebaseProject.from_config(webrtc)
+        session_path = firebase_session_path(config.syftbox_folder, project.project_id)
+        session = FirebaseSession(
+            project, session_path, load_refresh_token(session_path)
         )
+        firestore = FirestoreClient(project, session)
+        if project.turn_function_url is None:
+            ice_server_source: IceServerSource = no_ice_servers
+        else:
+            ice_server_source = TurnFunction(project.turn_function_url, session)
+        signaling = FirestoreSignaling(firestore, ice_server_source)
+        p2p = WebRTCP2PConnection(config.email, config.syftbox_folder)
+        p2p.open(AiortcPeerConnections(signaling, sends_offers=config.has_ds_role))
+        peering_config = FirestorePeeringConfig(config.email, config.syftbox_folder)
         return Connections(
             p2p_con=p2p,
             owner_store_con=LocalOwnerStoreConnection(
@@ -691,7 +711,7 @@ class SyftboxManager(BaseModelCallbackMixin):
             ),
             watcher_store_con=DriveWatcherStoreConnection(),
             collections_con=WebRTCCollectionsConnection(),
-            peering_con=ServerPeeringConnection(peering_config),
+            peering_con=FirestorePeeringConnection(peering_config, firestore),
             platform=WebRTCPlatform(),
         )
 

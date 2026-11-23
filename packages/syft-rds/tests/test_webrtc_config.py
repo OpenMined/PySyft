@@ -7,7 +7,7 @@ from syft.sync.connections.webrtc.webrtc_config import WebRTCConfig
 
 def test_webrtc_config_registers_no_dataset_specs():
     # A dataset spec would make a DS sync delete its local dataset copies.
-    webrtc = WebRTCConfig(signaling_url="wss://signaling.example.com", access_key="k")
+    webrtc = WebRTCConfig(firebase_project_id="syft-test", firebase_api_key="k")
 
     config = SyftRDSClientConfig.for_jupyter(
         "ds@example.com", has_ds_role=True, webrtc=webrtc

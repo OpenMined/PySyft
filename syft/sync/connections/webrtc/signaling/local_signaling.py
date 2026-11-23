@@ -7,6 +7,7 @@ from dataclasses import dataclass
 
 from syft.sync.connections.webrtc.signaling.signaling import (
     IceServers,
+    OnAnswerFailed,
     OnClosed,
     OnOffer,
     OnOnline,
@@ -36,10 +37,16 @@ class LocalSignaling(Signaling):
         self._watchers: dict[str, set[str]] = defaultdict(set)
 
     async def listen(
-        self, email: str, on_offer: OnOffer, on_online: OnOnline, on_closed: OnClosed
+        self,
+        email: str,
+        on_offer: OnOffer,
+        on_online: OnOnline,
+        on_closed: OnClosed,
+        on_answer_failed: OnAnswerFailed,
     ) -> None:
         """A session in one process ends only at ``close``, so ``on_closed``
-        never runs."""
+        never runs. A failed answer goes to the offerer as an error, so
+        ``on_answer_failed`` never runs."""
         self._listeners[email] = Listener(
             on_offer, on_online, asyncio.get_running_loop()
         )

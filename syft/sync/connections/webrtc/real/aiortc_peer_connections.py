@@ -26,7 +26,8 @@ from syft.sync.connections.webrtc.signaling.signaling import Signaling
 
 logger = logging.getLogger(__name__)
 
-CONNECT_TIMEOUT_SECONDS = 10.0
+# Polling the signaling and asking for TURN credentials take seconds each.
+CONNECT_TIMEOUT_SECONDS = 20.0
 CHANNEL_LABEL = "syft"
 # The maximum message size that aiortc advertises. For each 1200-byte SCTP fragment
 # that arrives, aiortc's InboundStream.pop_messages scans all earlier fragments of
@@ -141,11 +142,18 @@ class AiortcPeerConnections(PeerConnections):
         self._loop.call_soon_threadsafe(self._send_on_loop, peer, frame)
 
     def close(self) -> None:
-        """Close the signaling and each peer connection, then stop the loop."""
-        self._run(self._close_signaling_and_rtc_connections())
-        self._loop.call_soon_threadsafe(self._loop.stop)
-        self._thread.join()
-        self._loop.close()
+        """Close the signaling and each peer connection, then stop the loop.
+
+        Raises:
+            ConnectionError: The signaling fails to close. The peer connections
+                and the loop close all the same.
+        """
+        try:
+            self._run(self._close_signaling_and_rtc_connections())
+        finally:
+            self._loop.call_soon_threadsafe(self._loop.stop)
+            self._thread.join()
+            self._loop.close()
 
     def _run(self, coroutine: Coroutine[Any, Any, Any], timeout: float | None = None):
         """Run ``coroutine`` on the loop thread and wait for its result."""
@@ -187,7 +195,7 @@ class AiortcPeerConnections(PeerConnections):
         if reported_email.lower() not in self._peers:
             return
         peer = self._peers[reported_email.lower()]
-        # The server reports a watched peer again at each set_peers. A peer
+        # The signaling reports a watched peer again at each set_peers. A peer
         # with a channel, or with a connection on the way, gets no new one.
         if not self._has_open_channel(peer) and peer not in self._connect_tasks:
             task = asyncio.create_task(self._connect_in_background(peer))
@@ -206,6 +214,9 @@ class AiortcPeerConnections(PeerConnections):
         self._background_errors.append(error)
         # The next set_peers or connect signs in again.
         self._sign_in_task = None
+
+    def _on_answer_failed(self, error: ConnectionError) -> None:
+        self._background_errors.append(error)
 
     async def _close_rtc_connections_of_other_emails(self) -> None:
         """Close the peer connection to each email that is not a peer."""
@@ -230,6 +241,7 @@ class AiortcPeerConnections(PeerConnections):
                     self._answer,
                     self._on_peer_online,
                     self._on_signaling_closed,
+                    self._on_answer_failed,
                 )
             )
         await asyncio.shield(self._sign_in_task)
@@ -325,10 +337,18 @@ class AiortcPeerConnections(PeerConnections):
     async def _close_signaling_and_rtc_connections(self) -> None:
         for task in self._connect_tasks.values():
             task.cancel()
+        try:
+            await self._close_signaling()
+        finally:
+            await self._close_rtc_connections()
+
+    async def _close_signaling(self) -> None:
         if self._sign_in_task is not None and not self._sign_in_task.done():
             self._sign_in_task.cancel()
         elif self._sign_in_task is not None and not sign_in_failed(self._sign_in_task):
             await self.signaling.close(self.email)
+
+    async def _close_rtc_connections(self) -> None:
         await asyncio.gather(*(c.close() for c in self._rtc_connections.values()))
         self._rtc_connections.clear()
         self._channels.clear()

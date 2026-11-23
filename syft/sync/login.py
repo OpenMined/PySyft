@@ -2,6 +2,12 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from syft.sync.config.config import settings
+from syft.sync.connections.webrtc.firebase.auth import (
+    firebase_session_path,
+    session_is_refused,
+    sign_in_with_emailed_link,
+)
+from syft.sync.connections.webrtc.firebase.project import FirebaseProject
 from syft.sync.connections.webrtc.webrtc_config import WebRTCConfig
 from syft.sync.environments.environment import Environment
 from syft.sync.login_utils import handle_potential_version_mismatches_on_login
@@ -113,7 +119,7 @@ def _resolve_login_target(
 
     Raises:
         ValueError: ``webrtc`` is set and ``email`` is None or ``token_path``
-            is set, or ``webrtc`` is True and a signaling setting is missing.
+            is set, or ``webrtc`` is True and a Firebase setting is missing.
     """
     if webrtc is False:
         email, token_path = _resolve_login_params(email, token_path)
@@ -128,25 +134,44 @@ def _resolve_login_target(
 
 
 def _webrtc_config_from_settings() -> WebRTCConfig:
-    """Return the signaling server in the settings.
+    """Return the Firebase project in the settings.
 
     Raises:
-        ValueError: A signaling setting is missing.
+        ValueError: A Firebase setting is missing.
     """
-    if settings.signaling_url is None:
+    if settings.firebase_project_id is None:
         raise ValueError(
-            "Set SYFT_SIGNALING_URL to the URL of the signaling server, then log "
-            "in again."
+            "Set SYFT_FIREBASE_PROJECT_ID to the Firebase project of your org, "
+            "then log in again."
         )
-    if settings.signaling_access_key is None:
+    if settings.firebase_api_key is None:
         raise ValueError(
-            "Set SYFT_SIGNALING_ACCESS_KEY to the access key of the signaling "
-            "server, then log in again."
+            "Set SYFT_FIREBASE_API_KEY to the web API key of the Firebase project "
+            "of your org, then log in again."
         )
     return WebRTCConfig(
-        signaling_url=settings.signaling_url,
-        access_key=settings.signaling_access_key,
+        firebase_project_id=settings.firebase_project_id,
+        firebase_api_key=settings.firebase_api_key,
     )
+
+
+def _maybe_sign_in_to_firebase(target: LoginTarget, syftbox_folder: Path) -> None:
+    """Sign in to the Firebase project of a WebRTC login with an emailed link,
+    if this machine has no session for it, or Firebase refuses the saved one."""
+    if target.webrtc is None:
+        return
+    project = FirebaseProject.from_config(target.webrtc)
+    session_path = firebase_session_path(syftbox_folder, project.project_id)
+    if session_path.exists() and session_is_refused(project, session_path):
+        session_path.unlink()
+    if not session_path.exists():
+        sign_in_with_emailed_link(
+            project, target.email, session_path, lambda: _ask_sign_in_link(target.email)
+        )
+
+
+def _ask_sign_in_link(email: str) -> str:
+    return input(f"We sent a sign-in link to {email}. Paste the link here: ")
 
 
 def _import_key_file(
@@ -171,7 +196,7 @@ def login(
     | None = None,  # None: value is determined by the role
     encryption: bool | None = None,  # True: required; None: the datasite's policy
     key_file: str | Path | None = None,  # crypto_keys.json of an earlier session
-    webrtc: bool | WebRTCConfig = False,  # True: the signaling server in the settings
+    webrtc: bool | WebRTCConfig = False,  # True: the Firebase project in the settings
 ):
     return login_ds(
         email,
@@ -194,7 +219,7 @@ def login_ds(
     | None = None,  # None: value is determined by the role
     encryption: bool | None = None,  # True: required; None: the datasite's policy
     key_file: str | Path | None = None,  # crypto_keys.json of an earlier session
-    webrtc: bool | WebRTCConfig = False,  # True: the signaling server in the settings
+    webrtc: bool | WebRTCConfig = False,  # True: the Firebase project in the settings
 ):
     target = _resolve_login_target(email, token_path, webrtc)
     config = _manager_config(
@@ -204,6 +229,7 @@ def login_ds(
         encryption=encryption,
     )
     _import_key_file(key_file, config.syftbox_folder, target.email)
+    _maybe_sign_in_to_firebase(target, config.syftbox_folder)
     client = SyftboxManager.from_config(config)
 
     return _init_client_login(client, sync, load_peers, target.repair_pending)
@@ -218,7 +244,7 @@ def login_do(
     | None = None,  # None: value is determined by the role
     encryption: bool | None = None,  # True: required; None: the datasite's policy
     key_file: str | Path | None = None,  # crypto_keys.json of an earlier session
-    webrtc: bool | WebRTCConfig = False,  # True: the signaling server in the settings
+    webrtc: bool | WebRTCConfig = False,  # True: the Firebase project in the settings
 ):
     target = _resolve_login_target(email, token_path, webrtc)
     config = _manager_config(
@@ -228,6 +254,7 @@ def login_do(
         encryption=encryption,
     )
     _import_key_file(key_file, config.syftbox_folder, target.email)
+    _maybe_sign_in_to_firebase(target, config.syftbox_folder)
     client = SyftboxManager.from_config(config)
 
     return _init_client_login(client, sync, load_peers, target.repair_pending)

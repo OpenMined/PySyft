@@ -4,35 +4,27 @@ This module imports nothing from the ``webrtc`` extra, so login can use it
 without that extra installed.
 """
 
-from pydantic import ConfigDict, field_validator
+from pydantic import ConfigDict, ValidationInfo, field_validator
 
 from syft.sync.connections.base_connection import ConnectionConfig
 
-WEBSOCKET_SCHEMES = ("ws://", "wss://")
-
 
 class WebRTCConfig(ConnectionConfig):
-    """The signaling server of a WebRTC client."""
+    """The Firebase project that carries the signaling and the peering of a
+    WebRTC client. ``firebase/README.md`` tells how to set one up."""
 
     model_config = ConfigDict(frozen=True)
 
-    # The WebSocket URL of the signaling server.
-    signaling_url: str
-    # The shared access key of the signaling server.
-    access_key: str
+    firebase_project_id: str
+    # The web API key of the project. It is not a secret.
+    firebase_api_key: str
+    # The host of the Firebase emulators that replace the project, or None for
+    # the real project.
+    firebase_emulator_host: str | None = None
 
-    @field_validator("signaling_url")
+    @field_validator("firebase_project_id", "firebase_api_key")
     @classmethod
-    def _check_signaling_url(cls, signaling_url: str) -> str:
-        if not signaling_url.startswith(WEBSOCKET_SCHEMES):
-            raise ValueError(
-                f"signaling_url must start with ws:// or wss://, got {signaling_url!r}"
-            )
-        return signaling_url
-
-    @field_validator("access_key")
-    @classmethod
-    def _check_access_key(cls, access_key: str) -> str:
-        if not access_key:
-            raise ValueError("access_key must not be empty")
-        return access_key
+    def _check_not_empty(cls, value: str, info: ValidationInfo) -> str:
+        if not value:
+            raise ValueError(f"{info.field_name} must not be empty")
+        return value

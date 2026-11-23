@@ -38,7 +38,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-webrtc = ["aiortc>=1.14.0", "websockets>=15.0"]
+webrtc = ["aiortc>=1.14.0"]
 
 
 [tool.uv]

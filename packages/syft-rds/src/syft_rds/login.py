@@ -18,6 +18,7 @@ from syft.sync.environments.environment import Environment
 from syft.sync.login import (
     _import_key_file,
     _init_client_login,
+    _maybe_sign_in_to_firebase,
     _resolve_login_target,
 )
 from syft.sync.utils.syftbox_utils import check_env
@@ -66,6 +67,7 @@ def _login(
         )
 
     _import_key_file(key_file, config.sync.syftbox_folder, target.email)
+    _maybe_sign_in_to_firebase(target, config.sync.syftbox_folder)
     client = SyftRDSClient.from_config(config)
     _init_client_login(
         client.sync_engine,
@@ -89,9 +91,10 @@ def login_do(
 ) -> SyftRDSClient:
     """Log in as a DO and return a self-contained RDS client.
 
-    ``webrtc=True`` syncs over WebRTC through the signaling server in the
-    ``SYFT_SIGNALING_URL`` and ``SYFT_SIGNALING_ACCESS_KEY`` settings, with no
-    Google login.
+    ``webrtc=True`` syncs over WebRTC, with the Firebase project in the
+    ``SYFT_FIREBASE_PROJECT_ID`` and ``SYFT_FIREBASE_API_KEY`` settings, and no
+    Google login. The first login on a machine sends a sign-in link to the
+    email.
     """
     return _login(
         email=email,
@@ -120,9 +123,10 @@ def login_ds(
 ) -> SyftRDSClient:
     """Log in as a DS and return a self-contained RDS client.
 
-    ``webrtc=True`` syncs over WebRTC through the signaling server in the
-    ``SYFT_SIGNALING_URL`` and ``SYFT_SIGNALING_ACCESS_KEY`` settings, with no
-    Google login.
+    ``webrtc=True`` syncs over WebRTC, with the Firebase project in the
+    ``SYFT_FIREBASE_PROJECT_ID`` and ``SYFT_FIREBASE_API_KEY`` settings, and no
+    Google login. The first login on a machine sends a sign-in link to the
+    email.
     """
     return _login(
         email=email,

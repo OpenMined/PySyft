@@ -1,11 +1,20 @@
-"""The ICE servers taken from a Cloudflare generate-ice-servers response."""
+"""The ICE servers that the TURN Cloud Function takes from a Cloudflare
+generate-ice-servers response."""
+
+import importlib.util
+from pathlib import Path
 
 import pytest
 
-from syft.sync.connections.webrtc.signaling.cloudflare_turn import (
-    TURN_URL,
-    pick_ice_servers,
+# The Cloud Function is not in a package, so the test loads its file.
+CLOUDFLARE_TURN_FILE = (
+    Path(__file__).parents[3] / "firebase" / "functions" / "cloudflare_turn.py"
 )
+spec = importlib.util.spec_from_file_location("cloudflare_turn", CLOUDFLARE_TURN_FILE)
+cloudflare_turn = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(cloudflare_turn)
+TURN_URL = cloudflare_turn.TURN_URL
+pick_ice_servers = cloudflare_turn.pick_ice_servers
 
 STUN_URLS = ["stun:stun.cloudflare.com:3478", "stun:stun.cloudflare.com:443"]
 

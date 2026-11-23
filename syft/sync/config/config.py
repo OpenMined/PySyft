@@ -7,9 +7,9 @@ class SyftboxSettings(BaseSettings):
 
     dev_mode: bool = Field(default=False)
     token_path: str | None = Field(default=None)
-    # The signaling server for login with webrtc=True.
-    signaling_url: str | None = Field(default=None)
-    signaling_access_key: str | None = Field(default=None)
+    # The Firebase project for login with webrtc=True.
+    firebase_project_id: str | None = Field(default=None)
+    firebase_api_key: str | None = Field(default=None)
 
 
 settings = SyftboxSettings()

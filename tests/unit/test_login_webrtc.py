@@ -1,4 +1,4 @@
-"""Login with webrtc: the signaling server comes from the settings, and no
+"""Login with webrtc: the Firebase project comes from the settings, and no
 Google login or Drive check runs."""
 
 from pathlib import Path
@@ -12,44 +12,46 @@ from syft.sync.sync.collection_spec import CollectionSyncSpec
 from syft.sync.syftbox_manager import SyftboxManagerConfig
 
 EMAIL = "do@example.com"
-URL = "wss://signaling.example.com"
-KEY = "test-key"
+PROJECT_ID = "syft-test"
+API_KEY = "test-api-key"
 
 
-def test_webrtc_login_reads_signaling_settings(monkeypatch):
+def test_webrtc_login_reads_firebase_settings(monkeypatch):
     def read_drive(*args):
         raise AssertionError("A WebRTC login must not read Drive")
 
     monkeypatch.setattr(
         login, "handle_potential_version_mismatches_on_login", read_drive
     )
-    monkeypatch.setattr(login.settings, "signaling_url", URL)
-    monkeypatch.setattr(login.settings, "signaling_access_key", KEY)
+    monkeypatch.setattr(login.settings, "firebase_project_id", PROJECT_ID)
+    monkeypatch.setattr(login.settings, "firebase_api_key", API_KEY)
 
     target = login._resolve_login_target(EMAIL, None, webrtc=True)
 
-    assert target.webrtc == WebRTCConfig(signaling_url=URL, access_key=KEY)
+    assert target.webrtc == WebRTCConfig(
+        firebase_project_id=PROJECT_ID, firebase_api_key=API_KEY
+    )
     assert target.repair_pending is False
 
 
-def test_webrtc_login_without_signaling_url_raises(monkeypatch):
-    monkeypatch.setattr(login.settings, "signaling_url", None)
-    monkeypatch.setattr(login.settings, "signaling_access_key", KEY)
+def test_webrtc_login_without_firebase_project_raises(monkeypatch):
+    monkeypatch.setattr(login.settings, "firebase_project_id", None)
+    monkeypatch.setattr(login.settings, "firebase_api_key", API_KEY)
 
-    with pytest.raises(ValueError, match="SYFT_SIGNALING_URL"):
+    with pytest.raises(ValueError, match="SYFT_FIREBASE_PROJECT_ID"):
         login._resolve_login_target(EMAIL, None, webrtc=True)
 
 
 def test_webrtc_login_with_token_path_raises(monkeypatch):
-    monkeypatch.setattr(login.settings, "signaling_url", URL)
-    monkeypatch.setattr(login.settings, "signaling_access_key", KEY)
+    monkeypatch.setattr(login.settings, "firebase_project_id", PROJECT_ID)
+    monkeypatch.setattr(login.settings, "firebase_api_key", API_KEY)
 
     with pytest.raises(ValueError, match="token_path"):
         login._resolve_login_target(EMAIL, "token.json", webrtc=True)
 
 
 def test_jupyter_config_with_webrtc_uses_it_for_every_connection():
-    webrtc = WebRTCConfig(signaling_url=URL, access_key=KEY)
+    webrtc = WebRTCConfig(firebase_project_id=PROJECT_ID, firebase_api_key=API_KEY)
 
     config = SyftboxManagerConfig.for_jupyter(EMAIL, has_do_role=True, webrtc=webrtc)
 
@@ -59,7 +61,7 @@ def test_jupyter_config_with_webrtc_uses_it_for_every_connection():
 
 def test_webrtc_config_with_collection_specs_raises():
     spec = CollectionSyncSpec.public("syft_datasets", Path("datasets"))
-    webrtc = WebRTCConfig(signaling_url=URL, access_key=KEY)
+    webrtc = WebRTCConfig(firebase_project_id=PROJECT_ID, firebase_api_key=API_KEY)
 
     with pytest.raises(ValueError, match="Datasets do not go over WebRTC"):
         SyftboxManagerConfig.for_jupyter(

@@ -41,6 +41,15 @@ class CountingSignaling(LocalSignaling):
         return await super().ice_servers(email)
 
 
+class FailingCloseSignaling(LocalSignaling):
+    """LocalSignaling whose close fails, as Firestore does when it cannot be
+    reached."""
+
+    async def close(self, email: str) -> None:
+        await super().close(email)
+        raise ConnectionError("Firestore cannot be reached")
+
+
 @pytest.fixture
 def open_pair(tmp_path):
     """Both open, not connected yet."""
@@ -169,3 +178,16 @@ def test_each_peer_connection_gets_new_ice_servers(tmp_path):
     finally:
         do.close()
         ds.close()
+
+
+def test_close_stops_loop_when_signaling_close_fails():
+    peer_connections = AiortcPeerConnections(
+        FailingCloseSignaling(), sends_offers=False
+    )
+    peer_connections.open(DO, lambda peer: None, lambda peer, frame: None)
+    peer_connections.set_peers([DS])
+
+    with pytest.raises(ConnectionError, match="Firestore cannot be reached"):
+        peer_connections.close()
+
+    assert not peer_connections._thread.is_alive()

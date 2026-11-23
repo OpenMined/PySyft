@@ -10,9 +10,14 @@ OnOffer = Callable[[str, str], Awaitable[str]]
 OnOnline = Callable[[str], None]
 # The signaling calls it with the reason when a session ends before ``close``.
 OnClosed = Callable[[ConnectionError], None]
+# The signaling calls it with the reason when it fails to answer an offer for a
+# reason other than a refusal.
+OnAnswerFailed = Callable[[ConnectionError], None]
 # Each item is an RTCIceServer as JSON: "urls", and "username" and
 # "credential" for a TURN server.
 IceServers = list[dict[str, Any]]
+# Each call returns the ICE servers for one new peer connection.
+IceServerSource = Callable[[], Awaitable[IceServers]]
 
 
 class Signaling(ABC):
@@ -20,14 +25,20 @@ class Signaling(ABC):
 
     @abstractmethod
     async def listen(
-        self, email: str, on_offer: OnOffer, on_online: OnOnline, on_closed: OnClosed
+        self,
+        email: str,
+        on_offer: OnOffer,
+        on_online: OnOnline,
+        on_closed: OnClosed,
+        on_answer_failed: OnAnswerFailed,
     ) -> None:
         """Listen for offers and online peers as ``email``.
 
         ``on_offer`` answers each offer to ``email``. ``on_online`` gets the
         email of each watched peer that is online. ``on_closed`` gets the reason
-        when the session ends before ``close``. The callbacks run on the loop
-        that called ``listen``.
+        when the session ends before ``close``. ``on_answer_failed`` gets the
+        reason when an answer fails for another reason than a refusal. The
+        callbacks run on the loop that called ``listen``.
         """
 
     @abstractmethod
