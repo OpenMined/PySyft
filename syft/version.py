@@ -11,7 +11,7 @@ Bump these versions on each release (via `bump2version patch/minor/major`).
 # drive_owner_store.py in sync/connections/drive/).
 # The `: str` is the anchor .bumpversion.cfg searches for, so a bump never also
 # rewrites MIN_SUPPORTED_SYFT_VERSION.
-SYFT_VERSION: str = "0.10.2"
+SYFT_VERSION: str = "0.10.3"
 
 # Minimum client version we support communicating with.
 # 0.10.2 resets every migration protocol and object version to 0, so no
