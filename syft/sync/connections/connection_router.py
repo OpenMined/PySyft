@@ -489,7 +489,7 @@ class ConnectionRouter(BaseModel):
             raw = self.peer_store.decrypt_and_verify_for_self_if_needed(raw)
             return Checkpoint.from_compressed_data(raw)
         except Exception as e:
-            print(f"Warning: Failed to load checkpoint: {e}")
+            logger.warning(f"Failed to load checkpoint: {e}")
             return None
 
     def get_events_count_since_checkpoint(
@@ -532,7 +532,7 @@ class ConnectionRouter(BaseModel):
                 cp = IncrementalCheckpoint.from_compressed_data(raw)
                 checkpoints.append(cp)
             except Exception as e:
-                print(f"Warning: Failed to load incremental checkpoint: {e}")
+                logger.warning(f"Failed to load incremental checkpoint: {e}")
                 continue
         return sorted(checkpoints, key=lambda c: c.sequence_number)
 
@@ -569,7 +569,7 @@ class ConnectionRouter(BaseModel):
             raw = self.peer_store.decrypt_and_verify_for_self_if_needed(raw)
             return RollingState.from_compressed_data(raw)
         except Exception as e:
-            print(f"Warning: Failed to load rolling state: {e}")
+            logger.warning(f"Failed to load rolling state: {e}")
             return None
 
     def delete_rolling_state(self) -> None:

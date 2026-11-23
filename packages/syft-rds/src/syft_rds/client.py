@@ -26,7 +26,7 @@ from syft.sync.version.peer_manager import CompatAction
 from syft_job.client import JobClient
 from syft_job.job import JobInfo
 from syft_job.job_runner import SyftJobRunner
-from syft_job.read_permissions import ReadPermissions
+from syft_job.read_permissions import ReadPermissions, warn_if_submitter_not_named
 from syft_datasets.dataset_manager import SHARE_WITH_ANY, SyftDatasetManager
 from syft_datasets.dataset_ref import DatasetNotFoundError
 from syft_datasets.migrations.registry import DATASET_PROTOCOL_VERSION
@@ -39,6 +39,7 @@ from syft_rds.config import (
     MOCK_DATASET_SPEC,
     PRIVATE_DATASET_SPEC,
     SyftRDSClientConfig,
+    READABLE_DATASET_VARIANTS,
     dataset_variant,
 )
 
@@ -377,18 +378,12 @@ class SyftRDSClient(BaseModel):
     def _on_peers_loaded(self, *args: Any, **kwargs: Any) -> None:
         """Peers were (re)loaded: copy each peer's advertised install source
         into our owned job client so submitted run.sh references the DO's path.
-
-        As a DO, also give every approved peer a requests/ folder, so a peer
-        approved before api requests existed can call apis.
         """
         for peer in self.sync_engine.peer_manager.syncable_peers:
             if peer.version:
                 self.job_client.peer_install_sources[peer.email] = (
                     peer.version.syft_client_install_source
                 )
-        if self.has_do_role:
-            for peer in self.sync_engine.peer_manager.approved_peers:
-                self.job_client.setup_ds_request_folder_as_do(peer.email)
 
     def _share_any_datasets_with_peer(self, peer_email: str) -> None:
         """Share all datasets tagged 'any' with a specific peer.
@@ -512,6 +507,8 @@ class SyftRDSClient(BaseModel):
             share_outputs_with_submitter=share_outputs_with_submitter,
             share_files=share_files,
         )
+        if share_files:
+            warn_if_submitter_not_named(share_files, self.email)
         self.sync_engine.push_job_files(job_dir)
 
         print("\n✅ Job submitted successfully!")
@@ -1106,29 +1103,29 @@ class SyftRDSClient(BaseModel):
             self.sync()
 
     def _mock_collections_for(self, tag: str) -> list:
-        """Every uploaded mock-data layout of one dataset."""
+        """Every uploaded mock-data layout of one dataset that this release reads."""
         return [
             c
             for c in self.sync_engine._connection_router.owner_list_all_collections_with_permissions(
                 DATASET_COLLECTION_PREFIX
             )
-            if c.tag == tag
+            if c.tag == tag and c.variant in READABLE_DATASET_VARIANTS
         ]
 
     def _private_collections_for(self, tag: str) -> list:
-        """Every uploaded private-data layout of one dataset."""
+        """Every uploaded private-data layout of one dataset that this release reads."""
         return [
             c
             for c in self.sync_engine._connection_router.owner_list_all_collections_with_permissions(
                 PRIVATE_DATASET_COLLECTION_PREFIX
             )
-            if c.tag == tag
+            if c.tag == tag and c.variant in READABLE_DATASET_VARIANTS
         ]
 
     @staticmethod
     def _protocol_of(collection) -> str:
         """The dataset protocol version a collection's wire variant stands for."""
-        return collection.variant.removeprefix("v") or "0"
+        return collection.variant.removeprefix("v")
 
     def _audience_emails(self, users: list[str] | str | None) -> list[str]:
         """The peers whose layouts an audience needs.

@@ -1,5 +1,4 @@
 import re
-from typing import Optional
 
 from pydantic import BaseModel, Field
 from pathlib import Path
@@ -9,7 +8,7 @@ METADATA_FILENAME = "dataset.yaml"
 PRIVATE_METADATA_FILENAME = "private_metadata.yaml"
 
 # Datasets under public/syft_datasets/ and private/syft_datasets/ live inside a
-# protocol-version segment ("v1", "v2", ...); protocol 0 (<= 0.1.20) had none.
+# protocol-version segment ("v0", "v1", ...).
 # The naming convention is shared; the per-protocol layout that uses it lives in
 # the codecs' DatasetConfig.
 PROTOCOL_DIR_RE = re.compile(r"^v\d+$")
@@ -19,9 +18,9 @@ def is_protocol_dir_name(name: str) -> bool:
     return PROTOCOL_DIR_RE.match(name) is not None
 
 
-def protocol_dir_name(protocol_version: str) -> Optional[str]:
-    """The path segment for a protocol version; None for protocol 0."""
-    return None if protocol_version == "0" else f"v{protocol_version}"
+def protocol_dir_name(protocol_version: str) -> str:
+    """The path segment for a protocol version."""
+    return f"v{protocol_version}"
 
 
 class SyftBoxConfig(BaseModel):

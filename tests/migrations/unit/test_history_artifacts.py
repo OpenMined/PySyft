@@ -1,47 +1,38 @@
-"""Past release artifacts register cleanly and guard against schema drift."""
+"""Release artifacts register cleanly and guard against schema drift.
+
+The artifacts under syft/migrations/history are written by the release job, so
+a protocol that has not been released yet has none. Each guard below holds with
+or without them.
+"""
 
 import pytest
 import syft  # noqa: F401 -- imports models and registers history
 from syft_migration import MigrationError, MigrationRegistry, ReleasedProtocol
 
 from syft.migrations import client_registry
-from syft.migrations.history import (
-    PACKAGE_ARTIFACTS_DIR,
-    PROTOCOLS_DIR,
-    register_historic_schemas,
-)
-
-PROTOCOL_0_PATH = PROTOCOLS_DIR / "protocol-0.json"
+from syft.migrations.history import PROTOCOLS_DIR, register_historic_schemas
 
 
-def test_protocol0_artifacts_registered():
-    # importing syft registered the hardcoded 0.1.117 artifacts.
-    assert "0" in client_registry.protocol_version_history
-    package_info = client_registry.package_version_history["0"]
-    # The distribution was still named syft-client at 0.1.117.
-    assert package_info.package_name == "syft-client"
-    assert package_info.version == "0.1.117"
-
-    schema = client_registry.protocol_version_history["0"]
-    assert schema.supported_versions == {
-        "VersionInfo": ["1"],
-        "ProposedFileChangesMessage": ["1"],
-        "FileChangeEventsMessage": ["1"],
-    }
+def _fresh_registry(protocol_version: str) -> MigrationRegistry:
+    return MigrationRegistry(
+        protocol_name=client_registry.protocol_name,
+        package_name=client_registry.package_name,
+        package_version=client_registry.package_version,
+        protocol_version=protocol_version,
+    )
 
 
 def test_registering_again_is_idempotent():
+    before = dict(client_registry.protocol_version_history)
     register_historic_schemas()
-    assert "0" in client_registry.protocol_version_history
+    assert client_registry.protocol_version_history == before
 
 
 def test_all_protocol_artifacts_well_formed():
     # Filename encodes the frozen protocol version, and every supported
     # canonical name freezes a current-object schema (catches a mis-named or
     # hand-edited artifact).
-    paths = sorted(PROTOCOLS_DIR.glob("*.json"))
-    assert paths, "no released protocol artifacts found"
-    for path in paths:
+    for path in sorted(PROTOCOLS_DIR.glob("*.json")):
         schema = ReleasedProtocol.load(path).protocol_schema
         assert path.name == f"protocol-{schema.version}.json"
         assert set(schema.current_object_schemas) == set(schema.supported_versions)
@@ -77,43 +68,32 @@ def test_protocol_bump_not_missing():
 def test_bump_guard_trips_on_protocol_change():
     # A registry claiming the same protocol version as a released schema but
     # supporting different object versions must trip the guard.
-    stale = MigrationRegistry(
-        protocol_name=client_registry.protocol_name,
-        package_name=client_registry.package_name,
-        package_version=client_registry.package_version,
-        protocol_version="0",  # pretend we still speak the released protocol 0
+    released = client_registry.compute_protocol_schema()
+    stale = _fresh_registry(released.version)
+    # Register only a subset of the released objects, then load its schema.
+    stale.register_object_version(
+        client_registry.get_class(
+            "VersionInfo", client_registry.latest_version("VersionInfo")
+        )
     )
-    # Register only a subset of protocol-0's objects, then load its schema.
-    stale.register_object_version(client_registry.get_class("VersionInfo", "1"))
-    stale.register_historic_protocol_schema(
-        ReleasedProtocol.load(PROTOCOL_0_PATH).protocol_schema
-    )
+    stale.register_historic_protocol_schema(released)
     assert stale.protocol_changed_without_bump()
 
 
 def test_unknown_object_version_in_artifact_raises():
     # The fail-at-import guarantee syft/__init__.py relies on: an
     # artifact naming an object version this release cannot load must raise.
-    schema = ReleasedProtocol.load(PROTOCOL_0_PATH).protocol_schema
+    current = client_registry.latest_version("VersionInfo")
+    schema = client_registry.compute_protocol_schema()
     schema = schema.model_copy(
         update={
             "supported_versions": {
                 **schema.supported_versions,
-                "VersionInfo": ["1", "99"],
+                "VersionInfo": [current, "99"],
             }
         }
     )
-    empty = MigrationRegistry(
-        protocol_name=client_registry.protocol_name,
-        package_name=client_registry.package_name,
-        package_version=client_registry.package_version,
-        protocol_version=client_registry.protocol_version,
-    )
-    empty.register_object_version(client_registry.get_class("VersionInfo", "1"))
+    empty = _fresh_registry(client_registry.protocol_version)
+    empty.register_object_version(client_registry.get_class("VersionInfo", current))
     with pytest.raises(MigrationError):
         empty.register_historic_protocol_schema(schema, raise_for_unknown_objects=True)
-
-
-def test_artifact_files_exist():
-    assert (PACKAGE_ARTIFACTS_DIR / "syft-client-0.1.117.json").exists()
-    assert PROTOCOL_0_PATH.exists()

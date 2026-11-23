@@ -12,7 +12,7 @@ from pydantic import (
 )
 from syft_migration import MigratableObject
 
-from syft.migrations import client_registry, load_as_latest
+from syft.migrations import client_registry, load_current
 from syft.sync.messages.proposed_filechange import ProposedFileChange
 from syft.sync.utils.syftbox_utils import create_event_timestamp
 from syft.sync.utils.syftbox_utils import compress_data
@@ -57,7 +57,7 @@ class FileChangeEventsMessageFileName(BaseModel):
             raise ValueError(f"Invalid filename: {filename}") from e
 
 
-class FileChangeEventV1(BaseModel):
+class FileChangeEventV0(BaseModel):
     id: UUID
     path_in_datasite: Path
     datasite_email: str
@@ -135,19 +135,19 @@ class FileChangeEventV1(BaseModel):
         return hash(self.id)
 
     def __eq__(self, other: Any) -> bool:
-        if not isinstance(other, FileChangeEventV1):
+        if not isinstance(other, FileChangeEventV0):
             return False
         return self.id == other.id
 
 
-class FileChangeEventsMessageV1(MigratableObject, registry=client_registry):
+class FileChangeEventsMessageV0(MigratableObject, registry=client_registry):
     """The events wire envelope (DO -> watchers). The envelope is the migratable
     unit; its items are pinned to the exact version class, never a floating alias."""
 
     canonical_name: str = "FileChangeEventsMessage"
-    version: str = "1"
+    version: str = "0"
 
-    events: List[FileChangeEventV1]
+    events: List[FileChangeEventV0]
     message_filepath: FileChangeEventsMessageFileName = Field(
         default_factory=lambda: FileChangeEventsMessageFileName()
     )
@@ -161,15 +161,11 @@ class FileChangeEventsMessageV1(MigratableObject, registry=client_registry):
 
     @classmethod
     def from_compressed_data(cls, data: bytes) -> "FileChangeEventsMessage":
-        """Decompress and load, upgraded to the latest version.
-
-        Blobs written by protocol-0 clients (<= 0.1.117) predate the identity
-        fields; they are all version 1.
-        """
+        """Decompress and load, upgraded to the latest version."""
         uncompressed_data = uncompress_data(data)
-        return load_as_latest(json.loads(uncompressed_data), "FileChangeEventsMessage")
+        return load_current(json.loads(uncompressed_data), "FileChangeEventsMessage")
 
 
 # Current-version aliases: callers always work with the latest versions.
-FileChangeEvent = FileChangeEventV1
-FileChangeEventsMessage = FileChangeEventsMessageV1
+FileChangeEvent = FileChangeEventV0
+FileChangeEventsMessage = FileChangeEventsMessageV0

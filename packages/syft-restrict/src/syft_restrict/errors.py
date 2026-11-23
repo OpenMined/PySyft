@@ -26,3 +26,11 @@ class PolicyViolation(RestrictError):
 
 class MarkerError(RestrictError):
     """Raised when ``# syft-restrict: ...`` markers in a source file are malformed or absent."""
+
+
+class SourceEncodingError(RestrictError):
+    """Raised when a source file is not plain UTF-8."""
+
+
+class ObfuscationError(RestrictError):
+    """Raised when the display copy does not keep the rows of the source."""

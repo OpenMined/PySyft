@@ -4,13 +4,15 @@ from typing import Iterator
 import yaml
 from syft_migration import MigratableObject
 
-from ..config import is_protocol_dir_name
-from ..job_ref import JobRef
+from ..config import protocol_dir_name
+from ..job_ref import JobRef, RequestRef
+from ..submission import REQUEST_FILE_NAME
 from .base import ProtocolCodec
 
 
 class ProtocolCodecV0(ProtocolCodec):
-    """Pre-versioning layout (<= 0.1.38): jobs flat under <ds_email>/, no identity fields."""
+    """Jobs under <ds_email>/v<n>/ in inbox/ and review/, api calls under
+    <ds_email>/v<n>/ in requests/; identity fields on disk."""
 
     version = "0"
     protocol_versions = ["0"]
@@ -22,6 +24,11 @@ class ProtocolCodecV0(ProtocolCodec):
 
     def review_dir(self, ref: JobRef) -> Path:
         return self.config.get_review_job_dir(
+            ref.datasite_email, ref.ds_email, ref.job_name, ref.protocol_version
+        )
+
+    def request_dir(self, ref: RequestRef) -> Path:
+        return self.config.get_request_job_dir(
             ref.datasite_email, ref.ds_email, ref.job_name, ref.protocol_version
         )
 
@@ -39,30 +46,39 @@ class ProtocolCodecV0(ProtocolCodec):
         root = self.config.get_review_dir(datasite_email)
         yield from self._scan(root, datasite_email, self.state_marker)
 
-    def _scan(self, root: Path, datasite_email: str, marker: str) -> Iterator[JobRef]:
+    def iter_request_refs(self, datasite_email: str) -> Iterator[RequestRef]:
+        root = self.config.get_requests_dir(datasite_email)
+        yield from self._scan(
+            root, datasite_email, REQUEST_FILE_NAME, ref_type=RequestRef
+        )
+
+    def _scan(
+        self,
+        root: Path,
+        datasite_email: str,
+        marker: str,
+        ref_type: type[JobRef] | type[RequestRef] = JobRef,
+    ) -> Iterator[JobRef | RequestRef]:
         if not root.exists():
             return
         for ds_dir in sorted(p for p in root.iterdir() if p.is_dir()):
-            for entry in sorted(p for p in ds_dir.iterdir() if p.is_dir()):
-                # v<n>/ segments belong to a versioned codec, not the flat layout.
-                if is_protocol_dir_name(entry.name):
+            for protocol_version in self.protocol_versions:
+                version_dir = ds_dir / protocol_dir_name(protocol_version)
+                if not version_dir.is_dir():
                     continue
-                if (entry / marker).exists():
-                    yield JobRef(datasite_email, ds_dir.name, entry.name, "0")
+                for job_dir in sorted(p for p in version_dir.iterdir() if p.is_dir()):
+                    if (job_dir / marker).exists():
+                        yield ref_type(
+                            datasite_email, ds_dir.name, job_dir.name, protocol_version
+                        )
 
     def read(self, path: Path, canonical_name: str) -> dict:
+        # Files carry canonical_name/version on disk.
         with open(path, "r") as f:
-            data = yaml.safe_load(f) or {}
-        # Protocol-0 files predate the identity fields; they are all version 1.
-        data.setdefault("canonical_name", canonical_name)
-        data.setdefault("version", "1")
-        return data
+            return yaml.safe_load(f) or {}
 
     def write(self, path: Path, obj: MigratableObject) -> None:
         data = obj.disk_dict()
-        # Byte-match the pre-versioning (<= 0.1.38) on-disk format.
-        data.pop("canonical_name", None)
-        data.pop("version", None)
         path.parent.mkdir(parents=True, exist_ok=True)
         with open(path, "w") as f:
             yaml.dump(data, f, default_flow_style=False)

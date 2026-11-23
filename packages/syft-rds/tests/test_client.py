@@ -1,5 +1,10 @@
 """Tests for the self-contained SyftRDSClient product."""
 
+import warnings
+from unittest.mock import MagicMock, patch
+
+import pytest
+
 from syft_rds import SyftRDSClient
 
 
@@ -129,8 +134,6 @@ def test_encrypted_dataset_collection_syncs():
 
 def test_process_approved_jobs_holds_logs_back_by_default():
     """The DS reads a log only after the DO releases it."""
-    from unittest.mock import MagicMock
-
     _, do = SyftRDSClient.pair_with_mock_drive_service_connection()
     do.job_runner = MagicMock()
 
@@ -141,8 +144,6 @@ def test_process_approved_jobs_holds_logs_back_by_default():
 
 
 def test_submit_python_job_passes_share_args(tmp_path):
-    from unittest.mock import MagicMock, patch
-
     ds, do = SyftRDSClient.pair_with_mock_drive_service_connection()
     ds.job_client = MagicMock()
     code = tmp_path / "main.py"
@@ -165,8 +166,6 @@ def test_submit_python_job_passes_share_args(tmp_path):
 
 def test_submit_python_job_keeps_positional_order(tmp_path):
     """The sixth positional argument is still force_submission."""
-    from unittest.mock import MagicMock, patch
-
     ds, do = SyftRDSClient.pair_with_mock_drive_service_connection()
     ds.job_client = MagicMock()
     code = tmp_path / "main.py"
@@ -177,3 +176,43 @@ def test_submit_python_job_keeps_positional_order(tmp_path):
 
     kwargs = ds.job_client.submit_python_job.call_args.kwargs
     assert kwargs["share_files"] is None
+
+
+SUBMITTER_NOT_NAMED = "share_files doesn't name you"
+
+
+def submit_with_share_args(tmp_path, share_args):
+    """The DS submits a job with ``share_args(ds, do)``; job client and push mocked."""
+    ds, do = SyftRDSClient.pair_with_mock_drive_service_connection()
+    ds.job_client = MagicMock()
+    code = tmp_path / "main.py"
+    code.write_text("print(1)\n")
+
+    with patch.object(type(ds.sync_engine), "push_job_files"):
+        ds.submit_python_job(
+            do.email, str(code), force_submission=True, **share_args(ds, do)
+        )
+
+
+def test_submit_warns_when_share_files_leaves_out_submitter(tmp_path):
+    with pytest.warns(UserWarning, match=SUBMITTER_NOT_NAMED):
+        submit_with_share_args(
+            tmp_path, lambda ds, do: {"share_files": {"outputs": [do.email]}}
+        )
+
+
+@pytest.mark.parametrize(
+    "share_args",
+    [
+        lambda ds, do: {"share_files": {"outputs": [ds.email, do.email]}},
+        lambda ds, do: {},
+        lambda ds, do: {"share_logs_with_submitter": True},
+    ],
+    ids=["submitter_named", "no_share_files", "flags_only"],
+)
+def test_submit_naming_submitter_or_using_flags_does_not_warn(tmp_path, share_args):
+    with warnings.catch_warnings(record=True) as record:
+        warnings.simplefilter("always")
+        submit_with_share_args(tmp_path, share_args)
+
+    assert not [w for w in record if SUBMITTER_NOT_NAMED in str(w.message)]
