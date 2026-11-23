@@ -205,7 +205,7 @@ def test_input_policy_refuses_call_over_rate_limit(capsys):
     )
 
 
-def test_held_back_outputs_point_to_the_policy(capsys):
+def test_held_back_outputs_point_to_policy(capsys):
     with _adder_api(output_policy=HOLD_BACK_POLICY) as setup:
         call = setup.ds_manager.api.adder(1, b=2, block=False)
         _run_calls(setup.do_manager, setup.config_path)

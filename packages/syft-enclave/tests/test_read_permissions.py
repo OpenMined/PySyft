@@ -817,12 +817,12 @@ def test_unshared_log_points_to_log_requests():
     enclave, do1, do2, ds = run_crash_sharing_nothing()
 
     job = ds.jobs["j"]
-    not_shared = (
+    not_shared_message = (
         "stderr.txt is not shared with you. "
         "The data owners can release it with request_stderr."
     )
-    assert str(job.stderr) == not_shared
-    assert not_shared in job.stderr._repr_html_()
+    assert str(job.stderr) == not_shared_message
+    assert not_shared_message in job.stderr._repr_html_()
     assert str(job.stdout) == (
         "stdout.txt is not shared with you. "
         "The data owners can release it with request_stdout."

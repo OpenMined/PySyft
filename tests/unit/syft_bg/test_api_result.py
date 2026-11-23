@@ -22,22 +22,26 @@ def test_create_api_lists_args(temp_dir):
     assert not result.state_cleared and STATE_CLEARED not in repr(result)
 
 
-def test_set_policies_says_when_it_cleared_state(temp_dir):
-    policy = temp_dir / "policy.py"
-    policy.write_text("pass\n")
+def test_set_policies_says_when_state_cleared(temp_dir):
+    policy_path = temp_dir / "policy.py"
+    policy_path.write_text("pass\n")
     with _patched_paths(temp_dir):
         _create(_write_project(temp_dir), allow_any_peer=True, args=ARGS)
-        cleared = set_policies("main", input_policy=policy)
-        kept = set_policies("main", output_policy=policy, reset_state=False)
+        cleared_result = set_policies("main", input_policy=policy_path)
+        kept_result = set_policies("main", output_policy=policy_path, reset_state=False)
 
-    assert cleared.state_cleared and STATE_CLEARED in repr(cleared)
-    assert not kept.state_cleared and STATE_CLEARED not in repr(kept)
-    assert kept.args == ["dataset: str = 'adult'", "n: int"]
+    assert cleared_result.state_cleared and STATE_CLEARED in repr(cleared_result)
+    assert not kept_result.state_cleared
+    assert STATE_CLEARED not in repr(kept_result)
+    assert kept_result.args == ["dataset: str = 'adult'", "n: int"]
 
 
-def test_print_shows_the_summary():
-    ok = ApiResult.from_api("main", ApiDefinition(args=[ApiArg(name="a", default=1)]))
-    failed = ApiResult(success=False, error="No policy at x.py")
+def test_api_result_str_matches_repr():
+    ok_result = ApiResult.from_api(
+        "main", ApiDefinition(args=[ApiArg(name="a", default=1)])
+    )
+    failed_result = ApiResult(success=False, error="No policy at x.py")
 
-    assert str(ok) == repr(ok) and str(ok).startswith("ApiResult: OK [main]")
-    assert str(failed) == "ApiResult: FAILED\n  error: No policy at x.py"
+    assert str(ok_result) == repr(ok_result)
+    assert str(ok_result).startswith("ApiResult: OK [main]")
+    assert str(failed_result) == "ApiResult: FAILED\n  error: No policy at x.py"

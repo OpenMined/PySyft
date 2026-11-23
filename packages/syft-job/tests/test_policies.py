@@ -291,7 +291,7 @@ def test_timed_out_api_call_shares_nothing(env):
     assert not env.reads(DS_EMAIL, "call.job", "returncode.txt")
 
 
-def test_unshared_log_says_so(env):
+def test_unshared_log_says_not_shared(env):
     """A reader without a log is told it is not shared, not that none exists."""
     job = env.call("echo private; exit 3")
     assert not env.reads(DS_EMAIL, "call.job", "stderr.txt")
@@ -299,13 +299,13 @@ def test_unshared_log_says_so(env):
     for log_file in ("stdout.txt", "stderr.txt"):
         (job.job_review_path / log_file).unlink()
 
-    not_shared = (
+    not_shared_message = (
         "stderr.txt is not shared with you. "
         "The data owner can share it with share_job_results."
     )
     ds_job = _ds_job(env)
-    assert str(ds_job.stderr) == not_shared
-    assert not_shared in ds_job.stderr._repr_html_()
+    assert str(ds_job.stderr) == not_shared_message
+    assert not_shared_message in ds_job.stderr._repr_html_()
     assert str(ds_job.stdout).startswith("stdout.txt is not shared with you.")
     # The data owner keeps every log, so a missing one was never written.
     assert str(job.stderr) == "No stderr file found"
@@ -376,8 +376,8 @@ def test_job_view_shows_params_escaped(env):
     html = env.do_job("call.job")._repr_html_()
 
     assert "<h4>Parameters</h4>" in html
-    pretty = '{\n  "word": "<b>privacy</b>",\n  "n": 3\n}'
-    assert escape(pretty) in html and "<b>privacy</b>" not in html
+    pretty_params = '{\n  "word": "<b>privacy</b>",\n  "n": 3\n}'
+    assert escape(pretty_params) in html and "<b>privacy</b>" not in html
     # A job without code/params.json has no such section.
     assert "<h4>Parameters</h4>" not in env.do_job("plain.job")._repr_html_()
 
