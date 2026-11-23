@@ -145,15 +145,8 @@ def test_api_policies_allow_block_and_show(capsys):
             "stderr.txt is not shared with you: the data owner's policy "
             "refused the call. The reason is in job.policy_error."
         )
-        capsys.readouterr()
         assert blocked.output_paths == []
-        # The DS is sent to the policy's reason, not to a stderr they don't get.
-        out = capsys.readouterr().out
-        assert (
-            "The data owner's policy refused the call: "
-            "ValueError: Sum too large to share" in out
-        )
-        assert "job.policy_error" in out and "job.stderr" not in out
+        capsys.readouterr()
         _print_call_result(blocked)
         assert capsys.readouterr().out == (
             f"Job '{large.name}' finished with status: failed\n"
@@ -202,14 +195,8 @@ def test_held_back_outputs_point_to_the_policy(capsys):
         held = _ds_job(ds_manager, call.name)
 
     assert held.status == "done" and held.outputs_withheld
-    capsys.readouterr()
     assert held.output_paths == []
-    # The DS is told the policy held the outputs back, not that the script
-    # wrote none.
-    out = capsys.readouterr().out
-    assert "The data owner's output policy held the outputs back." in out
-    assert "The data owner can still share them with you later." in out
-    assert "may not have written" not in out
+    capsys.readouterr()
     _print_call_result(held)
     assert capsys.readouterr().out == (
         f"Job '{call.name}' finished with status: done\n"

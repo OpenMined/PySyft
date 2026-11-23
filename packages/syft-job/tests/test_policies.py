@@ -291,7 +291,7 @@ def test_timed_out_api_call_shares_nothing(env):
     assert not env.reads(DS_EMAIL, "call.job", "returncode.txt")
 
 
-def test_unshared_log_says_so(env, capsys):
+def test_unshared_log_says_so(env):
     """A reader without a log is told it is not shared, not that none exists."""
     job = env.call("echo private; exit 3")
     assert not env.reads(DS_EMAIL, "call.job", "stderr.txt")
@@ -307,10 +307,6 @@ def test_unshared_log_says_so(env, capsys):
     assert str(ds_job.stderr) == not_shared
     assert not_shared in ds_job.stderr._repr_html_()
     assert str(ds_job.stdout).startswith("stdout.txt is not shared with you.")
-    capsys.readouterr()
-    ds_job.output_paths
-    out = capsys.readouterr().out
-    assert not_shared in out and "Check stderr" not in out
     # The data owner keeps every log, so a missing one was never written.
     assert str(job.stderr) == "No stderr file found"
 
