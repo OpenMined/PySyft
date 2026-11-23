@@ -645,9 +645,7 @@ def _interpret_environment() -> dict[str, bool]:
     }
 
 
-def bug_report(
-    as_dict: bool = False, redact_paths: bool = False
-) -> dict[str, Any] | None:
+def bug_report(as_dict: bool = False) -> dict[str, Any] | None:
     """
     Generate a comprehensive environment snapshot for bug reports.
 
@@ -655,12 +653,11 @@ def bug_report(
     OS details, Python configuration, virtual environments, package managers,
     installed packages, and Jupyter/Colab environment detection.
 
-    The output is safe to share: it prints only versions, paths, and config
-    metadata. No tokens, secrets, or sensitive credentials are included.
+    The output is safe to share: it prints only versions and config metadata.
+    No tokens, secrets, paths, or PII are included.
 
     Args:
         as_dict: If True, return the report as a dictionary instead of printing.
-        redact_paths: If True, redact user-specific paths in the output.
 
     Returns:
         If as_dict is True, returns a dictionary containing all collected info.
