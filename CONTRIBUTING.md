@@ -157,6 +157,9 @@ git push -u origin feature/your-feature-name
 Then open a Pull Request against `dev`. **Every PR must follow the
 [pull request format](#pull-request-format) below.**
 
+We do not accept PRs that only add tests, or PRs for features in beta, such as signed job receipts
+on the enclave.
+
 ## Pull Request Format
 
 Every PR must follow this format. Reviewers check it, and the title check blocks the merge when the
