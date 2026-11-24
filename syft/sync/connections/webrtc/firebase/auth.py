@@ -128,7 +128,8 @@ class FirebaseSession:
         self._refresh_token = refresh_token
         self._lock = threading.Lock()
         self._id_token = ""
-        # In time.monotonic() seconds.
+        # In time.time() seconds: the wall clock runs on while the machine
+        # sleeps, and the token expires on it too.
         self._id_token_expiry = 0.0
 
     def id_token(self) -> str:
@@ -139,9 +140,15 @@ class FirebaseSession:
             ConnectionError: Firebase refuses the saved session.
         """
         with self._lock:
-            if time.monotonic() > self._id_token_expiry - ID_TOKEN_MARGIN_SECONDS:
+            if time.time() > self._id_token_expiry - ID_TOKEN_MARGIN_SECONDS:
                 self._refresh_id_token()
             return self._id_token
+
+    def expire_id_token(self) -> None:
+        """Make the next ``id_token`` call get a new token, as after Firebase
+        said that the token expired."""
+        with self._lock:
+            self._id_token_expiry = 0.0
 
     def _refresh_id_token(self) -> None:
         reply = post_json(
@@ -149,7 +156,7 @@ class FirebaseSession:
             {"grantType": "refresh_token", "refreshToken": self._refresh_token},
         )
         self._id_token = reply["id_token"]
-        self._id_token_expiry = time.monotonic() + int(reply["expires_in"])
+        self._id_token_expiry = time.time() + int(reply["expires_in"])
         # Firebase can give a new refresh token in place of the old one.
         self._refresh_token = reply["refresh_token"]
         save_refresh_token(self._session_path, self._refresh_token)

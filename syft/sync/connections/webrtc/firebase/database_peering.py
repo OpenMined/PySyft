@@ -1,7 +1,8 @@
-"""Peering through Firestore: peer requests, key bundles and peer info.
+"""Peering through the Realtime Database: peer requests, acl/, key bundles and
+peer info.
 
-firebase/firestore.rules has the paths and who may read and write them. The
-peer list stays on local disk.
+firebase/database.rules.json has the paths and who may read and write them.
+The peer list stays on local disk.
 """
 
 from dataclasses import dataclass
@@ -11,7 +12,11 @@ from syft_migration import MigrationError
 
 from syft.sync.connections.naming import PEERS_META_KEY, SYFT_PEERS_VERSION
 from syft.sync.connections.protocols import PeeringConnection
-from syft.sync.connections.webrtc.firebase.firestore import FirestoreClient, SetFields
+from syft.sync.connections.webrtc.firebase.database import (
+    RealtimeDatabase,
+    email_key,
+    email_of_key,
+)
 from syft.sync.peers.peer import PeerState
 from syft.sync.sync.caches.persisted_dict import PersistedDict
 from syft.sync.sync.constants import CACHE_DIR
@@ -22,28 +27,29 @@ from syft.sync.version.peer_info import PeerInfo
 PEER_REGISTRY_PATH = Path(CACHE_DIR) / "webrtc" / "SYFT_peers.json"
 # A request from a peer in one of these states needs no decision.
 DECIDED_STATES = (PeerState.ACCEPTED.value, PeerState.REJECTED.value)
-REQUEST_EMAIL_FIELD = "email"
-KEY_BUNDLE_FIELD = "key_bundle"
-PEER_INFO_FIELD = "peer_info"
 
 
-def peer_requests_path(receiver: str) -> str:
-    """Return the collection of the requests to peer with ``receiver``."""
-    return f"peer_requests/{receiver.lower()}/from"
+def requests_path(receiver: str) -> str:
+    """Return the node of the requests to peer with ``receiver``."""
+    return f"requests/{email_key(receiver)}"
 
 
-def shared_with_path(owner: str) -> str:
-    """Return the collection of what ``owner`` shares with each reader."""
-    return f"shared/{owner.lower()}/with"
+def acl_path(owner: str) -> str:
+    """Return the node of the peers that ``owner`` accepts."""
+    return f"acl/{email_key(owner)}"
 
 
-def shared_path(owner: str, reader: str) -> str:
-    """Return the document of what ``owner`` shares with ``reader``."""
-    return f"{shared_with_path(owner)}/{reader.lower()}"
+def key_bundle_path(email: str) -> str:
+    return f"keys/{email_key(email)}"
+
+
+def peer_info_path(owner: str, reader: str) -> str:
+    """Return the node of the peer info that ``owner`` shares with ``reader``."""
+    return f"info/{email_key(owner)}/{email_key(reader)}"
 
 
 @dataclass(frozen=True)
-class FirestorePeeringConfig:
+class DatabasePeeringConfig:
     # The email of this client. Peers see it as spelled here.
     email: str
     syftbox_folder: Path
@@ -53,46 +59,45 @@ class FirestorePeeringConfig:
             raise ValueError("email must not be empty")
 
 
-class FirestorePeeringConnection(PeeringConnection):
-    """``PeeringConnection`` through Firestore. It works from any thread.
+class DatabasePeeringConnection(PeeringConnection):
+    """``PeeringConnection`` through the Realtime Database. It works from any
+    thread."""
 
-    Firestore has no grant on one document. Therefore what this client shares
-    with a peer goes into a document that only the two of them read.
-    """
-
-    def __init__(self, config: FirestorePeeringConfig, firestore: FirestoreClient):
+    def __init__(self, config: DatabasePeeringConfig, database: RealtimeDatabase):
         self._config = config
-        self._firestore = firestore
+        self._database = database
         self._registry = PersistedDict(path=config.syftbox_folder / PEER_REGISTRY_PATH)
 
     def whoami(self) -> str:
         return self._config.email
 
     def open_channels(self, peer: str) -> None:
-        """Ask ``peer`` to peer.
+        """Ask ``peer`` to peer, and let it send signals to this client.
 
         WebRTC opens the channel when both peers are online.
         """
-        request = SetFields(
-            f"{peer_requests_path(peer)}/{self._config.email.lower()}",
-            {REQUEST_EMAIL_FIELD: self._config.email},
+        me = self._config.email
+        self._database.update(
+            {
+                f"{requests_path(peer)}/{email_key(me)}": me,
+                f"{acl_path(me)}/{email_key(peer)}": True,
+            }
         )
-        self._firestore.write_documents([request])
 
     def incoming_requests(self) -> list[str]:
         """Return the emails that asked to peer, and have no decision yet.
 
         An email that is in the peer list comes back as the peer list spells it.
         """
-        read = self._firestore.query_collection(peer_requests_path(self._config.email))
+        requests = self._database.get(requests_path(self._config.email))
+        senders = [] if requests is None else list(requests.values())
         registry = dict(self._registry.items())
         # email in lower case -> the email as the peer list spells it
         spellings = {email.lower(): email for email in registry}
-        senders = [request.text(REQUEST_EMAIL_FIELD) for request in read.documents]
-        requests = [spellings.get(email.lower(), email) for email in senders]
+        emails = [spellings.get(sender.lower(), sender) for sender in senders]
         return [
             email
-            for email in requests
+            for email in emails
             if email not in registry or registry[email]["state"] not in DECIDED_STATES
         ]
 
@@ -117,30 +122,29 @@ class FirestorePeeringConnection(PeeringConnection):
         self._registry.set(PEERS_META_KEY, {"version": SYFT_PEERS_VERSION})
 
     def publish_key_bundle(self, peer: str, bundle_json: str) -> None:
-        path = shared_path(self._config.email, peer)
-        self._firestore.write_documents(
-            [SetFields(path, {KEY_BUNDLE_FIELD: bundle_json})]
-        )
+        """Publish the key bundle of this client, the same for every peer."""
+        self._database.put(key_bundle_path(self._config.email), bundle_json)
 
     def grant_key_bundle_read(self, peer: str) -> None:
-        """Do nothing: ``publish_key_bundle`` writes the key bundle into a
-        document that ``peer`` reads."""
+        """Do nothing: every signed-in user can read keys/, the key directory."""
 
     def read_own_key_bundle(self, peer: str) -> str | None:
-        return self._read_shared_field(self._config.email, peer, KEY_BUNDLE_FIELD)
+        return self._database.get(key_bundle_path(self._config.email))
 
     def read_peer_key_bundle(self, peer: str) -> str | None:
-        return self._read_shared_field(peer, self._config.email, KEY_BUNDLE_FIELD)
+        return self._database.get(key_bundle_path(peer))
 
     def publish_peer_info(self, peer_info: PeerInfo) -> None:
-        """Write ``peer_info`` for this client, and for each peer that can read
-        the peer info of this client."""
-        read = self._firestore.query_collection(shared_with_path(self._config.email))
-        readers = [
-            shared.path for shared in read.documents if PEER_INFO_FIELD in shared.fields
+        """Write ``peer_info`` for this client, and for each peer it accepts."""
+        me = self._config.email
+        accepted = self._database.get(acl_path(me))
+        readers = (
+            [] if accepted is None else [key for key, ok in accepted.items() if ok]
+        )
+        paths = [peer_info_path(me, me)] + [
+            peer_info_path(me, email_of_key(reader)) for reader in readers
         ]
-        own = shared_path(self._config.email, self._config.email)
-        self._write_peer_info(sorted({own, *readers}), peer_info)
+        self._write_peer_info(paths, peer_info)
 
     def read_own_peer_info(self) -> PeerInfo | None:
         return self._read_peer_info(self._config.email)
@@ -150,20 +154,19 @@ class FirestorePeeringConnection(PeeringConnection):
 
     def grant_peer_info_read(self, peer: str, peer_info: PeerInfo) -> None:
         """Write ``peer_info`` for this client and for ``peer``."""
-        paths = [
-            shared_path(self._config.email, self._config.email),
-            shared_path(self._config.email, peer),
-        ]
-        self._write_peer_info(paths, peer_info)
+        me = self._config.email
+        self._write_peer_info(
+            [peer_info_path(me, me), peer_info_path(me, peer)], peer_info
+        )
 
     def _write_peer_info(self, paths: list[str], peer_info: PeerInfo) -> None:
         data = peer_info.to_json()
-        self._firestore.write_documents(
-            [SetFields(path, {PEER_INFO_FIELD: data}) for path in paths]
-        )
+        self._database.update({path: data for path in paths})
 
     def _read_peer_info(self, owner: str) -> PeerInfo | None:
-        data = self._read_shared_field(owner, self._config.email, PEER_INFO_FIELD)
+        """Return the peer info that ``owner`` shares with this client, or None
+        if it shares none."""
+        data = self._database.get(peer_info_path(owner, self._config.email))
         if data is None:
             return None
         try:
@@ -172,11 +175,3 @@ class FirestorePeeringConnection(PeeringConnection):
             raise UnreadablePeerInfoError(
                 f"Could not read the peer info of {owner}: {err}"
             ) from err
-
-    def _read_shared_field(self, owner: str, reader: str, field: str) -> str | None:
-        """Return ``field`` of what ``owner`` shares with ``reader``, or None if
-        ``owner`` did not share it."""
-        shared = self._firestore.get_document(shared_path(owner, reader))
-        if shared is None or field not in shared.fields:
-            return None
-        return shared.text(field)

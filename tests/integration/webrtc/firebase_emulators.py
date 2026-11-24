@@ -1,5 +1,5 @@
 """The Firebase emulators for the tests of WebRTC mode, and users signed in to
-them. The emulators need npx and Java 11 or later."""
+them. The emulators need npx and Java 21 or later."""
 
 import json
 import os
@@ -19,13 +19,16 @@ from syft.sync.connections.webrtc.firebase.auth import (
     load_refresh_token,
     sign_in_with_emailed_link,
 )
-from syft.sync.connections.webrtc.firebase.firestore import FirestoreClient
-from syft.sync.connections.webrtc.firebase.firestore_signaling import (
-    FirestoreSignaling,
+from syft.sync.connections.webrtc.firebase.database import (
+    RealtimeDatabase,
+    email_key,
+)
+from syft.sync.connections.webrtc.firebase.database_signaling import (
+    DatabaseSignaling,
 )
 from syft.sync.connections.webrtc.firebase.project import (
     AUTH_EMULATOR_PORT,
-    FIRESTORE_EMULATOR_PORT,
+    DATABASE_EMULATOR_PORT,
     FirebaseProject,
 )
 from syft.sync.connections.webrtc.firebase.turn import no_ice_servers
@@ -39,9 +42,9 @@ FIREBASE_FOLDER = Path(__file__).parents[3] / "firebase"
 START_TIMEOUT_SECONDS = 120
 STOP_TIMEOUT_SECONDS = 30
 AUTH_EMULATOR = f"http://{EMULATOR_HOST}:{AUTH_EMULATOR_PORT}"
-FIRESTORE_EMULATOR = f"http://{EMULATOR_HOST}:{FIRESTORE_EMULATOR_PORT}"
+DATABASE_EMULATOR = f"http://{EMULATOR_HOST}:{DATABASE_EMULATOR_PORT}"
 EMULATOR_PROJECT_PATH = f"emulator/v1/projects/{PROJECT_ID}"
-EMULATOR_PORTS = (AUTH_EMULATOR_PORT, FIRESTORE_EMULATOR_PORT)
+EMULATOR_PORTS = (AUTH_EMULATOR_PORT, DATABASE_EMULATOR_PORT)
 
 EMULATOR_CONFIG = WebRTCConfig(
     firebase_project_id=PROJECT_ID,
@@ -53,7 +56,8 @@ EMULATOR_PROJECT = FirebaseProject.from_config(EMULATOR_CONFIG)
 
 @contextmanager
 def running_emulators() -> Iterator[None]:
-    """Run the Auth and Firestore emulators with firebase/firestore.rules.
+    """Run the Auth and Realtime Database emulators with
+    firebase/database.rules.json.
 
     Raises:
         RuntimeError: An emulator port is in use, or the emulators do not start.
@@ -72,7 +76,7 @@ def running_emulators() -> Iterator[None]:
                 FIREBASE_TOOLS,
                 "emulators:start",
                 "--only",
-                "auth,firestore",
+                "auth,database",
                 "--project",
                 PROJECT_ID,
             ],
@@ -116,12 +120,14 @@ def stop_emulators(process: subprocess.Popen) -> None:
 
 
 def clear_emulators() -> None:
-    """Delete every user and every document."""
-    for url in (
-        f"{AUTH_EMULATOR}/{EMULATOR_PROJECT_PATH}/accounts",
-        f"{FIRESTORE_EMULATOR}/{EMULATOR_PROJECT_PATH}/databases/(default)/documents",
-    ):
-        urllib.request.urlopen(urllib.request.Request(url, method="DELETE")).close()
+    """Delete every user and all data."""
+    accounts = f"{AUTH_EMULATOR}/{EMULATOR_PROJECT_PATH}/accounts"
+    urllib.request.urlopen(urllib.request.Request(accounts, method="DELETE")).close()
+    # The emulator lets "owner" pass every rule.
+    root = f"{DATABASE_EMULATOR}/.json?ns={EMULATOR_PROJECT.database_namespace}"
+    headers = {"Authorization": "Bearer owner"}
+    request = urllib.request.Request(root, headers=headers, method="DELETE")
+    urllib.request.urlopen(request).close()
 
 
 def emailed_link(email: str) -> str:
@@ -151,23 +157,25 @@ def sign_in(email: str, syftbox_folder: Path) -> FirebaseSession:
     )
 
 
-def firestore_of(email: str, syftbox_folder: Path) -> FirestoreClient:
-    """A Firestore client of ``email``, signed in to the emulators."""
-    return FirestoreClient(EMULATOR_PROJECT, sign_in(email, syftbox_folder))
+def database_of(email: str, syftbox_folder: Path) -> RealtimeDatabase:
+    """The Realtime Database of ``email``, signed in to the emulators."""
+    return RealtimeDatabase(EMULATOR_PROJECT, sign_in(email, syftbox_folder))
 
 
-def signaling_of(email: str, syftbox_folder: Path) -> FirestoreSignaling:
-    """The signaling of ``email`` on the emulators, with no ICE servers."""
-    return FirestoreSignaling(firestore_of(email, syftbox_folder), no_ice_servers)
+def signalings_of_peers(
+    first: str, second: str, folder: Path
+) -> tuple[DatabaseSignaling, DatabaseSignaling]:
+    """The signalings of two users who accept each other, with no ICE servers."""
+    first_database = database_of(first, folder / "first")
+    second_database = database_of(second, folder / "second")
+    first_database.put(f"acl/{email_key(first)}/{email_key(second)}", True)
+    second_database.put(f"acl/{email_key(second)}/{email_key(first)}", True)
+    return (
+        DatabaseSignaling(first_database, no_ice_servers),
+        DatabaseSignaling(second_database, no_ice_servers),
+    )
 
 
-def fail_next_inbox_poll(signaling: FirestoreSignaling) -> None:
-    """Make the next inbox poll of ``signaling`` fail, so its session ends."""
-    firestore = signaling._firestore
-    query_collection = firestore.query_collection
-
-    def fail_once(path: str):
-        firestore.query_collection = query_collection
-        raise ConnectionError("Firestore is down")
-
-    firestore.query_collection = fail_once
+def end_stream(signaling: DatabaseSignaling) -> None:
+    """Cut the stream of ``signaling``, as a lost network does."""
+    signaling._stream._socket.shutdown(socket.SHUT_RDWR)

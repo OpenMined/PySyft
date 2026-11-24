@@ -30,13 +30,13 @@ from syft.sync.connections.webrtc.firebase.auth import (
     firebase_session_path,
     load_refresh_token,
 )
-from syft.sync.connections.webrtc.firebase.firestore import FirestoreClient
-from syft.sync.connections.webrtc.firebase.firestore_peering import (
-    FirestorePeeringConfig,
-    FirestorePeeringConnection,
+from syft.sync.connections.webrtc.firebase.database import RealtimeDatabase
+from syft.sync.connections.webrtc.firebase.database_peering import (
+    DatabasePeeringConfig,
+    DatabasePeeringConnection,
 )
-from syft.sync.connections.webrtc.firebase.firestore_signaling import (
-    FirestoreSignaling,
+from syft.sync.connections.webrtc.firebase.database_signaling import (
+    DatabaseSignaling,
 )
 from syft.sync.connections.webrtc.firebase.project import FirebaseProject
 from syft.sync.connections.webrtc.firebase.turn import TurnFunction, no_ice_servers
@@ -695,15 +695,15 @@ class SyftboxManager(BaseModelCallbackMixin):
         session = FirebaseSession(
             project, session_path, load_refresh_token(session_path)
         )
-        firestore = FirestoreClient(project, session)
+        database = RealtimeDatabase(project, session)
         if project.turn_function_url is None:
             ice_server_source: IceServerSource = no_ice_servers
         else:
             ice_server_source = TurnFunction(project.turn_function_url, session)
-        signaling = FirestoreSignaling(firestore, ice_server_source)
+        signaling = DatabaseSignaling(database, ice_server_source)
         p2p = WebRTCP2PConnection(config.email, config.syftbox_folder)
-        p2p.open(AiortcPeerConnections(signaling, sends_offers=config.has_ds_role))
-        peering_config = FirestorePeeringConfig(config.email, config.syftbox_folder)
+        p2p.open(AiortcPeerConnections(signaling))
+        peering_config = DatabasePeeringConfig(config.email, config.syftbox_folder)
         return Connections(
             p2p_con=p2p,
             owner_store_con=LocalOwnerStoreConnection(
@@ -711,7 +711,7 @@ class SyftboxManager(BaseModelCallbackMixin):
             ),
             watcher_store_con=DriveWatcherStoreConnection(),
             collections_con=WebRTCCollectionsConnection(),
-            peering_con=FirestorePeeringConnection(peering_config, firestore),
+            peering_con=DatabasePeeringConnection(peering_config, database),
             platform=WebRTCPlatform(),
         )
 
@@ -930,7 +930,7 @@ class SyftboxManager(BaseModelCallbackMixin):
         datasets and storage."""
         network = FakeNetwork()
         return cls._mock_drive_and_webrtc_pair(
-            lambda sends_offers: FakePeerConnections(network), **kwargs
+            lambda: FakePeerConnections(network), **kwargs
         )
 
     @classmethod
@@ -947,30 +947,28 @@ class SyftboxManager(BaseModelCallbackMixin):
 
         signaling = LocalSignaling()
         return cls._mock_drive_and_webrtc_pair(
-            lambda sends_offers: AiortcPeerConnections(signaling, sends_offers),
+            lambda: AiortcPeerConnections(signaling),
             **kwargs,
         )
 
     @classmethod
     def _mock_drive_and_webrtc_pair(
         cls,
-        make_peer_connections: Callable[[bool], PeerConnections],
+        make_peer_connections: Callable[[], PeerConnections],
         add_peers: bool = True,
         **config_kwargs: Any,
     ) -> tuple["SyftboxManager", "SyftboxManager"]:
         """(ds_manager, do_manager) over one mock Drive, their p2p replaced by a
         ``WebRTCP2PConnection`` on each side. With ``add_peers``, the approval
-        gives both sides their peers, and the DS connects to the DO.
-        ``make_peer_connections`` takes whether its client sends offers: the
-        DS does, and the DO does not."""
+        gives both sides their peers, and the two connect."""
         do_config, ds_config = cls._mock_pair_configs(**config_kwargs)
         do_connections, ds_connections = cls._mock_drive_connections(
             do_config, ds_config
         )
         do_p2p = WebRTCP2PConnection(do_config.email, do_config.syftbox_folder)
         ds_p2p = WebRTCP2PConnection(ds_config.email, ds_config.syftbox_folder)
-        do_p2p.open(make_peer_connections(False))
-        ds_p2p.open(make_peer_connections(True))
+        do_p2p.open(make_peer_connections())
+        ds_p2p.open(make_peer_connections())
         return cls._test_pair(
             do_config,
             do_connections.model_copy(update={"p2p_con": do_p2p}),

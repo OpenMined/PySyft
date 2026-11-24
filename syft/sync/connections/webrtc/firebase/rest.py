@@ -35,6 +35,21 @@ def post_json(url: str, body: Any, id_token: str | None = None) -> Any:
     return send_request(request)
 
 
+def request_json(method: str, url: str, body: Any = None) -> Any:
+    """Send ``body`` as JSON with ``method``, and return the JSON answer.
+
+    The credentials, if any, are in the query of ``url``.
+
+    Raises:
+        FirebaseRequestError: The API answers with an error status.
+        ConnectionUnavailableError: The API cannot be reached.
+    """
+    data = None if body is None else json.dumps(body).encode()
+    headers = {} if body is None else {"Content-Type": "application/json"}
+    request = urllib.request.Request(url, data=data, headers=headers, method=method)
+    return send_request(request)
+
+
 def get_json(url: str, id_token: str) -> Any:
     """GET ``url`` as the user of ``id_token``, and return the JSON answer.
 
@@ -47,6 +62,8 @@ def get_json(url: str, id_token: str) -> Any:
 
 
 def send_request(request: urllib.request.Request) -> Any:
+    # The query can hold an ID token, so no message shows it.
+    url = without_query(request.full_url)
     try:
         with urllib.request.urlopen(
             request, timeout=REQUEST_TIMEOUT_SECONDS
@@ -54,8 +71,10 @@ def send_request(request: urllib.request.Request) -> Any:
             return json.load(response)
     except urllib.error.HTTPError as err:
         reason = err.read().decode(errors="replace")
-        raise FirebaseRequestError(request.full_url, err.code, reason) from err
+        raise FirebaseRequestError(url, err.code, reason) from err
     except OSError as err:
-        raise ConnectionUnavailableError(
-            f"Could not reach {request.full_url}: {err}"
-        ) from err
+        raise ConnectionUnavailableError(f"Could not reach {url}: {err}") from err
+
+
+def without_query(url: str) -> str:
+    return url.split("?", 1)[0]

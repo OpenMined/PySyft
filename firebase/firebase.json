@@ -1,21 +1,24 @@
 {
-  "firestore": {
-    "rules": "firestore.rules"
+  "database": {
+    "rules": "database.rules.json"
   },
   "functions": [
     {
       "source": "functions",
       "codebase": "default",
       "runtime": "python312",
-      "ignore": ["venv", "__pycache__"]
+      "ignore": [
+        "venv",
+        "__pycache__"
+      ]
     }
   ],
   "emulators": {
     "auth": {
       "port": 9099
     },
-    "firestore": {
-      "port": 8080
+    "database": {
+      "port": 9000
     },
     "ui": {
       "enabled": false

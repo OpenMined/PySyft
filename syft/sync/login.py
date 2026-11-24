@@ -141,13 +141,13 @@ def _webrtc_config_from_settings() -> WebRTCConfig:
     """
     if settings.firebase_project_id is None:
         raise ValueError(
-            "Set SYFT_FIREBASE_PROJECT_ID to the Firebase project of your org, "
-            "then log in again."
+            "Set SYFT_FIREBASE_PROJECT_ID to the Firebase project for WebRTC, then "
+            "log in again."
         )
     if settings.firebase_api_key is None:
         raise ValueError(
-            "Set SYFT_FIREBASE_API_KEY to the web API key of the Firebase project "
-            "of your org, then log in again."
+            "Set SYFT_FIREBASE_API_KEY to the web API key of the Firebase project, "
+            "then log in again."
         )
     return WebRTCConfig(
         firebase_project_id=settings.firebase_project_id,

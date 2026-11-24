@@ -1,16 +1,15 @@
-"""Signaling between peers in one process. TEMP: V3 replaces it with the
-peering connection."""
+"""Signaling between peers in one process."""
 
 import asyncio
-from collections import defaultdict
+import uuid
 from dataclasses import dataclass
 
 from syft.sync.connections.webrtc.signaling.signaling import (
-    IceServers,
+    IceServerSet,
     OnAnswerFailed,
     OnClosed,
+    OnHello,
     OnOffer,
-    OnOnline,
     Signaling,
 )
 
@@ -18,29 +17,29 @@ from syft.sync.connections.webrtc.signaling.signaling import (
 @dataclass(frozen=True)
 class Listener:
     on_offer: OnOffer
-    on_online: OnOnline
+    on_hello: OnHello
+    # A new id at each listen.
+    session: str
     # The loop that runs both callbacks.
     loop: asyncio.AbstractEventLoop
 
 
 class LocalSignaling(Signaling):
-    """Gives each offer directly to the ``on_offer`` of the receiver.
+    """Gives each hello and each offer directly to the receiver.
 
-    ``on_offer`` runs on the loop of the receiver. A peer is online while it
+    The callbacks run on the loop of the receiver. A peer is online while it
     listens.
     """
 
     def __init__(self):
         # email -> its listener
         self._listeners: dict[str, Listener] = {}
-        # email -> the emails that watch it
-        self._watchers: dict[str, set[str]] = defaultdict(set)
 
     async def listen(
         self,
         email: str,
         on_offer: OnOffer,
-        on_online: OnOnline,
+        on_hello: OnHello,
         on_closed: OnClosed,
         on_answer_failed: OnAnswerFailed,
     ) -> None:
@@ -48,22 +47,19 @@ class LocalSignaling(Signaling):
         never runs. A failed answer goes to the offerer as an error, so
         ``on_answer_failed`` never runs."""
         self._listeners[email] = Listener(
-            on_offer, on_online, asyncio.get_running_loop()
+            on_offer, on_hello, uuid.uuid4().hex, asyncio.get_running_loop()
         )
-        for watcher in self._watchers[email] & self._listeners.keys():
-            self._report_online(watcher, email)
 
-    async def ice_servers(self, email: str) -> IceServers:
+    async def ice_servers(self, email: str) -> IceServerSet:
         # Peers in one process reach each other with no STUN or TURN server.
-        return []
+        return IceServerSet([], None)
 
-    async def watch(self, email: str, peers: list[str]) -> None:
-        for watchers in self._watchers.values():
-            watchers.discard(email)
+    async def hello(self, email: str, peers: list[str]) -> None:
+        session = self._listeners[email].session
         for peer in peers:
-            self._watchers[peer].add(email)
             if peer in self._listeners:
-                self._report_online(email, peer)
+                listener = self._listeners[peer]
+                listener.loop.call_soon_threadsafe(listener.on_hello, email, session)
 
     async def offer(self, sender: str, receiver: str, sdp: str) -> str:
         if receiver not in self._listeners:
@@ -76,7 +72,3 @@ class LocalSignaling(Signaling):
 
     async def close(self, email: str) -> None:
         del self._listeners[email]
-
-    def _report_online(self, watcher: str, peer: str) -> None:
-        listener = self._listeners[watcher]
-        listener.loop.call_soon_threadsafe(listener.on_online, peer)

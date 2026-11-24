@@ -1,5 +1,5 @@
-"""A DO and a DS in WebRTC mode: peering through Firestore on the Firebase
-emulators, and messages over real WebRTC on this machine. No Google Drive,
+"""A DO and a DS in WebRTC mode: peering through the Realtime Database on the
+Firebase emulators, and messages over real WebRTC on this machine. No Google Drive,
 mock or real, takes part."""
 
 import time
@@ -10,15 +10,15 @@ from syft.sync.connections.config import ConnectionRouterConfig
 from syft.sync.syftbox_manager import SyftboxManager
 from tests.integration.webrtc.firebase_emulators import (
     EMULATOR_CONFIG,
-    fail_next_inbox_poll,
+    end_stream,
     sign_in,
 )
 from tests.integration.webrtc.utils import close, flush, p2p_of
 from tests.unit.test_sync_manager import path_for_job
 from tests.unit.utils import grant_job_inbox_access
 
-# The next inbox poll comes within this time.
-POLL_SECONDS = 2
+# Time for the stream thread to see that its connection is gone.
+STREAM_END_SECONDS = 2
 
 pytestmark = pytest.mark.usefixtures("firebase_emulators")
 
@@ -97,8 +97,8 @@ def test_sync_finishes_pass_before_it_reports_ended_session(webrtc_pair):
     job_path = path_for_job(do_manager.email, ds_manager.email)
     ds_manager._send_file_change(job_path, "Hello, world!")
     flush(ds_manager)
-    fail_next_inbox_poll(p2p_of(do_manager)._peer_connections.signaling)
-    time.sleep(POLL_SECONDS)
+    end_stream(p2p_of(do_manager)._peer_connections.signaling)
+    time.sleep(STREAM_END_SECONDS)
 
     with pytest.raises(ConnectionError, match="signaling session ended"):
         do_manager.sync()

@@ -11,7 +11,7 @@ DS = "ds@example.com"
 OTHER_DS = "other-ds@example.com"
 
 
-def ignore_online(peer: str) -> None:
+def ignore_hello(sender: str, session: str) -> None:
     pass
 
 
@@ -30,7 +30,7 @@ def test_offer_reaches_listener_and_returns_its_answer():
         async def answer(sender: str, sdp: str) -> str:
             return f"answer from {DO} to {sender}: {sdp}"
 
-        await signaling.listen(DO, answer, ignore_online, ignore_error, ignore_error)
+        await signaling.listen(DO, answer, ignore_hello, ignore_error, ignore_error)
         return await signaling.offer(DS, DO, "offer")
 
     assert asyncio.run(exchange()) == f"answer from {DO} to {DS}: offer"
@@ -41,43 +41,24 @@ def test_offer_to_peer_not_listening_is_refused():
         asyncio.run(LocalSignaling().offer(DS, DO, "offer"))
 
 
-def test_watch_reports_peers_listening_now_and_later():
-    async def watch_two_peers() -> list[str]:
+def test_hello_reaches_only_peers_that_listen():
+    async def say_hello() -> list[tuple[str, str]]:
         signaling = LocalSignaling()
-        online: list[str] = []
+        hellos: list[tuple[str, str]] = []
+
+        def on_hello(sender: str, session: str) -> None:
+            hellos.append((sender, session))
+
+        await signaling.listen(DO, answer_nothing, on_hello, ignore_error, ignore_error)
         await signaling.listen(
-            DO, answer_nothing, online.append, ignore_error, ignore_error
-        )
-        await signaling.listen(
-            DS, answer_nothing, ignore_online, ignore_error, ignore_error
+            DS, answer_nothing, ignore_hello, ignore_error, ignore_error
         )
 
-        await signaling.watch(DO, [DS, OTHER_DS])
-        await signaling.listen(
-            OTHER_DS, answer_nothing, ignore_online, ignore_error, ignore_error
-        )
-        # LocalSignaling calls on_online on the loop of the watcher. The calls
-        # run when this coroutine yields.
+        await signaling.hello(DS, [DO, OTHER_DS])
+        # LocalSignaling calls on_hello on the loop of the receiver. The call
+        # runs when this coroutine yields.
         await asyncio.sleep(0)
-        return online
+        return hellos
 
-    assert asyncio.run(watch_two_peers()) == [DS, OTHER_DS]
-
-
-def test_watch_replaces_earlier_watch_list():
-    async def watch_then_unwatch() -> list[str]:
-        signaling = LocalSignaling()
-        online: list[str] = []
-        await signaling.listen(
-            DO, answer_nothing, online.append, ignore_error, ignore_error
-        )
-
-        await signaling.watch(DO, [DS])
-        await signaling.watch(DO, [])
-        await signaling.listen(
-            DS, answer_nothing, ignore_online, ignore_error, ignore_error
-        )
-        await asyncio.sleep(0)
-        return online
-
-    assert asyncio.run(watch_then_unwatch()) == []
+    [(sender, session)] = asyncio.run(say_hello())
+    assert sender == DS and session

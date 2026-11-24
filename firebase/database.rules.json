@@ -1,0 +1,69 @@
+{
+  "rules": {
+    "keys": {
+      "$email": {
+        ".read": "auth != null && auth.token.email_verified == true",
+        ".write": "auth != null && auth.token.email_verified == true && auth.token.email.toLowerCase().replace('.', ',') == $email",
+        ".validate": "newData.isString()"
+      }
+    },
+    "info": {
+      "$owner": {
+        "$reader": {
+          ".read": "auth != null && auth.token.email_verified == true && (auth.token.email.toLowerCase().replace('.', ',') == $owner || auth.token.email.toLowerCase().replace('.', ',') == $reader)",
+          ".write": "auth != null && auth.token.email_verified == true && auth.token.email.toLowerCase().replace('.', ',') == $owner",
+          ".validate": "newData.isString()"
+        }
+      }
+    },
+    "requests": {
+      "$to": {
+        ".read": "auth != null && auth.token.email_verified == true && auth.token.email.toLowerCase().replace('.', ',') == $to",
+        "$from": {
+          ".read": "auth != null && auth.token.email_verified == true && auth.token.email.toLowerCase().replace('.', ',') == $from",
+          ".write": "auth != null && auth.token.email_verified == true && auth.token.email.toLowerCase().replace('.', ',') == $from",
+          ".validate": "newData.isString() && newData.val().toLowerCase().replace('.', ',') == $from"
+        }
+      }
+    },
+    "acl": {
+      "$owner": {
+        ".read": "auth != null && auth.token.email_verified == true && auth.token.email.toLowerCase().replace('.', ',') == $owner",
+        "$peer": {
+          ".write": "auth != null && auth.token.email_verified == true && auth.token.email.toLowerCase().replace('.', ',') == $owner",
+          ".validate": "newData.isBoolean()"
+        }
+      }
+    },
+    "signal": {
+      "$to": {
+        ".read": "auth != null && auth.token.email_verified == true && auth.token.email.toLowerCase().replace('.', ',') == $to",
+        ".write": "auth != null && auth.token.email_verified == true && auth.token.email.toLowerCase().replace('.', ',') == $to && !newData.exists()",
+        "$from": {
+          "$id": {
+            ".write": "auth != null && auth.token.email_verified == true && ((auth.token.email.toLowerCase().replace('.', ',') == $from && (!data.exists() || $id == 'hello') && newData.exists() && root.child('acl').child($to).child($from).val() == true) || (auth.token.email.toLowerCase().replace('.', ',') == $to && !newData.exists()))",
+            ".validate": "(newData.child('type').val() == 'hello') == ($id == 'hello') && ((newData.child('type').val() == 'hello' && newData.hasChildren(['session'])) || ((newData.child('type').val() == 'offer' || newData.child('type').val() == 'answer') && newData.hasChildren(['request', 'sdp'])) || (newData.child('type').val() == 'refuse' && newData.hasChildren(['request', 'reason'])))",
+            "type": {
+              ".validate": "newData.isString()"
+            },
+            "session": {
+              ".validate": "newData.isString() && (newData.parent().child('type').val() == 'hello')"
+            },
+            "request": {
+              ".validate": "newData.isString() && (newData.parent().child('type').val() == 'offer' || newData.parent().child('type').val() == 'answer' || newData.parent().child('type').val() == 'refuse')"
+            },
+            "sdp": {
+              ".validate": "newData.isString() && (newData.parent().child('type').val() == 'offer' || newData.parent().child('type').val() == 'answer')"
+            },
+            "reason": {
+              ".validate": "newData.isString() && (newData.parent().child('type').val() == 'refuse')"
+            },
+            "$other": {
+              ".validate": false
+            }
+          }
+        }
+      }
+    }
+  }
+}

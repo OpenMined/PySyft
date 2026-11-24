@@ -22,13 +22,16 @@ from syft.sync.connections.webrtc.peer_connections import (
     OnOpen,
     PeerConnections,
 )
-from syft.sync.connections.webrtc.signaling.signaling import Signaling
+from syft.sync.connections.webrtc.signaling.signaling import IceServers, Signaling
 
 logger = logging.getLogger(__name__)
 
-# Polling the signaling and asking for TURN credentials take seconds each.
+# The round trips of the signaling and the TURN request take seconds each.
 CONNECT_TIMEOUT_SECONDS = 20.0
 CHANNEL_LABEL = "syft"
+# The offering side opens a new peer connection after this part of the
+# lifetime of its TURN credentials.
+CREDENTIALS_REFRESH_FRACTION = 0.9
 # The maximum message size that aiortc advertises. For each 1200-byte SCTP fragment
 # that arrives, aiortc's InboundStream.pop_messages scans all earlier fragments of
 # the message. Therefore the receive time grows with the square of the message size.
@@ -65,9 +68,12 @@ class AiortcPeerConnections(PeerConnections):
     loop thread that runs them. ``on_open`` and ``on_frame`` run on that
     thread.
 
-    A DS sends the offers. A DO only answers, and only the offers of its peers.
-    A failure in the background, such as a connect that fails or a signaling
-    session that ends, waits until ``maybe_raise_background_errors`` raises it.
+    Of two peers, the one with the lower email sends the offer. Each side says
+    hello to its peers when it signs in, and answers only the offers of its
+    peers. The offering side opens a new peer connection before its TURN
+    credentials expire. A failure in the background, such as a connect that
+    fails or a signaling session that ends, waits until
+    ``maybe_raise_background_errors`` raises it.
 
     A frame can have any size. ``split_frame_into_chunks`` splits it into
     chunks of at most ``MAX_MESSAGE_BYTES``, and the peer joins the chunks
@@ -76,9 +82,8 @@ class AiortcPeerConnections(PeerConnections):
     # open() sets it.
     email: str
 
-    def __init__(self, signaling: Signaling, sends_offers: bool):
+    def __init__(self, signaling: Signaling):
         self.signaling = signaling
-        self._sends_offers = sends_offers
         self._on_open: OnOpen | None = None
         self._on_frame: OnFrame | None = None
         self._loop = asyncio.new_event_loop()
@@ -92,10 +97,17 @@ class AiortcPeerConnections(PeerConnections):
         # peer email in lower case -> the peer email as set_peers spells it.
         # The signaling reports each email as its owner spells it.
         self._peers: dict[str, str] = {}
-        # peer email -> the task that connects to it after its online event,
-        # until the task ends. This dict keeps a strong reference to each task,
-        # because asyncio keeps only a weak one.
+        # peer email -> the task that connects to it after its hello, until the
+        # task ends. This dict keeps a strong reference to each task, because
+        # asyncio keeps only a weak one.
         self._connect_tasks: dict[str, asyncio.Task] = {}
+        # peer email -> the task that opens a new connection to it before the
+        # TURN credentials expire
+        self._refresh_tasks: dict[str, asyncio.Task] = {}
+        # peer email in lower case -> the session of its last hello
+        self._peer_sessions: dict[str, str] = {}
+        # The tasks that say hello, until they end.
+        self._hello_tasks: set[asyncio.Task] = set()
         # The sign-in to the signaling. None until the first set_peers or
         # connect, and again after the session ends.
         self._sign_in_task: asyncio.Task | None = None
@@ -118,12 +130,13 @@ class AiortcPeerConnections(PeerConnections):
         self._run(self._connect(peer), timeout)
 
     def set_peers(self, peers: list[str]) -> None:
-        """Set the peers of this client.
+        """Set the peers of this client, and say hello to each peer with no open
+        channel.
 
-        A client that sends offers connects to each peer when the peer is
-        online, now and each time the peer comes online again. A client that
-        only answers refuses an offer from an email that is not in ``peers``.
-        The channel to each email that is not in ``peers`` closes.
+        A peer that is online answers the hello, and the two connect. Thus each
+        call tries again to connect to the peers that are not connected. This
+        client refuses an offer from an email that is not in ``peers``. The
+        channel to each email that is not in ``peers`` closes.
         """
         self._run(self._set_peers(peers))
 
@@ -132,8 +145,8 @@ class AiortcPeerConnections(PeerConnections):
         are any.
 
         Raises:
-            ConnectionError: A connect failed, a peer refused an offer, or the
-                signaling session ended.
+            ConnectionError: A connect or a hello failed, a peer refused an
+                offer, an answer failed, or the signaling session ended.
         """
         self._run(self._maybe_raise_background_errors())
 
@@ -180,8 +193,9 @@ class AiortcPeerConnections(PeerConnections):
         self._peers = {peer.lower(): peer for peer in peers}
         await self._close_rtc_connections_of_other_emails()
         await self._maybe_sign_in()
-        if self._sends_offers:
-            await self.signaling.watch(self.email, peers)
+        unconnected = [peer for peer in peers if not self._has_open_channel(peer)]
+        if unconnected:
+            self._start_hello(unconnected)
 
     async def _maybe_raise_background_errors(self) -> None:
         if self._background_errors:
@@ -191,22 +205,51 @@ class AiortcPeerConnections(PeerConnections):
                 f"WebRTC failed in the background: {reasons}"
             ) from errors[0]
 
-    def _on_peer_online(self, reported_email: str) -> None:
+    def _on_hello(self, reported_email: str, session: str) -> None:
+        """Connect to a peer that said hello: offer, or say hello back so that
+        the peer offers."""
         if reported_email.lower() not in self._peers:
             return
         peer = self._peers[reported_email.lower()]
-        # The signaling reports a watched peer again at each set_peers. A peer
-        # with a channel, or with a connection on the way, gets no new one.
-        if not self._has_open_channel(peer) and peer not in self._connect_tasks:
+        last_session = self._peer_sessions.get(peer.lower())
+        self._peer_sessions[peer.lower()] = session
+        # The peer says hello again at each set_peers. A hello in the same
+        # session to an open channel needs nothing.
+        if self._has_open_channel(peer) and session == last_session:
+            return
+        if self._sends_offer_to(peer):
+            self._maybe_start_connect(peer)
+        else:
+            self._start_hello([peer])
+
+    def _sends_offer_to(self, peer: str) -> bool:
+        return self.email.lower() < peer.lower()
+
+    def _maybe_start_connect(self, peer: str) -> None:
+        """Connect to ``peer`` in the background, unless a connect is on the
+        way."""
+        if peer not in self._connect_tasks:
             task = asyncio.create_task(self._connect_in_background(peer))
             self._connect_tasks[peer] = task
             task.add_done_callback(lambda _: self._connect_tasks.pop(peer))
+
+    def _start_hello(self, peers: list[str]) -> None:
+        task = asyncio.create_task(self._say_hello(peers))
+        self._hello_tasks.add(task)
+        task.add_done_callback(self._hello_tasks.discard)
+
+    async def _say_hello(self, peers: list[str]) -> None:
+        try:
+            await self.signaling.hello(self.email, peers)
+        except ConnectionError as err:
+            error = ConnectionError(f"Could not say hello to {peers}: {err!r}")
+            self._background_errors.append(error)
 
     async def _connect_in_background(self, peer: str) -> None:
         try:
             await asyncio.wait_for(self._connect(peer), CONNECT_TIMEOUT_SECONDS)
         except (ConnectionError, TimeoutError) as err:
-            # The next online event of the peer starts a new connection.
+            # The next hello of the peer starts a new connection.
             error = ConnectionError(f"Could not connect to {peer}: {err!r}")
             self._background_errors.append(error)
 
@@ -226,6 +269,8 @@ class AiortcPeerConnections(PeerConnections):
         for peer in others:
             if peer in self._connect_tasks:
                 self._connect_tasks[peer].cancel()
+            if peer in self._refresh_tasks:
+                self._refresh_tasks.pop(peer).cancel()
             self._channels.pop(peer, None)
             self._partial_frames.pop(peer, None)
             await self._rtc_connections.pop(peer).close()
@@ -239,7 +284,7 @@ class AiortcPeerConnections(PeerConnections):
                 self.signaling.listen(
                     self.email,
                     self._answer,
-                    self._on_peer_online,
+                    self._on_hello,
                     self._on_signaling_closed,
                     self._on_answer_failed,
                 )
@@ -248,7 +293,8 @@ class AiortcPeerConnections(PeerConnections):
 
     async def _connect(self, peer: str) -> None:
         await self._maybe_sign_in()
-        rtc = await self._new_rtc_connection(peer)
+        ice_servers = await self.signaling.ice_servers(self.email)
+        rtc = await self._new_rtc_connection(peer, ice_servers.servers)
         channel = rtc.createDataChannel(CHANNEL_LABEL)
         self._use_channel(peer, channel)
         opened = asyncio.Event()
@@ -263,6 +309,22 @@ class AiortcPeerConnections(PeerConnections):
         answer = await self.signaling.offer(self.email, peer, offer)
         await rtc.setRemoteDescription(RTCSessionDescription(answer, "answer"))
         await opened.wait()
+        if ice_servers.lifetime_seconds is not None:
+            self._schedule_refresh(peer, ice_servers.lifetime_seconds)
+
+    def _schedule_refresh(self, peer: str, lifetime_seconds: float) -> None:
+        """Open a new connection to ``peer`` before the TURN credentials of
+        this one expire."""
+        if peer in self._refresh_tasks:
+            self._refresh_tasks.pop(peer).cancel()
+        delay = lifetime_seconds * CREDENTIALS_REFRESH_FRACTION
+        self._refresh_tasks[peer] = asyncio.create_task(self._refresh(peer, delay))
+
+    async def _refresh(self, peer: str, delay: float) -> None:
+        await asyncio.sleep(delay)
+        # The connect schedules the next refresh; this task is no longer it.
+        self._refresh_tasks.pop(peer)
+        self._maybe_start_connect(peer)
 
     async def _answer(self, sender: str, offer: str) -> str:
         """Answer the offer of ``sender``, and return the answer.
@@ -273,7 +335,8 @@ class AiortcPeerConnections(PeerConnections):
         if sender.lower() not in self._peers:
             raise ConnectionRefusedError(f"{sender} is not a peer of {self.email}")
         peer = self._peers[sender.lower()]
-        rtc = await self._new_rtc_connection(peer)
+        ice_servers = await self.signaling.ice_servers(self.email)
+        rtc = await self._new_rtc_connection(peer, ice_servers.servers)
 
         # aiortc hands over the channel already open.
         @rtc.on("datachannel")
@@ -285,15 +348,16 @@ class AiortcPeerConnections(PeerConnections):
         await rtc.setLocalDescription(await rtc.createAnswer())
         return rtc.localDescription.sdp
 
-    async def _new_rtc_connection(self, peer: str) -> RTCPeerConnection:
+    async def _new_rtc_connection(
+        self, peer: str, ice_servers: IceServers
+    ) -> RTCPeerConnection:
         """An aiortc peer connection to ``peer``, in place of any older one.
 
-        It gets new ICE servers, because TURN credentials expire.
+        Each one gets new ICE servers, because TURN credentials expire.
         """
         old = self._rtc_connections.pop(peer, None)
         if old is not None:
             await old.close()
-        ice_servers = await self.signaling.ice_servers(self.email)
         configuration = RTCConfiguration(
             iceServers=[RTCIceServer(**server) for server in ice_servers]
         )
@@ -335,7 +399,12 @@ class AiortcPeerConnections(PeerConnections):
             logger.exception("Dropped a WebRTC frame from %s", peer)
 
     async def _close_signaling_and_rtc_connections(self) -> None:
-        for task in self._connect_tasks.values():
+        tasks = [
+            *self._connect_tasks.values(),
+            *self._refresh_tasks.values(),
+            *self._hello_tasks,
+        ]
+        for task in tasks:
             task.cancel()
         try:
             await self._close_signaling()

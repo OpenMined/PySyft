@@ -4,7 +4,7 @@ import asyncio
 
 from syft.sync.connections.webrtc.firebase.auth import FirebaseSession
 from syft.sync.connections.webrtc.firebase.rest import post_json
-from syft.sync.connections.webrtc.signaling.signaling import IceServers
+from syft.sync.connections.webrtc.signaling.signaling import IceServerSet
 
 
 class TurnFunction:
@@ -15,18 +15,19 @@ class TurnFunction:
         self._url = url
         self._session = session
 
-    async def __call__(self) -> IceServers:
+    async def __call__(self) -> IceServerSet:
         """Raises:
         ConnectionError: The function refuses the user.
         ConnectionUnavailableError: The function cannot be reached.
         """
         return await asyncio.to_thread(self._request_ice_servers)
 
-    def _request_ice_servers(self) -> IceServers:
-        return post_json(self._url, {}, self._session.id_token())["ice_servers"]
+    def _request_ice_servers(self) -> IceServerSet:
+        reply = post_json(self._url, {}, self._session.id_token())
+        return IceServerSet(reply["ice_servers"], reply["lifetime_seconds"])
 
 
-async def no_ice_servers() -> IceServers:
+async def no_ice_servers() -> IceServerSet:
     """An ``IceServerSource`` for peers on one machine, which reach each other
     with no STUN or TURN server."""
-    return []
+    return IceServerSet([], None)

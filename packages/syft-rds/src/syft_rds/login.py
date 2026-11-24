@@ -91,10 +91,10 @@ def login_do(
 ) -> SyftRDSClient:
     """Log in as a DO and return a self-contained RDS client.
 
-    ``webrtc=True`` syncs over WebRTC, with the Firebase project in the
-    ``SYFT_FIREBASE_PROJECT_ID`` and ``SYFT_FIREBASE_API_KEY`` settings, and no
-    Google login. The first login on a machine sends a sign-in link to the
-    email.
+    ``webrtc=True`` syncs over WebRTC with no Google login, through the
+    Firebase project in the ``SYFT_FIREBASE_PROJECT_ID`` and
+    ``SYFT_FIREBASE_API_KEY`` settings. The first login on a machine sends a
+    sign-in link to the email.
     """
     return _login(
         email=email,
@@ -123,10 +123,10 @@ def login_ds(
 ) -> SyftRDSClient:
     """Log in as a DS and return a self-contained RDS client.
 
-    ``webrtc=True`` syncs over WebRTC, with the Firebase project in the
-    ``SYFT_FIREBASE_PROJECT_ID`` and ``SYFT_FIREBASE_API_KEY`` settings, and no
-    Google login. The first login on a machine sends a sign-in link to the
-    email.
+    ``webrtc=True`` syncs over WebRTC with no Google login, through the
+    Firebase project in the ``SYFT_FIREBASE_PROJECT_ID`` and
+    ``SYFT_FIREBASE_API_KEY`` settings. The first login on a machine sends a
+    sign-in link to the email.
     """
     return _login(
         email=email,

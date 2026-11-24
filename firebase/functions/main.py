@@ -9,8 +9,8 @@ from firebase_functions.params import SecretParam
 
 # The syft client builds the URL of the function from this region.
 REGION = "us-central1"
-# A peer connection that stays open longer than this loses its TURN relay.
-CREDENTIALS_TTL_SECONDS = 24 * 3600
+# The offering client opens a new peer connection before this time ends.
+CREDENTIALS_TTL_SECONDS = 4 * 3600
 BEARER_PREFIX = "Bearer "
 CLOUDFLARE_TURN_KEY_ID = SecretParam("CLOUDFLARE_TURN_KEY_ID")
 CLOUDFLARE_TURN_KEY_API_TOKEN = SecretParam("CLOUDFLARE_TURN_KEY_API_TOKEN")
@@ -22,7 +22,8 @@ initialize_app()
     region=REGION, secrets=[CLOUDFLARE_TURN_KEY_ID, CLOUDFLARE_TURN_KEY_API_TOKEN]
 )
 def turn_credentials(request: https_fn.Request) -> https_fn.Response:
-    """Return ``{"ice_servers": [...]}`` with new TURN credentials.
+    """Return ``{"ice_servers": [...], "lifetime_seconds": ...}`` with new TURN
+    credentials.
 
     The request must carry the Firebase ID token of a user with a verified
     email, as ``Authorization: Bearer <token>``.
@@ -41,7 +42,12 @@ def turn_credentials(request: https_fn.Request) -> https_fn.Response:
         api_token=CLOUDFLARE_TURN_KEY_API_TOKEN.value,
         ttl_seconds=CREDENTIALS_TTL_SECONDS,
     )
-    body = json.dumps({"ice_servers": generate_ice_servers(config)})
+    body = json.dumps(
+        {
+            "ice_servers": generate_ice_servers(config),
+            "lifetime_seconds": CREDENTIALS_TTL_SECONDS,
+        }
+    )
     return https_fn.Response(body, status=200, content_type="application/json")
 
 
