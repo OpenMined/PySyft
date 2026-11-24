@@ -289,7 +289,9 @@ class DataSiteWatcherCache(BaseModel):
 
         This is mainly for an enclave. It receives each DO's private dataset
         files through this watcher, and keeps the first copy it gets, so a DO
-        cannot swap its data afterwards."""
+        cannot swap its data afterwards. The flag is off by default; the
+        syft-enclave package turns it on for the enclave, and for the DOs and
+        DSs that log in through it."""
         has_file = Path(event.path_in_syftbox) in self.file_hashes
         immutable_subpaths = [
             spec.local_subpath for spec in self.collection_specs if spec.immutable
