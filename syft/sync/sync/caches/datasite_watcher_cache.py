@@ -285,7 +285,11 @@ class DataSiteWatcherCache(BaseModel):
 
     def _write_denied(self, event: FileChangeEvent) -> bool:
         """Whether ``event`` changes or deletes a file that this cache already
-        has in an immutable collection, with ``freeze_private_datasets`` on."""
+        has in an immutable collection, with ``freeze_private_datasets`` on.
+
+        This is mainly for an enclave. It receives each DO's private dataset
+        files through this watcher, and keeps the first copy it gets, so a DO
+        cannot swap its data afterwards."""
         has_file = Path(event.path_in_syftbox) in self.file_hashes
         immutable_subpaths = [
             spec.local_subpath for spec in self.collection_specs if spec.immutable
