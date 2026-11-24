@@ -185,13 +185,13 @@ def _checkpoints_folder_names(cached_client) -> list[str]:
 
 def test_an_adopted_folder_serves_a_checkpoint_from_an_earlier_client():
     # Version 0 predates the field, which is the shape an earlier client wrote.
-    # The rename finds the folder and the file still loads.
+    # The rename finds the folder and the file still loads, as the current version.
     router, cached_client, older_name = _checkpoints_owner_with_version(0)
 
     checkpoint = router.get_latest_checkpoint()
 
     assert checkpoint is not None, "the adopted folder must still serve its files"
-    assert checkpoint.version == 0
+    assert checkpoint.version == CHECKPOINT_VERSION
     assert _checkpoints_folder_names(cached_client) == [
         router.connections.owner_store_con._get_checkpoints_folder_name()
     ], "the read must go through the adopt, which renames the folder"

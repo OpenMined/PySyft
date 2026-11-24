@@ -11,8 +11,9 @@ Flow:
 - After N incremental checkpoints: compact into single full Checkpoint
 """
 
+import json
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, List
+from typing import TYPE_CHECKING, Any, Dict, List
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -29,21 +30,34 @@ if TYPE_CHECKING:
 
 CHECKPOINT_FILENAME_PREFIX = "checkpoint"
 INCREMENTAL_CHECKPOINT_PREFIX = "incremental_checkpoint"
-CHECKPOINT_VERSION = 1
+# Version 2 stores file content as base64 bytes; version 1 stored it as text.
+CHECKPOINT_VERSION = 2
+# An incremental checkpoint holds events, whose format did not change.
+INCREMENTAL_CHECKPOINT_VERSION = 1
 
 
-def _check_version(version: int, kind: str) -> None:
+def _check_version(version: int, latest: int, kind: str) -> None:
     """Refuse a checkpoint from a later client."""
 
     # A later client can change what a field holds while the object still parses.
     # The restore would then be wrong and silent. Every caller falls back to a
     # download of all events, so a refusal costs one slow cold start.
 
-    if version > CHECKPOINT_VERSION:
+    if version > latest:
         raise ValueError(
             f"This {kind} has version {version}, and this client reads up to "
-            f"version {CHECKPOINT_VERSION}."
+            f"version {latest}."
         )
+
+
+def _upgrade_text_content(checkpoint: dict[str, Any]) -> dict[str, Any]:
+    """A version 1 checkpoint as the current version: its text content as
+    UTF-8 bytes. Version 1 held only text, so this gives the exact bytes."""
+    files = [
+        {**file, "content": file["content"].encode("utf-8")}
+        for file in checkpoint["files"]
+    ]
+    return {**checkpoint, "version": CHECKPOINT_VERSION, "files": files}
 
 
 # Default compacting threshold: merge after this many incremental checkpoints
@@ -175,11 +189,14 @@ class Checkpoint(BaseModel):
 
     @classmethod
     def from_compressed_data(cls, data: bytes) -> "Checkpoint":
-        """Load checkpoint from compressed data."""
+        """Load checkpoint from compressed data. A version 1 checkpoint, which
+        held text content, loads as the current version."""
         uncompressed_data = uncompress_data(data)
-        checkpoint = cls.model_validate_json(uncompressed_data)
-        _check_version(checkpoint.version, "checkpoint")
-        return checkpoint
+        checkpoint = json.loads(uncompressed_data)
+        _check_version(checkpoint["version"], CHECKPOINT_VERSION, "checkpoint")
+        if checkpoint["version"] <= 1:
+            return cls.model_validate(_upgrade_text_content(checkpoint))
+        return cls.model_validate_json(uncompressed_data)
 
 
 class IncrementalCheckpoint(BaseModel):
@@ -196,7 +213,7 @@ class IncrementalCheckpoint(BaseModel):
     - After compacting: single full Checkpoint with merged state
     """
 
-    version: int = CHECKPOINT_VERSION
+    version: int = INCREMENTAL_CHECKPOINT_VERSION
     timestamp: float = Field(default_factory=create_event_timestamp)
     email: str
     sequence_number: int  # 1, 2, 3, ... (which checkpoint this is)
@@ -236,7 +253,9 @@ class IncrementalCheckpoint(BaseModel):
         """Load from compressed data."""
         uncompressed_data = uncompress_data(data)
         checkpoint = cls.model_validate_json(uncompressed_data)
-        _check_version(checkpoint.version, "incremental checkpoint")
+        _check_version(
+            checkpoint.version, INCREMENTAL_CHECKPOINT_VERSION, "incremental checkpoint"
+        )
         return checkpoint
 
 
