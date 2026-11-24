@@ -17,7 +17,6 @@ has at that time. An enclave gets a new key at every boot.
 
 from contextlib import AbstractContextManager
 from pathlib import Path
-from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
@@ -27,6 +26,7 @@ from syft.sync.messages.proposed_filechange import (
 )
 from syft.sync.peers.peer_store import PRIVATE_DIR_NAME
 from syft.sync.sync.caches.persisted_dict import locked_file, write_text_atomic
+from syft.sync.utils.file_content import ContentType, content_bytes
 from syft.sync.utils.versioned_file import read_versioned_json
 
 SEND_QUEUE_DIR_NAME = "send_queue"
@@ -35,8 +35,6 @@ CONTENT_FILE_SUFFIX = ".content"
 # Format of a send queue entry. Raise it when the layout of an entry changes. An
 # entry of a later version is refused.
 SEND_QUEUE_ENTRY_VERSION = 2
-
-ContentType = Literal["text", "binary"]
 
 
 def datasite_send_queue_path(syftbox_folder: Path | str, email: str) -> Path:
@@ -74,10 +72,6 @@ def _content_path(entry_folder: Path, index: int) -> Path:
     return entry_folder / f"{index}{CONTENT_FILE_SUFFIX}"
 
 
-def _content_bytes(content: str | bytes) -> bytes:
-    return content.encode("utf-8") if isinstance(content, str) else content
-
-
 def _read_content(path: Path, content_type: ContentType | None) -> str | bytes | None:
     if content_type is None:
         return None
@@ -101,7 +95,7 @@ class SendQueue:
         for index, change in enumerate(changes):
             if change.content is not None:
                 _content_path(entry_folder, index).write_bytes(
-                    _content_bytes(change.content)
+                    content_bytes(change.content)
                 )
         changes_without_content = [
             change.model_copy(update={"content": None}) for change in changes

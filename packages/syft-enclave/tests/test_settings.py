@@ -7,6 +7,7 @@ import pytest
 from pydantic import ValidationError
 
 from syft_enclaves import EnclaveSettings
+from syft_enclaves.client import SyftEnclaveClient
 from syft_rds.config import SyftRDSClientConfig
 
 
@@ -138,3 +139,23 @@ def test_persist_owner_state_reaches_do_syncer_config():
         has_ds_role=True,
     )
     assert default.sync.datasite_owner_syncer_config.persist_owner_state is True
+
+
+def test_for_enclave_keeps_no_watcher_state_by_default(monkeypatch):
+    """An enclave gets a new key at each boot and cannot read its saved
+    watcher state, so by default it keeps none."""
+    built = []
+    monkeypatch.setattr(
+        SyftEnclaveClient,
+        "from_config",
+        classmethod(lambda cls, config, data_owners=None: built.append(config)),
+    )
+
+    SyftEnclaveClient.for_enclave("enclave@openmined.org")
+
+    [config] = built
+    watcher_syncer_config = config.sync.datasite_watcher_syncer_config
+    assert (
+        watcher_syncer_config.datasite_watcher_cache_config.persist_watcher_state
+        is False
+    )

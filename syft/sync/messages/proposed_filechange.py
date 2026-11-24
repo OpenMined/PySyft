@@ -4,7 +4,6 @@ from pathlib import Path
 import json
 import uuid
 import time
-import base64
 from pydantic import Field, model_validator, field_serializer, computed_field
 from pydantic.main import BaseModel
 from syft_migration import MigratableObject
@@ -13,6 +12,11 @@ from syft.migrations import client_registry, load_as_latest
 from syft.sync.utils.syftbox_utils import compress_data, uncompress_data
 from syft.sync.utils.syftbox_utils import create_event_timestamp
 from syft.sync.utils.syftbox_utils import get_event_hash_from_content
+from syft.sync.utils.file_content import (
+    content_to_json,
+    content_type_of,
+    decode_content,
+)
 
 
 MESSAGE_FILENAME_PREFIX = "msgv2"
@@ -36,34 +40,17 @@ class ProposedFileChangeV1(BaseModel):
     @property
     def content_type(self) -> Literal["text", "binary"] | None:
         """Computed field that stores the content type for proper deserialization."""
-        if self.content is None:
-            return None
-        elif isinstance(self.content, bytes):
-            return "binary"
-        else:
-            return "text"
+        return content_type_of(self.content)
 
     @field_serializer("content", when_used="json")
     def serialize_content(self, value: str | bytes | None) -> str | None:
         """Serialize bytes as base64-encoded string for JSON."""
-        if value is None:
-            return None
-        if isinstance(value, bytes):
-            return base64.b64encode(value).decode("utf-8")
-        return value
+        return content_to_json(value)
 
     @model_validator(mode="before")
     @classmethod
     def pre_init(cls, data: dict[str, Any]) -> dict[str, Any]:
-        # Deserialize content based on content_type metadata
-        content_type = data.get("content_type")
-        content = data.get("content")
-
-        if content is not None and isinstance(content, str):
-            if content_type == "binary":
-                # Definitively decode base64 since we know it was binary
-                data["content"] = base64.b64decode(content)
-            # If content_type is "text" or None (legacy), keep as string
+        data = decode_content(data)
 
         # Generate hash if needed
         if "new_hash" not in data and not data.get("is_deleted", False):

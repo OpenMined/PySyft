@@ -33,9 +33,6 @@ from syft_enclaves.enclave_job_info import (
     PartyApprovalStatus,
     enclave_approval_file_name,
 )
-from syft_enclaves.immutability import (
-    make_private_dataset_immutability_filter,
-)
 from syft_enclaves.receipt.writer import (
     ReceiptSettings,
     mark_started,
@@ -794,13 +791,6 @@ class SyftEnclaveClient:
         """
         rds = SyftRDSClient.from_config(config, connections)
         rds.job_client = EnclaveJobClient(rds.job_client)
-
-        sync_engine = rds.sync_engine
-        if sync_engine.datasite_watcher_syncer:
-            sync_engine.datasite_watcher_syncer.datasite_watcher_cache.pre_write_filter = make_private_dataset_immutability_filter(
-                sync_engine.syftbox_folder
-            )
-
         return cls(rds, data_owners=data_owners)
 
     @classmethod
@@ -819,10 +809,11 @@ class SyftEnclaveClient:
             email: The enclave datasite's email address.
             token_path: Path to a pre-authorized Google Drive OAuth token.
             data_owners: Emails whose approval gates every job on this enclave.
-            persist_owner_state: Keep the owner-only state used to restore
-                this datasite later (event log, rolling state, checkpoints).
-                Off by default - an enclave gets ephemeral keys and wipes its
-                state on boot, so there is never anything to restore.
+            persist_owner_state: Keep the state used to restore this datasite
+                later: the owner's event log, rolling state and checkpoints,
+                and the watcher state of its DS role. Off by default - an
+                enclave gets ephemeral keys and wipes its state on boot, so
+                there is never anything to restore.
         """
         config = SyftRDSClientConfig.for_jupyter(
             email=email,
@@ -831,6 +822,8 @@ class SyftEnclaveClient:
             token_path=Path(token_path) if token_path is not None else None,
             encryption=True,
             persist_owner_state=persist_owner_state,
+            persist_watcher_state=persist_owner_state,
+            freeze_private_datasets=True,
         )
 
         # Note: We do not currently provide the ability to load encryption keys passed during creation of enclave.

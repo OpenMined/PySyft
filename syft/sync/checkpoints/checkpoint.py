@@ -11,11 +11,13 @@ Flow:
 - After N incremental checkpoints: compact into single full Checkpoint
 """
 
+import json
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, List
+from typing import TYPE_CHECKING, Any, Dict, List
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
+from syft.sync.utils.file_content import content_bytes
 from syft.sync.utils.syftbox_utils import (
     compress_data,
     create_event_timestamp,
@@ -28,33 +30,52 @@ if TYPE_CHECKING:
 
 CHECKPOINT_FILENAME_PREFIX = "checkpoint"
 INCREMENTAL_CHECKPOINT_PREFIX = "incremental_checkpoint"
-CHECKPOINT_VERSION = 1
+# Version 2 stores file content as base64 bytes; version 1 stored it as text.
+CHECKPOINT_VERSION = 2
+# An incremental checkpoint holds events, whose format did not change.
+INCREMENTAL_CHECKPOINT_VERSION = 1
 
 
-def _check_version(version: int, kind: str) -> None:
+def _check_version(version: int, latest: int, kind: str) -> None:
     """Refuse a checkpoint from a later client."""
 
     # A later client can change what a field holds while the object still parses.
     # The restore would then be wrong and silent. Every caller falls back to a
     # download of all events, so a refusal costs one slow cold start.
 
-    if version > CHECKPOINT_VERSION:
+    if version > latest:
         raise ValueError(
             f"This {kind} has version {version}, and this client reads up to "
-            f"version {CHECKPOINT_VERSION}."
+            f"version {latest}."
         )
+
+
+def _upgrade_text_content(checkpoint: dict[str, Any]) -> dict[str, Any]:
+    """A version 1 checkpoint as the current version: its text content as
+    UTF-8 bytes. Version 1 held only text, so this gives the exact bytes."""
+    files = [
+        {**file, "content": file["content"].encode("utf-8")}
+        for file in checkpoint["files"]
+    ]
+    return {**checkpoint, "version": CHECKPOINT_VERSION, "files": files}
 
 
 # Default compacting threshold: merge after this many incremental checkpoints
 DEFAULT_COMPACTING_THRESHOLD = 4
 
+# Default threshold for a checkpoint: this many events in the DO's rolling
+# state, or this many paths in the rolling state that a DS keeps for a DO
+DEFAULT_CHECKPOINT_EVENT_THRESHOLD = 50
+
 
 class CheckpointFile(BaseModel):
     """Represents a single file in the checkpoint."""
 
+    model_config = ConfigDict(ser_json_bytes="base64", val_json_bytes="base64")
+
     path: str  # Relative path in datasite (e.g., "public/syft_datasets/data.csv")
     hash: str  # Hash of the content (SHA256 hex string)
-    content: str  # File content
+    content: bytes  # File content; text as UTF-8
 
 
 class Checkpoint(BaseModel):
@@ -95,7 +116,7 @@ class Checkpoint(BaseModel):
         cls,
         email: str,
         file_hashes: Dict[str, str],
-        file_contents: Dict[str, str],
+        file_contents: Dict[str, str | bytes],
         last_event_timestamp: float | None = None,
     ) -> "Checkpoint":
         """
@@ -116,7 +137,7 @@ class Checkpoint(BaseModel):
                     CheckpointFile(
                         path=path_str,
                         hash=hash_value,
-                        content=content,
+                        content=content_bytes(content),
                     )
                 )
         return cls(
@@ -129,9 +150,38 @@ class Checkpoint(BaseModel):
         """Get file hashes as a dict mapping path to hash."""
         return {Path(f.path): f.hash for f in self.files}
 
-    def get_file_contents(self) -> Dict[str, str]:
+    def get_file_contents(self) -> Dict[str, bytes]:
         """Get file contents as a dict mapping path to content."""
         return {f.path: f.content for f in self.files}
+
+    def with_events(self, events: List["FileChangeEvent"]) -> "Checkpoint":
+        """A new checkpoint: these files with ``events`` applied in order. A
+        change sets its file, and a delete removes it.
+
+        Raises:
+            ValueError: if a change has no content or no hash.
+        """
+        files = {file.path: file for file in self.files}
+        last_event_timestamp = self.last_event_timestamp
+        for event in events:
+            path = str(event.path_in_datasite)
+            if event.is_deleted:
+                files.pop(path, None)
+            elif event.content is None or event.new_hash is None:
+                raise ValueError(
+                    f"The change of {path} in {self.email} has no content or no hash."
+                )
+            else:
+                files[path] = CheckpointFile(
+                    path=path, hash=event.new_hash, content=content_bytes(event.content)
+                )
+            if last_event_timestamp is None or event.timestamp > last_event_timestamp:
+                last_event_timestamp = event.timestamp
+        return Checkpoint(
+            email=self.email,
+            files=list(files.values()),
+            last_event_timestamp=last_event_timestamp,
+        )
 
     def as_compressed_data(self) -> bytes:
         """Compress checkpoint for storage."""
@@ -139,11 +189,14 @@ class Checkpoint(BaseModel):
 
     @classmethod
     def from_compressed_data(cls, data: bytes) -> "Checkpoint":
-        """Load checkpoint from compressed data."""
+        """Load checkpoint from compressed data. A version 1 checkpoint, which
+        held text content, loads as the current version."""
         uncompressed_data = uncompress_data(data)
-        checkpoint = cls.model_validate_json(uncompressed_data)
-        _check_version(checkpoint.version, "checkpoint")
-        return checkpoint
+        checkpoint = json.loads(uncompressed_data)
+        _check_version(checkpoint["version"], CHECKPOINT_VERSION, "checkpoint")
+        if checkpoint["version"] <= 1:
+            return cls.model_validate(_upgrade_text_content(checkpoint))
+        return cls.model_validate_json(uncompressed_data)
 
 
 class IncrementalCheckpoint(BaseModel):
@@ -160,7 +213,7 @@ class IncrementalCheckpoint(BaseModel):
     - After compacting: single full Checkpoint with merged state
     """
 
-    version: int = CHECKPOINT_VERSION
+    version: int = INCREMENTAL_CHECKPOINT_VERSION
     timestamp: float = Field(default_factory=create_event_timestamp)
     email: str
     sequence_number: int  # 1, 2, 3, ... (which checkpoint this is)
@@ -200,61 +253,10 @@ class IncrementalCheckpoint(BaseModel):
         """Load from compressed data."""
         uncompressed_data = uncompress_data(data)
         checkpoint = cls.model_validate_json(uncompressed_data)
-        _check_version(checkpoint.version, "incremental checkpoint")
+        _check_version(
+            checkpoint.version, INCREMENTAL_CHECKPOINT_VERSION, "incremental checkpoint"
+        )
         return checkpoint
-
-
-def compact_incremental_checkpoints(
-    checkpoints: List[IncrementalCheckpoint],
-    email: str,
-) -> Checkpoint:
-    """
-    Merge multiple incremental checkpoints into a single full Checkpoint.
-
-    Events are merged in order (by sequence number), with later events
-    overwriting earlier ones for the same file path. Deleted files are excluded.
-
-    Args:
-        checkpoints: List of incremental checkpoints to merge.
-        email: Email for the resulting checkpoint.
-
-    Returns:
-        A full Checkpoint with the merged state.
-    """
-    # Sort by sequence number to process in order
-    sorted_checkpoints = sorted(checkpoints, key=lambda c: c.sequence_number)
-
-    # Merge events: later events overwrite earlier ones for same path
-    merged_events: Dict[str, "FileChangeEvent"] = {}
-    last_event_timestamp = None
-
-    for cp in sorted_checkpoints:
-        for event in cp.events:
-            merged_events[str(event.path_in_datasite)] = event
-            if event.timestamp is not None:
-                if (
-                    last_event_timestamp is None
-                    or event.timestamp > last_event_timestamp
-                ):
-                    last_event_timestamp = event.timestamp
-
-    # Convert to full Checkpoint (only non-deleted files)
-    files = []
-    for event in merged_events.values():
-        if not event.is_deleted and event.content is not None:
-            files.append(
-                CheckpointFile(
-                    path=str(event.path_in_datasite),
-                    hash=str(event.new_hash),
-                    content=event.content,
-                )
-            )
-
-    return Checkpoint(
-        email=email,
-        files=files,
-        last_event_timestamp=last_event_timestamp,
-    )
 
 
 # Import here to avoid circular imports

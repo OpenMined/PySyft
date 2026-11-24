@@ -1,7 +1,6 @@
 from typing import Any, List, Literal
 from pathlib import Path
 from uuid import UUID, uuid4
-import base64
 import json
 from pydantic import (
     BaseModel,
@@ -17,6 +16,11 @@ from syft.sync.messages.proposed_filechange import ProposedFileChange
 from syft.sync.utils.syftbox_utils import create_event_timestamp
 from syft.sync.utils.syftbox_utils import compress_data
 from syft.sync.utils.syftbox_utils import uncompress_data
+from syft.sync.utils.file_content import (
+    content_to_json,
+    content_type_of,
+    decode_content,
+)
 
 
 FILE_CHANGE_FILENAME_PREFIX = "syfteventsmessagev3"
@@ -74,21 +78,12 @@ class FileChangeEventV1(BaseModel):
     @property
     def content_type(self) -> Literal["text", "binary"] | None:
         """Computed field that stores the content type for proper deserialization."""
-        if self.content is None:
-            return None
-        elif isinstance(self.content, bytes):
-            return "binary"
-        else:
-            return "text"
+        return content_type_of(self.content)
 
     @field_serializer("content", when_used="json")
     def serialize_content(self, value: str | bytes | None) -> str | None:
         """Serialize bytes as base64-encoded string for JSON."""
-        if value is None:
-            return None
-        if isinstance(value, bytes):
-            return base64.b64encode(value).decode("utf-8")
-        return value
+        return content_to_json(value)
 
     @property
     def path_in_syftbox(self) -> Path:
@@ -97,17 +92,21 @@ class FileChangeEventV1(BaseModel):
     @model_validator(mode="before")
     @classmethod
     def pre_init(cls, data: dict[str, Any]) -> dict[str, Any]:
-        # Deserialize content based on content_type metadata
-        content_type = data.get("content_type", None)
-        content = data.get("content")
+        return decode_content(data)
 
-        if content is not None and isinstance(content, str):
-            if content_type == "binary":
-                # Definitively decode base64 since we know it was binary
-                data["content"] = base64.b64decode(content)
-            # If content_type is "text" or None (legacy), keep as string
+    @model_validator(mode="after")
+    def _check_change_has_content(self) -> "FileChangeEventV1":
+        """A change that is not a delete has the content and the hash of its file.
 
-        return data
+        Raises:
+            ValueError: if it has no content or no hash.
+        """
+        if not self.is_deleted and (self.content is None or self.new_hash is None):
+            raise ValueError(
+                f"The change of {self.path_in_datasite} in {self.datasite_email} "
+                "is not a delete and has no content or no hash."
+            )
+        return self
 
     def eventfile_filepath(self) -> str:
         # TODO: remove

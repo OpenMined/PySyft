@@ -50,6 +50,7 @@ def _login(
             has_ds_role=has_ds_role,
             encryption=encryption,
             skip_peer_on_patch_version_diff=skip_peer_on_patch_version_diff,
+            freeze_private_datasets=True,
         )
     else:
         config = SyftRDSClientConfig.for_jupyter(
@@ -59,6 +60,7 @@ def _login(
             token_path=Path(token_path) if token_path is not None else None,
             encryption=encryption,
             skip_peer_on_patch_version_diff=skip_peer_on_patch_version_diff,
+            freeze_private_datasets=True,
         )
 
     _import_key_file(key_file, config.sync.syftbox_folder, email)

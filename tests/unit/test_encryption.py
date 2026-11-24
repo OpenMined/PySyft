@@ -5,6 +5,8 @@ from pathlib import Path
 
 import pytest
 
+from syft.sync.checkpoints.rolling_state import RollingState
+from syft.sync.connections.drive.drive_connections import drive_cached_client_of
 from syft.sync.encryption_policy import EncryptionPolicy
 from syft.sync.peers.exceptions import SyftPeerNotReadyError
 from syft.sync.peers.peer import Peer, PeerState
@@ -12,8 +14,6 @@ from syft.sync.peers.peer_store import PeerStore, import_key_file
 from syft.sync.syftbox_manager import SyftboxManager
 from tests.unit.test_sync_manager import path_for_job
 from tests.unit.utils import grant_job_inbox_access
-from syft.sync.connections.drive.drive_connections import drive_cached_client_of
-
 
 # =========================================================================
 # PeerStore unit tests
@@ -447,12 +447,13 @@ def test_encrypted_checkpoint_roundtrip():
 
 def test_encrypted_rolling_state_roundtrip():
     """Rolling state is encrypted at rest and decrypted on read."""
+    from uuid import uuid4
+
     from syft.sync.checkpoints.rolling_state import RollingState
     from syft.sync.events.file_change_event import (
         FileChangeEvent,
         FileChangeEventsMessage,
     )
-    from uuid import uuid4
 
     ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
         encryption=True,
@@ -638,3 +639,23 @@ def test_tampered_inbox_message_is_archived_with_warning():
     with pytest.warns(UserWarning, match="unread"):
         do_manager.sync()
     assert do_cached_client.get_file_metadatas_from_folder(inbox_id) == []
+
+
+def test_watcher_state_encrypted_at_rest():
+    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+        encryption=True
+    )
+    router = ds_manager._connection_router
+    state = RollingState(
+        email=do_manager.email,
+        base_checkpoint_timestamp=0.0,
+        received_msg_ids=["msg-1"],
+    )
+
+    router.watcher_save_rolling_state(do_manager.email, state)
+
+    stored = router.connections.watcher_store_con.get_rolling_state(do_manager.email)
+    assert stored is not None
+    plaintext = router.peer_store.decrypt_for_self(stored)
+    assert RollingState.from_compressed_data(plaintext) == state
+    assert router.watcher_load_rolling_state(do_manager.email) == state

@@ -137,7 +137,6 @@ def _delete_local_syftbox_dirs(local_syftbox_path: Path, verbose: bool = True) -
     dirs_to_delete = [
         local_syftbox_path,
         syftbox_parent / f"{syftbox_name}-events",
-        syftbox_parent / f"{syftbox_name}-event-messages",
     ]
     for d in dirs_to_delete:
         if d.exists():
@@ -153,8 +152,8 @@ def delete_local_syftbox(
 ) -> None:
     """Delete local SyftBox directories.
 
-    Deletes the SyftBox directory and its companion cache directories
-    (``<name>-events``, ``<name>-event-messages``).
+    Deletes the SyftBox directory and its companion cache directory
+    (``<name>-events``).
 
     Args:
         email: Google account email. Used to resolve default path if

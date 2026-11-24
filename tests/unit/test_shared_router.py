@@ -6,10 +6,7 @@ from unittest.mock import Mock
 import pytest
 
 from syft.sync.connections.base_connection import ConnectionConfig
-from syft.sync.connections.drive.drive_connections import (
-    DriveWatcherStoreConnection,
-    drive_cached_client_of,
-)
+from syft.sync.connections.drive.drive_connections import drive_cached_client_of
 from syft.sync.connections.drive.drive_cached_client import DriveCachedClient
 from syft.sync.connections.drive.grdrive_config import GdriveConnectionConfig
 from syft.sync.connections.drive.mock_drive_service import pair_with_mock_service
@@ -50,13 +47,8 @@ def test_every_part_of_manager_shares_one_router():
 
 
 def _drive_cached_clients(connections) -> list[DriveCachedClient]:
-    """The cached client of each connection that uses Drive. The watcher store
-    does not use it yet."""
-    return [
-        connection._cached_client
-        for connection in connections.all()
-        if not isinstance(connection, DriveWatcherStoreConnection)
-    ]
+    """The cached client of each connection."""
+    return [connection._cached_client for connection in connections.all()]
 
 
 def test_manager_builds_one_drive_connection_from_its_config(monkeypatch):

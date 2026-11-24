@@ -25,7 +25,9 @@ def create_configs(
         has_ds_role=True,
         use_in_memory_cache=use_in_memory_cache,
         persist_owner_state=enclave_persist_owner_state,
+        persist_watcher_state=enclave_persist_owner_state,
         encryption_policy=enclave_policy,
+        freeze_private_datasets=True,
     )
     do1_config = SyftRDSClientConfig._base_config_for_testing(
         email=do1_email,
@@ -33,6 +35,7 @@ def create_configs(
         has_ds_role=True,
         use_in_memory_cache=use_in_memory_cache,
         encryption_policy=do1_policy,
+        freeze_private_datasets=True,
     )
     do2_config = SyftRDSClientConfig._base_config_for_testing(
         email=do2_email,
@@ -40,12 +43,14 @@ def create_configs(
         has_ds_role=True,
         use_in_memory_cache=use_in_memory_cache,
         encryption_policy=do2_policy,
+        freeze_private_datasets=True,
     )
     ds_config = SyftRDSClientConfig._base_config_for_testing(
         email=ds_email,
         has_ds_role=True,
         use_in_memory_cache=use_in_memory_cache,
         encryption_policy=ds_policy,
+        freeze_private_datasets=True,
     )
     return enclave_config, do1_config, do2_config, ds_config
 
