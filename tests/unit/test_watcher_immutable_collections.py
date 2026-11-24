@@ -1,5 +1,5 @@
-"""With ``freeze_private_datasets`` on, a file in an immutable collection
-keeps the first copy that the DS received from a DO."""
+"""With ``freeze_private_datasets`` on (the default), a file in an immutable
+collection keeps the first copy that the DS received from a DO."""
 
 import time
 import uuid
@@ -93,7 +93,6 @@ def test_refused_change_not_restored_after_restart():
     )
     syncer = ds.datasite_watcher_syncer
     assert syncer is not None
-    syncer.datasite_watcher_cache.freeze_private_datasets = True
     syncer.datasite_watcher_cache.collection_specs = [PRIVATE_SPEC]
     first = _event(PRIVATE_FILE, "first", datasite_email=do.email)
     for event in (first, _event(PRIVATE_FILE, "second", datasite_email=do.email)):

@@ -83,8 +83,8 @@ class DataSiteWatcherCacheConfig(BaseModel):
     collection_specs: list[CollectionSyncSpec] = []
     # Refuse a change or a delete of a file that the DS already has in an
     # immutable collection, so a DO cannot replace data it shared, such as a
-    # private dataset in an enclave.
-    freeze_private_datasets: bool = False
+    # private dataset in an enclave. On by default.
+    freeze_private_datasets: bool = True
 
 
 class DataSiteWatcherCache(BaseModel):
@@ -289,9 +289,9 @@ class DataSiteWatcherCache(BaseModel):
 
         This is mainly for an enclave. It receives each DO's private dataset
         files through this watcher, and keeps the first copy it gets, so a DO
-        cannot swap its data afterwards. The flag is off by default; the
-        syft-enclave package turns it on for the enclave, and for the DOs and
-        DSs that log in through it."""
+        cannot swap its data afterwards. The flag is on by default: private
+        dataset files only reach a watcher when a DO shares them with an
+        enclave, so no other client needs it off."""
         has_file = Path(event.path_in_syftbox) in self.file_hashes
         immutable_subpaths = [
             spec.local_subpath for spec in self.collection_specs if spec.immutable

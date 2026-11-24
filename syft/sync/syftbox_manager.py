@@ -159,7 +159,7 @@ class SyftboxManagerConfig(BaseModel):
         encryption: bool | None = None,
         persist_owner_state: bool = True,
         persist_watcher_state: bool = True,
-        freeze_private_datasets: bool = False,
+        freeze_private_datasets: bool = True,
         skip_peer_on_patch_version_diff: Optional[
             bool
         ] = None,  # None: value is determined by the role
@@ -241,7 +241,7 @@ class SyftboxManagerConfig(BaseModel):
         encryption: bool | None = None,
         persist_owner_state: bool = True,
         persist_watcher_state: bool = True,
-        freeze_private_datasets: bool = False,
+        freeze_private_datasets: bool = True,
         skip_peer_on_patch_version_diff: Optional[
             bool
         ] = None,  # None: value is determined by the role
@@ -325,7 +325,7 @@ class SyftboxManagerConfig(BaseModel):
         use_in_memory_cache: bool = True,
         persist_owner_state: bool = True,
         persist_watcher_state: bool = True,
-        freeze_private_datasets: bool = False,
+        freeze_private_datasets: bool = True,
         check_versions: bool = False,
         collection_specs: list["CollectionSyncSpec"] | None = None,
         encryption_policy: EncryptionPolicy = EncryptionPolicy.OPTIONAL,
