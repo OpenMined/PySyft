@@ -286,19 +286,21 @@ class DataSiteWatcherCache(BaseModel):
     def _write_denied(self, event: FileChangeEvent) -> bool:
         """Whether ``event`` changes or deletes a file that this cache already
         has in an immutable collection, with ``freeze_private_datasets`` on."""
-        denied = (
-            self.freeze_private_datasets
-            and Path(event.path_in_syftbox) in self.file_hashes
-            and any(
-                spec.immutable
-                and event.path_in_datasite.is_relative_to(spec.local_subpath)
-                for spec in self.collection_specs
-            )
+        has_file = Path(event.path_in_syftbox) in self.file_hashes
+        immutable_subpaths = [
+            spec.local_subpath for spec in self.collection_specs if spec.immutable
+        ]
+        in_immutable_collection = any(
+            event.path_in_datasite.is_relative_to(subpath)
+            for subpath in immutable_subpaths
         )
+        denied = self.freeze_private_datasets and has_file and in_immutable_collection
         if denied:
+            action = "delete" if event.is_deleted else "change"
             logger.warning(
-                f"Refused a change to {event.path_in_syftbox}: the file is in an "
-                "immutable collection, and the DS has it already"
+                f"Refused to {action} {event.path_in_syftbox} for "
+                f"{event.datasite_email}: the file is in an immutable collection "
+                "and was already received, so it cannot change"
             )
         return denied
 
