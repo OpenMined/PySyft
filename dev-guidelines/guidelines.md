@@ -176,6 +176,15 @@ Integration tests need OAuth tokens in the `credentials/` folder, and the env va
 
 - Prefer simple code that is easy to read. Avoid deeply nested dict and list comprehensions with
   complicated control flow.
+- When a condition combines more than two checks, give each check a variable that says what it
+  checks, then combine the variables:
+
+  ```python
+  has_file = path in self.file_hashes
+  in_immutable_collection = any(path.is_relative_to(p) for p in immutable_subpaths)
+  denied = self.freeze_private_datasets and has_file and in_immutable_collection
+  ```
+
 - Put a repeated or magic value in a module-level constant.
 - Build strings with f-strings.
 - Keep imports at the top of the file where possible, in this order: standard library,
