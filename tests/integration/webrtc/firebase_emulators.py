@@ -162,18 +162,19 @@ def database_of(email: str, syftbox_folder: Path) -> RealtimeDatabase:
     return RealtimeDatabase(EMULATOR_PROJECT, sign_in(email, syftbox_folder))
 
 
+def signaling_of(email: str, peers: list[str], folder: Path) -> DatabaseSignaling:
+    """The signaling of ``email``, who accepts ``peers``, with no ICE servers."""
+    database = database_of(email, folder / email)
+    for peer in peers:
+        database.put(f"acl/{email_key(email)}/{email_key(peer)}", True)
+    return DatabaseSignaling(database, no_ice_servers)
+
+
 def signalings_of_peers(
     first: str, second: str, folder: Path
 ) -> tuple[DatabaseSignaling, DatabaseSignaling]:
     """The signalings of two users who accept each other, with no ICE servers."""
-    first_database = database_of(first, folder / "first")
-    second_database = database_of(second, folder / "second")
-    first_database.put(f"acl/{email_key(first)}/{email_key(second)}", True)
-    second_database.put(f"acl/{email_key(second)}/{email_key(first)}", True)
-    return (
-        DatabaseSignaling(first_database, no_ice_servers),
-        DatabaseSignaling(second_database, no_ice_servers),
-    )
+    return signaling_of(first, [second], folder), signaling_of(second, [first], folder)
 
 
 def end_stream(signaling: DatabaseSignaling) -> None:

@@ -11,10 +11,16 @@ import pytest
 from syft.sync.connections.webrtc.real.aiortc_peer_connections import (
     AiortcPeerConnections,
 )
-from tests.integration.webrtc.firebase_emulators import end_stream, signalings_of_peers
+from tests.integration.webrtc.firebase_emulators import (
+    end_stream,
+    signaling_of,
+    signalings_of_peers,
+)
 
 DO = "do@example.com"
 DS = "ds@example.com"
+# Sorts before the DO, so this DS sends the offer to the DO.
+OFFERING_DS = "ann@example.com"
 TIMEOUT_SECONDS = 20
 # A login opens the connections, then loads its peers and sets them.
 LOGIN_GAP_SECONDS = 1
@@ -22,12 +28,29 @@ LOGIN_GAP_SECONDS = 1
 STREAM_END_SECONDS = 2
 # Long enough for an offer to reach the peer, and its answer to fail.
 ANSWER_WAIT_SECONDS = 3
+# Long enough for an offer to reach the inbox.
+OFFER_WRITE_SECONDS = 1
 
 pytestmark = pytest.mark.usefixtures("firebase_emulators")
 
 
 def ignore(*args: object) -> None:
     pass
+
+
+def open_recording(
+    client: AiortcPeerConnections,
+    email: str,
+    opened: queue.Queue[tuple[str, str]],
+    frames: queue.Queue[tuple[str, str, bytes]],
+) -> None:
+    """Open ``client`` as ``email``. Put each channel that opens in ``opened``,
+    and each frame that arrives in ``frames``, both after ``email``."""
+    client.open(
+        email,
+        lambda peer: opened.put((email, peer)),
+        lambda peer, frame: frames.put((email, peer, frame)),
+    )
 
 
 def test_peers_connect_after_hellos(tmp_path):
@@ -48,6 +71,38 @@ def test_peers_connect_after_hellos(tmp_path):
     finally:
         do.close()
         ds.close()
+
+
+def test_do_exchanges_frames_with_two_dss_at_once(tmp_path):
+    peers_of = {DO: [OFFERING_DS, DS], OFFERING_DS: [DO], DS: [DO]}
+    clients = {
+        email: AiortcPeerConnections(signaling_of(email, peers, tmp_path))
+        for email, peers in peers_of.items()
+    }
+    opened: queue.Queue[tuple[str, str]] = queue.Queue()
+    frames: queue.Queue[tuple[str, str, bytes]] = queue.Queue()
+    for email, client in clients.items():
+        open_recording(client, email, opened, frames)
+    try:
+        for email, client in clients.items():
+            client.set_peers(peers_of[email])
+        channels = {opened.get(timeout=TIMEOUT_SECONDS) for _ in range(4)}
+        assert channels == {(DO, OFFERING_DS), (DO, DS), (OFFERING_DS, DO), (DS, DO)}
+
+        for ds in (OFFERING_DS, DS):
+            clients[ds].send(DO, f"from {ds}".encode())
+            clients[DO].send(ds, f"to {ds}".encode())
+
+        received = {frames.get(timeout=TIMEOUT_SECONDS) for _ in range(4)}
+        assert received == {
+            (DO, OFFERING_DS, f"from {OFFERING_DS}".encode()),
+            (DO, DS, f"from {DS}".encode()),
+            (OFFERING_DS, DO, f"to {OFFERING_DS}".encode()),
+            (DS, DO, f"to {DS}".encode()),
+        }
+    finally:
+        for client in clients.values():
+            client.close()
 
 
 def test_peer_that_signs_in_later_gets_connected(tmp_path):
@@ -128,6 +183,36 @@ def test_refused_offer_reaches_offerer(tmp_path):
 
     with pytest.raises(ConnectionRefusedError, match="not a peer"):
         asyncio.run(offer_to_refusing_peer())
+
+
+def test_offer_sent_before_listen_is_not_answered(tmp_path):
+    do_signaling, ds_signaling = signalings_of_peers(DO, DS, tmp_path)
+    offerers: list[str] = []
+
+    async def record_offer(sender: str, sdp: str) -> str:
+        offerers.append(sender)
+        return sdp
+
+    async def offer_before_and_after_do_listens() -> None:
+        await ds_signaling.listen(DS, record_offer, ignore, ignore, ignore)
+        try:
+            with pytest.raises(TimeoutError):
+                await asyncio.wait_for(
+                    ds_signaling.offer(DS, DO, "v=0"), OFFER_WRITE_SECONDS
+                )
+            await do_signaling.listen(DO, record_offer, ignore, ignore, ignore)
+            try:
+                await asyncio.wait_for(
+                    ds_signaling.offer(DS, DO, "v=0"), TIMEOUT_SECONDS
+                )
+            finally:
+                await do_signaling.close(DO)
+        finally:
+            await ds_signaling.close(DS)
+
+    asyncio.run(offer_before_and_after_do_listens())
+
+    assert offerers == [DS]
 
 
 def test_failed_answer_reaches_on_answer_failed(tmp_path):

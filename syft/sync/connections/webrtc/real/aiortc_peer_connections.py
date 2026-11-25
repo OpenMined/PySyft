@@ -60,7 +60,9 @@ def split_frame_into_chunks(frame: bytes) -> list[bytes]:
 
 def sign_in_failed(sign_in: asyncio.Task) -> bool:
     """Return whether ``sign_in`` ended without a session."""
-    return sign_in.done() and (sign_in.cancelled() or sign_in.exception() is not None)
+    if not sign_in.done():
+        return False
+    return sign_in.cancelled() or sign_in.exception() is not None
 
 
 class AiortcPeerConnections(PeerConnections):

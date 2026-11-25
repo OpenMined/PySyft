@@ -7,10 +7,7 @@
       "source": "functions",
       "codebase": "default",
       "runtime": "python312",
-      "ignore": [
-        "venv",
-        "__pycache__"
-      ]
+      "ignore": ["venv", "__pycache__"]
     }
   ],
   "emulators": {

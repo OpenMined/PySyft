@@ -4,9 +4,12 @@ import asyncio
 import os
 import queue
 import threading
+import time
 from typing import Any
 
+import aioice.ice
 import pytest
+from aioice.ice import StunProtocol
 from aiortc import RTCDataChannel, RTCSctpTransport
 
 from syft.sync.connections.types import MessageKind
@@ -24,6 +27,12 @@ EVENTS = MessageKind.FILE_EVENTS
 SLOW_SIGN_IN_SECONDS = 1.0
 CONNECT_SECONDS = 10
 SHORT_LIFETIME_SECONDS = 1.0
+# aioice closes a connection after 6 failed consent checks, 5 s apart. Each
+# check waits 0.5 s for its response.
+FAST_CONSENT_INTERVAL_SECONDS = 0.1
+FAST_CONSENT_FAILURES = 2
+# Time for the consent checks to fail, and for both channels to close.
+CHANNEL_END_SECONDS = 3
 
 
 class SlowSignaling(LocalSignaling):
@@ -77,6 +86,26 @@ class ExpiringSignaling(LocalSignaling):
 
     async def ice_servers(self, email: str) -> IceServerSet:
         return IceServerSet([], SHORT_LIFETIME_SECONDS)
+
+
+class Network:
+    """Drops every ICE packet in this process while ``down`` is True, as a
+    lost network does. The signaling still works."""
+
+    def __init__(self, monkeypatch: pytest.MonkeyPatch):
+        self.down = False
+        send_stun, send_data = StunProtocol.send_stun, StunProtocol.send_data
+
+        def maybe_send_stun(protocol: StunProtocol, *args: Any) -> None:
+            if not self.down:
+                send_stun(protocol, *args)
+
+        async def maybe_send_data(protocol: StunProtocol, *args: Any) -> None:
+            if not self.down:
+                await send_data(protocol, *args)
+
+        monkeypatch.setattr(StunProtocol, "send_stun", maybe_send_stun)
+        monkeypatch.setattr(StunProtocol, "send_data", maybe_send_data)
 
 
 def ignore(*args: object) -> None:
@@ -280,6 +309,37 @@ def test_peer_that_signs_in_again_gets_new_channel():
     finally:
         do.close()
         second_ds.close()
+
+
+def test_lost_channel_opens_again_at_next_set_peers(monkeypatch):
+    network = Network(monkeypatch)
+    monkeypatch.setattr(aioice.ice, "CONSENT_INTERVAL", FAST_CONSENT_INTERVAL_SECONDS)
+    monkeypatch.setattr(aioice.ice, "CONSENT_FAILURES", FAST_CONSENT_FAILURES)
+    signaling = LocalSignaling()
+    do = AiortcPeerConnections(signaling)
+    ds = AiortcPeerConnections(signaling)
+    opened_on_ds: queue.Queue[str] = queue.Queue()
+    frames_on_do: queue.Queue[tuple[str, bytes]] = queue.Queue()
+    do.open(DO, ignore, lambda *frame: frames_on_do.put(frame))
+    ds.open(DS, opened_on_ds.put, ignore)
+    try:
+        do.set_peers([DS])
+        ds.set_peers([DO])
+        assert opened_on_ds.get(timeout=CONNECT_SECONDS) == DO
+        network.down = True
+        time.sleep(CHANNEL_END_SECONDS)
+        network.down = False
+
+        # The next sync of each side sets its peers again.
+        do.set_peers([DS])
+        ds.set_peers([DO])
+
+        assert opened_on_ds.get(timeout=CONNECT_SECONDS) == DO
+        ds.send(DO, b"hello")
+        assert frames_on_do.get(timeout=CONNECT_SECONDS) == (DS, b"hello")
+    finally:
+        do.close()
+        ds.close()
 
 
 def test_connected_peer_gets_no_hello_on_set_peers():
