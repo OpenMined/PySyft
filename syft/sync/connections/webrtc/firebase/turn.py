@@ -9,7 +9,7 @@ from syft.sync.connections.webrtc.signaling.signaling import IceServerSet
 
 class TurnFunction:
     """An ``IceServerSource``: each call gets new short-lived TURN credentials
-    from the function in firebase/functions/main.py."""
+    from the function in infra/firebase/functions/main.py."""
 
     def __init__(self, url: str, session: FirebaseSession):
         self._url = url

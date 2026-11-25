@@ -38,7 +38,7 @@ from syft.sync.connections.webrtc.webrtc_config import WebRTCConfig
 PROJECT_ID = "demo-syft"
 EMULATOR_HOST = "127.0.0.1"
 FIREBASE_TOOLS = "firebase-tools@15.35.0"
-FIREBASE_FOLDER = Path(__file__).parents[3] / "firebase"
+FIREBASE_FOLDER = Path(__file__).parents[3] / "infra" / "firebase"
 START_TIMEOUT_SECONDS = 120
 STOP_TIMEOUT_SECONDS = 30
 AUTH_EMULATOR = f"http://{EMULATOR_HOST}:{AUTH_EMULATOR_PORT}"
@@ -57,7 +57,7 @@ EMULATOR_PROJECT = FirebaseProject.from_config(EMULATOR_CONFIG)
 @contextmanager
 def running_emulators() -> Iterator[None]:
     """Run the Auth and Realtime Database emulators with
-    firebase/database.rules.json.
+    infra/firebase/database.rules.json.
 
     Raises:
         RuntimeError: An emulator port is in use, or the emulators do not start.

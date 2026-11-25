@@ -11,7 +11,7 @@ from syft.sync.connections.base_connection import ConnectionConfig
 
 class WebRTCConfig(ConnectionConfig):
     """The Firebase project that carries the signaling and the peering of a
-    WebRTC client. ``firebase/README.md`` tells how to set one up."""
+    WebRTC client. ``infra/firebase/README.md`` tells how to set one up."""
 
     model_config = ConfigDict(frozen=True)
 

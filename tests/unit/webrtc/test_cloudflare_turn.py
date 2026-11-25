@@ -8,7 +8,11 @@ import pytest
 
 # The Cloud Function is not in a package, so the test loads its file.
 CLOUDFLARE_TURN_FILE = (
-    Path(__file__).parents[3] / "firebase" / "functions" / "cloudflare_turn.py"
+    Path(__file__).parents[3]
+    / "infra"
+    / "firebase"
+    / "functions"
+    / "cloudflare_turn.py"
 )
 spec = importlib.util.spec_from_file_location("cloudflare_turn", CLOUDFLARE_TURN_FILE)
 cloudflare_turn = importlib.util.module_from_spec(spec)

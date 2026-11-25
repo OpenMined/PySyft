@@ -1,5 +1,5 @@
 """The Realtime Database REST API of WebRTC mode, used as the signed-in user,
-so the rules in firebase/database.rules.json apply."""
+so the rules in infra/firebase/database.rules.json apply."""
 
 import http.client
 import json

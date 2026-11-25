@@ -1,4 +1,4 @@
-"""firebase/database.rules.json on the Realtime Database emulator: each
+"""infra/firebase/database.rules.json on the Realtime Database emulator: each
 signed-in user reads and writes only what the rules allow."""
 
 from collections.abc import Callable

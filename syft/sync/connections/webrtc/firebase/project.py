@@ -6,14 +6,14 @@ from syft.sync.connections.webrtc.webrtc_config import WebRTCConfig
 
 AUTH_URL = "https://identitytoolkit.googleapis.com/v1"
 TOKEN_URL = "https://securetoken.googleapis.com/v1"
-# The region and the name of the function in firebase/functions/main.py.
+# The region and the name of the function in infra/firebase/functions/main.py.
 TURN_FUNCTION_URL = (
     "https://us-central1-{project_id}.cloudfunctions.net/turn_credentials"
 )
 # The default Realtime Database of a project, in us-central1.
 DATABASE_URL = "https://{database}.firebaseio.com"
 DEFAULT_DATABASE = "{project_id}-default-rtdb"
-# The emulator ports in firebase/firebase.json.
+# The emulator ports in infra/firebase/firebase.json.
 AUTH_EMULATOR_PORT = 9099
 DATABASE_EMULATOR_PORT = 9000
 

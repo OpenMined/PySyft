@@ -1,7 +1,7 @@
 """Peering through the Realtime Database: peer requests, acl/, key bundles and
 peer info.
 
-firebase/database.rules.json has the paths and who may read and write them.
+infra/firebase/database.rules.json has the paths and who may read and write them.
 The peer list stays on local disk.
 """
 

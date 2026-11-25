@@ -2,9 +2,9 @@
 
 A sender writes each offer, answer and refusal at
 signal/{receiver}/{sender}/{id}, and its hello at
-signal/{receiver}/{sender}/hello, where the next hello replaces it. The rules in firebase/database.rules.json let
-it write only if the receiver accepted it. Each client reads its own node,
-signal/{me}, as one stream.
+signal/{receiver}/{sender}/hello, where the next hello replaces it. The rules
+in infra/firebase/database.rules.json let it write only if the receiver
+accepted it. Each client reads its own node, signal/{me}, as one stream.
 """
 
 import asyncio
