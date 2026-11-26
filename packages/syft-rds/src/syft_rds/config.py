@@ -22,6 +22,7 @@ from syft.sync.syftbox_manager import (
     SyftboxManagerConfig,
 )
 from syft.sync.sync.collection_spec import CollectionLayout, CollectionSyncSpec
+from syft.sync.connections.webrtc.webrtc_config import WebRTCConfig
 from syft_job import SyftJobConfig
 from syft_datasets.config import SyftBoxConfig, protocol_dir_name
 from syft_datasets.dataset_manager import (
@@ -151,6 +152,7 @@ class SyftRDSClientConfig(BaseModel):
         email,
         has_do_role=False,
         has_ds_role=False,
+        webrtc: WebRTCConfig | None = None,
         token_path=None,
         **kw,
     ) -> "SyftRDSClientConfig":
@@ -159,7 +161,10 @@ class SyftRDSClientConfig(BaseModel):
             has_do_role=has_do_role,
             has_ds_role=has_ds_role,
             token_path=token_path,
-            collection_specs=DATASET_COLLECTION_SPECS,
+            # Datasets do not go over WebRTC yet, so a WebRTC client registers
+            # no dataset specs.
+            collection_specs=DATASET_COLLECTION_SPECS if webrtc is None else [],
+            webrtc=webrtc,
             **kw,
         )
         return cls._compose(sync)
@@ -170,13 +175,17 @@ class SyftRDSClientConfig(BaseModel):
         email,
         has_do_role=False,
         has_ds_role=False,
+        webrtc: WebRTCConfig | None = None,
         **kw,
     ) -> "SyftRDSClientConfig":
         sync = SyftboxManagerConfig.for_colab(
             email=email,
             has_do_role=has_do_role,
             has_ds_role=has_ds_role,
-            collection_specs=DATASET_COLLECTION_SPECS,
+            # Datasets do not go over WebRTC yet, so a WebRTC client registers
+            # no dataset specs.
+            collection_specs=DATASET_COLLECTION_SPECS if webrtc is None else [],
+            webrtc=webrtc,
             **kw,
         )
         return cls._compose(sync)

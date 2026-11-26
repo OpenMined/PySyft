@@ -32,6 +32,12 @@ class FakeNetwork:
         self._peer_on_opens[email](peer)
         self._peer_on_opens[peer](email)
 
+    def is_listening(self, email: str) -> bool:
+        return email in self._peer_on_opens
+
+    def has_channel(self, email: str, peer: str) -> bool:
+        return frozenset((email, peer)) in self._channels
+
     def send(self, sender: str, receiver: str, frame: bytes) -> None:
         """Hand ``frame`` to ``receiver`` inside this call; dropped when the two
         have no open channel."""
@@ -60,6 +66,18 @@ class FakePeerConnections(PeerConnections):
 
     def connect(self, peer: str) -> None:
         self.network.connect(self.email, peer)
+
+    def set_peers(self, peers: list[str]) -> None:
+        """Connect to each of ``peers`` that listens and has no channel to this
+        client. A fake network has no roles, so either side connects."""
+        for peer in peers:
+            if self.network.is_listening(peer) and not self.network.has_channel(
+                self.email, peer
+            ):
+                self.network.connect(self.email, peer)
+
+    def maybe_raise_background_errors(self) -> None:
+        """Do nothing: the fake network does no work in the background."""
 
     def send(self, peer: str, frame: bytes) -> None:
         self.network.send(self.email, peer, frame)

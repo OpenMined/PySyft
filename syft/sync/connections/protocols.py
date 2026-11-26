@@ -59,6 +59,18 @@ class P2PConnection(RouterConnection, ABC):
     # outbox, so the owner compacts them. A live link drops them on receipt.
     keeps_sent_messages: bool = False
 
+    def set_peers(self, peers: list[str]) -> None:
+        """Set the peers that this client may exchange messages with.
+
+        A backend with live channels, such as WebRTC, connects to them. Drive
+        needs no channels, so here it does nothing.
+        """
+
+    def maybe_raise_background_errors(self) -> None:
+        """Raise the failures in the background since the last call, if there
+        are any. Drive does no work in the background, so here it does
+        nothing."""
+
     @abstractmethod
     def send(
         self, peer: str, msg_id: str, data: bytes, kind: MessageKind

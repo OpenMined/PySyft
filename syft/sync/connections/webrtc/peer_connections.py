@@ -23,6 +23,15 @@ class PeerConnections(ABC):
         """Open a channel to ``peer``; return once it is open."""
 
     @abstractmethod
+    def set_peers(self, peers: list[str]) -> None:
+        """Keep channels to ``peers``, and accept channels only from them."""
+
+    @abstractmethod
+    def maybe_raise_background_errors(self) -> None:
+        """Raise the failures in the background since the last call, if there
+        are any."""
+
+    @abstractmethod
     def send(self, peer: str, frame: bytes) -> None:
         """Send ``frame`` to ``peer``; dropped when there is no channel to it."""
 
