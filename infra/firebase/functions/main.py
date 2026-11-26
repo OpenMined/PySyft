@@ -1,6 +1,7 @@
 """The Cloud Function that gives syft's WebRTC clients TURN credentials."""
 
 import json
+import logging
 
 from cloudflare_turn import CloudflareTurnConfig, generate_ice_servers
 from firebase_admin import auth, initialize_app
@@ -15,6 +16,7 @@ BEARER_PREFIX = "Bearer "
 CLOUDFLARE_TURN_KEY_ID = SecretParam("CLOUDFLARE_TURN_KEY_ID")
 CLOUDFLARE_TURN_KEY_API_TOKEN = SecretParam("CLOUDFLARE_TURN_KEY_API_TOKEN")
 
+logger = logging.getLogger(__name__)
 initialize_app()
 
 
@@ -34,7 +36,10 @@ def turn_credentials(request: https_fn.Request) -> https_fn.Response:
     try:
         token = auth.verify_id_token(header.removeprefix(BEARER_PREFIX))
     except (auth.InvalidIdTokenError, ValueError) as err:
-        return error_response(401, f"The Firebase ID token is not valid: {err}")
+        # The reason can describe the setup of the function, so only the log
+        # of the function gets it.
+        logger.warning("Refused a Firebase ID token: %r", err)
+        return error_response(401, "The Firebase ID token is not valid")
     if token.get("email_verified") is not True:
         return error_response(403, "The email of the user is not verified")
     config = CloudflareTurnConfig(
