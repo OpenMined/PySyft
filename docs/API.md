@@ -227,14 +227,17 @@ ds_client.submit_python_job(
 )
 ```
 
-### `client.submit_bash_job(user, code_path, job_name=None)`
+### `client.submit_bash_job(user, script, job_name="")`
 
 Submit a bash job to a Data Owner. **DS only.**
+
+- `user`: DO email to submit the job to.
+- `script`: Bash script content to execute, not a path to a script.
 
 ```python
 ds_client.submit_bash_job(
     user="owner@example.com",
-    code_path="/path/to/script.sh",
+    script="echo hello",
 )
 ```
 
